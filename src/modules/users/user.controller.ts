@@ -19,6 +19,7 @@ import { CreateUserDto } from './dtos/create-user.dto'
 import { UserStatus } from '@enums/status.enum'
 import { Auth } from '@decorators/auth.decorator'
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger'
+import { ResponseDto } from '@common/response.dto'
 
 @ApiTags('users')
 @Controller('users')
@@ -29,16 +30,25 @@ export class UsersController {
   @ApiBearerAuth()
   @Post('register')
   @Auth(Role.ADMIN)
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto)
+  async register(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
+    const user = await this.userService.create(createUserDto)
+    return new ResponseDto({
+      messageCode: 'USER_CREATED',
+      statusCode: 200,
+      data: user,
+    })
   }
 
   @ApiOperation({ summary: 'Get user profile' })
   @ApiBearerAuth()
   @Get('profile')
   @UseGuards(JwtAuthGuard)
-  getProfile(@Request() req) {
-    return req.user
+  async getProfile(@Request() req): Promise<ResponseDto> {
+    return new ResponseDto({
+      messageCode: 'USER_PROFILE_RETRIEVED',
+      statusCode: 200,
+      data: req.user,
+    })
   }
 
   @ApiOperation({ summary: 'Update user status (Admin only)' })
@@ -47,8 +57,16 @@ export class UsersController {
   @Put(':id/status')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  async updateStatus(@Param('id', ParseIntPipe) id: number, @Body('status') status: UserStatus) {
-    return this.userService.updateStatus(id, status)
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('status') status: UserStatus,
+  ): Promise<ResponseDto> {
+    const user = await this.userService.updateStatus(id, status)
+    return new ResponseDto({
+      messageCode: 'USER_STATUS_UPDATED',
+      statusCode: 200,
+      data: user,
+    })
   }
 
   @ApiOperation({ summary: 'Get admin data (Admin only)' })
@@ -58,8 +76,12 @@ export class UsersController {
   @Get('admin-only')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  getAdminData() {
-    return 'This route is only accessible to admins'
+  async getAdminData(): Promise<ResponseDto> {
+    return new ResponseDto({
+      messageCode: 'ADMIN_DATA_RETRIEVED',
+      statusCode: 200,
+      data: 'This route is only accessible to admins',
+    })
   }
 
   @ApiOperation({ summary: 'Get moderator data (Moderator/Admin only)' })
@@ -69,14 +91,22 @@ export class UsersController {
   @Get('moderator-only')
   @UseGuards(RolesGuard)
   @Roles(Role.MODERATOR, Role.ADMIN)
-  getModeratorData() {
-    return 'This route is accessible to moderators and admins'
+  async getModeratorData(): Promise<ResponseDto> {
+    return new ResponseDto({
+      messageCode: 'MODERATOR_DATA_RETRIEVED',
+      statusCode: 200,
+      data: 'This route is accessible to moderators and admins',
+    })
   }
 
   @ApiOperation({ summary: 'Get public data' })
   @ApiResponse({ status: 200, description: 'Data retrieved successfully.' })
   @Get('public')
-  getPublicData() {
-    return 'This route is accessible to everyone'
+  async getPublicData(): Promise<ResponseDto> {
+    return new ResponseDto({
+      messageCode: 'PUBLIC_DATA_RETRIEVED',
+      statusCode: 200,
+      data: 'This route is accessible to everyone',
+    })
   }
 }

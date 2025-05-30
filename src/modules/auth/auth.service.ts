@@ -9,6 +9,8 @@ import { User } from '@modules/users/user.entity'
 import { jwtConfig } from '@config/jwt.config'
 import { TokenPayloadDto } from './dtos/token-payload.dto'
 import { Role } from '@enums/role.enum'
+import { RefreshTokenDto } from './dtos/refresh-token.dto'
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -46,25 +48,66 @@ export class AuthService {
     username: string
     email: string
   }): Promise<TokenPayloadDto> {
-    return new TokenPayloadDto({
-      expiresIn: jwtConfig.expiresIn,
-      accessToken: await this.jwtService.signAsync({
-        userId: data.userId,
-        username: data.username,
-        email: data.email,
-        type: 'ACCESS_TOKEN',
-        role: data.role,
-      }),
-      refreshToken: await this.jwtService.signAsync(
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(
+        {
+          userId: data.userId,
+          username: data.username,
+          email: data.email,
+          type: 'ACCESS_TOKEN',
+          role: data.role,
+        },
+        {
+          secret: jwtConfig.accessToken.secret,
+          expiresIn: jwtConfig.accessToken.expiresIn,
+        },
+      ),
+      this.jwtService.signAsync(
         {
           userId: data.userId,
           type: 'REFRESH_TOKEN',
           role: data.role,
         },
         {
-          expiresIn: jwtConfig.expiresIn,
+          secret: jwtConfig.refreshToken.secret,
+          expiresIn: jwtConfig.refreshToken.expiresIn,
         },
       ),
+    ])
+
+    return new TokenPayloadDto({
+      expiresIn: jwtConfig.accessToken.expiresIn,
+      accessToken,
+      refreshToken,
     })
+  }
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<TokenPayloadDto> {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshTokenDto.refreshToken, {
+        secret: jwtConfig.refreshToken.secret,
+      })
+
+      if (payload.type !== 'REFRESH_TOKEN') {
+        throw new UnauthorizedException('Invalid refresh token')
+      }
+
+      const user = await this.userRepository.findOne({
+        where: { id: payload.userId },
+      })
+
+      if (!user) {
+        throw new UnauthorizedException('User not found')
+      }
+
+      return this.createAccessToken({
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      })
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token')
+    }
   }
 }

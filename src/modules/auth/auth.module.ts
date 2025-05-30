@@ -1,22 +1,21 @@
-import { Module } from '@nestjs/common'
-import { AuthService } from './auth.service'
-import { JwtModule } from '@nestjs/jwt'
-import { AuthController } from './auth.controller'
 import { jwtConfig } from '@config/jwt.config'
-import { UsersModule } from '@modules/users/user.module'
-
+import { User } from '@modules/users/user.entity'
+import { Module } from '@nestjs/common'
+import { JwtModule } from '@nestjs/jwt'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { Algorithm } from 'jsonwebtoken'
+import { AuthController } from './auth.controller'
+import { AuthService } from './auth.service'
 @Module({
   imports: [
-    UsersModule,
-    JwtModule.registerAsync({
-      useFactory: () => ({
-        secret: jwtConfig.secret,
-        signOptions: { algorithm: 'HS256', expiresIn: jwtConfig.expiresIn },
-      }),
+    TypeOrmModule.forFeature([User]),
+    JwtModule.register({
+      global: true,
+      signOptions: { algorithm: jwtConfig.jwtAlgorithm as Algorithm },
     }),
   ],
-  providers: [AuthService],
   controllers: [AuthController],
+  providers: [AuthService],
   exports: [AuthService],
 })
 export class AuthModule {}

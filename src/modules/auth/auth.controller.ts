@@ -1,10 +1,12 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Res } from '@nestjs/common'
-import { ApiOperation } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Response } from 'express'
 import { AuthService } from './auth.service'
 import { LoginPayloadDto } from './dtos/login-payload.dto'
 import { UserLoginDto } from './dtos/user-login.dto'
+import { RefreshTokenDto } from './dtos/refresh-token.dto'
 @Controller('auth')
+@ApiTags('Auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -49,5 +51,11 @@ export class AuthController {
     //   },
     // }
     // res.status(HttpStatus.OK).json(new LoginPayloadDto(userAndRoleFormatted))
+  }
+
+  @Post('refresh-token')
+  @ApiOperation({ summary: 'Refresh token' })
+  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto, @Res() res: Response) {
+    return res.status(HttpStatus.OK).json(await this.authService.refreshToken(refreshTokenDto))
   }
 }
