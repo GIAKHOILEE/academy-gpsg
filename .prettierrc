@@ -5,5 +5,5 @@
   "endOfLine": "auto",
   "semi": false,
   "parse": "flow",
-  "printWidth": 110
+  "printWidth": 150
 }

@@ -7,7 +7,7 @@ export class CreateUserDto {
   @ApiProperty({
     description: 'Username of the user',
     minLength: 3,
-    example: 'johndoe',
+    example: 'student1',
   })
   @IsString()
   @MinLength(3)
@@ -16,7 +16,7 @@ export class CreateUserDto {
 
   @ApiProperty({
     description: 'Email of the user',
-    example: 'johndoe@example.com',
+    example: 'student1@gmail.com',
   })
   @IsEmail()
   @IsNotEmpty()
@@ -25,21 +25,21 @@ export class CreateUserDto {
   @ApiProperty({
     description: 'Password of the user',
     minLength: 6,
-    example: '123456',
+    example: '1234567',
   })
   @IsString()
   @MinLength(6)
   @IsNotEmpty()
   password: string
 
-  @ApiPropertyOptional({
-    description: 'Role of the user',
-    enum: Role,
-    default: Role.USER,
-  })
-  @IsEnum(Role)
-  @IsOptional()
-  role?: Role
+  // @ApiPropertyOptional({
+  //   description: 'Role of the user',
+  //   enum: Role,
+  //   default: Role.STUDENT,
+  // })
+  // @IsEnum(Role)
+  // @IsOptional()
+  // role?: Role
 
   @ApiPropertyOptional({
     description: 'Status of the user',

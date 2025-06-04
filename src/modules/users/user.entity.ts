@@ -24,25 +24,23 @@ export class User {
   password: string
 
   @Column({
-    type: 'enum',
-    enum: Role,
-    default: Role.USER,
+    type: 'tinyint',
+    default: Role.STUDENT,
   })
   role: Role
 
   @Column({
-    type: 'enum',
-    enum: UserStatus,
+    type: 'tinyint',
     default: UserStatus.INACTIVE,
   })
   status: UserStatus
 
   @CreateDateColumn()
-  createdAt: Date
+  created_at: Date
 
   @UpdateDateColumn()
-  updatedAt: Date
+  updated_at: Date
 
   @DeleteDateColumn()
-  deletedAt: Date
+  deleted_at: Date
 }
