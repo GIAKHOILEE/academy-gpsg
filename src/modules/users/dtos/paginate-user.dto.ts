@@ -1,7 +1,7 @@
 import { IsOptional, IsString } from 'class-validator'
-import { PaginationParams } from '@common/pagination'
+import { PaginationDto } from '@common/pagination'
 
-export class PaginateUserDto extends PaginationParams {
+export class PaginateUserDto extends PaginationDto {
   @IsOptional()
   @IsString()
   username?: string

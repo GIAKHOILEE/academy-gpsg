@@ -3,7 +3,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsOptional } from 'class-validator'
 import { removeVietnameseTones } from './utils'
 
-export class PaginationParams {
+export class PaginationDto {
   @ApiPropertyOptional({ description: 'Trang hiện tại', example: 1 })
   @IsOptional()
   page?: number
@@ -30,7 +30,7 @@ export interface PaginationMeta {
   totalPages: number
 }
 
-export async function paginate<T>(queryBuilder: SelectQueryBuilder<T>, params: PaginationParams) {
+export async function paginate<T>(queryBuilder: SelectQueryBuilder<T>, params: PaginationDto) {
   const { page = 1, limit = 10, orderBy, orderDirection = 'DESC', ...filters } = params
 
   const mainTableAlias = queryBuilder.alias
