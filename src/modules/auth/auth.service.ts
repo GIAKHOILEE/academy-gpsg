@@ -42,12 +42,7 @@ export class AuthService {
     return formattedUser
   }
 
-  async createAccessToken(data: {
-    role: Role
-    userId: number
-    username: string
-    email: string
-  }): Promise<TokenPayloadDto> {
+  async createAccessToken(data: { role: Role; userId: number; username: string; email: string }): Promise<TokenPayloadDto> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {

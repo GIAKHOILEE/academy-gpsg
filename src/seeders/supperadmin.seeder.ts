@@ -1,12 +1,11 @@
+import { hashPassword } from '@common/utils'
 import { Role } from '@enums/role.enum'
+import { UserStatus } from '@enums/status.enum'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import * as bcrypt from 'bcrypt'
+import * as dotenv from 'dotenv'
 import { Repository } from 'typeorm'
 import { User } from '../modules/users/user.entity'
-import * as dotenv from 'dotenv'
-import { UserStatus } from '@enums/status.enum'
-import { hashPassword } from '@common/utils'
 
 dotenv.config()
 @Injectable()

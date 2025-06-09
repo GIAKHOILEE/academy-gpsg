@@ -5,7 +5,17 @@ export interface IUser {
   id: number
   username: string
   email: string
-  //   password?: string;
+  // password?: string
+  saint_name?: string
+  phone_number?: string
+  address?: string
+  avatar?: string
+  birth_place?: string
+  birth_date?: Date
+  parish?: string
+  deanery?: string
+  diocese?: string
+  congregation?: string
   role: Role
   status: UserStatus
 }

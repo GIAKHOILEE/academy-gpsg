@@ -1,7 +1,6 @@
-import { IsString, IsEnum, MinLength, IsOptional, IsEmail, IsNotEmpty } from 'class-validator'
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator'
 
 export class CreateUserDto {
   @ApiProperty({
@@ -31,6 +30,86 @@ export class CreateUserDto {
   @MinLength(6)
   @IsNotEmpty()
   password: string
+
+  @ApiPropertyOptional({
+    description: 'Saint name of the user',
+    example: 'John Doe',
+  })
+  @IsString()
+  @IsOptional()
+  saint_name?: string
+
+  @ApiPropertyOptional({
+    description: 'Phone number of the user',
+    example: '081234567890',
+  })
+  @IsString()
+  @IsOptional()
+  phone_number?: string
+
+  @ApiPropertyOptional({
+    description: 'Address of the user',
+    example: 'Jl. Raya No. 123',
+  })
+  @IsString()
+  @IsOptional()
+  address?: string
+
+  @ApiPropertyOptional({
+    description: 'Avatar of the user',
+    example: 'https://example.com/avatar.png',
+  })
+  @IsString()
+  @IsOptional()
+  avatar?: string
+
+  @ApiPropertyOptional({
+    description: 'Birth place of the user',
+    example: 'Jl. Raya No. 123',
+  })
+  @IsString()
+  @IsOptional()
+  birth_place?: string
+
+  @ApiPropertyOptional({
+    description: 'Birth date of the user',
+    example: '2000-01-01',
+  })
+  @IsString()
+  @IsOptional()
+  birth_date?: string
+
+  @ApiPropertyOptional({
+    description: 'Giáo xứ',
+    example: 'Giáo xứ 1',
+  })
+  @IsString()
+  @IsOptional()
+  parish?: string
+
+  @ApiPropertyOptional({
+    description: 'Giáo hạt',
+    example: 'Giáo hạt 1',
+  })
+  @IsString()
+  @IsOptional()
+  deanery?: string
+
+  @ApiPropertyOptional({
+    description: 'Giáo phận',
+    example: 'Giáo phận 1',
+  })
+  @IsString()
+  @IsOptional()
+  diocese?: string
+
+  @ApiPropertyOptional({
+    description: 'Dòng tu',
+    example: 'Dòng tu 1',
+  })
+  @IsString()
+  @IsOptional()
+  congregation?: string
 
   // @ApiPropertyOptional({
   //   description: 'Role of the user',

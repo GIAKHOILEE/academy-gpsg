@@ -19,7 +19,7 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto, role: Role): Promise<User> {
-    const { username, password, status } = createUserDto
+    const { username, password, status, ...rest } = createUserDto
     const existingUser = await this.usersRepository.createQueryBuilder('users').where('users.username = :username', { username }).getOne()
     if (existingUser) {
       throw new ConflictException('Username already exists')
@@ -31,6 +31,7 @@ export class UserService {
       password: hashedPassword,
       role,
       status,
+      ...rest,
     })
 
     return this.usersRepository.save(user)
@@ -50,6 +51,7 @@ export class UserService {
         email: user.email,
         role: user.role,
         status: user.status,
+        ...user,
       }
     })
     return {
@@ -69,6 +71,7 @@ export class UserService {
       email: user.email,
       role: user.role,
       status: user.status,
+      ...user,
     }
     return userData
   }
@@ -84,6 +87,7 @@ export class UserService {
       email: user.email,
       role: user.role,
       status: user.status,
+      ...user,
     }
     return userData
   }
