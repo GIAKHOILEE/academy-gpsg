@@ -25,7 +25,11 @@ export class User {
   @Column({ nullable: true })
   address: string
 
-  @Column()
+  @Column({
+    nullable: true,
+    default:
+      'https://hvmvsaigon.edu.vn/img_data/images/Logo/logo.png?fbclid=IwY2xjawK06L1leHRuA2FlbQIxMQABHsnTQpPdhGmH5uQ_J38nn3Qq0SpH1wvD9RedHNeFEjJG7h6j4c3kIyx4yBHC_aem_aWpVMiPMe_YW4_baT8qkHQ',
+  })
   avatar: string
 
   // nơi sinh
