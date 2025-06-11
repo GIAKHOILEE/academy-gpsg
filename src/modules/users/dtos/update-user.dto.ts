@@ -4,6 +4,11 @@ import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 export class UpdateUserDto {
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Tên đầy đủ', example: 'John Doe' })
+  full_name?: string
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Tên tài khoản', example: 'John Doe' })
   username?: string
 

@@ -11,6 +11,9 @@ export class Subject {
   @Column()
   image: string
 
+  @Column()
+  description: string
+
   @CreateDateColumn()
   created_at: Date
 

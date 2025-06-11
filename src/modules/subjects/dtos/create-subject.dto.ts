@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class CreateSubjectDto {
@@ -9,6 +9,11 @@ export class CreateSubjectDto {
 
   @IsString()
   @IsOptional()
-  @ApiProperty({ description: 'Ảnh môn học' })
+  @ApiPropertyOptional({ description: 'Ảnh môn học' })
   image?: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Mô tả môn học' })
+  description?: string
 }

@@ -3,6 +3,14 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator'
 
 export class CreateUserDto {
+  @ApiPropertyOptional({
+    description: 'Full name of the user',
+    example: 'John Doe',
+  })
+  @IsString()
+  @IsOptional()
+  full_name?: string
+
   @ApiProperty({
     description: 'Username of the user',
     minLength: 3,

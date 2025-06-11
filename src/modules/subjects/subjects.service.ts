@@ -15,14 +15,14 @@ export class SubjectsService {
   ) {}
 
   async create(createSubjectDto: CreateSubjectDto): Promise<ISubject> {
-    const { name, image } = createSubjectDto
+    const { name, image, description } = createSubjectDto
 
     const existingSubject = await this.subjectRepository.findOne({ where: { name } })
     if (existingSubject) {
       throw new BadRequestException('Subject already exists')
     }
 
-    const subject = this.subjectRepository.create({ name, image })
+    const subject = this.subjectRepository.create({ name, image, description })
     return this.subjectRepository.save(subject)
   }
 
@@ -42,6 +42,7 @@ export class SubjectsService {
       id: subject.id,
       name: subject.name,
       image: subject.image,
+      description: subject.description,
     }
     return formattedSubject
   }

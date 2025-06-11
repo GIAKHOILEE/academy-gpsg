@@ -7,9 +7,10 @@ import { AppService } from './app.service'
 import { LoggerMiddleware } from './middleware/logger.middleware'
 import { SuperAdminSeeder } from '@seeders/supperadmin.seeder'
 import { User } from '@modules/users/user.entity'
+import { SubjectsModule } from '@modules/subjects/subjects.module'
 
 @Module({
-  imports: [TypeOrmModule.forRoot(databaseConfig), TypeOrmModule.forFeature([User]), AuthModule, UsersModule],
+  imports: [TypeOrmModule.forRoot(databaseConfig), TypeOrmModule.forFeature([User]), AuthModule, UsersModule, SubjectsModule],
   providers: [AppService, SuperAdminSeeder],
 })
 export class AppModule implements NestModule {
