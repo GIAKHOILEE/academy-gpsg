@@ -6,8 +6,11 @@ import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { UpdateSubjectDto } from './dtos/update-subject.dto'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 
-@Controller('subjects')
+@Controller('admin/subjects')
+@ApiTags('Subjects')
+@ApiBearerAuth()
 export class SubjectsController {
   constructor(private readonly subjectsService: SubjectsService) {}
 
@@ -25,6 +28,7 @@ export class SubjectsController {
   @Get()
   @Auth(Role.ADMIN)
   async getAll(@Query() pagination: PaginateSubjectDto): Promise<ResponseDto> {
+    console.log(pagination)
     const subjects = await this.subjectsService.getAll(pagination)
     return new ResponseDto({
       messageCode: 'SUBJECTS_FETCHED',

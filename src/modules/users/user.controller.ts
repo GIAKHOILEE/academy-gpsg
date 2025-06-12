@@ -6,7 +6,7 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, Request }
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { CreateUserDto } from './dtos/create-user.dto'
 import { PaginateUserDto } from './dtos/paginate-user.dto'
-import { UpdatePasswordDto } from './dtos/update-user.dto'
+import { UpdatePasswordDto, UpdateUserDto } from './dtos/update-user.dto'
 import { UserService } from './user.service'
 
 // ============================================
@@ -77,11 +77,23 @@ export class AdminUsersController {
   @Put(':id/status')
   @Auth(Role.ADMIN)
   async updateStatus(@Param('id', ParseIntPipe) id: number, @Body('status') status: UserStatus): Promise<ResponseDto> {
-    const user = await this.userService.updateStatus(id, status)
+    await this.userService.updateStatus(id, status)
     return new ResponseDto({
       messageCode: 'USER_STATUS_UPDATED_SUCCESS',
       statusCode: 200,
-      data: user,
+    })
+  }
+
+  @ApiOperation({ summary: 'Cập nhật thông tin của user' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiBearerAuth()
+  @Put(':id')
+  @Auth(Role.ADMIN)
+  async updateUser(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto): Promise<ResponseDto> {
+    await this.userService.updateUser(id, updateUserDto)
+    return new ResponseDto({
+      messageCode: 'USER_UPDATED_SUCCESS',
+      statusCode: 200,
     })
   }
 

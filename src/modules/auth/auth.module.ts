@@ -6,8 +6,11 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { Algorithm } from 'jsonwebtoken'
 import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
+import { PassportModule } from '@nestjs/passport'
+import { JwtStrategy } from '@strategies/jwt.strategy'
 @Module({
   imports: [
+    PassportModule,
     TypeOrmModule.forFeature([User]),
     JwtModule.register({
       global: true,
@@ -15,7 +18,7 @@ import { AuthService } from './auth.service'
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

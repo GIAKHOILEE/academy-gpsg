@@ -9,7 +9,7 @@ import { CreateUserDto } from './dtos/create-user.dto'
 import { PaginateUserDto } from './dtos/paginate-user.dto'
 import { User } from './user.entity'
 import { IUser } from './user.interface'
-import { UpdatePasswordDto } from './dtos/update-user.dto'
+import { UpdatePasswordDto, UpdateUserDto } from './dtos/update-user.dto'
 
 @Injectable()
 export class UserService {
@@ -96,13 +96,34 @@ export class UserService {
     return userData
   }
 
-  async updateStatus(userId: number, status: UserStatus): Promise<User> {
+  async updateUser(userId: number, updateUserDto: UpdateUserDto): Promise<void> {
+    const { username, ...dto } = updateUserDto
+    const user = await this.usersRepository.findOne({ where: { id: userId } })
+    if (!user) {
+      throw new UnauthorizedException('User not found')
+    }
+    if (username) {
+      const existingUser = await this.usersRepository
+        .createQueryBuilder('users')
+        .where('users.username = :username', { username })
+        .andWhere('users.id != :userId', { userId })
+        .getOne()
+      if (existingUser) {
+        throw new ConflictException('Username already exists')
+      }
+      user.username = username
+    }
+    Object.assign(user, dto)
+    await this.usersRepository.save(user)
+  }
+
+  async updateStatus(userId: number, status: UserStatus): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id: userId } })
     if (!user) {
       throw new UnauthorizedException('User not found')
     }
     user.status = status
-    return this.usersRepository.save(user)
+    await this.usersRepository.save(user)
   }
 
   async updatePassword(userId: number, updatePasswordDto: UpdatePasswordDto): Promise<void> {
