@@ -6,6 +6,9 @@ export class Subject {
   id: number
 
   @Column()
+  code: string
+
+  @Column()
   name: string
 
   @Column()

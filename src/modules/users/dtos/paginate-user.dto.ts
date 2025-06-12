@@ -1,20 +1,21 @@
-import { IsOptional, IsString } from 'class-validator'
+import { IsNumber, IsOptional, IsString } from 'class-validator'
 import { PaginationDto } from '@common/pagination'
 import { ApiPropertyOptional } from '@nestjs/swagger'
+import { UserStatus } from '@enums/status.enum'
 
 export class PaginateUserDto extends PaginationDto {
   @IsOptional()
   @IsString()
-  @ApiPropertyOptional({ description: 'Tên đầy đủ', example: 'John Doe' })
+  @ApiPropertyOptional({ description: 'Tên đầy đủ' })
   full_name?: string
 
   @IsOptional()
   @IsString()
-  @ApiPropertyOptional({ description: 'Email', example: 'john.doe@example.com' })
+  @ApiPropertyOptional({ description: 'Email' })
   email?: string
 
   @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ description: 'Trạng thái', example: 'active' })
-  status?: string
+  @IsNumber()
+  @ApiPropertyOptional({ description: 'Trạng thái 1: active, 2: inactive', enum: UserStatus })
+  status?: UserStatus
 }

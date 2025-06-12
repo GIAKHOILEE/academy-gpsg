@@ -66,7 +66,7 @@ export class User {
 
   @Column({
     type: 'tinyint',
-    default: UserStatus.INACTIVE,
+    default: UserStatus.ACTIVE,
   })
   status: UserStatus
 

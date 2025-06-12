@@ -4,6 +4,11 @@ import { IsOptional, IsString } from 'class-validator'
 export class UpdateSubjectDto {
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Mã môn học' })
+  code: string
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Tên môn học' })
   name: string
 

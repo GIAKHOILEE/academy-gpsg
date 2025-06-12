@@ -15,14 +15,19 @@ export class SubjectsService {
   ) {}
 
   async create(createSubjectDto: CreateSubjectDto): Promise<ISubject> {
-    const { name, image, description } = createSubjectDto
+    const { code, name, image, description } = createSubjectDto
+
+    const existingCode = await this.subjectRepository.findOne({ where: { code: createSubjectDto.code } })
+    if (existingCode) {
+      throw new BadRequestException('Code already exists')
+    }
 
     const existingSubject = await this.subjectRepository.findOne({ where: { name } })
     if (existingSubject) {
       throw new BadRequestException('Subject already exists')
     }
 
-    const subject = this.subjectRepository.create({ name, image, description })
+    const subject = this.subjectRepository.create({ code, name, image, description })
     return this.subjectRepository.save(subject)
   }
 
@@ -30,7 +35,14 @@ export class SubjectsService {
     const queryBuilder = this.subjectRepository.createQueryBuilder('subject').select(['subject.id', 'subject.name', 'subject.image'])
     const { data, meta } = await paginate(queryBuilder, pagination)
 
-    return { data, meta }
+    const formattedData = data.map(subject => ({
+      id: subject.id,
+      code: subject.code,
+      name: subject.name,
+      image: subject.image,
+      description: subject.description,
+    }))
+    return { data: formattedData, meta }
   }
 
   async getById(id: number): Promise<ISubject> {
@@ -40,6 +52,7 @@ export class SubjectsService {
     }
     const formattedSubject = {
       id: subject.id,
+      code: subject.code,
       name: subject.name,
       image: subject.image,
       description: subject.description,
@@ -51,6 +64,18 @@ export class SubjectsService {
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
       throw new NotFoundException('Subject not found')
+    }
+
+    if (updateSubjectDto.code) {
+      const existingCode = await this.subjectRepository
+        .createQueryBuilder('subject')
+        .where('subject.code = :code', { code: updateSubjectDto.code })
+        .andWhere('subject.id != :id', { id })
+        .getOne()
+
+      if (existingCode) {
+        throw new BadRequestException('Code already exists')
+      }
     }
 
     if (updateSubjectDto.name) {
