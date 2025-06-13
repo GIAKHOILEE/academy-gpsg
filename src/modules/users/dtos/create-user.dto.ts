@@ -128,12 +128,12 @@ export class CreateUserDto {
   // @IsOptional()
   // role?: Role
 
-  @ApiPropertyOptional({
-    description: 'Status of the user',
-    enum: UserStatus,
-    default: UserStatus.INACTIVE,
-  })
-  @IsEnum(UserStatus)
-  @IsOptional()
-  status?: UserStatus
+  // @ApiPropertyOptional({
+  //   description: 'Status of the user',
+  //   enum: UserStatus,
+  //   default: UserStatus.ACTIVE,
+  // })
+  // @IsEnum(UserStatus)
+  // @IsOptional()
+  // status?: UserStatus
 }

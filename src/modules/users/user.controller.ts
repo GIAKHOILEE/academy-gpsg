@@ -17,61 +17,91 @@ import { UserService } from './user.service'
 export class AdminUsersController {
   constructor(private readonly userService: UserService) {}
 
-  @ApiOperation({ summary: 'Tạo tài khoản mới cho học viên' })
+  // tạo tài khoản cho admin
+  @ApiOperation({ summary: 'Tạo tài khoản mới cho Admin' })
   @ApiBearerAuth()
-  @Post('register-student')
+  @Post('register-admin')
   @Auth(Role.ADMIN)
-  async register(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
-    const user = await this.userService.create(createUserDto, Role.STUDENT)
+  async registerAdmin(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
+    const user = await this.userService.create(createUserDto, Role.ADMIN)
     return new ResponseDto({
-      messageCode: 'STUDENT_CREATED',
+      messageCode: 'ADMIN_CREATED_SUCCESS',
       statusCode: 200,
       data: user,
     })
   }
 
-  @ApiOperation({ summary: 'Tạo tài khoản mới cho giáo viên' })
+  // lấy danh sách admin
+  @ApiOperation({ summary: 'Lấy danh sách Admin' })
   @ApiBearerAuth()
-  @Post('register-teacher')
+  @Get('admin')
   @Auth(Role.ADMIN)
-  async registerTeacher(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
-    const user = await this.userService.create(createUserDto, Role.TEACHER)
+  async getAdmin(@Query() paginateUserDto: PaginateUserDto): Promise<ResponseDto> {
+    const users = await this.userService.getAllUsers(paginateUserDto, Role.ADMIN)
     return new ResponseDto({
-      messageCode: 'TEACHER_CREATED',
+      messageCode: 'ADMIN_RETRIEVED_SUCCESS',
       statusCode: 200,
-      data: user,
+      data: users.data,
+      meta: users.meta,
     })
   }
 
-  @ApiOperation({ summary: 'Lấy danh sách giáo viên' })
-  @ApiBearerAuth()
-  @Get('teachers')
-  @Auth(Role.ADMIN)
-  async getAllTeachers(@Query() paginateUserDto: PaginateUserDto): Promise<ResponseDto> {
-    const teachers = await this.userService.getAllUsers(paginateUserDto, Role.TEACHER)
-    return new ResponseDto({
-      messageCode: 'TEACHERS_RETRIEVED',
-      statusCode: 200,
-      data: teachers.data,
-      meta: teachers.meta,
-    })
-  }
+  // tạo tài khoản mới cho học viên
+  // @ApiOperation({ summary: 'Tạo tài khoản mới cho học viên' })
+  // @ApiBearerAuth()
+  // @Post('register-student')
+  // @Auth(Role.ADMIN)
+  // async register(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
+  //   const user = await this.userService.create(createUserDto, Role.STUDENT)
+  //   return new ResponseDto({
+  //     messageCode: 'STUDENT_CREATED',
+  //     statusCode: 200,
+  //     data: user,
+  //   })
+  // }
 
-  @ApiOperation({ summary: 'Lấy danh sách học sinh' })
-  @ApiBearerAuth()
-  @Get('students')
-  @Auth(Role.ADMIN)
-  async getAllStudents(@Query() paginateUserDto: PaginateUserDto): Promise<ResponseDto> {
-    const students = await this.userService.getAllUsers(paginateUserDto, Role.STUDENT)
-    return new ResponseDto({
-      messageCode: 'STUDENTS_RETRIEVED',
-      statusCode: 200,
-      data: students.data,
-      meta: students.meta,
-    })
-  }
+  // @ApiOperation({ summary: 'Tạo tài khoản mới cho giáo viên' })
+  // @ApiBearerAuth()
+  // @Post('register-teacher')
+  // @Auth(Role.ADMIN)
+  // async registerTeacher(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
+  //   const user = await this.userService.create(createUserDto, Role.TEACHER)
+  //   return new ResponseDto({
+  //     messageCode: 'TEACHER_CREATED',
+  //     statusCode: 200,
+  //     data: user,
+  //   })
+  // }
 
-  @ApiOperation({ summary: 'Cập nhật trạng thái của user' })
+  // @ApiOperation({ summary: 'Lấy danh sách giáo viên' })
+  // @ApiBearerAuth()
+  // @Get('teachers')
+  // @Auth(Role.ADMIN)
+  // async getAllTeachers(@Query() paginateUserDto: PaginateUserDto): Promise<ResponseDto> {
+  //   const teachers = await this.userService.getAllUsers(paginateUserDto, Role.TEACHER)
+  //   return new ResponseDto({
+  //     messageCode: 'TEACHERS_RETRIEVED',
+  //     statusCode: 200,
+  //     data: teachers.data,
+  //     meta: teachers.meta,
+  //   })
+  // }
+
+  // @ApiOperation({ summary: 'Lấy danh sách học sinh' })
+  // @ApiBearerAuth()
+  // @Get('students')
+  // @Auth(Role.ADMIN)
+  // async getAllStudents(@Query() paginateUserDto: PaginateUserDto): Promise<ResponseDto> {
+  //   const students = await this.userService.getAllUsers(paginateUserDto, Role.STUDENT)
+  //   return new ResponseDto({
+  //     messageCode: 'STUDENTS_RETRIEVED',
+  //     statusCode: 200,
+  //     data: students.data,
+  //     meta: students.meta,
+  //   })
+  // }
+
+  @ApiOperation({ summary: 'Cập nhật trạng thái của Admin' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiBearerAuth()
   @Put(':id/status')
@@ -84,7 +114,7 @@ export class AdminUsersController {
     })
   }
 
-  @ApiOperation({ summary: 'Cập nhật thông tin của user' })
+  @ApiOperation({ summary: 'Cập nhật thông tin của Admin' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiBearerAuth()
   @Put(':id')
@@ -94,18 +124,6 @@ export class AdminUsersController {
     return new ResponseDto({
       messageCode: 'USER_UPDATED_SUCCESS',
       statusCode: 200,
-    })
-  }
-
-  @ApiOperation({ summary: 'Lấy dữ liệu của admin' })
-  @ApiBearerAuth()
-  @Get('admin-only')
-  @Auth(Role.ADMIN)
-  async getAdminData(): Promise<ResponseDto> {
-    return new ResponseDto({
-      messageCode: 'ADMIN_DATA_RETRIEVED',
-      statusCode: 200,
-      data: 'This route is only accessible to admins',
     })
   }
 }
@@ -140,16 +158,6 @@ export class UsersController {
     return new ResponseDto({
       messageCode: 'PASSWORD_UPDATED_SUCCESS',
       statusCode: 200,
-    })
-  }
-
-  @ApiOperation({ summary: 'Lấy dữ liệu công khai' })
-  @Get('public')
-  async getPublicData(): Promise<ResponseDto> {
-    return new ResponseDto({
-      messageCode: 'PUBLIC_DATA_RETRIEVED',
-      statusCode: 200,
-      data: 'This route is accessible to everyone',
     })
   }
 }

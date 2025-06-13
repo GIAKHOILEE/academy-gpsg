@@ -1,0 +1,299 @@
+import { paginate } from '@common/pagination'
+import { hashPassword } from '@common/utils'
+import { Role } from '@enums/role.enum'
+import { UserStatus } from '@enums/status.enum'
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { DataSource, Repository } from 'typeorm'
+import { User } from '../users/user.entity'
+import { CreateStudentsDto } from './dtos/create-students.dto'
+import { PaginateStudentsDto } from './dtos/paginate-students.dto'
+import { UpdateStudentsDto } from './dtos/update-students.dto'
+import { Student } from './students.entity'
+
+@Injectable()
+export class StudentsService {
+  constructor(
+    private readonly dataSource: DataSource,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
+  ) {}
+
+  async createStudent(createStudentDto: CreateStudentsDto): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner()
+
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+
+    try {
+      const { code, image_4x6, diploma_image, transcript_image, other_document, ...userData } = createStudentDto
+      const { username, password, ...rest } = userData
+
+      // Kiểm tra username đã tồn tại
+      const existingUser = await queryRunner.manager
+        .getRepository(User)
+        .createQueryBuilder('users')
+        .where('users.username = :username', { username })
+        .getOne()
+
+      if (existingUser) throw new ConflictException('USER_ALREADY_EXISTS')
+
+      const hashedPassword = await hashPassword(password)
+      const user = queryRunner.manager.getRepository(User).create({
+        username,
+        password: hashedPassword,
+        role: Role.STUDENT,
+        status: UserStatus.ACTIVE,
+        ...rest,
+      })
+
+      await queryRunner.manager.save(User, user)
+
+      // Kiểm tra mã student
+      const existingStudent = await queryRunner.manager
+        .getRepository(Student)
+        .createQueryBuilder('students')
+        .where('students.code = :code', { code })
+        .getOne()
+
+      if (existingStudent) throw new ConflictException('STUDENT_ALREADY_EXISTS')
+
+      const student = queryRunner.manager.getRepository(Student).create({
+        code,
+        user_id: user.id,
+        image_4x6,
+        diploma_image,
+        transcript_image,
+        other_document,
+      })
+
+      await queryRunner.manager.save(Student, student)
+
+      // Commit nếu mọi thứ thành công
+      await queryRunner.commitTransaction()
+
+      // const formattedStudent = {
+      //   id: student.id,
+      //   username: user.username,
+      //   full_name: user.full_name,
+      //   status: user.status,
+      //   code: student.code,
+      //   image_4x6: student.image_4x6,
+      //   diploma_image: student.diploma_image,
+      //   transcript_image: student.transcript_image,
+      //   other_document: student.other_document,
+      // }
+      return
+    } catch (error) {
+      // Rollback nếu có lỗi
+      await queryRunner.rollbackTransaction()
+      throw error
+    } finally {
+      await queryRunner.release()
+    }
+  }
+
+  async updateStudent(id: number, updateStudentDto: UpdateStudentsDto): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner()
+
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+
+    const { code, image_4x6, diploma_image, transcript_image, other_document, ...userData } = updateStudentDto
+    const { username, ...rest } = userData
+
+    try {
+      const studentRepo = queryRunner.manager.getRepository(Student)
+      const userRepo = queryRunner.manager.getRepository(User)
+
+      const student = await studentRepo.findOne({ where: { id } })
+      if (!student) throw new NotFoundException('STUDENT_NOT_FOUND')
+
+      const user = await userRepo.findOne({ where: { id: student.user_id } })
+      if (!user) throw new NotFoundException('USER_NOT_FOUND')
+
+      // Check duplicate username
+      if (username) {
+        const existingUser = await userRepo
+          .createQueryBuilder('users')
+          .where('users.username = :username', { username })
+          .andWhere('users.id != :id', { id: user.id })
+          .getOne()
+        if (existingUser) throw new ConflictException('USER_ALREADY_EXISTS')
+      }
+
+      if (code) {
+        const existingStudent = await studentRepo
+          .createQueryBuilder('students')
+          .where('students.code = :code', { code })
+          .andWhere('students.id != :id', { id })
+          .getOne()
+        if (existingStudent) throw new ConflictException('STUDENT_ALREADY_EXISTS')
+      }
+
+      // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
+      const updatedUser = userRepo.merge(user, {
+        username: username ?? user.username,
+        ...rest,
+      })
+      await userRepo.save(updatedUser)
+
+      // Cập nhật student: merge tương tự
+      const updatedStudent = studentRepo.merge(student, {
+        code: code ?? student.code,
+        image_4x6: image_4x6 ?? student.image_4x6,
+        diploma_image: diploma_image ?? student.diploma_image,
+        transcript_image: transcript_image ?? student.transcript_image,
+        other_document: other_document ?? student.other_document,
+      })
+      await studentRepo.save(updatedStudent)
+
+      await queryRunner.commitTransaction()
+
+      return
+    } catch (error) {
+      await queryRunner.rollbackTransaction()
+      throw error
+    } finally {
+      await queryRunner.release()
+    }
+  }
+
+  async deleteStudent(id: number): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner()
+
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+
+    try {
+      const studentRepo = queryRunner.manager.getRepository(Student)
+      const userRepo = queryRunner.manager.getRepository(User)
+
+      const student = await studentRepo.findOne({ where: { id } })
+      if (!student) throw new NotFoundException('STUDENT_NOT_FOUND')
+
+      const user = await userRepo.findOne({ where: { id: student.user_id } })
+      if (!user) throw new NotFoundException('USER_NOT_FOUND')
+
+      await studentRepo.delete(student.id)
+      await userRepo.delete(user.id)
+
+      await queryRunner.commitTransaction()
+    } catch (error) {
+      await queryRunner.rollbackTransaction()
+      throw error
+    } finally {
+      await queryRunner.release()
+    }
+  }
+
+  async getStudentById(id: number) {
+    const student = await this.studentRepository
+      .createQueryBuilder('students')
+      .leftJoinAndSelect('students.user', 'user')
+      .select([
+        'students.id',
+        'students.code',
+        'students.image_4x6',
+        'students.diploma_image',
+        'students.transcript_image',
+        'students.other_document',
+        'user.id',
+        'user.username',
+        'user.full_name',
+        'user.email',
+        'user.phone_number',
+        'user.saint_name',
+        'user.address',
+        'user.avatar',
+        'user.birth_place',
+        'user.birth_date',
+        'user.parish',
+        'user.deanery',
+        'user.diocese',
+        'user.congregation',
+        'user.status',
+      ])
+      .where('students.id = :id', { id })
+      .getOne()
+
+    if (!student) throw new NotFoundException('STUDENT_NOT_FOUND')
+
+    const formattedStudent = {
+      id: student.id,
+      code: student.code,
+      username: student.user.username,
+      full_name: student.user.full_name,
+      email: student.user.email,
+      phone_number: student.user.phone_number,
+      status: student.user.status,
+      saint_name: student.user.saint_name,
+      address: student.user.address,
+      avatar: student.user.avatar,
+      birth_place: student.user.birth_place,
+      birth_date: student.user.birth_date,
+      parish: student.user.parish,
+      deanery: student.user.deanery,
+      diocese: student.user.diocese,
+      congregation: student.user.congregation,
+      image_4x6: student.image_4x6,
+      diploma_image: student.diploma_image,
+      transcript_image: student.transcript_image,
+      other_document: student.other_document,
+    }
+    return formattedStudent
+  }
+
+  async getAllStudents(paginateStudentsDto: PaginateStudentsDto) {
+    const { full_name, email, phone_number, status, ...rest } = paginateStudentsDto
+    const query = this.studentRepository
+      .createQueryBuilder('students')
+      .leftJoinAndSelect('students.user', 'user')
+      .where('students.deleted_at IS NULL')
+
+    if (full_name) {
+      query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })
+    }
+
+    if (email) {
+      query.andWhere('user.email = :email', { email })
+    }
+
+    if (phone_number) {
+      query.andWhere('user.phone_number = :phone_number', { phone_number })
+    }
+
+    if (status) {
+      query.andWhere('user.status = :status', { status })
+    }
+
+    const { data, meta } = await paginate(query, rest)
+
+    const formattedStudents = data.map(student => ({
+      id: student.id,
+      code: student.code,
+      username: student.user.username,
+      full_name: student.user.full_name,
+      email: student.user.email,
+      phone_number: student.user.phone_number,
+      status: student.user.status,
+      saint_name: student.user.saint_name,
+      address: student.user.address,
+      avatar: student.user.avatar,
+      birth_place: student.user.birth_place,
+      birth_date: student.user.birth_date,
+      parish: student.user.parish,
+      deanery: student.user.deanery,
+      diocese: student.user.diocese,
+      congregation: student.user.congregation,
+      image_4x6: student.image_4x6,
+      diploma_image: student.diploma_image,
+      transcript_image: student.transcript_image,
+      other_document: student.other_document,
+    }))
+    return {
+      data: formattedStudents,
+      meta,
+    }
+  }
+}

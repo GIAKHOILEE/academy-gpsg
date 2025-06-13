@@ -28,7 +28,6 @@ export class SubjectsController {
   @Get()
   @Auth(Role.ADMIN)
   async getAll(@Query() pagination: PaginateSubjectDto): Promise<ResponseDto> {
-    console.log(pagination)
     const subjects = await this.subjectsService.getAll(pagination)
     return new ResponseDto({
       messageCode: 'SUBJECTS_FETCHED',

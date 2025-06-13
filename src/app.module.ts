@@ -9,9 +9,18 @@ import { SuperAdminSeeder } from '@seeders/supperadmin.seeder'
 import { User } from '@modules/users/user.entity'
 import { SubjectsModule } from '@modules/subjects/subjects.module'
 import { CloudinaryModule } from '@services/cloudinary/cloudinary.module'
+import { StudentsModule } from '@modules/students/students.module'
 
 @Module({
-  imports: [TypeOrmModule.forRoot(databaseConfig), TypeOrmModule.forFeature([User]), AuthModule, UsersModule, SubjectsModule, CloudinaryModule],
+  imports: [
+    TypeOrmModule.forRoot(databaseConfig),
+    TypeOrmModule.forFeature([User]),
+    AuthModule,
+    UsersModule,
+    StudentsModule,
+    SubjectsModule,
+    CloudinaryModule,
+  ],
   providers: [AppService, SuperAdminSeeder],
 })
 export class AppModule implements NestModule {
