@@ -1,8 +1,8 @@
-import { CreateUserDto } from '@modules/users/dtos/create-user.dto'
+import { CreateUserDtoV2 } from '@modules/users/dtos/create-user.dto'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
-export class CreateStudentsDto extends CreateUserDto {
+export class CreateStudentsDto extends CreateUserDtoV2 {
   @ApiProperty({ description: 'Mã sinh viên' })
   @IsString()
   @IsNotEmpty()

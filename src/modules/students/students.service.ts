@@ -27,14 +27,14 @@ export class StudentsService {
 
     try {
       const { code, image_4x6, diploma_image, transcript_image, other_document, ...userData } = createStudentDto
-      const { username, password, email, ...rest } = userData
+      const { password, email, ...rest } = userData
 
-      // Kiểm tra username đã tồn tại
-      if (username) {
+      // Kiểm tra email đã tồn tại
+      if (email) {
         const existingUser = await queryRunner.manager
           .getRepository(User)
           .createQueryBuilder('users')
-          .where('users.username = :username', { username })
+          .where('users.email = :email', { email })
           .getOne()
 
         if (existingUser) throw new ConflictException('USER_ALREADY_EXISTS')
@@ -42,7 +42,6 @@ export class StudentsService {
 
       const hashedPassword = await hashPassword(password ?? code)
       const user = queryRunner.manager.getRepository(User).create({
-        username: username ?? email,
         password: hashedPassword,
         role: Role.STUDENT,
         status: UserStatus.ACTIVE,
@@ -79,7 +78,6 @@ export class StudentsService {
 
       // const formattedStudent = {
       //   id: student.id,
-      //   username: user.username,
       //   full_name: user.full_name,
       //   status: user.status,
       //   code: student.code,
@@ -105,7 +103,7 @@ export class StudentsService {
     await queryRunner.startTransaction()
 
     const { code, image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, ...userData } = updateStudentDto
-    const { username, ...rest } = userData
+    const { email, ...rest } = userData
 
     try {
       const studentRepo = queryRunner.manager.getRepository(Student)
@@ -117,11 +115,11 @@ export class StudentsService {
       const user = await userRepo.findOne({ where: { id: student.user_id } })
       if (!user) throw new NotFoundException('USER_NOT_FOUND')
 
-      // Check duplicate username
-      if (username) {
+      // Check duplicate email
+      if (email) {
         const existingUser = await userRepo
           .createQueryBuilder('users')
-          .where('users.username = :username', { username })
+          .where('users.email = :email', { email })
           .andWhere('users.id != :id', { id: user.id })
           .getOne()
         if (existingUser) throw new ConflictException('USER_ALREADY_EXISTS')
@@ -138,7 +136,7 @@ export class StudentsService {
 
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
       const updatedUser = userRepo.merge(user, {
-        username: username ?? user.username,
+        email: email ?? user.email,
         ...rest,
       })
       await userRepo.save(updatedUser)
@@ -206,7 +204,6 @@ export class StudentsService {
         'students.transcript_image',
         'students.other_document',
         'user.id',
-        'user.username',
         'user.full_name',
         'user.email',
         'user.gender',
@@ -232,7 +229,6 @@ export class StudentsService {
     const formattedStudent = {
       id: student.id,
       code: student.code,
-      username: student.user.username,
       full_name: student.user.full_name,
       email: student.user.email,
       gender: student.user.gender,
@@ -285,7 +281,6 @@ export class StudentsService {
     const formattedStudents = data.map(student => ({
       id: student.id,
       code: student.code,
-      username: student.user.username,
       full_name: student.user.full_name,
       email: student.user.email,
       gender: student.user.gender,

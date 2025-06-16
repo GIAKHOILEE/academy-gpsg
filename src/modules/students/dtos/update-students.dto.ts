@@ -1,8 +1,8 @@
-import { UpdateUserDto } from '@modules/users/dtos/update-user.dto'
+import { UpdateUserDtoV2 } from '@modules/users/dtos/update-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator'
 
-export class UpdateStudentsDto extends UpdateUserDto {
+export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Mã sinh viên' })
   @IsString()
   @IsOptional()

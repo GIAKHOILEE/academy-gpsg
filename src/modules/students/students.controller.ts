@@ -29,11 +29,12 @@ export class StudentsController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách học viên, Status: 1: ACTIVE 2: INACTIVE' })
   async getStudents(@Query() paginateStudentsDto: PaginateStudentsDto): Promise<ResponseDto> {
-    const data = await this.studentsService.getAllStudents(paginateStudentsDto)
+    const students = await this.studentsService.getAllStudents(paginateStudentsDto)
     return {
       statusCode: 200,
       messageCode: 'STUDENTS_GET_SUCCESS',
-      data,
+      data: students.data,
+      meta: students.meta,
     }
   }
 

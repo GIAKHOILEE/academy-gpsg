@@ -1,8 +1,8 @@
-import { CreateUserDto } from '@modules/users/dtos/create-user.dto'
+import { CreateUserDtoV2 } from '@modules/users/dtos/create-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsOptional, IsString } from 'class-validator'
 
-export class CreateTeachersDto extends CreateUserDto {
+export class CreateTeachersDto extends CreateUserDtoV2 {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên khác (GM, LM, TS, ThS,...)' })
