@@ -9,9 +9,7 @@ export class CloudinaryService {
       return new Promise((resolve, reject) => {
         const isPdf = file.mimetype === 'application/pdf'
 
-        const folderPath = process.env.CLOUDINARY_FOLDER
-          ? `${process.env.CLOUDINARY_FOLDER}/${subFolder}`.replace(/\/$/, '')
-          : 'default_folder'
+        const folderPath = process.env.CLOUDINARY_FOLDER ? `${process.env.CLOUDINARY_FOLDER}/${subFolder}`.replace(/\/$/, '') : 'default_folder'
 
         let originalFilename = file.originalname.replace(/\.[^/.]+$/, '')
         if (isPdf) originalFilename += '.pdf'
@@ -44,15 +42,12 @@ export class CloudinaryService {
     try {
       return new Promise((resolve, reject) => {
         this.cloudinary.uploader
-          .upload_stream(
-            { resource_type: 'auto', folder: process.env.CLOUDINARY_FOLDER },
-            (error, result) => {
-              if (error) {
-                return reject(new BadRequestException(error.message))
-              }
-              resolve(result.secure_url)
-            },
-          )
+          .upload_stream({ resource_type: 'auto', folder: process.env.CLOUDINARY_FOLDER }, (error, result) => {
+            if (error) {
+              return reject(new BadRequestException(error.message))
+            }
+            resolve(result.secure_url)
+          })
           .end(file.buffer)
       })
     } catch (error) {

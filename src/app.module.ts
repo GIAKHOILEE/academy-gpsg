@@ -10,6 +10,7 @@ import { User } from '@modules/users/user.entity'
 import { SubjectsModule } from '@modules/subjects/subjects.module'
 import { CloudinaryModule } from '@services/cloudinary/cloudinary.module'
 import { StudentsModule } from '@modules/students/students.module'
+import { DepartmentModule } from '@modules/departments/department.module'
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { StudentsModule } from '@modules/students/students.module'
     UsersModule,
     StudentsModule,
     SubjectsModule,
+    DepartmentModule,
     CloudinaryModule,
   ],
   providers: [AppService, SuperAdminSeeder],

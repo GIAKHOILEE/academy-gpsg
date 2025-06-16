@@ -164,15 +164,15 @@ export class CreateUserDtoV2 {
   @IsNotEmpty()
   email: string
 
-  @ApiProperty({
-    description: 'Password of the user',
+  @ApiPropertyOptional({
+    description: 'if student: default is code, if teacher: default là giangvien',
     minLength: 6,
     example: '1234567',
   })
   @IsString()
   @MinLength(6)
-  @IsNotEmpty()
-  password: string
+  @IsOptional()
+  password?: string
 
   @ApiPropertyOptional({
     description: 'Saint name of the user',

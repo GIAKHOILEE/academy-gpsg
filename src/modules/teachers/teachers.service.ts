@@ -40,7 +40,7 @@ export class TeachersService {
       } = createTeacherDto
       const { password, email, ...rest } = userData
 
-      // Kiểm tra username đã tồn tại
+      // Kiểm tra email đã tồn tại
       if (email) {
         const existingUser = await queryRunner.manager
           .getRepository(User)
@@ -107,10 +107,21 @@ export class TeachersService {
       const { email, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
-      if (!teacher) throw new NotFoundException('Teacher not found')
+      if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
 
       const user = await queryRunner.manager.getRepository(User).findOne({ where: { id: teacher.user_id } })
-      if (!user) throw new NotFoundException('User not found')
+      if (!user) throw new NotFoundException('USER_NOT_FOUND')
+
+      // Check duplicate email
+      if (email) {
+        const existingUser = await queryRunner.manager
+          .getRepository(User)
+          .createQueryBuilder('users')
+          .where('users.email = :email', { email })
+          .andWhere('users.id != :id', { id: user.id })
+          .getOne()
+        if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
+      }
 
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
         email: email ?? user.email,
@@ -146,7 +157,7 @@ export class TeachersService {
 
     try {
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
-      if (!teacher) throw new NotFoundException('Teacher not found')
+      if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
 
       await queryRunner.manager.getRepository(Teacher).update(id, { deleted_at: new Date() })
       await queryRunner.commitTransaction()
@@ -160,7 +171,7 @@ export class TeachersService {
 
   async getTeacherById(id: number) {
     const teacher = await this.teacherRepository.findOne({ where: { id } })
-    if (!teacher) throw new NotFoundException('Teacher not found')
+    if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
 
     const formattedTeacher = {
       id: teacher.id,

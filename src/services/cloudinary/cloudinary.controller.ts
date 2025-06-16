@@ -1,9 +1,9 @@
-import { BadRequestException, Body, Controller, Delete, Post, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Auth } from '@decorators/auth.decorator'
+import { BadRequestException, Body, Controller, Delete, Post, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from 'src/common/response.dto'
 import { CloudinaryService } from '../cloudinary/cloudinary.service'
-import { Auth } from '@decorators/auth.decorator'
 @Controller('admin/upload')
 @Auth()
 @ApiBearerAuth()

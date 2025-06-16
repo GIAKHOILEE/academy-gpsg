@@ -37,7 +37,7 @@ export class StudentsService {
           .where('users.email = :email', { email })
           .getOne()
 
-        if (existingUser) throw new ConflictException('USER_ALREADY_EXISTS')
+        if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
       }
 
       const hashedPassword = await hashPassword(password ?? code)
@@ -122,7 +122,7 @@ export class StudentsService {
           .where('users.email = :email', { email })
           .andWhere('users.id != :id', { id: user.id })
           .getOne()
-        if (existingUser) throw new ConflictException('USER_ALREADY_EXISTS')
+        if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
       }
 
       if (code) {
