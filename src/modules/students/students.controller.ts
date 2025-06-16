@@ -16,7 +16,7 @@ export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Tạo tài khoản cho học viên' })
+  @ApiOperation({ summary: 'password: nếu không có mặc định là mã học viên' })
   async createStudent(@Body() createStudentDto: CreateStudentsDto): Promise<ResponseDto> {
     const data = await this.studentsService.createStudent(createStudentDto)
     return {

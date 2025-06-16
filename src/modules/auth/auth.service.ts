@@ -4,7 +4,7 @@ import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { IUser } from '@modules/users/user.interface'
 import { validateHash } from '@common/utils'
-import { UserLoginDto } from './dtos/user-login.dto'
+import { AdminLoginDto, UserLoginDto } from './dtos/user-login.dto'
 import { User } from '@modules/users/user.entity'
 import { jwtConfig } from '@config/jwt.config'
 import { TokenPayloadDto } from './dtos/token-payload.dto'
@@ -19,7 +19,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validate(userLoginDto: UserLoginDto): Promise<IUser> {
+  async validate(userLoginDto: AdminLoginDto): Promise<IUser> {
     const user = await this.userRepository.findOne({
       where: {
         username: userLoginDto.username,
@@ -42,12 +42,34 @@ export class AuthService {
     return formattedUser
   }
 
+  async validateUser(userLoginDto: UserLoginDto): Promise<IUser> {
+    const user = await this.userRepository.findOne({
+      where: {
+        email: userLoginDto.email,
+      },
+    })
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password')
+    }
+    const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password')
+    }
+    const formattedUser: IUser = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+    }
+    return formattedUser
+  }
+
   async createAccessToken(data: { role: Role; userId: number; username: string; email: string }): Promise<TokenPayloadDto> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           userId: data.userId,
-          username: data.username,
+          username: data.username ?? '',
           email: data.email,
           type: 'ACCESS_TOKEN',
           role: data.role,

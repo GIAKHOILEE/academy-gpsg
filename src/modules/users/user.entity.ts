@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm'
-import { Role } from '../../enums/role.enum'
-import { UserStatus } from '../../enums/status.enum'
+import { UserStatus } from '@enums/status.enum'
+import { Gender, Role } from '@enums/role.enum'
 
 @Entity()
 export class User {
@@ -21,6 +21,9 @@ export class User {
 
   @Column({ nullable: true })
   saint_name: string
+
+  @Column({ nullable: true })
+  gender: Gender
 
   @Column({ nullable: true })
   phone_number: string

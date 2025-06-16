@@ -19,14 +19,25 @@ export class Student {
   @Column({ nullable: true })
   image_4x6: string
 
+  // học bạ
   @Column({ nullable: true })
   diploma_image: string
 
+  // bằng tốt nghiệp
   @Column({ nullable: true })
   transcript_image: string
 
+  // tài liệu khác
   @Column({ nullable: true })
   other_document: string
+
+  // tốt nghiệp
+  @Column({ nullable: true, default: false })
+  graduate: boolean
+
+  // năm tốt nghiệp
+  @Column({ nullable: true, default: null })
+  graduate_year: number
 
   @CreateDateColumn()
   created_at: Date

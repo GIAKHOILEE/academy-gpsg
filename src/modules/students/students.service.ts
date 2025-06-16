@@ -27,23 +27,26 @@ export class StudentsService {
 
     try {
       const { code, image_4x6, diploma_image, transcript_image, other_document, ...userData } = createStudentDto
-      const { username, password, ...rest } = userData
+      const { username, password, email, ...rest } = userData
 
       // Kiểm tra username đã tồn tại
-      const existingUser = await queryRunner.manager
-        .getRepository(User)
-        .createQueryBuilder('users')
-        .where('users.username = :username', { username })
-        .getOne()
+      if (username) {
+        const existingUser = await queryRunner.manager
+          .getRepository(User)
+          .createQueryBuilder('users')
+          .where('users.username = :username', { username })
+          .getOne()
 
-      if (existingUser) throw new ConflictException('USER_ALREADY_EXISTS')
+        if (existingUser) throw new ConflictException('USER_ALREADY_EXISTS')
+      }
 
-      const hashedPassword = await hashPassword(password)
+      const hashedPassword = await hashPassword(password ?? code)
       const user = queryRunner.manager.getRepository(User).create({
-        username,
+        username: username ?? email,
         password: hashedPassword,
         role: Role.STUDENT,
         status: UserStatus.ACTIVE,
+        email,
         ...rest,
       })
 
@@ -65,6 +68,8 @@ export class StudentsService {
         diploma_image,
         transcript_image,
         other_document,
+        graduate: false,
+        graduate_year: null,
       })
 
       await queryRunner.manager.save(Student, student)
@@ -99,7 +104,7 @@ export class StudentsService {
     await queryRunner.connect()
     await queryRunner.startTransaction()
 
-    const { code, image_4x6, diploma_image, transcript_image, other_document, ...userData } = updateStudentDto
+    const { code, image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, ...userData } = updateStudentDto
     const { username, ...rest } = userData
 
     try {
@@ -145,6 +150,8 @@ export class StudentsService {
         diploma_image: diploma_image ?? student.diploma_image,
         transcript_image: transcript_image ?? student.transcript_image,
         other_document: other_document ?? student.other_document,
+        graduate: graduate ?? student.graduate,
+        graduate_year: graduate_year ?? student.graduate_year,
       })
       await studentRepo.save(updatedStudent)
 
@@ -202,6 +209,7 @@ export class StudentsService {
         'user.username',
         'user.full_name',
         'user.email',
+        'user.gender',
         'user.phone_number',
         'user.saint_name',
         'user.address',
@@ -213,6 +221,8 @@ export class StudentsService {
         'user.diocese',
         'user.congregation',
         'user.status',
+        'students.graduate',
+        'students.graduate_year',
       ])
       .where('students.id = :id', { id })
       .getOne()
@@ -225,6 +235,7 @@ export class StudentsService {
       username: student.user.username,
       full_name: student.user.full_name,
       email: student.user.email,
+      gender: student.user.gender,
       phone_number: student.user.phone_number,
       status: student.user.status,
       saint_name: student.user.saint_name,
@@ -240,6 +251,8 @@ export class StudentsService {
       diploma_image: student.diploma_image,
       transcript_image: student.transcript_image,
       other_document: student.other_document,
+      graduate: student.graduate,
+      graduate_year: student.graduate_year,
     }
     return formattedStudent
   }
@@ -275,6 +288,7 @@ export class StudentsService {
       username: student.user.username,
       full_name: student.user.full_name,
       email: student.user.email,
+      gender: student.user.gender,
       phone_number: student.user.phone_number,
       status: student.user.status,
       saint_name: student.user.saint_name,
@@ -290,6 +304,8 @@ export class StudentsService {
       diploma_image: student.diploma_image,
       transcript_image: student.transcript_image,
       other_document: student.other_document,
+      graduate: student.graduate,
+      graduate_year: student.graduate_year,
     }))
     return {
       data: formattedStudents,

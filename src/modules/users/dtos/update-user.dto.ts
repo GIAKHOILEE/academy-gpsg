@@ -1,5 +1,6 @@
+import { Gender } from '@enums/role.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class UpdateUserDto {
   @IsString()
@@ -21,6 +22,11 @@ export class UpdateUserDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên thánh', example: 'John Doe' })
   saint_name?: string
+
+  @IsEnum(Gender)
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Giới tính (1: MALE, 2: FEMALE)', example: '1' })
+  gender?: Gender
 
   @IsString()
   @IsOptional()

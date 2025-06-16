@@ -1,4 +1,4 @@
-import { UserStatus } from '@enums/status.enum'
+import { Gender } from '@enums/role.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator'
 
@@ -46,6 +46,15 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   saint_name?: string
+
+  @ApiPropertyOptional({
+    description: 'Gender of the user (1: MALE, 2: FEMALE)',
+    enum: Gender,
+    default: Gender.MALE,
+  })
+  @IsEnum(Gender)
+  @IsOptional()
+  gender?: Gender
 
   @ApiPropertyOptional({
     description: 'Phone number of the user',

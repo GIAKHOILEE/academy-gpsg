@@ -1,6 +1,6 @@
 import { UpdateUserDto } from '@modules/users/dtos/update-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsOptional, IsString } from 'class-validator'
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateStudentsDto extends UpdateUserDto {
   @ApiPropertyOptional({ description: 'Mã sinh viên' })
@@ -27,4 +27,14 @@ export class UpdateStudentsDto extends UpdateUserDto {
   @IsString()
   @IsOptional()
   other_document: string
+
+  @ApiPropertyOptional({ description: 'Tốt nghiệp' })
+  @IsBoolean()
+  @IsOptional()
+  graduate: boolean
+
+  @ApiPropertyOptional({ description: 'Năm tốt nghiệp' })
+  @IsNumber()
+  @IsOptional()
+  graduate_year: number
 }
