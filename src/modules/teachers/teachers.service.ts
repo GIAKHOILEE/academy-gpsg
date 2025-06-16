@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
@@ -38,7 +38,7 @@ export class TeachersService {
         cv,
         ...userData
       } = createTeacherDto
-      const { password, email, ...rest } = userData
+      const { password, email, code, ...rest } = userData
 
       // Kiểm tra email đã tồn tại
       if (email) {
@@ -51,12 +51,21 @@ export class TeachersService {
         if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
       }
 
-      const hashedPassword = await hashPassword(password ?? 'giangvien')
+      // Kiểm tra code đã tồn tại
+      if (!code) throw new BadRequestException('CODE_IS_REQUIRED')
+      if (code) {
+        const existingUser = await queryRunner.manager.getRepository(User).createQueryBuilder('users').where('users.code = :code', { code }).getOne()
+
+        if (existingUser) throw new ConflictException('CODE_ALREADY_EXISTS')
+      }
+
+      const hashedPassword = await hashPassword(password ?? code)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
         role: Role.TEACHER,
         status: UserStatus.ACTIVE,
         email,
+        code,
         ...rest,
       })
 
@@ -175,6 +184,7 @@ export class TeachersService {
 
     const formattedTeacher = {
       id: teacher.id,
+      code: teacher.user.code,
       full_name: teacher.user.full_name,
       email: teacher.user.email,
       gender: teacher.user.gender,
@@ -229,6 +239,7 @@ export class TeachersService {
 
     const formattedTeachers = data.map(teacher => ({
       id: teacher.id,
+      code: teacher.user.code,
       full_name: teacher.user.full_name,
       email: teacher.user.email,
       gender: teacher.user.gender,

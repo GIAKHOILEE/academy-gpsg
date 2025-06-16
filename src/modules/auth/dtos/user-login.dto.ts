@@ -16,8 +16,8 @@ export class AdminLoginDto {
 export class UserLoginDto {
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({ example: 'superadmin', description: 'Username' })
-  readonly email: string
+  @ApiProperty({ example: '1234567', description: 'Code' })
+  readonly code: string
 
   @IsString()
   @IsNotEmpty()

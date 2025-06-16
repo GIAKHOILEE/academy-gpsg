@@ -3,15 +3,15 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Response } from 'express'
 import { AuthService } from './auth.service'
 import { LoginPayloadDto } from './dtos/login-payload.dto'
-import { AdminLoginDto, UserLoginDto } from './dtos/user-login.dto'
 import { RefreshTokenDto } from './dtos/refresh-token.dto'
+import { AdminLoginDto, UserLoginDto } from './dtos/user-login.dto'
 @Controller('auth')
 @ApiTags('Auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đăng nhập hệ thống' })
+  @ApiOperation({ summary: 'Admin Đăng nhập hệ thống' })
   @Post('login')
   async adminLogin(@Body() userLoginDto: AdminLoginDto, @Res() res: Response) {
     const userAndRole = await this.authService.validate(userLoginDto)
@@ -20,6 +20,7 @@ export class AuthController {
       username: userAndRole.username,
       role: userAndRole.role,
       email: userAndRole.email,
+      code: userAndRole.code ?? '',
     })
     /*==========================================
     =========login with Bearer token============
@@ -54,12 +55,13 @@ export class AuthController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đăng nhập hệ thống' })
+  @ApiOperation({ summary: 'User Đăng nhập hệ thống' })
   @Post('user/login')
   async userLogin(@Body() userLoginDto: UserLoginDto, @Res() res: Response) {
     const userAndRole = await this.authService.validateUser(userLoginDto)
     const token = await this.authService.createAccessToken({
       username: '',
+      code: userAndRole.code,
       userId: userAndRole.id,
       role: userAndRole.role,
       email: userAndRole.email,

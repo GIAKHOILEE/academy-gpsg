@@ -156,6 +156,14 @@ export class CreateUserDtoV2 {
   @IsOptional()
   full_name?: string
 
+  @ApiPropertyOptional({
+    description: 'Code of the user',
+    example: '1234567',
+  })
+  @IsString()
+  @IsOptional()
+  code?: string
+
   @ApiProperty({
     description: 'Email of the user',
     example: 'student1@gmail.com',

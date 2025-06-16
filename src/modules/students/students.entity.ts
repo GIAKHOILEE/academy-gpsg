@@ -6,9 +6,6 @@ export class Student {
   @PrimaryGeneratedColumn()
   id: number
 
-  @Column()
-  code: string
-
   @OneToOne(() => User, user => user.id, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User

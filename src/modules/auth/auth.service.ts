@@ -1,15 +1,15 @@
+import { validateHash } from '@common/utils'
+import { jwtConfig } from '@config/jwt.config'
+import { Role } from '@enums/role.enum'
+import { User } from '@modules/users/user.entity'
+import { IUser } from '@modules/users/user.interface'
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
-import { IUser } from '@modules/users/user.interface'
-import { validateHash } from '@common/utils'
-import { AdminLoginDto, UserLoginDto } from './dtos/user-login.dto'
-import { User } from '@modules/users/user.entity'
-import { jwtConfig } from '@config/jwt.config'
-import { TokenPayloadDto } from './dtos/token-payload.dto'
-import { Role } from '@enums/role.enum'
+import { Repository } from 'typeorm'
 import { RefreshTokenDto } from './dtos/refresh-token.dto'
+import { TokenPayloadDto } from './dtos/token-payload.dto'
+import { AdminLoginDto, UserLoginDto } from './dtos/user-login.dto'
 
 @Injectable()
 export class AuthService {
@@ -45,18 +45,19 @@ export class AuthService {
   async validateUser(userLoginDto: UserLoginDto): Promise<IUser> {
     const user = await this.userRepository.findOne({
       where: {
-        email: userLoginDto.email,
+        code: userLoginDto.code,
       },
     })
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password')
+      throw new UnauthorizedException('Invalid code or password')
     }
     const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password')
+      throw new UnauthorizedException('Invalid code or password')
     }
     const formattedUser: IUser = {
       id: user.id,
+      code: user.code,
       email: user.email,
       role: user.role,
       status: user.status,
@@ -64,13 +65,14 @@ export class AuthService {
     return formattedUser
   }
 
-  async createAccessToken(data: { role: Role; userId: number; username: string; email: string }): Promise<TokenPayloadDto> {
+  async createAccessToken(data: { role: Role; userId: number; username: string; email: string; code: string }): Promise<TokenPayloadDto> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           userId: data.userId,
           username: data.username ?? '',
           email: data.email,
+          code: data.code ?? '',
           type: 'ACCESS_TOKEN',
           role: data.role,
         },
@@ -84,6 +86,7 @@ export class AuthService {
           userId: data.userId,
           type: 'REFRESH_TOKEN',
           role: data.role,
+          code: data.code ?? '',
         },
         {
           secret: jwtConfig.refreshToken.secret,
@@ -122,6 +125,7 @@ export class AuthService {
         username: user.username,
         email: user.email,
         role: user.role,
+        code: user.code,
       })
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token')

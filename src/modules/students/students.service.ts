@@ -2,7 +2,7 @@ import { paginate } from '@common/pagination'
 import { hashPassword } from '@common/utils'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
 import { User } from '../users/user.entity'
@@ -26,8 +26,8 @@ export class StudentsService {
     await queryRunner.startTransaction()
 
     try {
-      const { code, image_4x6, diploma_image, transcript_image, other_document, ...userData } = createStudentDto
-      const { password, email, ...rest } = userData
+      const { image_4x6, diploma_image, transcript_image, other_document, ...userData } = createStudentDto
+      const { password, email, code, ...rest } = userData
 
       // Kiểm tra email đã tồn tại
       if (email) {
@@ -40,12 +40,21 @@ export class StudentsService {
         if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
       }
 
+      // Kiểm tra code đã tồn tại
+      if (!code) throw new BadRequestException('CODE_IS_REQUIRED')
+      if (code) {
+        const existingUser = await queryRunner.manager.getRepository(User).createQueryBuilder('users').where('users.code = :code', { code }).getOne()
+
+        if (existingUser) throw new ConflictException('CODE_ALREADY_EXISTS')
+      }
+
       const hashedPassword = await hashPassword(password ?? code)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
         role: Role.STUDENT,
         status: UserStatus.ACTIVE,
         email,
+        code,
         ...rest,
       })
 
@@ -55,13 +64,12 @@ export class StudentsService {
       const existingStudent = await queryRunner.manager
         .getRepository(Student)
         .createQueryBuilder('students')
-        .where('students.code = :code', { code })
+        .where('students.user_id = :user_id', { user_id: user.id })
         .getOne()
 
       if (existingStudent) throw new ConflictException('STUDENT_ALREADY_EXISTS')
 
       const student = queryRunner.manager.getRepository(Student).create({
-        code,
         user_id: user.id,
         image_4x6,
         diploma_image,
@@ -73,22 +81,10 @@ export class StudentsService {
 
       await queryRunner.manager.save(Student, student)
 
-      // Commit nếu mọi thứ thành công
       await queryRunner.commitTransaction()
 
-      // const formattedStudent = {
-      //   id: student.id,
-      //   full_name: user.full_name,
-      //   status: user.status,
-      //   code: student.code,
-      //   image_4x6: student.image_4x6,
-      //   diploma_image: student.diploma_image,
-      //   transcript_image: student.transcript_image,
-      //   other_document: student.other_document,
-      // }
       return
     } catch (error) {
-      // Rollback nếu có lỗi
       await queryRunner.rollbackTransaction()
       throw error
     } finally {
@@ -102,7 +98,7 @@ export class StudentsService {
     await queryRunner.connect()
     await queryRunner.startTransaction()
 
-    const { code, image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, ...userData } = updateStudentDto
+    const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, ...userData } = updateStudentDto
     const { email, ...rest } = userData
 
     try {
@@ -125,15 +121,6 @@ export class StudentsService {
         if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
       }
 
-      if (code) {
-        const existingStudent = await studentRepo
-          .createQueryBuilder('students')
-          .where('students.code = :code', { code })
-          .andWhere('students.id != :id', { id })
-          .getOne()
-        if (existingStudent) throw new ConflictException('STUDENT_ALREADY_EXISTS')
-      }
-
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
       const updatedUser = userRepo.merge(user, {
         email: email ?? user.email,
@@ -143,7 +130,6 @@ export class StudentsService {
 
       // Cập nhật student: merge tương tự
       const updatedStudent = studentRepo.merge(student, {
-        code: code ?? student.code,
         image_4x6: image_4x6 ?? student.image_4x6,
         diploma_image: diploma_image ?? student.diploma_image,
         transcript_image: transcript_image ?? student.transcript_image,
@@ -198,12 +184,12 @@ export class StudentsService {
       .leftJoinAndSelect('students.user', 'user')
       .select([
         'students.id',
-        'students.code',
         'students.image_4x6',
         'students.diploma_image',
         'students.transcript_image',
         'students.other_document',
         'user.id',
+        'user.code',
         'user.full_name',
         'user.email',
         'user.gender',
@@ -228,7 +214,7 @@ export class StudentsService {
 
     const formattedStudent = {
       id: student.id,
-      code: student.code,
+      code: student.user.code,
       full_name: student.user.full_name,
       email: student.user.email,
       gender: student.user.gender,
@@ -280,7 +266,7 @@ export class StudentsService {
 
     const formattedStudents = data.map(student => ({
       id: student.id,
-      code: student.code,
+      code: student.user.code,
       full_name: student.user.full_name,
       email: student.user.email,
       gender: student.user.gender,

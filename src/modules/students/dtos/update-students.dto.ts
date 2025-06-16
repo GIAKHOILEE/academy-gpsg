@@ -3,11 +3,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateStudentsDto extends UpdateUserDtoV2 {
-  @ApiPropertyOptional({ description: 'Mã sinh viên' })
-  @IsString()
-  @IsOptional()
-  code: string
-
   @ApiPropertyOptional({ description: 'Ảnh 4x6' })
   @IsString()
   @IsOptional()

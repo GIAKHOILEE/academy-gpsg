@@ -5,6 +5,7 @@ export interface IUser {
   id: number
   full_name?: string
   username?: string
+  code?: string
   email: string
   // password?: string
   saint_name?: string
