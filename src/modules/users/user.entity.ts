@@ -10,13 +10,13 @@ export class User {
   @Column({ nullable: true })
   full_name: string
 
-  @Column()
+  @Column({ unique: true, nullable: true })
   username: string
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, unique: true })
   code: string
 
-  @Column()
+  @Column({ unique: true })
   email: string
 
   @Column()
