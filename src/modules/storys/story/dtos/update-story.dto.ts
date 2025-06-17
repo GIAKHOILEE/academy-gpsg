@@ -10,7 +10,7 @@ export class UpdateStoryDto {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ example: 'https://example.com/image.jpg' })
-  image?: string
+  thumbnail?: string
 
   @IsOptional()
   @IsString()

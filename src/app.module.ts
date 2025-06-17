@@ -12,6 +12,7 @@ import { CloudinaryModule } from '@services/cloudinary/cloudinary.module'
 import { StudentsModule } from '@modules/students/students.module'
 import { DepartmentModule } from '@modules/departments/department.module'
 import { StoryModule } from '@modules/storys/story.module'
+import { NotificationsModule } from '@modules/notifications/notifications.module'
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StoryModule } from '@modules/storys/story.module'
     StudentsModule,
     SubjectsModule,
     DepartmentModule,
+    NotificationsModule,
     StoryModule,
     CloudinaryModule,
   ],

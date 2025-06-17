@@ -3,7 +3,7 @@ import { ITopic } from '../topic/topic.interface'
 export interface IStory {
   id: number
   title?: string
-  image?: string
+  thumbnail?: string
   content?: string
   topic_id?: number
   topic?: ITopic

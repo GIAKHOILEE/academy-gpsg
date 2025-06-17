@@ -30,7 +30,7 @@ export class StoryService {
     const formattedStory: IStory = {
       id: savedStory.id,
       title: savedStory.title,
-      image: savedStory.image,
+      thumbnail: savedStory.thumbnail,
       content: savedStory.content,
       topic_id: savedStory.topic_id,
       topic: topic,
@@ -73,7 +73,7 @@ export class StoryService {
     const formattedStory: IStory = {
       id: story.id,
       title: story.title,
-      image: story.image,
+      thumbnail: story.thumbnail,
       content: story.content,
       topic_id: story.topic_id,
       topic: story.topic,
@@ -88,7 +88,7 @@ export class StoryService {
     const query = this.storyRepository
       .createQueryBuilder('story')
       .leftJoinAndSelect('story.topic', 'topic')
-      .select(['story.id', 'story.title', 'story.image', 'story.content', 'story.topic_id', 'story.created_at', 'topic.id', 'topic.name'])
+      .select(['story.id', 'story.title', 'story.thumbnail', 'story.content', 'story.topic_id', 'story.created_at', 'topic.id', 'topic.name'])
 
     if (topic_id) {
       query.where('story.topic_id = :topic_id', { topic_id })
@@ -99,7 +99,7 @@ export class StoryService {
     const formattedStories: IStory[] = data.map(story => ({
       id: story.id,
       title: story.title,
-      image: story.image,
+      thumbnail: story.thumbnail,
       content: story.content,
       topic_id: story.topic_id,
       created_at: formatStringDate(story.created_at.toISOString()),

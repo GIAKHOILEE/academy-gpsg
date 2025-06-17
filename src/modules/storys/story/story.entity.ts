@@ -10,9 +10,9 @@ export class Story {
   title: string
 
   @Column()
-  image: string
+  thumbnail: string
 
-  @Column()
+  @Column({ type: 'text' })
   content: string
 
   @Column()

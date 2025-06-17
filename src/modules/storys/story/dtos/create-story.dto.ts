@@ -10,7 +10,7 @@ export class CreateStoryDto {
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ example: 'https://example.com/image.jpg' })
-  image: string
+  thumbnail: string
 
   @IsNotEmpty()
   @IsString()
