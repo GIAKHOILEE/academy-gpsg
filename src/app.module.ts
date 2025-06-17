@@ -11,6 +11,7 @@ import { SubjectsModule } from '@modules/subjects/subjects.module'
 import { CloudinaryModule } from '@services/cloudinary/cloudinary.module'
 import { StudentsModule } from '@modules/students/students.module'
 import { DepartmentModule } from '@modules/departments/department.module'
+import { StoryModule } from '@modules/storys/story.module'
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DepartmentModule } from '@modules/departments/department.module'
     StudentsModule,
     SubjectsModule,
     DepartmentModule,
+    StoryModule,
     CloudinaryModule,
   ],
   providers: [AppService, SuperAdminSeeder],
