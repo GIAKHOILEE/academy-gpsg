@@ -29,6 +29,7 @@
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/typeorm": "^11.0.0",
     "bcrypt": "^6.0.0",
+    "date-fns": "^4.1.0",
     "handlebars": "^4.7.8",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",

@@ -17,11 +17,15 @@ import { EventsModule } from '@modules/events/events.module'
 import { StudyLinkModule } from '@modules/study-link/study-link.module'
 import { CalendarsModule } from '@modules/calendars/calendars.module'
 import { TeachersModule } from '@modules/teachers/teachers.module'
+import { VisitLoggerMiddleware } from '@middleware/visitor.middleware'
+import { DashboardModule } from '@modules/dashboard/dashboard.module'
+import { VisitorModule } from '@modules/visitor/visitor.module'
+import { Visitor } from '@modules/visitor/visitor.entity'
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(databaseConfig),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Visitor]),
     AuthModule,
     UsersModule,
     StudentsModule,
@@ -34,11 +38,14 @@ import { TeachersModule } from '@modules/teachers/teachers.module'
     StudyLinkModule,
     StoryModule,
     CloudinaryModule,
+    DashboardModule,
+    VisitorModule,
   ],
   providers: [AppService, SuperAdminSeeder],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(LoggerMiddleware).forRoutes('*')
+    consumer.apply(VisitLoggerMiddleware).forRoutes('/dashboard/analytics')
   }
 }
