@@ -21,6 +21,8 @@ import { VisitLoggerMiddleware } from '@middleware/visitor.middleware'
 import { DashboardModule } from '@modules/dashboard/dashboard.module'
 import { VisitorModule } from '@modules/visitor/visitor.module'
 import { Visitor } from '@modules/visitor/visitor.entity'
+import { ContactModule } from '@modules/contact/contact.module'
+import { FooterModule } from '@modules/footer/footer.module'
 
 @Module({
   imports: [
@@ -37,9 +39,11 @@ import { Visitor } from '@modules/visitor/visitor.entity'
     EventsModule,
     StudyLinkModule,
     StoryModule,
-    CloudinaryModule,
     DashboardModule,
     VisitorModule,
+    ContactModule,
+    FooterModule,
+    CloudinaryModule,
   ],
   providers: [AppService, SuperAdminSeeder],
 })
