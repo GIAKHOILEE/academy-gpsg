@@ -1,7 +1,7 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
-@Entity('notifications')
-export class Notification {
+@Entity('events')
+export class Event {
   @PrimaryGeneratedColumn()
   id: number
 
@@ -11,8 +11,14 @@ export class Notification {
   @Column()
   thumbnail: string
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', nullable: true })
   content: string
+
+  @Column()
+  start_date: string
+
+  @Column({ nullable: true })
+  end_date: string
 
   @CreateDateColumn()
   created_at: Date

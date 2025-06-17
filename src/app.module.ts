@@ -13,6 +13,7 @@ import { StudentsModule } from '@modules/students/students.module'
 import { DepartmentModule } from '@modules/departments/department.module'
 import { StoryModule } from '@modules/storys/story.module'
 import { NotificationsModule } from '@modules/notifications/notifications.module'
+import { EventsModule } from '@modules/events/events.module'
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { NotificationsModule } from '@modules/notifications/notifications.module
     SubjectsModule,
     DepartmentModule,
     NotificationsModule,
+    EventsModule,
     StoryModule,
     CloudinaryModule,
   ],
