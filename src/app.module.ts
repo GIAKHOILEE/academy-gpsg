@@ -14,6 +14,7 @@ import { DepartmentModule } from '@modules/departments/department.module'
 import { StoryModule } from '@modules/storys/story.module'
 import { NotificationsModule } from '@modules/notifications/notifications.module'
 import { EventsModule } from '@modules/events/events.module'
+import { StudyLinkModule } from '@modules/study-link/study-link.module'
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { EventsModule } from '@modules/events/events.module'
     DepartmentModule,
     NotificationsModule,
     EventsModule,
+    StudyLinkModule,
     StoryModule,
     CloudinaryModule,
   ],
