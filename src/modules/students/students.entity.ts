@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToOne } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToOne, OneToMany } from 'typeorm'
 import { JoinColumn } from 'typeorm'
 import { User } from '../users/user.entity'
+import { ClassStudents } from '@modules/class/class-students/class-students.entity'
 @Entity({ name: 'students' })
 export class Student {
   @PrimaryGeneratedColumn()
@@ -35,6 +36,10 @@ export class Student {
   // năm tốt nghiệp
   @Column({ nullable: true, default: null })
   graduate_year: number
+
+  // danh sách lớp học
+  @OneToMany(() => ClassStudents, classStudents => classStudents.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  class_students: ClassStudents[]
 
   @CreateDateColumn()
   created_at: Date

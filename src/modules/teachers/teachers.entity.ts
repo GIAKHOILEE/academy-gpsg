@@ -1,7 +1,16 @@
+import { Classes } from '@modules/class/class.entity'
 import { User } from '@modules/users/user.entity'
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { OneToOne } from 'typeorm'
-import { JoinColumn } from 'typeorm'
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm'
 
 @Entity({ name: 'teachers' })
 export class Teacher {
@@ -50,6 +59,9 @@ export class Teacher {
   // CV
   @Column({ nullable: true })
   cv: string
+
+  @OneToMany(() => Classes, classes => classes.teacher, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  classes: Classes[]
 
   @CreateDateColumn()
   created_at: Date

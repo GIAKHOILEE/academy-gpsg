@@ -19,6 +19,6 @@ export interface IUser {
   deanery?: string
   diocese?: string
   congregation?: string
-  role: Role
-  status: UserStatus
+  role?: Role
+  status?: UserStatus
 }

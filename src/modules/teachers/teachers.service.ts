@@ -179,7 +179,11 @@ export class TeachersService {
   }
 
   async getTeacherById(id: number) {
-    const teacher = await this.teacherRepository.findOne({ where: { id } })
+    const teacher = await this.teacherRepository
+      .createQueryBuilder('teachers')
+      .leftJoinAndSelect('teachers.user', 'user')
+      .where('teachers.id = :id', { id })
+      .getOne()
     if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
 
     const formattedTeacher = {

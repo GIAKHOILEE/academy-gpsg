@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Classes } from '@modules/class/class.entity'
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity('departments')
 export class Department {
@@ -13,6 +14,9 @@ export class Department {
 
   @Column({ nullable: true })
   description: string
+
+  @OneToMany(() => Classes, classes => classes.department, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  classes: Classes[]
 
   @CreateDateColumn()
   created_at: Date

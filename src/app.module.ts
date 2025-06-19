@@ -23,6 +23,7 @@ import { VisitorModule } from '@modules/visitor/visitor.module'
 import { Visitor } from '@modules/visitor/visitor.entity'
 import { ContactModule } from '@modules/contact/contact.module'
 import { FooterModule } from '@modules/footer/footer.module'
+import { ClassModule } from '@modules/class/class.module'
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { FooterModule } from '@modules/footer/footer.module'
     TeachersModule,
     SubjectsModule,
     DepartmentModule,
+    ClassModule,
     CalendarsModule,
     NotificationsModule,
     EventsModule,
