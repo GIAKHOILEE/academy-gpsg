@@ -1,4 +1,4 @@
-import { ClassStatus, Semester } from '@enums/class.enum'
+import { ClassStatus, Schedule, Semester } from '@enums/class.enum'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
@@ -29,6 +29,14 @@ export class Classes {
   // Học kỳ
   @Column({ nullable: true, default: Semester.FIRST })
   semester: Semester
+
+  //lịch học
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    default: [Schedule.SUNDAY, Schedule.MONDAY, Schedule.TUESDAY, Schedule.WEDNESDAY, Schedule.THURSDAY, Schedule.FRIDAY, Schedule.SATURDAY],
+  })
+  schedule: Schedule[]
 
   // Ngày khai giảng
   @Column({ nullable: true })

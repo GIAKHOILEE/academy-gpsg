@@ -1,4 +1,4 @@
-import { ClassStatus, Semester } from '@enums/class.enum'
+import { ClassStatus, Schedule, Semester } from '@enums/class.enum'
 import { ClassStudents } from './class-students/class-students.entity'
 import { ISubject } from '@modules/subjects/subjects.interface'
 import { ITeacher } from '@modules/teachers/teachers.interface'
@@ -12,6 +12,7 @@ export interface IClasses {
   classroom?: string
   scholastic?: string
   semester?: Semester
+  schedule?: Schedule[]
   opening_day?: string
   closing_day?: string
   is_active?: boolean

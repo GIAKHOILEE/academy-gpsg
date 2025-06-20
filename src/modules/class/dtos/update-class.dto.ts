@@ -1,6 +1,6 @@
-import { ClassStatus, Semester } from '@enums/class.enum'
+import { ClassStatus, Schedule, Semester } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateClassDto {
   @IsString()
@@ -32,6 +32,15 @@ export class UpdateClassDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Học kỳ', example: Semester.FIRST })
   semester: Semester
+
+  @IsArray()
+  @IsEnum(Schedule, { each: true })
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Lịch học',
+    example: [Schedule.SUNDAY, Schedule.MONDAY, Schedule.TUESDAY, Schedule.WEDNESDAY, Schedule.THURSDAY, Schedule.FRIDAY, Schedule.SATURDAY],
+  })
+  schedule: Schedule[]
 
   @IsString()
   @IsOptional()

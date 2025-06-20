@@ -1,7 +1,7 @@
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ClassService } from './class.service'
 import { CreateClassDto } from './dtos/create-class.dto'
@@ -57,6 +57,17 @@ export class AdminClassController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'CLASS_UPDATED_SUCCESSFULLY',
+    })
+  }
+
+  @Patch(':id/is-active')
+  @ApiOperation({ summary: 'Update the is_active status of a class by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the class to update' })
+  async updateIsActive(@Param('id') id: number): Promise<ResponseDto> {
+    await this.classService.updateIsActive(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'CLASS_IS_ACTIVE_UPDATED_SUCCESSFULLY',
     })
   }
 

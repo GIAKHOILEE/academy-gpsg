@@ -61,6 +61,7 @@ export class ClassService {
       classroom: savedClass.classroom,
       scholastic: savedClass.scholastic,
       semester: savedClass.semester,
+      schedule: savedClass.schedule,
       opening_day: savedClass.opening_day,
       closing_day: savedClass.closing_day,
       subject: {
@@ -105,6 +106,13 @@ export class ClassService {
     await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, department_id })
   }
 
+  async updateIsActive(id: number): Promise<void> {
+    const existingClass = await this.classRepository.findOne({ where: { id }, select: ['id', 'is_active'] })
+    if (!existingClass) throw new NotFoundException('CLASS_NOT_FOUND')
+
+    await this.classRepository.update(id, { is_active: !existingClass.is_active })
+  }
+
   async deleteClass(id: number): Promise<void> {
     const existingClass = await this.classRepository.exists({ where: { id } })
     if (!existingClass) throw new NotFoundException('CLASS_NOT_FOUND')
@@ -130,6 +138,7 @@ export class ClassService {
       classroom: classEntity.classroom,
       scholastic: classEntity.scholastic,
       semester: classEntity.semester,
+      schedule: classEntity.schedule,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       subject: {
@@ -185,6 +194,7 @@ export class ClassService {
       classroom: classEntity.classroom,
       scholastic: classEntity.scholastic,
       semester: classEntity.semester,
+      schedule: classEntity.schedule,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       subject: {
