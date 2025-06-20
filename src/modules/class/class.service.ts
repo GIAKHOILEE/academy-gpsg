@@ -62,6 +62,8 @@ export class ClassService {
       scholastic: savedClass.scholastic,
       semester: savedClass.semester,
       schedule: savedClass.schedule,
+      start_time: savedClass.start_time,
+      end_time: savedClass.end_time,
       opening_day: savedClass.opening_day,
       closing_day: savedClass.closing_day,
       subject: {
@@ -139,6 +141,8 @@ export class ClassService {
       scholastic: classEntity.scholastic,
       semester: classEntity.semester,
       schedule: classEntity.schedule,
+      start_time: classEntity.start_time,
+      end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       subject: {
@@ -195,6 +199,8 @@ export class ClassService {
       scholastic: classEntity.scholastic,
       semester: classEntity.semester,
       schedule: classEntity.schedule,
+      start_time: classEntity.start_time,
+      end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       subject: {

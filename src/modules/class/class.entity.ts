@@ -32,11 +32,18 @@ export class Classes {
 
   //lịch học
   @Column({
-    type: 'jsonb',
+    type: 'json',
     nullable: true,
-    default: [Schedule.SUNDAY, Schedule.MONDAY, Schedule.TUESDAY, Schedule.WEDNESDAY, Schedule.THURSDAY, Schedule.FRIDAY, Schedule.SATURDAY],
   })
   schedule: Schedule[]
+
+  // giờ bắt đầu vào học
+  @Column({ nullable: true })
+  start_time: string
+
+  // giờ kết thúc học
+  @Column({ nullable: true })
+  end_time: string
 
   // Ngày khai giảng
   @Column({ nullable: true })

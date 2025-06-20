@@ -13,6 +13,8 @@ export interface IClasses {
   scholastic?: string
   semester?: Semester
   schedule?: Schedule[]
+  start_time?: string
+  end_time?: string
   opening_day?: string
   closing_day?: string
   is_active?: boolean

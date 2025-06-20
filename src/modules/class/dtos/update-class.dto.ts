@@ -44,6 +44,16 @@ export class UpdateClassDto {
 
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Giờ bắt đầu vào học', example: '08:00' })
+  start_time: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Giờ kết thúc học', example: '17:00' })
+  end_time: string
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Ngày khai giảng', example: '2025-01-01' })
   opening_day: string
 
