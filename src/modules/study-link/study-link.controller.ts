@@ -35,7 +35,8 @@ export class StudyLinkController {
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_STUDY_LINKS_SUCCESS',
-      data: studyLinks,
+      data: studyLinks.data,
+      meta: studyLinks.meta,
     })
   }
 
@@ -89,7 +90,8 @@ export class StudyLinkControllerUser {
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_STUDY_LINKS_SUCCESS',
-      data: studyLinks,
+      data: studyLinks.data,
+      meta: studyLinks.meta,
     })
   }
 
