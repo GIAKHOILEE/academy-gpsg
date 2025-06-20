@@ -10,6 +10,8 @@ export interface IClasses {
   code?: string
   status?: ClassStatus
   classroom?: string
+  max_students?: number
+  current_students?: number
   scholastic?: string
   semester?: Semester
   schedule?: Schedule[]

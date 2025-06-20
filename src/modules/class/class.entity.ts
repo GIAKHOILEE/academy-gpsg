@@ -22,6 +22,12 @@ export class Classes {
   @Column()
   classroom: string
 
+  @Column()
+  max_students: number
+
+  @Column({ default: 0 })
+  current_students: number
+
   // Niên khóa
   @Column()
   scholastic: string

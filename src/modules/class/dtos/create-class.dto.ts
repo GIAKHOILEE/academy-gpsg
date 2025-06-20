@@ -23,6 +23,11 @@ export class CreateClassDto {
   @ApiProperty({ description: 'Phòng học', example: 'A101' })
   classroom: string
 
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Số lượng học sinh tối đa', example: 30 })
+  max_students: number
+
   @IsString()
   @IsNotEmpty()
   @ApiProperty({ description: 'Niên khóa', example: '2025-2026' })

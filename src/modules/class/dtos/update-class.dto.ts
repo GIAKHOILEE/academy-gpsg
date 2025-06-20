@@ -13,6 +13,11 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Mã lớp', example: 'ENG_v1' })
   code: string
 
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Số lượng học sinh tối đa', example: 30 })
+  max_students: number
+
   @IsEnum(ClassStatus)
   @IsOptional()
   @ApiPropertyOptional({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING })
