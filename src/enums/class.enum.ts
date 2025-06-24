@@ -1,20 +1,8 @@
-export enum Semester {
-  FIRST = 1,
-  SECOND = 2,
-  THIRD = 3,
-  FOURTH = 4,
-  FIFTH = 5,
-  SIXTH = 6,
-  SEVENTH = 7,
-  EIGHTH = 8,
-  SUMMER = 9,
-}
-
 export enum ClassStatus {
-  ENROLLING = 1,
-  END_ENROLLING = 2,
-  HAS_BEGUN = 3,
-  END_CLASS = 4,
+  ENROLLING = 1, // Đang tuyển sinh
+  END_ENROLLING = 2, // Đã kết thúc tuyển sinh
+  HAS_BEGUN = 3, // Đã bắt đầu
+  END_CLASS = 4, // Đã kết thúc
 }
 
 export enum Schedule {
@@ -25,4 +13,21 @@ export enum Schedule {
   THURSDAY = 5,
   FRIDAY = 6,
   SATURDAY = 7,
+}
+
+export enum PaymentMethod {
+  CASH = 1, // Tiền mặt
+  TRANSFER = 2, // Chuyển khoản
+}
+
+export enum PaymentStatus {
+  PAID = 1, // Đã thanh toán
+  UNPAID = 2, // Chưa thanh toán
+}
+
+export enum StatusEnrollment {
+  PENDING = 1, // Chờ thanh toán
+  DONE = 2, // Đã hoàn thành
+  PAY_LATE = 3, // thanh toán sau
+  DEBT = 4, // nợ học phí
 }

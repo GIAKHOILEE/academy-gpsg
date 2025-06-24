@@ -24,6 +24,8 @@ import { Visitor } from '@modules/visitor/visitor.entity'
 import { ContactModule } from '@modules/contact/contact.module'
 import { FooterModule } from '@modules/footer/footer.module'
 import { ClassModule } from '@modules/class/class.module'
+import { SemesterModule } from '@modules/class/_semester/semester.module'
+import { ScholasticModule } from '@modules/class/_scholastic/scholastic.module'
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { ClassModule } from '@modules/class/class.module'
     StudentsModule,
     TeachersModule,
     SubjectsModule,
+    SemesterModule,
+    ScholasticModule,
     DepartmentModule,
     ClassModule,
     CalendarsModule,

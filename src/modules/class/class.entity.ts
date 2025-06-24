@@ -1,9 +1,11 @@
-import { ClassStatus, Schedule, Semester } from '@enums/class.enum'
-import { Teacher } from '@modules/teachers/teachers.entity'
-import { Subject } from '@modules/subjects/subjects.entity'
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { ClassStatus, Schedule } from '@enums/class.enum'
 import { Department } from '@modules/departments/departments.entity'
+import { Subject } from '@modules/subjects/subjects.entity'
+import { Teacher } from '@modules/teachers/teachers.entity'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { ClassStudents } from './class-students/class-students.entity'
+import { Semester } from './_semester/semester.entity'
+import { Scholastic } from './_scholastic/scholastic.entity'
 
 @Entity({ name: 'classes' })
 export class Classes {
@@ -25,16 +27,11 @@ export class Classes {
   @Column()
   max_students: number
 
+  @Column()
+  price: number
+
   @Column({ default: 0 })
   current_students: number
-
-  // Niên khóa
-  @Column()
-  scholastic: string
-
-  // Học kỳ
-  @Column({ nullable: true, default: Semester.FIRST })
-  semester: Semester
 
   //lịch học
   @Column({
@@ -77,6 +74,22 @@ export class Classes {
 
   @Column({ nullable: true })
   teacher_id: number
+
+  // Niên khóa
+  @ManyToOne(() => Scholastic, scholastic => scholastic.classes, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'scholastic_id' })
+  scholastic: Scholastic
+
+  @Column({ nullable: true })
+  scholastic_id: number
+
+  // Học kỳ
+  @ManyToOne(() => Semester, semester => semester.classes, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'semester_id' })
+  semester: Semester
+
+  @Column({ nullable: true })
+  semester_id: number
 
   // khoa
   @ManyToOne(() => Department, department => department.classes, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
