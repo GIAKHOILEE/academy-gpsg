@@ -8,11 +8,11 @@ import { CreateSemesterDto } from './dtos/create-semester.dto'
 import { UpdateSemesterDto } from './dtos/update-semester.dto'
 import { PaginateSemesterDto } from './dtos/paginate-semester.dto'
 
-@ApiTags('Semester')
-@Controller('semester')
+@ApiTags('Admin Semester')
+@Controller('admin/semester')
 @ApiBearerAuth()
 @Auth(Role.ADMIN)
-export class SemesterController {
+export class AdminSemesterController {
   constructor(private readonly semesterService: SemesterService) {}
 
   @Post()

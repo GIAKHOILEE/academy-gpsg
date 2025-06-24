@@ -8,11 +8,11 @@ import { ResponseDto } from '@common/response.dto'
 import { UpdateScholasticDto } from './dtos/update-scholastic.dto'
 import { PaginateScholasticDto } from './dtos/paginate-scholastic.dto'
 
-@ApiTags('Scholastic')
-@Controller('scholastic')
+@ApiTags('Admin Scholastic')
+@Controller('admin/scholastic')
 @ApiBearerAuth()
 @Auth(Role.ADMIN)
-export class ScholasticController {
+export class AdminScholasticController {
   constructor(private readonly scholasticService: ScholasticService) {}
 
   @Post()
