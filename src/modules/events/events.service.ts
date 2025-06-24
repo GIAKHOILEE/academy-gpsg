@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Event } from './events.entity'
@@ -7,6 +7,8 @@ import { UpdateEventDto } from './dtos/update-events.dto'
 import { PaginateEventDto } from './dtos/paginate-events.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { IEvent } from './events.interface'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class EventsService {
@@ -17,7 +19,7 @@ export class EventsService {
 
   async createEvent(createEventDto: CreateEventDto): Promise<IEvent> {
     if (createEventDto.start_date && createEventDto.end_date && createEventDto.start_date > createEventDto.end_date) {
-      throw new BadRequestException('START_DATE_MUST_BE_BEFORE_END_DATE')
+      throwAppException(ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
     }
 
     const event = this.eventRepository.create(createEventDto)
@@ -37,18 +39,18 @@ export class EventsService {
 
   async updateEvent(id: number, updateEventDto: UpdateEventDto): Promise<void> {
     const event = await this.eventRepository.findOne({ where: { id } })
-    if (!event) throw new NotFoundException('EVENT_NOT_FOUND')
+    if (!event) throwAppException(ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (updateEventDto.start_date && updateEventDto.end_date && updateEventDto.start_date > updateEventDto.end_date) {
-      throw new BadRequestException('START_DATE_MUST_BE_BEFORE_END_DATE')
+      throwAppException(ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
     }
 
     if (updateEventDto.start_date && updateEventDto.start_date > event.end_date) {
-      throw new BadRequestException('START_DATE_MUST_BE_BEFORE_END_DATE')
+      throwAppException(ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
     }
 
     if (updateEventDto.end_date && updateEventDto.end_date < event.start_date) {
-      throw new BadRequestException('END_DATE_MUST_BE_AFTER_START_DATE')
+      throwAppException(ErrorCode.END_DATE_MUST_BE_AFTER_START_DATE, HttpStatus.BAD_REQUEST)
     }
 
     await this.eventRepository.update(id, updateEventDto)
@@ -56,13 +58,13 @@ export class EventsService {
 
   async deleteEvent(id: number): Promise<void> {
     const event = await this.eventRepository.findOne({ where: { id } })
-    if (!event) throw new NotFoundException('EVENT_NOT_FOUND')
+    if (!event) throwAppException(ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     await this.eventRepository.delete(id)
   }
 
   async getEventById(id: number): Promise<IEvent> {
     const event = await this.eventRepository.findOne({ where: { id } })
-    if (!event) throw new NotFoundException('EVENT_NOT_FOUND')
+    if (!event) throwAppException(ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedEvent: IEvent = {
       id: event.id,

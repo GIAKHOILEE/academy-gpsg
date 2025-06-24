@@ -1,8 +1,8 @@
 import { paginate } from '@common/pagination'
-import { hashPassword } from '@common/utils'
+import { hashPassword, throwAppException } from '@common/utils'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
 import { User } from '../users/user.entity'
@@ -10,6 +10,7 @@ import { CreateStudentsDto } from './dtos/create-students.dto'
 import { PaginateStudentsDto } from './dtos/paginate-students.dto'
 import { UpdateStudentsDto } from './dtos/update-students.dto'
 import { Student } from './students.entity'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class StudentsService {
@@ -37,15 +38,15 @@ export class StudentsService {
           .where('users.email = :email', { email })
           .getOne()
 
-        if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
+        if (existingUser) throwAppException(ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       // Kiểm tra code đã tồn tại
-      if (!code) throw new BadRequestException('CODE_IS_REQUIRED')
+      if (!code) throwAppException(ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
       if (code) {
         const existingUser = await queryRunner.manager.getRepository(User).createQueryBuilder('users').where('users.code = :code', { code }).getOne()
 
-        if (existingUser) throw new ConflictException('CODE_ALREADY_EXISTS')
+        if (existingUser) throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       const hashedPassword = await hashPassword(password ?? code)
@@ -67,7 +68,7 @@ export class StudentsService {
         .where('students.user_id = :user_id', { user_id: user.id })
         .getOne()
 
-      if (existingStudent) throw new ConflictException('STUDENT_ALREADY_EXISTS')
+      if (existingStudent) throwAppException(ErrorCode.STUDENT_ALREADY_EXISTS, HttpStatus.CONFLICT)
 
       const student = queryRunner.manager.getRepository(Student).create({
         user_id: user.id,
@@ -106,10 +107,10 @@ export class StudentsService {
       const userRepo = queryRunner.manager.getRepository(User)
 
       const student = await studentRepo.findOne({ where: { id } })
-      if (!student) throw new NotFoundException('STUDENT_NOT_FOUND')
+      if (!student) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       const user = await userRepo.findOne({ where: { id: student.user_id } })
-      if (!user) throw new NotFoundException('USER_NOT_FOUND')
+      if (!user) throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // Check duplicate email
       if (email) {
@@ -118,7 +119,7 @@ export class StudentsService {
           .where('users.email = :email', { email })
           .andWhere('users.id != :id', { id: user.id })
           .getOne()
-        if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
+        if (existingUser) throwAppException(ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
@@ -161,10 +162,10 @@ export class StudentsService {
       const userRepo = queryRunner.manager.getRepository(User)
 
       const student = await studentRepo.findOne({ where: { id } })
-      if (!student) throw new NotFoundException('STUDENT_NOT_FOUND')
+      if (!student) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       const user = await userRepo.findOne({ where: { id: student.user_id } })
-      if (!user) throw new NotFoundException('USER_NOT_FOUND')
+      if (!user) throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       await studentRepo.delete(student.id)
       await userRepo.delete(user.id)
@@ -210,7 +211,7 @@ export class StudentsService {
       .where('students.id = :id', { id })
       .getOne()
 
-    if (!student) throw new NotFoundException('STUDENT_NOT_FOUND')
+    if (!student) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedStudent = {
       id: student.id,

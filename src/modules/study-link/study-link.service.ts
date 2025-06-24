@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { StudyLink } from './study-link.entity'
@@ -7,6 +7,8 @@ import { UpdateStudyLinkDto } from './dtos/update-study-link.dto'
 import { PaginateStudyLinkDto } from './dtos/paginate-study-link.dto'
 import { paginate, PaginationMeta } from 'src/common/pagination'
 import { IStudyLink } from './study-link.interface'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 @Injectable()
 export class StudyLinkService {
   constructor(
@@ -55,7 +57,7 @@ export class StudyLinkService {
   async getStudyLinkById(id: number): Promise<IStudyLink> {
     const studyLink = await this.studyLinkRepository.findOne({ where: { id } })
     if (!studyLink) {
-      throw new NotFoundException('Study link not found')
+      throwAppException(ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     const formatStudyLink = {
@@ -72,7 +74,7 @@ export class StudyLinkService {
   async updateStudyLink(id: number, updateStudyLinkDto: UpdateStudyLinkDto): Promise<void> {
     const isExist = await this.studyLinkRepository.exists({ where: { id } })
     if (!isExist) {
-      throw new NotFoundException('STUDY_LINK_NOT_FOUND')
+      throwAppException(ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     await this.studyLinkRepository.update(id, updateStudyLinkDto)
   }
@@ -80,7 +82,7 @@ export class StudyLinkService {
   async deleteStudyLink(id: number): Promise<void> {
     const isExist = await this.studyLinkRepository.exists({ where: { id } })
     if (!isExist) {
-      throw new NotFoundException('STUDY_LINK_NOT_FOUND')
+      throwAppException(ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     await this.studyLinkRepository.delete(id)
   }

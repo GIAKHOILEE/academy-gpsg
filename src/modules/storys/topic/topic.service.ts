@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
@@ -9,6 +9,8 @@ import { ITopic } from './topic.interface'
 import { PaginateTopicDto } from './dtos/paginate-topic.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { Story } from '../story/story.entity'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { throwAppException } from '@common/utils'
 
 @Injectable()
 export class TopicService {
@@ -24,7 +26,7 @@ export class TopicService {
       where: { name: createTopicDto.name },
     })
 
-    if (existingTopic) throw new ConflictException('TOPIC_ALREADY_EXISTS')
+    if (existingTopic) throwAppException(ErrorCode.TOPIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     const topic = this.topicRepository.create(createTopicDto)
 
@@ -33,7 +35,7 @@ export class TopicService {
 
   async updateTopic(id: number, updateTopicDto: UpdateTopicDto): Promise<void> {
     const existsTopic = await this.topicRepository.exists({ where: { id } })
-    if (!existsTopic) throw new NotFoundException('TOPIC_NOT_FOUND')
+    if (!existsTopic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (updateTopicDto.name) {
       const existingTopic = await this.topicRepository
@@ -41,7 +43,7 @@ export class TopicService {
         .where('topic.name = :name', { name: updateTopicDto.name })
         .andWhere('topic.id != :id', { id })
         .getOne()
-      if (existingTopic) throw new ConflictException('TOPIC_ALREADY_EXISTS')
+      if (existingTopic) throwAppException(ErrorCode.TOPIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     await this.topicRepository.update(id, updateTopicDto)
@@ -68,7 +70,7 @@ export class TopicService {
   async getTopicById(id: number): Promise<ITopic> {
     const topic = await this.topicRepository.findOne({ where: { id } })
 
-    if (!topic) throw new NotFoundException('TOPIC_NOT_FOUND')
+    if (!topic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedTopic = {
       id: topic.id,
@@ -81,10 +83,10 @@ export class TopicService {
 
   async deleteTopics(id: number): Promise<void> {
     const existsTopic = await this.topicRepository.exists({ where: { id } })
-    if (!existsTopic) throw new NotFoundException('TOPIC_NOT_FOUND')
+    if (!existsTopic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const existsStory = await this.storyRepository.exists({ where: { topic_id: id } })
-    if (existsStory) throw new BadRequestException('TOPIC_HAS_STORIES')
+    if (existsStory) throwAppException(ErrorCode.TOPIC_HAS_STORIES, HttpStatus.BAD_REQUEST)
 
     await this.topicRepository.delete(id)
   }

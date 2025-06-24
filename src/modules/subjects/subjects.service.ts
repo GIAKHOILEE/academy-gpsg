@@ -1,11 +1,13 @@
 import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { CreateSubjectDto } from './dtos/create-subject.dto'
 import { Subject } from './subjects.entity'
 import { ISubject } from './subjects.interface'
 import { UpdateSubjectDto } from './dtos/update-subject.dto'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class SubjectsService {
@@ -19,12 +21,12 @@ export class SubjectsService {
 
     const existingCode = await this.subjectRepository.findOne({ where: { code: createSubjectDto.code } })
     if (existingCode) {
-      throw new BadRequestException('Code already exists')
+      throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     const existingSubject = await this.subjectRepository.findOne({ where: { name } })
     if (existingSubject) {
-      throw new BadRequestException('Subject already exists')
+      throwAppException(ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     const subject = this.subjectRepository.create({ code, name, image, description })
@@ -48,7 +50,7 @@ export class SubjectsService {
   async getById(id: number): Promise<ISubject> {
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
-      throw new NotFoundException('Subject not found')
+      throwAppException(ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     const formattedSubject = {
       id: subject.id,
@@ -63,7 +65,7 @@ export class SubjectsService {
   async update(id: number, updateSubjectDto: UpdateSubjectDto): Promise<void> {
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
-      throw new NotFoundException('Subject not found')
+      throwAppException(ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     if (updateSubjectDto.code) {
@@ -74,7 +76,7 @@ export class SubjectsService {
         .getOne()
 
       if (existingCode) {
-        throw new BadRequestException('Code already exists')
+        throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -86,7 +88,7 @@ export class SubjectsService {
         .getOne()
 
       if (existingSubject) {
-        throw new BadRequestException('Subject already exists')
+        throwAppException(ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -96,7 +98,7 @@ export class SubjectsService {
   async delete(id: number): Promise<void> {
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
-      throw new NotFoundException('Subject not found')
+      throwAppException(ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     await this.subjectRepository.delete(id)
   }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -6,10 +6,11 @@ import { Repository } from 'typeorm'
 import { Notification } from './notifications.entity'
 import { CreateNotificationDto } from './dtos/create-notification.dto'
 import { INotification } from './notifications.interface'
-import { formatStringDate } from '@common/utils'
+import { formatStringDate, throwAppException } from '@common/utils'
 import { UpdateNotificationDto } from './dtos/update-notification.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { PaginateNotificationDto } from './dtos/paginate-notification.dto'
+import { ErrorCode } from '@enums/error-codes.enum'
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -34,21 +35,21 @@ export class NotificationsService {
 
   async updateNotification(id: number, updateNotificationDto: UpdateNotificationDto): Promise<void> {
     const notification = await this.notificationRepository.exists({ where: { id } })
-    if (!notification) throw new NotFoundException('NOTIFICATION_NOT_FOUND')
+    if (!notification) throwAppException(ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.notificationRepository.update(id, updateNotificationDto)
   }
 
   async deleteNotification(id: number): Promise<void> {
     const notification = await this.notificationRepository.exists({ where: { id } })
-    if (!notification) throw new NotFoundException('NOTIFICATION_NOT_FOUND')
+    if (!notification) throwAppException(ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.notificationRepository.delete(id)
   }
 
   async getNotificationById(id: number): Promise<INotification> {
     const notification = await this.notificationRepository.findOne({ where: { id } })
-    if (!notification) throw new NotFoundException('NOTIFICATION_NOT_FOUND')
+    if (!notification) throwAppException(ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedNotification: INotification = {
       id: notification.id,

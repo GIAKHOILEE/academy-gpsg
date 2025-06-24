@@ -1,15 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 
 import { Story } from './story.entity'
 import { IStory } from './story.interface'
 import { CreateStoryDto } from './dtos/create-story.dto'
-import { formatStringDate } from '@common/utils'
+import { formatStringDate, throwAppException } from '@common/utils'
 import { UpdateStoryDto } from './dtos/update-story.dto'
 import { Topic } from '../topic/topic.entity'
 import { PaginateStoryDto } from './dtos/paginate-story.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class StoryService {
@@ -22,7 +23,7 @@ export class StoryService {
 
   async createStory(createStoryDto: CreateStoryDto): Promise<IStory> {
     const topic = await this.topicRepository.findOne({ where: { id: createStoryDto.topic_id } })
-    if (!topic) throw new NotFoundException('TOPIC_NOT_FOUND')
+    if (!topic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const story = this.storyRepository.create(createStoryDto)
     const savedStory = await this.storyRepository.save(story)
@@ -42,11 +43,11 @@ export class StoryService {
 
   async updateStory(id: number, updateStoryDto: UpdateStoryDto): Promise<void> {
     const existsStory = await this.storyRepository.exists({ where: { id } })
-    if (!existsStory) throw new NotFoundException('STORY_NOT_FOUND')
+    if (!existsStory) throwAppException(ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (updateStoryDto.topic_id) {
       const existsTopic = await this.topicRepository.exists({ where: { id: updateStoryDto.topic_id } })
-      if (!existsTopic) throw new NotFoundException('TOPIC_NOT_FOUND')
+      if (!existsTopic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       await this.storyRepository.update(id, { ...updateStoryDto, topic_id: updateStoryDto.topic_id })
     } else {
@@ -56,7 +57,7 @@ export class StoryService {
 
   async deleteStory(id: number): Promise<void> {
     const existsStory = await this.storyRepository.exists({ where: { id } })
-    if (!existsStory) throw new NotFoundException('STORY_NOT_FOUND')
+    if (!existsStory) throwAppException(ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.storyRepository.delete(id)
   }
@@ -68,7 +69,7 @@ export class StoryService {
       .where('story.id = :id', { id })
       .getOne()
 
-    if (!story) throw new NotFoundException('STORY_NOT_FOUND')
+    if (!story) throwAppException(ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedStory: IStory = {
       id: story.id,

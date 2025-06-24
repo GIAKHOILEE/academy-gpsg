@@ -1,7 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { paginate, PaginationMeta } from '@common/pagination'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { paginate, PaginationMeta } from '@common/pagination'
 import { Classes } from '../class.entity'
 import { CreateScholasticDto } from './dtos/create-scholastic.dto'
 import { PaginateScholasticDto } from './dtos/paginate-scholastic.dto'
@@ -24,7 +26,7 @@ export class ScholasticService {
         name: createScholasticDto.name,
       },
     })
-    if (scholastic) throw new BadRequestException('SCHOLASTIC_ALREADY_EXISTS')
+    if (scholastic) throwAppException(ErrorCode.SCHOLASTIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     const newScholastic = this.scholasticRepository.create(createScholasticDto)
     const savedScholastic = await this.scholasticRepository.save(newScholastic)
@@ -36,20 +38,20 @@ export class ScholasticService {
 
   async update(id: number, updateScholasticDto: UpdateScholasticDto): Promise<void> {
     const scholastic = await this.scholasticRepository.exists({ where: { id } })
-    if (!scholastic) throw new NotFoundException('SCHOLASTIC_NOT_FOUND')
+    if (!scholastic) throwAppException(ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const existingScholastic = await this.scholasticRepository.exists({ where: { name: updateScholasticDto.name } })
-    if (existingScholastic) throw new BadRequestException('SCHOLASTIC_ALREADY_EXISTS')
+    if (existingScholastic) throwAppException(ErrorCode.SCHOLASTIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     await this.scholasticRepository.update(id, updateScholasticDto)
   }
 
   async delete(id: number): Promise<void> {
     const scholastic = await this.scholasticRepository.exists({ where: { id } })
-    if (!scholastic) throw new NotFoundException('SCHOLASTIC_NOT_FOUND')
+    if (!scholastic) throwAppException(ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const classes = await this.classRepository.exists({ where: { scholastic_id: id } })
-    if (classes) throw new BadRequestException('SCHOLASTIC_HAS_CLASSES')
+    if (classes) throwAppException(ErrorCode.SCHOLASTIC_HAS_CLASSES, HttpStatus.BAD_REQUEST)
 
     await this.scholasticRepository.delete(id)
   }
@@ -68,7 +70,7 @@ export class ScholasticService {
 
   async findOne(id: number): Promise<IScholastic> {
     const scholastic = await this.scholasticRepository.findOne({ where: { id } })
-    if (!scholastic) throw new NotFoundException('SCHOLASTIC_NOT_FOUND')
+    if (!scholastic) throwAppException(ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     return {
       id: scholastic.id,

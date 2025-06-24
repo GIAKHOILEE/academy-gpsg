@@ -1,9 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
 import { Teacher } from './teachers.entity'
-import { hashPassword } from '@common/utils'
+import { hashPassword, throwAppException } from '@common/utils'
 import { User } from '@modules/users/user.entity'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -11,6 +11,7 @@ import { CreateTeachersDto } from './dtos/create-teachers.dto'
 import { UpdateTeachersDto } from './dtos/update-teachers.dto'
 import { PaginateTeachersDto } from './dtos/paginate-teachers.dto'
 import { paginate } from '@common/pagination'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class TeachersService {
@@ -48,15 +49,15 @@ export class TeachersService {
           .where('users.email = :email', { email })
           .getOne()
 
-        if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
+        if (existingUser) throwAppException(ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       // Kiểm tra code đã tồn tại
-      if (!code) throw new BadRequestException('CODE_IS_REQUIRED')
+      if (!code) throwAppException(ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
       if (code) {
         const existingUser = await queryRunner.manager.getRepository(User).createQueryBuilder('users').where('users.code = :code', { code }).getOne()
 
-        if (existingUser) throw new ConflictException('CODE_ALREADY_EXISTS')
+        if (existingUser) throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       const hashedPassword = await hashPassword(password ?? code)
@@ -116,10 +117,10 @@ export class TeachersService {
       const { email, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
-      if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
+      if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       const user = await queryRunner.manager.getRepository(User).findOne({ where: { id: teacher.user_id } })
-      if (!user) throw new NotFoundException('USER_NOT_FOUND')
+      if (!user) throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // Check duplicate email
       if (email) {
@@ -129,7 +130,7 @@ export class TeachersService {
           .where('users.email = :email', { email })
           .andWhere('users.id != :id', { id: user.id })
           .getOne()
-        if (existingUser) throw new ConflictException('EMAIL_ALREADY_EXISTS')
+        if (existingUser) throwAppException(ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
@@ -166,7 +167,7 @@ export class TeachersService {
 
     try {
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
-      if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
+      if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       await queryRunner.manager.getRepository(Teacher).update(id, { deleted_at: new Date() })
       await queryRunner.commitTransaction()
@@ -184,7 +185,7 @@ export class TeachersService {
       .leftJoinAndSelect('teachers.user', 'user')
       .where('teachers.id = :id', { id })
       .getOne()
-    if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
+    if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedTeacher = {
       id: teacher.id,

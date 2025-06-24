@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { Repository } from 'typeorm'
 import { Calendars } from './calendars.entity'
 import { CreateCalendarsDto } from './dtos/create-calendars.dto'
@@ -7,6 +7,8 @@ import { UpdateCalendarsDto } from './dtos/update-calendars.dto'
 import { PaginateCalendarsDto } from './dtos/pagiante-calendars.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { InjectRepository } from '@nestjs/typeorm'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class CalendarsService {
@@ -32,7 +34,7 @@ export class CalendarsService {
   async updateCalendars(id: number, updateCalendarsDto: UpdateCalendarsDto): Promise<void> {
     const calendars = await this.calendarsRepository.exists({ where: { id } })
     if (!calendars) {
-      throw new NotFoundException('CALENDAR_NOT_FOUND')
+      throwAppException(ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     await this.calendarsRepository.update(id, updateCalendarsDto)
@@ -43,7 +45,7 @@ export class CalendarsService {
   async deleteCalendars(id: number): Promise<void> {
     const calendars = await this.calendarsRepository.exists({ where: { id } })
     if (!calendars) {
-      throw new NotFoundException('CALENDAR_NOT_FOUND')
+      throwAppException(ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     await this.calendarsRepository.delete(id)
@@ -66,7 +68,7 @@ export class CalendarsService {
   async getCalendarsById(id: number): Promise<ICalendars> {
     const calendar = await this.calendarsRepository.findOne({ where: { id } })
     if (!calendar) {
-      throw new NotFoundException('CALENDAR_NOT_FOUND')
+      throwAppException(ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     const calendarResponse: ICalendars = {

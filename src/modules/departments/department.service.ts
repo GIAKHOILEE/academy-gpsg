@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Department } from './departments.entity'
@@ -6,6 +6,8 @@ import { CreateDepartmentDto } from './dtos/create-department.dto'
 import { IDepartment } from './department.interface'
 import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
 import { UpdateDepartmentDto } from './dtos/update-department.dto'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class DepartmentService {
@@ -19,12 +21,12 @@ export class DepartmentService {
 
     const existingCode = await this.departmentRepository.findOne({ where: { code } })
     if (existingCode) {
-      throw new BadRequestException('CODE_ALREADY_EXISTS')
+      throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     const existingName = await this.departmentRepository.findOne({ where: { name } })
     if (existingName) {
-      throw new BadRequestException('NAME_ALREADY_EXISTS')
+      throwAppException(ErrorCode.NAME_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     const department = this.departmentRepository.create({ code, name, description })
@@ -49,7 +51,7 @@ export class DepartmentService {
   async getById(id: number): Promise<IDepartment> {
     const department = await this.departmentRepository.findOne({ where: { id } })
     if (!department) {
-      throw new NotFoundException('DEPARTMENT_NOT_FOUND')
+      throwAppException(ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     const formattedData: IDepartment = {
@@ -67,7 +69,7 @@ export class DepartmentService {
 
     const department = await this.departmentRepository.findOne({ where: { id } })
     if (!department) {
-      throw new NotFoundException('DEPARTMENT_NOT_FOUND')
+      throwAppException(ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     if (code) {
@@ -77,7 +79,7 @@ export class DepartmentService {
         .andWhere('department.id != :id', { id })
         .getOne()
       if (existingCode) {
-        throw new BadRequestException('CODE_ALREADY_EXISTS')
+        throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -88,7 +90,7 @@ export class DepartmentService {
         .andWhere('department.id != :id', { id })
         .getOne()
       if (existingName) {
-        throw new BadRequestException('NAME_ALREADY_EXISTS')
+        throwAppException(ErrorCode.NAME_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -99,7 +101,7 @@ export class DepartmentService {
   async delete(id: number): Promise<void> {
     const department = await this.departmentRepository.findOne({ where: { id } })
     if (!department) {
-      throw new NotFoundException('DEPARTMENT_NOT_FOUND')
+      throwAppException(ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     await this.departmentRepository.delete(id)
   }

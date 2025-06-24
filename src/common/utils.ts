@@ -1,5 +1,10 @@
+import { ErrorCode } from '@enums/error-codes.enum'
+import { messages } from '@i18n/messages'
+import { HttpStatus } from '@nestjs/common'
 import * as bcrypt from 'bcryptjs'
 import e from 'express'
+import { ClsServiceManager } from 'nestjs-cls'
+import { AppException } from './exeption'
 
 export function generateHash(password: string): string {
   return bcrypt.hashSync(password, 10)
@@ -57,4 +62,17 @@ export function generateRandomString(length = 5): string {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return result
+}
+
+export function getLocalizedMessage(code: ErrorCode, lang: string): string {
+  const translations = messages[lang] || messages.vi
+  return translations[ErrorCode[code]] || 'Unknown error'
+}
+
+export function throwAppException(code: ErrorCode, status = HttpStatus.BAD_REQUEST): never {
+  const cls = ClsServiceManager.getClsService()
+  const req = cls.get<Request>('request')
+  const lang = req?.headers['accept-language']?.split(',')[0] || 'vi'
+  const message = getLocalizedMessage(code, lang)
+  throw new AppException(message, code, status)
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Footer } from './footer.entity'
@@ -6,6 +6,8 @@ import { CreateFooterDto } from './dtos/craete-footer.dto'
 import { UpdateFooterDto } from './dtos/update-footer.dto'
 import { FooterEnum } from '@enums/footer.enum'
 import { IFooter } from './footer.interface'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class FooterService {
@@ -35,7 +37,7 @@ export class FooterService {
     })
 
     if (!footerToUpdate) {
-      throw new NotFoundException(`Footer with ID ${id} not found.`)
+      throwAppException(ErrorCode.FOOTER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     await this.footerRepository.update(id, footerData)

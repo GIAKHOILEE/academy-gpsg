@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 
@@ -8,6 +8,8 @@ import { UpdateSemesterDto } from './dtos/update-semester.dto'
 import { PaginateSemesterDto } from './dtos/paginate-semester.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { Classes } from '../class.entity'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { throwAppException } from '@common/utils'
 
 @Injectable()
 export class SemesterService {
@@ -25,7 +27,7 @@ export class SemesterService {
       },
     })
     if (semester) {
-      throw new BadRequestException('SEMESTER_ALREADY_EXISTS')
+      throwAppException(ErrorCode.SEMESTER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
     const newSemester = this.semesterRepository.create(createSemesterDto)
     return await this.semesterRepository.save(newSemester)
@@ -34,20 +36,20 @@ export class SemesterService {
   async update(id: number, updateSemesterDto: UpdateSemesterDto): Promise<void> {
     const semester = await this.semesterRepository.exists({ where: { id } })
     if (!semester) {
-      throw new NotFoundException('SEMESTER_NOT_FOUND')
+      throwAppException(ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     const existingSemester = await this.semesterRepository.exists({ where: { name: updateSemesterDto.name } })
-    if (existingSemester) throw new BadRequestException('SEMESTER_ALREADY_EXISTS')
+    if (existingSemester) throwAppException(ErrorCode.SEMESTER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     await this.semesterRepository.update(id, updateSemesterDto)
   }
 
   async delete(id: number): Promise<void> {
     const semester = await this.semesterRepository.exists({ where: { id } })
-    if (!semester) throw new NotFoundException('SEMESTER_NOT_FOUND')
+    if (!semester) throwAppException(ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const classes = await this.classRepository.exists({ where: { semester_id: id } })
-    if (classes) throw new BadRequestException('SEMESTER_HAS_CLASSES')
+    if (classes) throwAppException(ErrorCode.SEMESTER_HAS_CLASSES, HttpStatus.BAD_REQUEST)
 
     await this.semesterRepository.delete(id)
   }
@@ -61,7 +63,7 @@ export class SemesterService {
 
   async findOne(id: number): Promise<Semester> {
     const semester = await this.semesterRepository.findOne({ where: { id } })
-    if (!semester) throw new NotFoundException('SEMESTER_NOT_FOUND')
+    if (!semester) throwAppException(ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     return semester
   }

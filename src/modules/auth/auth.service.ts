@@ -1,9 +1,10 @@
-import { validateHash } from '@common/utils'
+import { throwAppException, validateHash } from '@common/utils'
 import { jwtConfig } from '@config/jwt.config'
+import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { User } from '@modules/users/user.entity'
 import { IUser } from '@modules/users/user.interface'
-import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -26,11 +27,11 @@ export class AuthService {
       },
     })
     if (!user) {
-      throw new UnauthorizedException('Invalid username or password')
+      throwAppException(ErrorCode.INVALID_USERNAME_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
     }
     const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid username or password')
+      throwAppException(ErrorCode.INVALID_USERNAME_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
     }
     const formattedUser: IUser = {
       id: user.id,
@@ -49,11 +50,11 @@ export class AuthService {
       },
     })
     if (!user) {
-      throw new UnauthorizedException('Invalid code or password')
+      throwAppException(ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
     }
     const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid code or password')
+      throwAppException(ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
     }
     const formattedUser: IUser = {
       id: user.id,
@@ -109,7 +110,7 @@ export class AuthService {
       })
 
       if (payload.type !== 'REFRESH_TOKEN') {
-        throw new UnauthorizedException('Invalid refresh token')
+        throwAppException(ErrorCode.INVALID_REFRESH_TOKEN, HttpStatus.UNAUTHORIZED)
       }
 
       const user = await this.userRepository.findOne({
@@ -117,7 +118,7 @@ export class AuthService {
       })
 
       if (!user) {
-        throw new UnauthorizedException('User not found')
+        throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
       }
 
       return this.createAccessToken({
@@ -128,7 +129,7 @@ export class AuthService {
         code: user.code,
       })
     } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token')
+      throwAppException(ErrorCode.INVALID_REFRESH_TOKEN, HttpStatus.UNAUTHORIZED)
     }
   }
 }

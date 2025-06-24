@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Classes } from './class.entity'
@@ -12,6 +12,8 @@ import { PaginateClassDto } from './dtos/paginate-class.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { Semester } from './_semester/semester.entity'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { throwAppException } from '@common/utils'
 
 @Injectable()
 export class ClassService {
@@ -34,39 +36,39 @@ export class ClassService {
     const { code, subject_id, teacher_id, department_id, scholastic_id, semester_id, ...rest } = createClassDto
 
     const existingClass = await this.classRepository.findOne({ where: { code } })
-    if (existingClass) throw new BadRequestException('CLASS_CODE_ALREADY_EXISTS')
+    if (existingClass) throwAppException(ErrorCode.CLASS_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     const subject = await this.subjectRepository
       .createQueryBuilder('subjects')
       .select(['subjects.id', 'subjects.code', 'subjects.name'])
       .where('subjects.id = :id', { id: subject_id })
       .getOne()
-    if (!subject) throw new NotFoundException('SUBJECT_NOT_FOUND')
+    if (!subject) throwAppException(ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     const teacher = await this.teacherRepository
       .createQueryBuilder('teachers')
       .leftJoinAndSelect('teachers.user', 'user')
       .select(['teachers.id', 'teachers.user.code', 'teachers.user.full_name'])
       .where('teachers.id = :id', { id: teacher_id })
       .getOne()
-    if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
+    if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
     const department = await this.departmentRepository
       .createQueryBuilder('departments')
       .select(['departments.id', 'departments.code', 'departments.name'])
       .where('departments.id = :id', { id: department_id })
       .getOne()
-    if (!department) throw new NotFoundException('DEPARTMENT_NOT_FOUND')
+    if (!department) throwAppException(ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     const scholastic = await this.scholasticRepository
       .createQueryBuilder('scholastics')
       .select(['scholastics.id', 'scholastics.name'])
       .where('scholastics.id = :id', { id: scholastic_id })
       .getOne()
-    if (!scholastic) throw new NotFoundException('SCHOLASTIC_NOT_FOUND')
+    if (!scholastic) throwAppException(ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
     const semester = await this.semesterRepository
       .createQueryBuilder('semesters')
       .select(['semesters.id', 'semesters.name'])
       .where('semesters.id = :id', { id: semester_id })
       .getOne()
-    if (!semester) throw new NotFoundException('SEMESTER_NOT_FOUND')
+    if (!semester) throwAppException(ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, department, scholastic, semester })
     const savedClass = await this.classRepository.save(classEntity)
@@ -117,27 +119,27 @@ export class ClassService {
     const { code, subject_id, teacher_id, department_id, scholastic_id, semester_id, ...rest } = updateClassDto
 
     const existingClass = await this.classRepository.findOne({ where: { id } })
-    if (!existingClass) throw new NotFoundException('CLASS_NOT_FOUND')
+    if (!existingClass) throwAppException(ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (subject_id) {
       const subject = await this.subjectRepository.exists({ where: { id: subject_id } })
-      if (!subject) throw new NotFoundException('SUBJECT_NOT_FOUND')
+      if (!subject) throwAppException(ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     if (teacher_id) {
       const teacher = await this.teacherRepository.exists({ where: { id: teacher_id } })
-      if (!teacher) throw new NotFoundException('TEACHER_NOT_FOUND')
+      if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     if (department_id) {
       const department = await this.departmentRepository.exists({ where: { id: department_id } })
-      if (!department) throw new NotFoundException('DEPARTMENT_NOT_FOUND')
+      if (!department) throwAppException(ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     if (scholastic_id) {
       const scholastic = await this.scholasticRepository.exists({ where: { id: scholastic_id } })
-      if (!scholastic) throw new NotFoundException('SCHOLASTIC_NOT_FOUND')
+      if (!scholastic) throwAppException(ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     if (semester_id) {
       const semester = await this.semesterRepository.exists({ where: { id: semester_id } })
-      if (!semester) throw new NotFoundException('SEMESTER_NOT_FOUND')
+      if (!semester) throwAppException(ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, department_id, scholastic_id, semester_id })
@@ -145,14 +147,14 @@ export class ClassService {
 
   async updateIsActive(id: number): Promise<void> {
     const existingClass = await this.classRepository.findOne({ where: { id }, select: ['id', 'is_active'] })
-    if (!existingClass) throw new NotFoundException('CLASS_NOT_FOUND')
+    if (!existingClass) throwAppException(ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.classRepository.update(id, { is_active: !existingClass.is_active })
   }
 
   async deleteClass(id: number): Promise<void> {
     const existingClass = await this.classRepository.exists({ where: { id } })
-    if (!existingClass) throw new NotFoundException('CLASS_NOT_FOUND')
+    if (!existingClass) throwAppException(ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.classRepository.delete(id)
   }
@@ -167,7 +169,7 @@ export class ClassService {
       .leftJoinAndSelect('classes.semester', 'semester')
       .where('classes.id = :id', { id })
       .getOne()
-    if (!classEntity) throw new NotFoundException('CLASS_NOT_FOUND')
+    if (!classEntity) throwAppException(ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedClass: IClasses = {
       id: classEntity.id,
