@@ -33,7 +33,8 @@ export class AdminClassController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'CLASSES_FETCHED_SUCCESSFULLY',
-      data: classes,
+      data: classes.data,
+      meta: classes.meta,
     })
   }
 
@@ -97,7 +98,8 @@ export class UserClassController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'CLASSES_FETCHED_SUCCESSFULLY',
-      data: classes,
+      data: classes.data,
+      meta: classes.meta,
     })
   }
 
