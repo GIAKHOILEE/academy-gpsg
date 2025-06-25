@@ -1,7 +1,7 @@
 import { paginate, PaginationMeta } from '@common/pagination'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Classes } from '../class.entity'

@@ -1,14 +1,14 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { StudyLink } from './study-link.entity'
-import { CreateStudyLinkDto } from './dtos/create-study-link.dto'
-import { UpdateStudyLinkDto } from './dtos/update-study-link.dto'
-import { PaginateStudyLinkDto } from './dtos/paginate-study-link.dto'
-import { paginate, PaginationMeta } from 'src/common/pagination'
-import { IStudyLink } from './study-link.interface'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { paginate, PaginationMeta } from 'src/common/pagination'
+import { Repository } from 'typeorm'
+import { CreateStudyLinkDto } from './dtos/create-study-link.dto'
+import { PaginateStudyLinkDto } from './dtos/paginate-study-link.dto'
+import { UpdateStudyLinkDto } from './dtos/update-study-link.dto'
+import { StudyLink } from './study-link.entity'
+import { IStudyLink } from './study-link.interface'
 @Injectable()
 export class StudyLinkService {
   constructor(

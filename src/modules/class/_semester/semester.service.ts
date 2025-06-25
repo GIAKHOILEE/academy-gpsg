@@ -1,15 +1,15 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
-import { Repository } from 'typeorm'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
 
-import { Semester } from './semester.entity'
-import { CreateSemesterDto } from './dtos/create-semester.dto'
-import { UpdateSemesterDto } from './dtos/update-semester.dto'
-import { PaginateSemesterDto } from './dtos/paginate-semester.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { Classes } from '../class.entity'
-import { ErrorCode } from '@enums/error-codes.enum'
 import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { Classes } from '../class.entity'
+import { CreateSemesterDto } from './dtos/create-semester.dto'
+import { PaginateSemesterDto } from './dtos/paginate-semester.dto'
+import { UpdateSemesterDto } from './dtos/update-semester.dto'
+import { Semester } from './semester.entity'
 
 @Injectable()
 export class SemesterService {

@@ -1,13 +1,13 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { Department } from './departments.entity'
-import { CreateDepartmentDto } from './dtos/create-department.dto'
-import { IDepartment } from './department.interface'
 import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
-import { UpdateDepartmentDto } from './dtos/update-department.dto'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { IDepartment } from './department.interface'
+import { Department } from './departments.entity'
+import { CreateDepartmentDto } from './dtos/create-department.dto'
+import { UpdateDepartmentDto } from './dtos/update-department.dto'
 
 @Injectable()
 export class DepartmentService {

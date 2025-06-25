@@ -1,13 +1,13 @@
 import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { CreateSubjectDto } from './dtos/create-subject.dto'
+import { UpdateSubjectDto } from './dtos/update-subject.dto'
 import { Subject } from './subjects.entity'
 import { ISubject } from './subjects.interface'
-import { UpdateSubjectDto } from './dtos/update-subject.dto'
-import { throwAppException } from '@common/utils'
-import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class SubjectsService {

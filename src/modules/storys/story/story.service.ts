@@ -1,16 +1,16 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
-import { Repository } from 'typeorm'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
 
+import { paginate, PaginationMeta } from '@common/pagination'
+import { formatStringDate, throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { Topic } from '../topic/topic.entity'
+import { CreateStoryDto } from './dtos/create-story.dto'
+import { PaginateStoryDto } from './dtos/paginate-story.dto'
+import { UpdateStoryDto } from './dtos/update-story.dto'
 import { Story } from './story.entity'
 import { IStory } from './story.interface'
-import { CreateStoryDto } from './dtos/create-story.dto'
-import { formatStringDate, throwAppException } from '@common/utils'
-import { UpdateStoryDto } from './dtos/update-story.dto'
-import { Topic } from '../topic/topic.entity'
-import { PaginateStoryDto } from './dtos/paginate-story.dto'
-import { paginate, PaginationMeta } from '@common/pagination'
-import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class StoryService {

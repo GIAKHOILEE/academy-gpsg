@@ -2,7 +2,6 @@ import { ErrorCode } from '@enums/error-codes.enum'
 import { messages } from '@i18n/messages'
 import { HttpStatus } from '@nestjs/common'
 import * as bcrypt from 'bcryptjs'
-import e from 'express'
 import { ClsServiceManager } from 'nestjs-cls'
 import { AppException } from './exeption'
 

@@ -1,13 +1,13 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { Footer } from './footer.entity'
-import { CreateFooterDto } from './dtos/craete-footer.dto'
-import { UpdateFooterDto } from './dtos/update-footer.dto'
-import { FooterEnum } from '@enums/footer.enum'
-import { IFooter } from './footer.interface'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { FooterEnum } from '@enums/footer.enum'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { CreateFooterDto } from './dtos/craete-footer.dto'
+import { UpdateFooterDto } from './dtos/update-footer.dto'
+import { Footer } from './footer.entity'
+import { IFooter } from './footer.interface'
 
 @Injectable()
 export class FooterService {

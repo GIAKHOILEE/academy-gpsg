@@ -31,7 +31,7 @@ export class AuthService {
     }
     const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
     if (!isPasswordValid) {
-      throwAppException(ErrorCode.INVALID_USERNAME_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
+      throwAppException(ErrorCode.INVALID_USERNAME_OR_PASSWORD, HttpStatus.BAD_REQUEST)
     }
     const formattedUser: IUser = {
       id: user.id,

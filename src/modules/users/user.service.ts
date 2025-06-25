@@ -1,16 +1,16 @@
 import { paginate, PaginationMeta } from '@common/pagination'
 import { hashPassword, throwAppException, validateHash } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
-import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
+import { ConflictException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { CreateUserDto } from './dtos/create-user.dto'
 import { PaginateUserDto } from './dtos/paginate-user.dto'
+import { UpdatePasswordDto, UpdateUserDto } from './dtos/update-user.dto'
 import { User } from './user.entity'
 import { IUser } from './user.interface'
-import { UpdatePasswordDto, UpdateUserDto } from './dtos/update-user.dto'
-import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class UserService {

@@ -1,16 +1,16 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
-import { Notification } from './notifications.entity'
-import { CreateNotificationDto } from './dtos/create-notification.dto'
-import { INotification } from './notifications.interface'
-import { formatStringDate, throwAppException } from '@common/utils'
-import { UpdateNotificationDto } from './dtos/update-notification.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { PaginateNotificationDto } from './dtos/paginate-notification.dto'
+import { formatStringDate, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { CreateNotificationDto } from './dtos/create-notification.dto'
+import { PaginateNotificationDto } from './dtos/paginate-notification.dto'
+import { UpdateNotificationDto } from './dtos/update-notification.dto'
+import { Notification } from './notifications.entity'
+import { INotification } from './notifications.interface'
 @Injectable()
 export class NotificationsService {
   constructor(

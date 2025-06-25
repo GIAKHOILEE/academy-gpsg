@@ -1,13 +1,13 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 
-import { TopicService } from './topic.service'
-import { CreateTopicDto } from './dtos/create-topic.dto'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from '@common/response.dto'
-import { PaginateTopicDto } from './dtos/paginate-topic.dto'
-import { UpdateTopicDto } from './dtos/update-topic.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { CreateTopicDto } from './dtos/create-topic.dto'
+import { PaginateTopicDto } from './dtos/paginate-topic.dto'
+import { UpdateTopicDto } from './dtos/update-topic.dto'
+import { TopicService } from './topic.service'
 
 @ApiTags('Admin Topics')
 @Controller('admin/topics')

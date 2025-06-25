@@ -1,16 +1,16 @@
-import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
+import { paginate, PaginationMeta } from '@common/pagination'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { Story } from '../story/story.entity'
 import { CreateTopicDto } from './dtos/create-topic.dto'
+import { PaginateTopicDto } from './dtos/paginate-topic.dto'
 import { UpdateTopicDto } from './dtos/update-topic.dto'
 import { Topic } from './topic.entity'
 import { ITopic } from './topic.interface'
-import { PaginateTopicDto } from './dtos/paginate-topic.dto'
-import { paginate, PaginationMeta } from '@common/pagination'
-import { Story } from '../story/story.entity'
-import { ErrorCode } from '@enums/error-codes.enum'
-import { throwAppException } from '@common/utils'
 
 @Injectable()
 export class TopicService {

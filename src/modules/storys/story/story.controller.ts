@@ -1,13 +1,12 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
-import { StoryService } from './story.service'
-import { CreateStoryDto } from './dtos/create-story.dto'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger'
 import { ResponseDto } from '@common/response.dto'
-import { PaginateStoryDto } from './dtos/paginate-story.dto'
-import { UpdateStoryDto } from './dtos/update-story.dto'
-import { ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { CreateStoryDto } from './dtos/create-story.dto'
+import { PaginateStoryDto } from './dtos/paginate-story.dto'
+import { UpdateStoryDto } from './dtos/update-story.dto'
+import { StoryService } from './story.service'
 
 @ApiTags('Admin Stories')
 @Controller('admin/stories')

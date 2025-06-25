@@ -1,8 +1,9 @@
 import { paginate } from '@common/pagination'
 import { hashPassword, throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
-import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
 import { User } from '../users/user.entity'
@@ -10,7 +11,6 @@ import { CreateStudentsDto } from './dtos/create-students.dto'
 import { PaginateStudentsDto } from './dtos/paginate-students.dto'
 import { UpdateStudentsDto } from './dtos/update-students.dto'
 import { Student } from './students.entity'
-import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class StudentsService {

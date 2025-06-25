@@ -1,14 +1,14 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { Event } from './events.entity'
-import { CreateEventDto } from './dtos/create-events.dto'
-import { UpdateEventDto } from './dtos/update-events.dto'
-import { PaginateEventDto } from './dtos/paginate-events.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { IEvent } from './events.interface'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { CreateEventDto } from './dtos/create-events.dto'
+import { PaginateEventDto } from './dtos/paginate-events.dto'
+import { UpdateEventDto } from './dtos/update-events.dto'
+import { Event } from './events.entity'
+import { IEvent } from './events.interface'
 
 @Injectable()
 export class EventsService {

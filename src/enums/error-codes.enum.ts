@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-duplicate-enum-values */
+
 export enum ErrorCode {
   SCHOLASTIC_ALREADY_EXISTS = 400,
   SCHOLASTIC_NOT_FOUND = 404,

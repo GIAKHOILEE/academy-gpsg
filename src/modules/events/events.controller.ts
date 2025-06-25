@@ -1,13 +1,12 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
-import { EventsService } from './events.service'
-import { CreateEventDto } from './dtos/create-events.dto'
-import { IEvent } from './events.interface'
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
-import { Role } from '@enums/role.enum'
-import { Auth } from '@decorators/auth.decorator'
 import { ResponseDto } from '@common/response.dto'
+import { Auth } from '@decorators/auth.decorator'
+import { Role } from '@enums/role.enum'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { CreateEventDto } from './dtos/create-events.dto'
 import { PaginateEventDto } from './dtos/paginate-events.dto'
 import { UpdateEventDto } from './dtos/update-events.dto'
+import { EventsService } from './events.service'
 
 @ApiTags('Admin Events')
 @ApiBearerAuth()

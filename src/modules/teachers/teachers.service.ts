@@ -1,17 +1,17 @@
-import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 
-import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, Repository } from 'typeorm'
-import { Teacher } from './teachers.entity'
+import { paginate } from '@common/pagination'
 import { hashPassword, throwAppException } from '@common/utils'
-import { User } from '@modules/users/user.entity'
+import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
+import { User } from '@modules/users/user.entity'
+import { InjectRepository } from '@nestjs/typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { CreateTeachersDto } from './dtos/create-teachers.dto'
-import { UpdateTeachersDto } from './dtos/update-teachers.dto'
 import { PaginateTeachersDto } from './dtos/paginate-teachers.dto'
-import { paginate } from '@common/pagination'
-import { ErrorCode } from '@enums/error-codes.enum'
+import { UpdateTeachersDto } from './dtos/update-teachers.dto'
+import { Teacher } from './teachers.entity'
 
 @Injectable()
 export class TeachersService {
