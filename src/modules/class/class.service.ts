@@ -47,7 +47,7 @@ export class ClassService {
     const teacher = await this.teacherRepository
       .createQueryBuilder('teachers')
       .leftJoinAndSelect('teachers.user', 'user')
-      .select(['teachers.id', 'teachers.user.code', 'teachers.user.full_name'])
+      .select(['teachers.id', 'user.code', 'user.full_name', 'user.email'])
       .where('teachers.id = :id', { id: teacher_id })
       .getOne()
     if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -164,6 +164,7 @@ export class ClassService {
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
       .leftJoinAndSelect('classes.teacher', 'teacher')
+      .leftJoinAndSelect('teacher.user', 'user')
       .leftJoinAndSelect('classes.department', 'department')
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
@@ -220,6 +221,7 @@ export class ClassService {
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
       .leftJoinAndSelect('classes.teacher', 'teacher')
+      .leftJoinAndSelect('teacher.user', 'user')
       .leftJoinAndSelect('classes.department', 'department')
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
@@ -245,8 +247,7 @@ export class ClassService {
     }
 
     const { data, meta } = await paginate(query, rest)
-
-    const formattedClasses: IClasses[] = data.map((classEntity: Classes) => ({
+    const formattedClasses: IClasses[] = data.map(classEntity => ({
       id: classEntity.id,
       name: classEntity.name,
       code: classEntity.code,
