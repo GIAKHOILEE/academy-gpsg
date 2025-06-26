@@ -65,7 +65,12 @@ export class UserService {
   }
 
   async findOne(username: string): Promise<IUser> {
-    const user = await this.usersRepository.findOne({ where: { username } })
+    const user = await this.usersRepository
+      .createQueryBuilder('users')
+      .where('users.username = :username', { username })
+      .andWhere('users.is_temporary = :is_temporary', { is_temporary: false })
+      .getOne()
+
     if (!user) {
       throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
@@ -83,7 +88,12 @@ export class UserService {
   }
 
   async getMe(userId: number): Promise<IUser> {
-    const user = await this.usersRepository.findOne({ where: { id: userId } })
+    const user = await this.usersRepository
+      .createQueryBuilder('users')
+      .where('users.id = :userId', { userId })
+      .andWhere('users.is_temporary = :is_temporary', { is_temporary: false })
+      .getOne()
+
     if (!user) {
       throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }

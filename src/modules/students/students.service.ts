@@ -72,10 +72,10 @@ export class StudentsService {
 
       const student = queryRunner.manager.getRepository(Student).create({
         user_id: user.id,
-        image_4x6,
-        diploma_image,
-        transcript_image,
-        other_document,
+        image_4x6: image_4x6 ?? null,
+        diploma_image: diploma_image ?? null,
+        transcript_image: transcript_image ?? null,
+        other_document: other_document ?? null,
         graduate: false,
         graduate_year: null,
       })
@@ -209,6 +209,7 @@ export class StudentsService {
         'students.graduate_year',
       ])
       .where('students.id = :id', { id })
+      .andWhere('students.is_temporary = :is_temporary', { is_temporary: false })
       .getOne()
 
     if (!student) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -246,6 +247,7 @@ export class StudentsService {
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.user', 'user')
       .where('students.deleted_at IS NULL')
+      .andWhere('students.is_temporary = :is_temporary', { is_temporary: false })
 
     if (full_name) {
       query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })

@@ -3,7 +3,7 @@ import { Department } from '@modules/departments/departments.entity'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { ClassStudents } from './class-students/class-students.entity'
+import { ClassStudents } from './class-students/class-student.entity'
 import { Semester } from './_semester/semester.entity'
 import { Scholastic } from './_scholastic/scholastic.entity'
 

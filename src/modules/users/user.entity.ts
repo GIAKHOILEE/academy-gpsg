@@ -16,10 +16,10 @@ export class User {
   @Column({ nullable: true, unique: true })
   code: string
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   email: string
 
-  @Column()
+  @Column({ nullable: true })
   password: string
 
   @Column({ nullable: true })
@@ -46,7 +46,7 @@ export class User {
   birth_place: string
 
   @Column({ nullable: true })
-  birth_date: Date
+  birth_date: string
 
   // giáo xứ
   @Column({ nullable: true })
@@ -75,6 +75,9 @@ export class User {
     default: UserStatus.ACTIVE,
   })
   status: UserStatus
+
+  @Column({ nullable: true })
+  is_temporary: boolean
 
   @CreateDateColumn()
   created_at: Date

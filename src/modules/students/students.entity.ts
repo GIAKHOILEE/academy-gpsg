@@ -1,7 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToOne, OneToMany } from 'typeorm'
 import { JoinColumn } from 'typeorm'
 import { User } from '../users/user.entity'
-import { ClassStudents } from '@modules/class/class-students/class-students.entity'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
+import { Enrollments } from '@modules/enrollments/enrollments.entity'
 @Entity({ name: 'students' })
 export class Student {
   @PrimaryGeneratedColumn()
@@ -37,9 +38,17 @@ export class Student {
   @Column({ nullable: true, default: null })
   graduate_year: number
 
+  // bảng tạm
+  @Column({ nullable: true, default: false })
+  is_temporary: boolean
+
   // danh sách lớp học
   @OneToMany(() => ClassStudents, classStudents => classStudents.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   class_students: ClassStudents[]
+
+  // danh sách đăng ký
+  @OneToMany(() => Enrollments, enrollments => enrollments.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  enrollments: Enrollments[]
 
   @CreateDateColumn()
   created_at: Date

@@ -6,7 +6,7 @@ export interface IUser {
   full_name?: string
   username?: string
   code?: string
-  email: string
+  email?: string
   // password?: string
   saint_name?: string
   gender?: Gender
@@ -14,7 +14,7 @@ export interface IUser {
   address?: string
   avatar?: string
   birth_place?: string
-  birth_date?: Date
+  birth_date?: string
   parish?: string
   deanery?: string
   diocese?: string

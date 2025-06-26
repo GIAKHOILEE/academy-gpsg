@@ -1,13 +1,8 @@
 import { CreateUserDtoV2 } from '@modules/users/dtos/create-user.dto'
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { ApiPropertyOptional } from '@nestjs/swagger'
+import { IsOptional, IsString } from 'class-validator'
 
 export class CreateStudentsDto extends CreateUserDtoV2 {
-  @ApiProperty({ description: 'Mã sinh viên' })
-  @IsString()
-  @IsNotEmpty()
-  code: string
-
   @ApiPropertyOptional({ description: 'Ảnh 4x6' })
   @IsString()
   @IsOptional()
@@ -28,3 +23,5 @@ export class CreateStudentsDto extends CreateUserDtoV2 {
   @IsOptional()
   other_document: string
 }
+
+export class CreateStudentWithEnrollmentDto extends CreateStudentsDto {}

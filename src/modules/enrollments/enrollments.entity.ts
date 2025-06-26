@@ -1,0 +1,103 @@
+import { PaymentMethod, PaymentStatus } from '@enums/class.enum'
+import { StatusEnrollment } from '@enums/class.enum'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
+import { Student } from '@modules/students/students.entity'
+import { Column, CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm'
+
+@Entity('enrollments')
+export class Enrollments {
+  @PrimaryGeneratedColumn()
+  id: number
+
+  @Column({ unique: true })
+  code: string
+
+  @CreateDateColumn()
+  registration_date: Date
+
+  @Column({ type: 'enum', enum: PaymentMethod, default: PaymentMethod.CASH })
+  payment_method: PaymentMethod
+
+  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.UNPAID })
+  payment_status: PaymentStatus
+
+  @Column({ type: 'enum', enum: StatusEnrollment, default: StatusEnrollment.PENDING })
+  status: StatusEnrollment
+
+  // List mã lớp đăng ký
+  @Column({ type: 'json', nullable: true })
+  class_ids: number[]
+
+  // Tổng học phí
+  @Column({ type: 'float', nullable: true })
+  total_fee: number
+
+  // Tiền đặt cọc
+  @Column({ type: 'float', nullable: true })
+  prepaid: number
+
+  // Nợ học phí
+  @Column({ type: 'float', nullable: true })
+  debt: number
+
+  // Ghi chú
+  @Column({ type: 'text', nullable: true })
+  note: string
+
+  // Đã ghi danh và có đăng nhập
+  @Column({ default: false })
+  is_logged: boolean
+
+  // Tên thánh
+  @Column({ nullable: true })
+  saint_name: string
+
+  @Column({ nullable: true })
+  full_name: string
+
+  @Column({ nullable: true })
+  email: string
+
+  @Column({ nullable: true })
+  phone_number: string
+
+  // ngày sinh
+  @Column({ nullable: true })
+  birth_date: string
+
+  @Column({ nullable: true })
+  address: string
+
+  // nơi sinh
+  @Column({ nullable: true })
+  birth_place: string
+
+  // giáo xứ
+  @Column({ nullable: true })
+  parish: string
+
+  // giáo hat
+  @Column({ nullable: true })
+  deanery: string
+
+  // giáo phận
+  @Column({ nullable: true })
+  diocese: string
+
+  // dòng tu
+  @Column({ nullable: true })
+  congregation: string
+
+  @ManyToOne(() => Student, student => student.enrollments, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'student_id' })
+  student: Student
+
+  @Column({ nullable: true })
+  student_id: number
+
+  @CreateDateColumn()
+  created_at: Date
+
+  @UpdateDateColumn()
+  updated_at: Date
+}

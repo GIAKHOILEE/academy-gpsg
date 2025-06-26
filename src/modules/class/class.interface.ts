@@ -1,5 +1,5 @@
 import { ClassStatus, Schedule } from '@enums/class.enum'
-import { ClassStudents } from './class-students/class-students.entity'
+import { ClassStudents } from './class-students/class-student.entity'
 import { ISubject } from '@modules/subjects/subjects.interface'
 import { ITeacher } from '@modules/teachers/teachers.interface'
 import { IDepartment } from '@modules/departments/department.interface'

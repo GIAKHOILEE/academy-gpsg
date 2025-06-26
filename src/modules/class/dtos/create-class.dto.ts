@@ -15,7 +15,7 @@ export class CreateClassDto {
 
   @IsEnum(ClassStatus)
   @IsNotEmpty()
-  @ApiProperty({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING })
+  @ApiProperty({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
   status: ClassStatus
 
   @IsString()
@@ -37,6 +37,7 @@ export class CreateClassDto {
   @IsEnum(Schedule, { each: true })
   @IsNotEmpty()
   @ApiProperty({
+    enum: Schedule,
     description: 'Lịch học',
     example: [Schedule.SUNDAY, Schedule.MONDAY, Schedule.TUESDAY, Schedule.WEDNESDAY, Schedule.THURSDAY, Schedule.FRIDAY, Schedule.SATURDAY],
   })
