@@ -39,7 +39,7 @@ export class Student {
   graduate_year: number
 
   // bảng tạm
-  @Column({ nullable: true, default: false })
+  @Column({ default: false })
   is_temporary: boolean
 
   // danh sách lớp học

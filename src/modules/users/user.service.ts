@@ -68,7 +68,7 @@ export class UserService {
     const user = await this.usersRepository
       .createQueryBuilder('users')
       .where('users.username = :username', { username })
-      .andWhere('users.is_temporary = :is_temporary', { is_temporary: false })
+      .andWhere('(users.is_temporary = false OR users.is_temporary IS NULL)')
       .getOne()
 
     if (!user) {
@@ -91,7 +91,7 @@ export class UserService {
     const user = await this.usersRepository
       .createQueryBuilder('users')
       .where('users.id = :userId', { userId })
-      .andWhere('users.is_temporary = :is_temporary', { is_temporary: false })
+      .andWhere('(users.is_temporary = false OR users.is_temporary IS NULL)')
       .getOne()
 
     if (!user) {
