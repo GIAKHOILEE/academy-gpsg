@@ -28,6 +28,7 @@ import { CloudinaryModule } from '@services/cloudinary/cloudinary.module'
 import { ClsModule } from 'nestjs-cls'
 import { AppService } from './app.service'
 import { LoggerMiddleware } from './middleware/logger.middleware'
+import { EnrollmentsModule } from './modules/enrollments/enrollments.module'
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware'
     ContactModule,
     FooterModule,
     CloudinaryModule,
+    EnrollmentsModule,
   ],
   providers: [AppService, SuperAdminSeeder],
 })
