@@ -47,7 +47,7 @@ export class Student {
   class_students: ClassStudents[]
 
   // danh sách đăng ký
-  @OneToMany(() => Enrollments, enrollments => enrollments.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @OneToMany(() => Enrollments, enrollments => enrollments.student)
   enrollments: Enrollments[]
 
   @CreateDateColumn()

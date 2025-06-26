@@ -88,7 +88,7 @@ export class Enrollments {
   @Column({ nullable: true })
   congregation: string
 
-  @ManyToOne(() => Student, student => student.enrollments, { onDelete: 'CASCADE', onUpdate: 'CASCADE', nullable: true })
+  @ManyToOne(() => Student, student => student.enrollments, { nullable: true })
   @JoinColumn({ name: 'student_id' })
   student: Student
 

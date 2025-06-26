@@ -1,6 +1,6 @@
 import { paginate, PaginationMeta } from '@common/pagination'
 import { generateRandomString, throwAppException } from '@common/utils'
-import { ClassStatus } from '@enums/class.enum'
+import { ClassStatus, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -9,11 +9,12 @@ import { Student } from '@modules/students/students.entity'
 import { User } from '@modules/users/user.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, Repository } from 'typeorm'
+import { DataSource, LessThan, Repository } from 'typeorm'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
+import { Cron, CronExpression } from '@nestjs/schedule'
 
 @Injectable()
 export class EnrollmentsService {
@@ -211,7 +212,10 @@ export class EnrollmentsService {
     return formatEnrollment
   }
 
-  async getManyEnrollment(paginateEnrollmentsDto: PaginateEnrollmentsDto): Promise<{
+  async getManyEnrollment(
+    paginateEnrollmentsDto: PaginateEnrollmentsDto,
+    isSoftDelete: boolean = false,
+  ): Promise<{
     data: IEnrollments[]
     meta: PaginationMeta
     summary: {
@@ -239,10 +243,14 @@ export class EnrollmentsService {
       'enrollment.phone_number',
       'enrollment.address',
       'student.id',
-      'student.user.code',
+      'user.code',
     ])
     queryBuilder.leftJoin('enrollment.student', 'student')
     queryBuilder.leftJoin('student.user', 'user')
+
+    if (isSoftDelete) {
+      queryBuilder.where('enrollment.deleted_at IS NOT NULL')
+    }
 
     const { data, meta } = await paginate(queryBuilder, paginateEnrollmentsDto)
 
@@ -276,6 +284,30 @@ export class EnrollmentsService {
         total_debt: totalResult.total_debt,
         total_fee: totalResult.total_fee,
       },
+    }
+  }
+
+  // delete
+  async deleteEnrollment(id: number): Promise<void> {
+    const enrollment = await this.enrollmentsRepository.exists({ where: { id } })
+    if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    await this.enrollmentsRepository.delete(id)
+  }
+
+  // 10 ngày không thanh toán thì tự động soft delete
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async overDue10Day() {
+    const enrollments = await this.enrollmentsRepository
+      .createQueryBuilder('enrollment')
+      .select(['enrollment.id', 'enrollment.status', 'enrollment.registration_date', 'enrollment.payment_status'])
+      .where('enrollment.payment_status = :payment_status', { payment_status: PaymentStatus.UNPAID })
+      .andWhere('enrollment.status = :status', { status: StatusEnrollment.PENDING })
+      .andWhere('enrollment.registration_date < :date', { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) })
+      .getMany()
+
+    for (const enrollment of enrollments) {
+      await this.enrollmentsRepository.softDelete(enrollment.id)
     }
   }
 }
