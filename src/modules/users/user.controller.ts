@@ -141,7 +141,7 @@ export class UsersController {
   @Get('me')
   @Auth()
   async getMe(@Request() req): Promise<ResponseDto> {
-    const user = await this.userService.getMe(req.user.id)
+    const user = await this.userService.getMe(req.user.userId)
     return new ResponseDto({
       messageCode: 'GET_ME_SUCCESS',
       statusCode: 200,
@@ -154,7 +154,7 @@ export class UsersController {
   @Put('me/password')
   @Auth()
   async updatePassword(@Request() req, @Body() updatePasswordDto: UpdatePasswordDto): Promise<ResponseDto> {
-    await this.userService.updatePassword(req.user.id, updatePasswordDto)
+    await this.userService.updatePassword(req.user.userId, updatePasswordDto)
     return new ResponseDto({
       messageCode: 'PASSWORD_UPDATED_SUCCESS',
       statusCode: 200,

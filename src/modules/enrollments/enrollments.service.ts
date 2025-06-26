@@ -28,7 +28,7 @@ export class EnrollmentsService {
     private readonly classRepository: Repository<Classes>,
   ) {}
 
-  async createEnrollment(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, studentId?: number): Promise<IEnrollments> {
+  async createEnrollment(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, userId?: number): Promise<IEnrollments> {
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
@@ -37,6 +37,15 @@ export class EnrollmentsService {
       // check student
       // có studentId là có đăng nhập, không có studentId là không đăng nhập
       let studentEntity: Student | null = null
+      let studentId: number | null = null
+      if (userId) {
+        studentId = await this.studentRepository
+          .createQueryBuilder('student')
+          .select(['student.id'])
+          .where('student.user_id = :userId', { userId })
+          .getOne()
+          .then(student => student?.id)
+      }
       if (studentId) {
         studentEntity = await this.studentRepository
           .createQueryBuilder('student')
@@ -58,6 +67,7 @@ export class EnrollmentsService {
           .leftJoin('student.user', 'user')
           .where('student.id = :id', { id: studentId })
           .getOne()
+        console.log('studentEntity', studentEntity)
         if (!studentEntity) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
         createEnrollmentDto.saint_name = studentEntity.user.saint_name

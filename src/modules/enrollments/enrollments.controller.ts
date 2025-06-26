@@ -1,11 +1,12 @@
 import { ResponseDto } from '@common/response.dto'
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, Request } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, Request, UseGuards } from '@nestjs/common'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { EnrollmentsService } from './enrollments.service'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Role } from '@enums/role.enum'
 import { Auth } from '@decorators/auth.decorator'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
+import { OptionalJwtAuthGuard } from '@guards/optional-jwt-auth.guard'
 
 @Controller('admin/enrollments')
 @ApiBearerAuth()
@@ -95,8 +96,9 @@ export class EnrollmentsController {
   @ApiOperation({ summary: 'Đăng ký học' })
   @Post()
   @ApiBearerAuth()
+  @UseGuards(OptionalJwtAuthGuard)
   async createEnrollment(@Body() createEnrollmentDto: CreateEnrollmentsDto, @Request() req): Promise<ResponseDto> {
-    const userId = req.user?.id || null
+    const userId = req.user?.userId || null
     const isLogged = userId ? true : false
     const data = await this.enrollmentsService.createEnrollment(createEnrollmentDto, isLogged, userId)
     return new ResponseDto({
