@@ -1,5 +1,5 @@
 import { ResponseDto } from '@common/response.dto'
-import { Body, Controller, Get, Param, Post, Query, Req, Request } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, Request } from '@nestjs/common'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { EnrollmentsService } from './enrollments.service'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
@@ -75,6 +75,16 @@ export class AdminEnrollmentsController {
   //       data,
   //     })
   //   }
+
+  @ApiOperation({ summary: 'Xóa đăng ký' })
+  @Delete(':id')
+  async deleteEnrollment(@Param('id') id: number): Promise<ResponseDto> {
+    await this.enrollmentsService.deleteEnrollment(id)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'ENROLLMENT_DELETE_SUCCESS',
+    })
+  }
 }
 
 @Controller('enrollments')
@@ -85,9 +95,8 @@ export class EnrollmentsController {
   @ApiOperation({ summary: 'Đăng ký học' })
   @Post()
   @ApiBearerAuth()
-  @Auth(Role.STUDENT)
   async createEnrollment(@Body() createEnrollmentDto: CreateEnrollmentsDto, @Request() req): Promise<ResponseDto> {
-    const userId = req.user.id || null
+    const userId = req.user?.id || null
     const isLogged = userId ? true : false
     const data = await this.enrollmentsService.createEnrollment(createEnrollmentDto, isLogged, userId)
     return new ResponseDto({

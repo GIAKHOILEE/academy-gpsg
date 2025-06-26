@@ -1,8 +1,6 @@
-import { PaymentMethod, PaymentStatus } from '@enums/class.enum'
-import { StatusEnrollment } from '@enums/class.enum'
-import { ClassStudents } from '@modules/class/class-students/class-student.entity'
+import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { Student } from '@modules/students/students.entity'
-import { Column, CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm'
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity('enrollments')
 export class Enrollments {
@@ -100,4 +98,7 @@ export class Enrollments {
 
   @UpdateDateColumn()
   updated_at: Date
+
+  @DeleteDateColumn()
+  deleted_at: Date
 }

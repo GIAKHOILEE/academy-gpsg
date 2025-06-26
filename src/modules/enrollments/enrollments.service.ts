@@ -102,12 +102,13 @@ export class EnrollmentsService {
         })
 
         await queryRunner.manager.save(Student, student)
+        studentId = student.id
       }
 
       // check class
       const classEntities = await this.classRepository
         .createQueryBuilder('class')
-        .select(['class.id', 'class.name', 'class.price', 'class.start_date', 'class.end_date', 'class.status'])
+        .select(['class.id', 'class.name', 'class.price', 'class.status'])
         .where('class.id IN (:...class_ids)', { class_ids })
         .andWhere('class.status = :status', { status: ClassStatus.ENROLLING })
         .getMany()
@@ -122,13 +123,15 @@ export class EnrollmentsService {
         code: generateRandomString(5),
         class_ids,
         total_fee: totalFee,
+        student_id: studentId,
       })
-      const savedEnrollment = await this.enrollmentsRepository.save(enrollment)
+
+      const savedEnrollment = await queryRunner.manager.save(Enrollments, enrollment)
 
       const formatEnrollment: IEnrollments = {
         ...savedEnrollment,
         student_id: studentId || null,
-        student_code: studentId ? studentEntity.user.code : null,
+        student_code: studentId ? studentEntity?.user.code : null,
         saint_name: createEnrollmentDto.saint_name,
         full_name: createEnrollmentDto.full_name,
         email: createEnrollmentDto.email,
@@ -150,6 +153,7 @@ export class EnrollmentsService {
       // })
       // await this.classStudentsRepository.save(classStudents)
 
+      await queryRunner.commitTransaction()
       return formatEnrollment
     } catch (error) {
       await queryRunner.rollbackTransaction()
@@ -162,20 +166,45 @@ export class EnrollmentsService {
   async getEnrollmentById(id: number): Promise<IEnrollments> {
     const enrollment = await this.enrollmentsRepository
       .createQueryBuilder('enrollment')
-      .select(['enrollment.*', 'student.user.code', 'student.id'])
+      .select([
+        'enrollment.id',
+        'enrollment.code',
+        'enrollment.registration_date',
+        'enrollment.payment_method',
+        'enrollment.payment_status',
+        'enrollment.status',
+        'enrollment.total_fee',
+        'enrollment.prepaid',
+        'enrollment.debt',
+        'enrollment.is_logged',
+        'enrollment.saint_name',
+        'enrollment.full_name',
+        'enrollment.email',
+        'enrollment.phone_number',
+        'enrollment.address',
+        'enrollment.birth_date',
+        'enrollment.birth_place',
+        'enrollment.parish',
+        'enrollment.deanery',
+        'enrollment.diocese',
+        'enrollment.congregation',
+        'enrollment.note',
+        'enrollment.class_ids',
+        'student.id',
+        'user.code',
+      ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
       .where('enrollment.id = :id', { id })
       .getOne()
-    if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
+    if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     const listClass = await this.classRepository
       .createQueryBuilder('class')
       .select(['class.id', 'class.name', 'class.price', 'class.code'])
       .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
-      .getRawMany()
+      .getMany()
     if (listClass.length !== enrollment.class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
-
     const formatEnrollment: IEnrollments = {
       id: enrollment.id,
       code: enrollment.code,
@@ -195,7 +224,7 @@ export class EnrollmentsService {
         price: classEntity.price,
       })),
       student_id: enrollment.student.id,
-      student_code: enrollment.student.user.code,
+      student_code: enrollment.student?.user?.code,
       saint_name: enrollment.saint_name,
       full_name: enrollment.full_name,
       email: enrollment.email,
@@ -253,12 +282,11 @@ export class EnrollmentsService {
     }
 
     const { data, meta } = await paginate(queryBuilder, paginateEnrollmentsDto)
-
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
         ...enrollment,
         student_id: enrollment.student.id,
-        student_code: enrollment.student.user.code,
+        student_code: enrollment.student?.user?.code,
         saint_name: enrollment.saint_name,
         full_name: enrollment.full_name,
         email: enrollment.email,
@@ -294,6 +322,10 @@ export class EnrollmentsService {
 
     await this.enrollmentsRepository.delete(id)
   }
+
+  // updateEnrollment(id: number, updateEnrollmentDto: UpdateEnrollmentsDto): Promise<void> {
+  //   return this.enrollmentsRepository.update(id, updateEnrollmentDto)
+  // }
 
   // 10 ngày không thanh toán thì tự động soft delete
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
