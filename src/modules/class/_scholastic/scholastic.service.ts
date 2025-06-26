@@ -26,7 +26,7 @@ export class ScholasticService {
         name: createScholasticDto.name,
       },
     })
-    if (scholastic) throwAppException(ErrorCode.SCHOLASTIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+    if (scholastic) throwAppException('SCHOLASTIC_ALREADY_EXISTS', ErrorCode.SCHOLASTIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     const newScholastic = this.scholasticRepository.create(createScholasticDto)
     const savedScholastic = await this.scholasticRepository.save(newScholastic)
@@ -38,20 +38,20 @@ export class ScholasticService {
 
   async update(id: number, updateScholasticDto: UpdateScholasticDto): Promise<void> {
     const scholastic = await this.scholasticRepository.exists({ where: { id } })
-    if (!scholastic) throwAppException(ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!scholastic) throwAppException('SCHOLASTIC_NOT_FOUND', ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const existingScholastic = await this.scholasticRepository.exists({ where: { name: updateScholasticDto.name } })
-    if (existingScholastic) throwAppException(ErrorCode.SCHOLASTIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+    if (existingScholastic) throwAppException('SCHOLASTIC_ALREADY_EXISTS', ErrorCode.SCHOLASTIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     await this.scholasticRepository.update(id, updateScholasticDto)
   }
 
   async delete(id: number): Promise<void> {
     const scholastic = await this.scholasticRepository.exists({ where: { id } })
-    if (!scholastic) throwAppException(ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!scholastic) throwAppException('SCHOLASTIC_NOT_FOUND', ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const classes = await this.classRepository.exists({ where: { scholastic_id: id } })
-    if (classes) throwAppException(ErrorCode.SCHOLASTIC_HAS_CLASSES, HttpStatus.BAD_REQUEST)
+    if (classes) throwAppException('SCHOLASTIC_HAS_CLASSES', ErrorCode.SCHOLASTIC_HAS_CLASSES, HttpStatus.BAD_REQUEST)
 
     await this.scholasticRepository.delete(id)
   }
@@ -70,7 +70,7 @@ export class ScholasticService {
 
   async findOne(id: number): Promise<IScholastic> {
     const scholastic = await this.scholasticRepository.findOne({ where: { id } })
-    if (!scholastic) throwAppException(ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!scholastic) throwAppException('SCHOLASTIC_NOT_FOUND', ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     return {
       id: scholastic.id,

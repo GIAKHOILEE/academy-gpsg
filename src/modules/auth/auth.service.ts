@@ -27,11 +27,11 @@ export class AuthService {
       },
     })
     if (!user) {
-      throwAppException(ErrorCode.INVALID_USERNAME_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
+      throwAppException('INVALID_USERNAME_OR_PASSWORD', ErrorCode.INVALID_USERNAME_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
     }
     const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
     if (!isPasswordValid) {
-      throwAppException(ErrorCode.INVALID_USERNAME_OR_PASSWORD, HttpStatus.BAD_REQUEST)
+      throwAppException('INVALID_USERNAME_OR_PASSWORD', ErrorCode.INVALID_USERNAME_OR_PASSWORD, HttpStatus.BAD_REQUEST)
     }
     const formattedUser: IUser = {
       id: user.id,
@@ -50,11 +50,11 @@ export class AuthService {
       },
     })
     if (!user) {
-      throwAppException(ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
+      throwAppException('INVALID_CODE_OR_PASSWORD', ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
     }
     const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
     if (!isPasswordValid) {
-      throwAppException(ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
+      throwAppException('INVALID_CODE_OR_PASSWORD', ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
     }
     const formattedUser: IUser = {
       id: user.id,
@@ -110,7 +110,7 @@ export class AuthService {
       })
 
       if (payload.type !== 'REFRESH_TOKEN') {
-        throwAppException(ErrorCode.INVALID_REFRESH_TOKEN, HttpStatus.UNAUTHORIZED)
+        throwAppException('INVALID_REFRESH_TOKEN', ErrorCode.INVALID_REFRESH_TOKEN, HttpStatus.UNAUTHORIZED)
       }
 
       const user = await this.userRepository.findOne({
@@ -118,7 +118,7 @@ export class AuthService {
       })
 
       if (!user) {
-        throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
       }
 
       return this.createAccessToken({
@@ -129,7 +129,7 @@ export class AuthService {
         code: user.code,
       })
     } catch (error) {
-      throwAppException(ErrorCode.INVALID_REFRESH_TOKEN, HttpStatus.UNAUTHORIZED)
+      throwAppException('INVALID_REFRESH_TOKEN', ErrorCode.INVALID_REFRESH_TOKEN, HttpStatus.UNAUTHORIZED)
     }
   }
 }

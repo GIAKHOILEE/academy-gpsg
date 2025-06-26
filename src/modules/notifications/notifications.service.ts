@@ -35,21 +35,21 @@ export class NotificationsService {
 
   async updateNotification(id: number, updateNotificationDto: UpdateNotificationDto): Promise<void> {
     const notification = await this.notificationRepository.exists({ where: { id } })
-    if (!notification) throwAppException(ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!notification) throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.notificationRepository.update(id, updateNotificationDto)
   }
 
   async deleteNotification(id: number): Promise<void> {
     const notification = await this.notificationRepository.exists({ where: { id } })
-    if (!notification) throwAppException(ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!notification) throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.notificationRepository.delete(id)
   }
 
   async getNotificationById(id: number): Promise<INotification> {
     const notification = await this.notificationRepository.findOne({ where: { id } })
-    if (!notification) throwAppException(ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!notification) throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedNotification: INotification = {
       id: notification.id,

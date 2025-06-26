@@ -1,23 +1,19 @@
-import { HttpStatus, Injectable } from '@nestjs/common'
-import { Enrollments } from './enrollments.entity'
-import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, FindManyOptions, In, Repository } from 'typeorm'
-import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
-import { ErrorCode } from '@enums/error-codes.enum'
-import { generateRandomString, throwAppException } from '@common/utils'
-import { Student } from '@modules/students/students.entity'
-import { Classes } from '@modules/class/class.entity'
-import { ClassStatus, StatusEnrollment } from '@enums/class.enum'
-import { ClassStudents } from '@modules/class/class-students/class-student.entity'
-import { IEnrollments } from './enrollments.interface'
-import { Role } from '@enums/role.enum'
-import { UserService } from '@modules/users/user.service'
-import { CreateStudentsDto, CreateStudentWithEnrollmentDto } from '@modules/students/dtos/create-students.dto'
-import { StudentsService } from '@modules/students/students.service'
-import { User } from '@modules/users/user.entity'
-import { UserStatus } from '@enums/status.enum'
 import { paginate, PaginationMeta } from '@common/pagination'
+import { generateRandomString, throwAppException } from '@common/utils'
+import { ClassStatus } from '@enums/class.enum'
+import { ErrorCode } from '@enums/error-codes.enum'
+import { Role } from '@enums/role.enum'
+import { UserStatus } from '@enums/status.enum'
+import { Classes } from '@modules/class/class.entity'
+import { Student } from '@modules/students/students.entity'
+import { User } from '@modules/users/user.entity'
+import { HttpStatus, Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { DataSource, Repository } from 'typeorm'
+import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
+import { Enrollments } from './enrollments.entity'
+import { IEnrollments } from './enrollments.interface'
 
 @Injectable()
 export class EnrollmentsService {
@@ -29,10 +25,6 @@ export class EnrollmentsService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Classes)
     private readonly classRepository: Repository<Classes>,
-    @InjectRepository(ClassStudents)
-    private readonly classStudentsRepository: Repository<ClassStudents>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
   ) {}
 
   async createEnrollment(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, studentId?: number): Promise<IEnrollments> {
@@ -65,7 +57,7 @@ export class EnrollmentsService {
           .leftJoin('student.user', 'user')
           .where('student.id = :id', { id: studentId })
           .getOne()
-        if (!studentEntity) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (!studentEntity) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
         createEnrollmentDto.saint_name = studentEntity.user.saint_name
         createEnrollmentDto.full_name = studentEntity.user.full_name
@@ -118,7 +110,7 @@ export class EnrollmentsService {
         .where('class.id IN (:...class_ids)', { class_ids })
         .andWhere('class.status = :status', { status: ClassStatus.ENROLLING })
         .getMany()
-      if (classEntities.length !== class_ids.length) throwAppException(ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (classEntities.length !== class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // Tổng tiền học
       const totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
@@ -174,14 +166,14 @@ export class EnrollmentsService {
       .leftJoin('student.user', 'user')
       .where('enrollment.id = :id', { id })
       .getOne()
-    if (!enrollment) throwAppException(ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const listClass = await this.classRepository
       .createQueryBuilder('class')
       .select(['class.id', 'class.name', 'class.price', 'class.code'])
       .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
       .getRawMany()
-    if (listClass.length !== enrollment.class_ids.length) throwAppException(ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (listClass.length !== enrollment.class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formatEnrollment: IEnrollments = {
       id: enrollment.id,
@@ -251,7 +243,6 @@ export class EnrollmentsService {
     ])
     queryBuilder.leftJoin('enrollment.student', 'student')
     queryBuilder.leftJoin('student.user', 'user')
-    queryBuilder.where('enrollment.status != :status', { status: StatusEnrollment.DELETED })
 
     const { data, meta } = await paginate(queryBuilder, paginateEnrollmentsDto)
 
@@ -274,7 +265,6 @@ export class EnrollmentsService {
       .select('SUM(enrollment.prepaid)', 'total_prepaid')
       .addSelect('SUM(enrollment.debt)', 'total_debt')
       .addSelect('SUM(enrollment.total_fee)', 'total_fee')
-      .where('enrollment.status != :status', { status: StatusEnrollment.DELETED })
       .getRawOne()
 
     return {

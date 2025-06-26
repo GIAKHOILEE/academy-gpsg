@@ -30,5 +30,4 @@ export enum StatusEnrollment {
   DONE = 2, // Đã hoàn thành
   PAY_LATE = 3, // thanh toán sau
   DEBT = 4, // nợ học phí
-  DELETED = 5, // đã xóa
 }

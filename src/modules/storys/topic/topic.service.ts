@@ -26,7 +26,7 @@ export class TopicService {
       where: { name: createTopicDto.name },
     })
 
-    if (existingTopic) throwAppException(ErrorCode.TOPIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+    if (existingTopic) throwAppException('TOPIC_ALREADY_EXISTS', ErrorCode.TOPIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     const topic = this.topicRepository.create(createTopicDto)
 
@@ -35,7 +35,7 @@ export class TopicService {
 
   async updateTopic(id: number, updateTopicDto: UpdateTopicDto): Promise<void> {
     const existsTopic = await this.topicRepository.exists({ where: { id } })
-    if (!existsTopic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!existsTopic) throwAppException('TOPIC_NOT_FOUND', ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (updateTopicDto.name) {
       const existingTopic = await this.topicRepository
@@ -43,7 +43,7 @@ export class TopicService {
         .where('topic.name = :name', { name: updateTopicDto.name })
         .andWhere('topic.id != :id', { id })
         .getOne()
-      if (existingTopic) throwAppException(ErrorCode.TOPIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+      if (existingTopic) throwAppException('TOPIC_ALREADY_EXISTS', ErrorCode.TOPIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     await this.topicRepository.update(id, updateTopicDto)
@@ -70,7 +70,7 @@ export class TopicService {
   async getTopicById(id: number): Promise<ITopic> {
     const topic = await this.topicRepository.findOne({ where: { id } })
 
-    if (!topic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!topic) throwAppException('TOPIC_NOT_FOUND', ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedTopic = {
       id: topic.id,
@@ -83,10 +83,10 @@ export class TopicService {
 
   async deleteTopics(id: number): Promise<void> {
     const existsTopic = await this.topicRepository.exists({ where: { id } })
-    if (!existsTopic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!existsTopic) throwAppException('TOPIC_NOT_FOUND', ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const existsStory = await this.storyRepository.exists({ where: { topic_id: id } })
-    if (existsStory) throwAppException(ErrorCode.TOPIC_HAS_STORIES, HttpStatus.BAD_REQUEST)
+    if (existsStory) throwAppException('TOPIC_HAS_STORIES', ErrorCode.TOPIC_HAS_STORIES, HttpStatus.BAD_REQUEST)
 
     await this.topicRepository.delete(id)
   }

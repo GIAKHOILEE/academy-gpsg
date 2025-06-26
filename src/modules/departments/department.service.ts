@@ -21,12 +21,12 @@ export class DepartmentService {
 
     const existingCode = await this.departmentRepository.findOne({ where: { code } })
     if (existingCode) {
-      throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+      throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     const existingName = await this.departmentRepository.findOne({ where: { name } })
     if (existingName) {
-      throwAppException(ErrorCode.NAME_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+      throwAppException('NAME_ALREADY_EXISTS', ErrorCode.NAME_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     const department = this.departmentRepository.create({ code, name, description })
@@ -51,7 +51,7 @@ export class DepartmentService {
   async getById(id: number): Promise<IDepartment> {
     const department = await this.departmentRepository.findOne({ where: { id } })
     if (!department) {
-      throwAppException(ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     const formattedData: IDepartment = {
@@ -69,7 +69,7 @@ export class DepartmentService {
 
     const department = await this.departmentRepository.findOne({ where: { id } })
     if (!department) {
-      throwAppException(ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     if (code) {
@@ -79,7 +79,7 @@ export class DepartmentService {
         .andWhere('department.id != :id', { id })
         .getOne()
       if (existingCode) {
-        throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+        throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -90,7 +90,7 @@ export class DepartmentService {
         .andWhere('department.id != :id', { id })
         .getOne()
       if (existingName) {
-        throwAppException(ErrorCode.NAME_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+        throwAppException('NAME_ALREADY_EXISTS', ErrorCode.NAME_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -101,7 +101,7 @@ export class DepartmentService {
   async delete(id: number): Promise<void> {
     const department = await this.departmentRepository.findOne({ where: { id } })
     if (!department) {
-      throwAppException(ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     await this.departmentRepository.delete(id)
   }

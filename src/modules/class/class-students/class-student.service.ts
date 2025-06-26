@@ -23,10 +23,10 @@ export class ClassStudentService {
     const { class_id, student_id } = createClassStudentDto
     // check class
     const classEntity = await this.classRepository.findOne({ where: { id: class_id } })
-    if (!classEntity) throwAppException(ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
     // check student
     const studentEntity = await this.studentRepository.findOne({ where: { id: student_id } })
-    if (!studentEntity) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!studentEntity) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const classStudent = await this.classStudentRepository.save(createClassStudentDto)
     return classStudent

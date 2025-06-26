@@ -19,7 +19,7 @@ export class EventsService {
 
   async createEvent(createEventDto: CreateEventDto): Promise<IEvent> {
     if (createEventDto.start_date && createEventDto.end_date && createEventDto.start_date > createEventDto.end_date) {
-      throwAppException(ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
+      throwAppException('START_DATE_MUST_BE_BEFORE_END_DATE', ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
     }
 
     const event = this.eventRepository.create(createEventDto)
@@ -39,18 +39,18 @@ export class EventsService {
 
   async updateEvent(id: number, updateEventDto: UpdateEventDto): Promise<void> {
     const event = await this.eventRepository.findOne({ where: { id } })
-    if (!event) throwAppException(ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!event) throwAppException('EVENT_NOT_FOUND', ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (updateEventDto.start_date && updateEventDto.end_date && updateEventDto.start_date > updateEventDto.end_date) {
-      throwAppException(ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
+      throwAppException('START_DATE_MUST_BE_BEFORE_END_DATE', ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
     }
 
     if (updateEventDto.start_date && updateEventDto.start_date > event.end_date) {
-      throwAppException(ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
+      throwAppException('START_DATE_MUST_BE_BEFORE_END_DATE', ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
     }
 
     if (updateEventDto.end_date && updateEventDto.end_date < event.start_date) {
-      throwAppException(ErrorCode.END_DATE_MUST_BE_AFTER_START_DATE, HttpStatus.BAD_REQUEST)
+      throwAppException('END_DATE_MUST_BE_AFTER_START_DATE', ErrorCode.END_DATE_MUST_BE_AFTER_START_DATE, HttpStatus.BAD_REQUEST)
     }
 
     await this.eventRepository.update(id, updateEventDto)
@@ -58,13 +58,13 @@ export class EventsService {
 
   async deleteEvent(id: number): Promise<void> {
     const event = await this.eventRepository.findOne({ where: { id } })
-    if (!event) throwAppException(ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!event) throwAppException('EVENT_NOT_FOUND', ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     await this.eventRepository.delete(id)
   }
 
   async getEventById(id: number): Promise<IEvent> {
     const event = await this.eventRepository.findOne({ where: { id } })
-    if (!event) throwAppException(ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!event) throwAppException('EVENT_NOT_FOUND', ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedEvent: IEvent = {
       id: event.id,

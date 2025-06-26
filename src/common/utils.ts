@@ -63,15 +63,15 @@ export function generateRandomString(length = 5): string {
   return result
 }
 
-export function getLocalizedMessage(code: ErrorCode, lang: string): string {
+export function getLocalizedMessage(message: string, lang: string): string {
   const translations = messages[lang] || messages.vi
-  return translations[ErrorCode[code]] || 'Unknown error'
+  return translations[message] || message
 }
 
-export function throwAppException(code: ErrorCode, status = HttpStatus.BAD_REQUEST): never {
+export function throwAppException(message: string, code: ErrorCode, status = HttpStatus.BAD_REQUEST): never {
   const cls = ClsServiceManager.getClsService()
   const req = cls.get<Request>('request')
   const lang = req?.headers['accept-language']?.split(',')[0] || 'vi'
-  const message = getLocalizedMessage(code, lang)
-  throw new AppException(message, code, status)
+  const messageTranslated = getLocalizedMessage(message, lang)
+  throw new AppException(messageTranslated, code, status)
 }

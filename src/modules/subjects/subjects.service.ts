@@ -21,12 +21,12 @@ export class SubjectsService {
 
     const existingCode = await this.subjectRepository.findOne({ where: { code: createSubjectDto.code } })
     if (existingCode) {
-      throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+      throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     const existingSubject = await this.subjectRepository.findOne({ where: { name } })
     if (existingSubject) {
-      throwAppException(ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+      throwAppException('SUBJECT_ALREADY_EXISTS', ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
     const subject = this.subjectRepository.create({ code, name, image, description })
@@ -50,7 +50,7 @@ export class SubjectsService {
   async getById(id: number): Promise<ISubject> {
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
-      throwAppException(ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('SUBJECT_NOT_FOUND', ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     const formattedSubject = {
       id: subject.id,
@@ -65,7 +65,7 @@ export class SubjectsService {
   async update(id: number, updateSubjectDto: UpdateSubjectDto): Promise<void> {
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
-      throwAppException(ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('SUBJECT_NOT_FOUND', ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     if (updateSubjectDto.code) {
@@ -76,7 +76,7 @@ export class SubjectsService {
         .getOne()
 
       if (existingCode) {
-        throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+        throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -88,7 +88,7 @@ export class SubjectsService {
         .getOne()
 
       if (existingSubject) {
-        throwAppException(ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+        throwAppException('SUBJECT_ALREADY_EXISTS', ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -98,7 +98,7 @@ export class SubjectsService {
   async delete(id: number): Promise<void> {
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
-      throwAppException(ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('SUBJECT_NOT_FOUND', ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     await this.subjectRepository.delete(id)
   }

@@ -23,7 +23,7 @@ export class StoryService {
 
   async createStory(createStoryDto: CreateStoryDto): Promise<IStory> {
     const topic = await this.topicRepository.findOne({ where: { id: createStoryDto.topic_id } })
-    if (!topic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!topic) throwAppException('TOPIC_NOT_FOUND', ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const story = this.storyRepository.create(createStoryDto)
     const savedStory = await this.storyRepository.save(story)
@@ -43,11 +43,11 @@ export class StoryService {
 
   async updateStory(id: number, updateStoryDto: UpdateStoryDto): Promise<void> {
     const existsStory = await this.storyRepository.exists({ where: { id } })
-    if (!existsStory) throwAppException(ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!existsStory) throwAppException('STORY_NOT_FOUND', ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (updateStoryDto.topic_id) {
       const existsTopic = await this.topicRepository.exists({ where: { id: updateStoryDto.topic_id } })
-      if (!existsTopic) throwAppException(ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (!existsTopic) throwAppException('TOPIC_NOT_FOUND', ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       await this.storyRepository.update(id, { ...updateStoryDto, topic_id: updateStoryDto.topic_id })
     } else {
@@ -57,7 +57,7 @@ export class StoryService {
 
   async deleteStory(id: number): Promise<void> {
     const existsStory = await this.storyRepository.exists({ where: { id } })
-    if (!existsStory) throwAppException(ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!existsStory) throwAppException('STORY_NOT_FOUND', ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.storyRepository.delete(id)
   }
@@ -69,7 +69,7 @@ export class StoryService {
       .where('story.id = :id', { id })
       .getOne()
 
-    if (!story) throwAppException(ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!story) throwAppException('STORY_NOT_FOUND', ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedStory: IStory = {
       id: story.id,

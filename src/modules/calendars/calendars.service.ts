@@ -34,7 +34,7 @@ export class CalendarsService {
   async updateCalendars(id: number, updateCalendarsDto: UpdateCalendarsDto): Promise<void> {
     const calendars = await this.calendarsRepository.exists({ where: { id } })
     if (!calendars) {
-      throwAppException(ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('CALENDAR_NOT_FOUND', ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     await this.calendarsRepository.update(id, updateCalendarsDto)
@@ -45,7 +45,7 @@ export class CalendarsService {
   async deleteCalendars(id: number): Promise<void> {
     const calendars = await this.calendarsRepository.exists({ where: { id } })
     if (!calendars) {
-      throwAppException(ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('CALENDAR_NOT_FOUND', ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     await this.calendarsRepository.delete(id)
@@ -68,7 +68,7 @@ export class CalendarsService {
   async getCalendarsById(id: number): Promise<ICalendars> {
     const calendar = await this.calendarsRepository.findOne({ where: { id } })
     if (!calendar) {
-      throwAppException(ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('CALENDAR_NOT_FOUND', ErrorCode.CALENDAR_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     const calendarResponse: ICalendars = {

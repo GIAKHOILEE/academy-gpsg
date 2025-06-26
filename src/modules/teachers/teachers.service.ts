@@ -49,15 +49,15 @@ export class TeachersService {
           .where('users.email = :email', { email })
           .getOne()
 
-        if (existingUser) throwAppException(ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       // Kiểm tra code đã tồn tại
-      if (!code) throwAppException(ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
+      if (!code) throwAppException('CODE_IS_REQUIRED', ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
       if (code) {
         const existingUser = await queryRunner.manager.getRepository(User).createQueryBuilder('users').where('users.code = :code', { code }).getOne()
 
-        if (existingUser) throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       const hashedPassword = await hashPassword(password ?? code)
@@ -117,10 +117,10 @@ export class TeachersService {
       const { email, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
-      if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       const user = await queryRunner.manager.getRepository(User).findOne({ where: { id: teacher.user_id } })
-      if (!user) throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (!user) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // Check duplicate email
       if (email) {
@@ -130,7 +130,7 @@ export class TeachersService {
           .where('users.email = :email', { email })
           .andWhere('users.id != :id', { id: user.id })
           .getOne()
-        if (existingUser) throwAppException(ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
@@ -167,7 +167,7 @@ export class TeachersService {
 
     try {
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
-      if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       await queryRunner.manager.getRepository(Teacher).update(id, { deleted_at: new Date() })
       await queryRunner.commitTransaction()
@@ -185,7 +185,7 @@ export class TeachersService {
       .leftJoinAndSelect('teachers.user', 'user')
       .where('teachers.id = :id', { id })
       .getOne()
-    if (!teacher) throwAppException(ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedTeacher = {
       id: teacher.id,

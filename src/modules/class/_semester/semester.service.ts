@@ -27,7 +27,7 @@ export class SemesterService {
       },
     })
     if (semester) {
-      throwAppException(ErrorCode.SEMESTER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+      throwAppException('SEMESTER_ALREADY_EXISTS', ErrorCode.SEMESTER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
     const newSemester = this.semesterRepository.create(createSemesterDto)
     return await this.semesterRepository.save(newSemester)
@@ -36,20 +36,20 @@ export class SemesterService {
   async update(id: number, updateSemesterDto: UpdateSemesterDto): Promise<void> {
     const semester = await this.semesterRepository.exists({ where: { id } })
     if (!semester) {
-      throwAppException(ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     const existingSemester = await this.semesterRepository.exists({ where: { name: updateSemesterDto.name } })
-    if (existingSemester) throwAppException(ErrorCode.SEMESTER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+    if (existingSemester) throwAppException('SEMESTER_ALREADY_EXISTS', ErrorCode.SEMESTER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     await this.semesterRepository.update(id, updateSemesterDto)
   }
 
   async delete(id: number): Promise<void> {
     const semester = await this.semesterRepository.exists({ where: { id } })
-    if (!semester) throwAppException(ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const classes = await this.classRepository.exists({ where: { semester_id: id } })
-    if (classes) throwAppException(ErrorCode.SEMESTER_HAS_CLASSES, HttpStatus.BAD_REQUEST)
+    if (classes) throwAppException('SEMESTER_HAS_CLASSES', ErrorCode.SEMESTER_HAS_CLASSES, HttpStatus.BAD_REQUEST)
 
     await this.semesterRepository.delete(id)
   }
@@ -63,7 +63,7 @@ export class SemesterService {
 
   async findOne(id: number): Promise<Semester> {
     const semester = await this.semesterRepository.findOne({ where: { id } })
-    if (!semester) throwAppException(ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     return semester
   }

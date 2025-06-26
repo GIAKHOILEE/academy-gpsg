@@ -37,7 +37,7 @@ export class FooterService {
     })
 
     if (!footerToUpdate) {
-      throwAppException(ErrorCode.FOOTER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('FOOTER_NOT_FOUND', ErrorCode.FOOTER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     await this.footerRepository.update(id, footerData)

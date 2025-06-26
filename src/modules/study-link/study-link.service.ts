@@ -57,7 +57,7 @@ export class StudyLinkService {
   async getStudyLinkById(id: number): Promise<IStudyLink> {
     const studyLink = await this.studyLinkRepository.findOne({ where: { id } })
     if (!studyLink) {
-      throwAppException(ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('STUDY_LINK_NOT_FOUND', ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     const formatStudyLink = {
@@ -74,7 +74,7 @@ export class StudyLinkService {
   async updateStudyLink(id: number, updateStudyLinkDto: UpdateStudyLinkDto): Promise<void> {
     const isExist = await this.studyLinkRepository.exists({ where: { id } })
     if (!isExist) {
-      throwAppException(ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('STUDY_LINK_NOT_FOUND', ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     await this.studyLinkRepository.update(id, updateStudyLinkDto)
   }
@@ -82,7 +82,7 @@ export class StudyLinkService {
   async deleteStudyLink(id: number): Promise<void> {
     const isExist = await this.studyLinkRepository.exists({ where: { id } })
     if (!isExist) {
-      throwAppException(ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('STUDY_LINK_NOT_FOUND', ErrorCode.STUDY_LINK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     await this.studyLinkRepository.delete(id)
   }

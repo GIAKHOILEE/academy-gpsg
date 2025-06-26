@@ -23,7 +23,7 @@ export class UserService {
     const { username, password, full_name, ...rest } = createUserDto
     const existingUser = await this.usersRepository.createQueryBuilder('users').where('users.username = :username', { username }).getOne()
     if (existingUser) {
-      throwAppException(ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
+      throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
 
     const hashedPassword = await hashPassword(password)
@@ -72,7 +72,7 @@ export class UserService {
       .getOne()
 
     if (!user) {
-      throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     const userData: IUser = {
       id: user.id,
@@ -95,7 +95,7 @@ export class UserService {
       .getOne()
 
     if (!user) {
-      throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     const userData: IUser = {
       id: user.id,
@@ -114,7 +114,7 @@ export class UserService {
     const { username, ...dto } = updateUserDto
     const user = await this.usersRepository.findOne({ where: { id: userId } })
     if (!user) {
-      throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     if (username) {
       const existingUser = await this.usersRepository
@@ -144,19 +144,23 @@ export class UserService {
     const { old_password, new_password } = updatePasswordDto
     const user = await this.usersRepository.findOne({ where: { id: userId } })
     if (!user) {
-      throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
     // kiểm tra oldPassword có giống với password hiện tại không
     const isOldPasswordMatch = await validateHash(old_password, user.password)
     if (!isOldPasswordMatch) {
-      throwAppException(ErrorCode.OLD_PASSWORD_INCORRECT, HttpStatus.BAD_REQUEST)
+      throwAppException('OLD_PASSWORD_INCORRECT', ErrorCode.OLD_PASSWORD_INCORRECT, HttpStatus.BAD_REQUEST)
     }
 
     // kiểm tra newPassword có trùng với oldPassword không
     const isPasswordMatch = await validateHash(new_password, user.password)
     if (isPasswordMatch) {
-      throwAppException(ErrorCode.NEW_PASSWORD_CANNOT_BE_THE_SAME_AS_THE_OLD_PASSWORD, HttpStatus.BAD_REQUEST)
+      throwAppException(
+        'NEW_PASSWORD_CANNOT_BE_THE_SAME_AS_THE_OLD_PASSWORD',
+        ErrorCode.NEW_PASSWORD_CANNOT_BE_THE_SAME_AS_THE_OLD_PASSWORD,
+        HttpStatus.BAD_REQUEST,
+      )
     }
     const hashedPassword = await hashPassword(new_password)
     user.password = hashedPassword

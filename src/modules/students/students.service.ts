@@ -38,15 +38,15 @@ export class StudentsService {
           .where('users.email = :email', { email })
           .getOne()
 
-        if (existingUser) throwAppException(ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       // Kiểm tra code đã tồn tại
-      if (!code) throwAppException(ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
+      if (!code) throwAppException('CODE_IS_REQUIRED', ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
       if (code) {
         const existingUser = await queryRunner.manager.getRepository(User).createQueryBuilder('users').where('users.code = :code', { code }).getOne()
 
-        if (existingUser) throwAppException(ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       const hashedPassword = await hashPassword(password ?? code)
@@ -68,7 +68,7 @@ export class StudentsService {
         .where('students.user_id = :user_id', { user_id: user.id })
         .getOne()
 
-      if (existingStudent) throwAppException(ErrorCode.STUDENT_ALREADY_EXISTS, HttpStatus.CONFLICT)
+      if (existingStudent) throwAppException('STUDENT_ALREADY_EXISTS', ErrorCode.STUDENT_ALREADY_EXISTS, HttpStatus.CONFLICT)
 
       const student = queryRunner.manager.getRepository(Student).create({
         user_id: user.id,
@@ -107,10 +107,10 @@ export class StudentsService {
       const userRepo = queryRunner.manager.getRepository(User)
 
       const student = await studentRepo.findOne({ where: { id } })
-      if (!student) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       const user = await userRepo.findOne({ where: { id: student.user_id } })
-      if (!user) throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (!user) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // Check duplicate email
       if (email) {
@@ -119,7 +119,7 @@ export class StudentsService {
           .where('users.email = :email', { email })
           .andWhere('users.id != :id', { id: user.id })
           .getOne()
-        if (existingUser) throwAppException(ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
@@ -162,10 +162,10 @@ export class StudentsService {
       const userRepo = queryRunner.manager.getRepository(User)
 
       const student = await studentRepo.findOne({ where: { id } })
-      if (!student) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       const user = await userRepo.findOne({ where: { id: student.user_id } })
-      if (!user) throwAppException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+      if (!user) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       await studentRepo.delete(student.id)
       await userRepo.delete(user.id)
@@ -212,7 +212,7 @@ export class StudentsService {
       .andWhere('students.is_temporary = :is_temporary', { is_temporary: false })
       .getOne()
 
-    if (!student) throwAppException(ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedStudent = {
       id: student.id,
