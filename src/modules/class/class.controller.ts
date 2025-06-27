@@ -85,8 +85,6 @@ export class AdminClassController {
 }
 
 @ApiTags('User Classes')
-@ApiBearerAuth()
-@Auth()
 @Controller('classes')
 export class UserClassController {
   constructor(private readonly classService: ClassService) {}
