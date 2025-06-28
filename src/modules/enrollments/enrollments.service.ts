@@ -4,17 +4,19 @@ import { ClassStatus, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { User } from '@modules/users/user.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
+import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, LessThan, Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
+import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
 import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
-import { Cron, CronExpression } from '@nestjs/schedule'
 
 @Injectable()
 export class EnrollmentsService {
@@ -126,6 +128,8 @@ export class EnrollmentsService {
 
       // Tổng tiền học
       const totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
+      const prepaid = 0 // trả trước
+      const debt = totalFee - prepaid // nợ học phí
 
       const enrollment = this.enrollmentsRepository.create({
         ...createEnrollmentDto,
@@ -133,6 +137,8 @@ export class EnrollmentsService {
         code: generateRandomString(5),
         class_ids,
         total_fee: totalFee,
+        prepaid,
+        debt,
         student_id: studentId,
       })
 
@@ -165,6 +171,113 @@ export class EnrollmentsService {
 
       await queryRunner.commitTransaction()
       return formatEnrollment
+    } catch (error) {
+      await queryRunner.rollbackTransaction()
+      throw error
+    } finally {
+      await queryRunner.release()
+    }
+  }
+
+  async updateEnrollment(id: number, updateEnrollmentDto: UpdateEnrollmentsDto): Promise<void> {
+    const { code, payment_method, status, prepaid, class_ids, ...rest } = updateEnrollmentDto
+    const queryRunner = this.dataSource.createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+    try {
+      const enrollmentsRepo = queryRunner.manager.getRepository(Enrollments)
+      const userRepo = queryRunner.manager.getRepository(User)
+      const studentRepo = queryRunner.manager.getRepository(Student)
+      const classRepo = queryRunner.manager.getRepository(Classes)
+      const classStudentsRepo = queryRunner.manager.getRepository(ClassStudents)
+      // gắn deleted_at = null trước khi cập nhật
+      await enrollmentsRepo.update(id, { deleted_at: null })
+
+      const enrollment = await enrollmentsRepo.findOne({ where: { id } })
+      if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      // xem student ở enrollment có is_temporary là false | null thì không cho sửa code
+      if (enrollment.student.is_temporary === false || enrollment.student.is_temporary === null)
+        throwAppException('ENROLLMENT_NOT_TEMPORARY', ErrorCode.ENROLLMENT_NOT_TEMPORARY, HttpStatus.BAD_REQUEST)
+
+      if (code && enrollment.student.is_temporary === true) {
+        const user = await userRepo.findOne({ where: { code } })
+
+        if (user) {
+          // Nếu tìm thấy user thật với code này
+          // 1. Xóa user/student tạm
+          await studentRepo.delete({ id: enrollment.student_id })
+          await userRepo.delete({ id: enrollment.student.user_id })
+
+          // 2. Gán student_id của enrollment sang user thật
+          enrollment.student_id = user.id
+
+          // 3. Cập nhật luôn enrollment
+          await enrollmentsRepo.update(id, {
+            student_id: user.id,
+          })
+        } else {
+          // Nếu không tìm thấy user thật thì giữ lại student cũ
+          // chỉ cần gán code mới và đổi is_temporary = false
+          await userRepo.update(enrollment.student.user_id, {
+            code,
+            is_temporary: false,
+          })
+          await studentRepo.update(enrollment.student_id, {
+            is_temporary: false,
+          })
+        }
+      }
+
+      // check class
+      let totalFee = enrollment.total_fee
+      if (class_ids) {
+        const classEntities = await classRepo
+          .createQueryBuilder('class')
+          .select(['class.id', 'class.name', 'class.price', 'class.status'])
+          .where('class.id IN (:...class_ids)', { class_ids })
+          .andWhere('class.status = :status', { status: ClassStatus.ENROLLING })
+          .getMany()
+        if (classEntities.length !== class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+        totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
+        enrollment.class_ids = class_ids
+        enrollment.total_fee = totalFee
+      }
+
+      if (prepaid) {
+        // phải có status là nợ học phí mới được trả trước
+        if (enrollment.status !== StatusEnrollment.DEBT || status !== StatusEnrollment.DEBT)
+          throwAppException('ENROLLMENT_NOT_DEBT', ErrorCode.ENROLLMENT_NOT_DEBT, HttpStatus.BAD_REQUEST)
+        enrollment.prepaid = prepaid
+        enrollment.debt = totalFee - prepaid
+      }
+
+      // Nếu status là hoàn thành thì trạng thái thanh toán là đã thanh toán, ngược lại là chưa thanh toán
+      if (status) {
+        if (status === StatusEnrollment.DONE) {
+          enrollment.payment_status = PaymentStatus.PAID
+        } else {
+          enrollment.payment_status = PaymentStatus.UNPAID
+        }
+      }
+
+      // nếu từ status pending sang các status khác thì lưu vào class-students
+      if (status && status !== StatusEnrollment.PENDING && enrollment.status === StatusEnrollment.PENDING) {
+        const classStudents = class_ids.map(class_id => ({
+          class_id,
+          student_id: enrollment.student_id,
+        }))
+        await classStudentsRepo.save(classStudents)
+      }
+
+      // cập nhật lại enrollment
+      const updatedEnrollment = this.enrollmentsRepository.create({
+        ...enrollment,
+        ...rest,
+      })
+      await enrollmentsRepo.save(updatedEnrollment)
+
+      await queryRunner.commitTransaction()
     } catch (error) {
       await queryRunner.rollbackTransaction()
       throw error
@@ -332,10 +445,6 @@ export class EnrollmentsService {
 
     await this.enrollmentsRepository.delete(id)
   }
-
-  // updateEnrollment(id: number, updateEnrollmentDto: UpdateEnrollmentsDto): Promise<void> {
-  //   return this.enrollmentsRepository.update(id, updateEnrollmentDto)
-  // }
 
   // 10 ngày không thanh toán thì tự động soft delete
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

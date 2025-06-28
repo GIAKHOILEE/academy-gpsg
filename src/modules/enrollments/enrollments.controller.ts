@@ -1,5 +1,5 @@
 import { ResponseDto } from '@common/response.dto'
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, Request, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Request, UseGuards } from '@nestjs/common'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { EnrollmentsService } from './enrollments.service'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
@@ -7,6 +7,7 @@ import { Role } from '@enums/role.enum'
 import { Auth } from '@decorators/auth.decorator'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { OptionalJwtAuthGuard } from '@guards/optional-jwt-auth.guard'
+import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
 
 @Controller('admin/enrollments')
 @ApiBearerAuth()
@@ -66,16 +67,16 @@ export class AdminEnrollmentsController {
     })
   }
 
-  //   @ApiOperation({ summary: 'Cập nhật thông tin đăng ký' })
-  //   @Put(':id')
-  //   async updateEnrollment(@Param('id') id: number, @Body() updateEnrollmentDto: UpdateEnrollmentsDto): Promise<ResponseDto> {
-  //     const data = await this.enrollmentsService.updateEnrollment(id, updateEnrollmentDto)
-  //     return new ResponseDto({
-  //       statusCode: 200,
-  //       messageCode: 'ENROLLMENT_UPDATE_SUCCESS',
-  //       data,
-  //     })
-  //   }
+  @ApiOperation({ summary: 'Cập nhật thông tin đăng ký' })
+  @Put(':id')
+  async updateEnrollment(@Param('id') id: number, @Body() updateEnrollmentDto: UpdateEnrollmentsDto): Promise<ResponseDto> {
+    const data = await this.enrollmentsService.updateEnrollment(id, updateEnrollmentDto)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'ENROLLMENT_UPDATE_SUCCESS',
+      data,
+    })
+  }
 
   @ApiOperation({ summary: 'Xóa đăng ký' })
   @Delete(':id')

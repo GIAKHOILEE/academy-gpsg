@@ -1,43 +1,47 @@
-import { StatusEnrollment } from '@enums/class.enum'
-import { PaymentMethod, PaymentStatus } from '@enums/class.enum'
+import { PaymentMethod, StatusEnrollment } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateEnrollmentsDto {
-  @ApiPropertyOptional({ description: 'Mã sinh viên', example: 1 })
-  @IsNumber()
+  @ApiPropertyOptional({ description: 'Mã student', example: '123456' })
+  @IsString()
   @IsOptional()
-  student_id: number
+  code: string
+
+  @ApiPropertyOptional({ description: 'Mã lớp', example: [1, 2, 3] })
+  @IsArray()
+  @IsOptional()
+  class_ids: number[]
 
   @ApiPropertyOptional({ description: 'Phương thức thanh toán', enum: PaymentMethod, example: PaymentMethod.CASH })
   @IsEnum(PaymentMethod)
   @IsOptional()
   payment_method: PaymentMethod
 
-  @ApiPropertyOptional({ description: 'Trạng thái thanh toán', enum: PaymentStatus, example: PaymentStatus.UNPAID })
-  @IsEnum(PaymentStatus)
-  @IsOptional()
-  payment_status: PaymentStatus
+  // @ApiPropertyOptional({ description: 'Trạng thái thanh toán', enum: PaymentStatus, example: PaymentStatus.UNPAID })
+  // @IsEnum(PaymentStatus)
+  // @IsOptional()
+  // payment_status: PaymentStatus
 
   @ApiPropertyOptional({ description: 'Trạng thái đăng ký', enum: StatusEnrollment, example: StatusEnrollment.PENDING })
   @IsEnum(StatusEnrollment)
   @IsOptional()
   status: StatusEnrollment
 
-  @ApiPropertyOptional({ description: 'Tổng học phí', example: 1000000 })
-  @IsNumber()
-  @IsOptional()
-  total_fee: number
+  // @ApiPropertyOptional({ description: 'Tổng học phí', example: 1000000 })
+  // @IsNumber()
+  // @IsOptional()
+  // total_fee: number
 
   @ApiPropertyOptional({ description: 'Tiền đã đóng', example: 1000000 })
   @IsNumber()
   @IsOptional()
   prepaid: number
 
-  @ApiPropertyOptional({ description: 'Tiền nợ', example: 1000000 })
-  @IsNumber()
-  @IsOptional()
-  debt: number
+  // @ApiPropertyOptional({ description: 'Tiền nợ', example: 1000000 })
+  // @IsNumber()
+  // @IsOptional()
+  // debt: number
 
   @ApiPropertyOptional({ description: 'Ghi chú', example: 'Ghi chú' })
   @IsString()
