@@ -5,7 +5,7 @@ import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Que
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ClassService } from './class.service'
 import { CreateClassDto } from './dtos/create-class.dto'
-import { PaginateClassDto } from './dtos/paginate-class.dto'
+import { GetStudentsOfClassDto, PaginateClassDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
 
 @ApiTags('Admin Classes')
@@ -110,6 +110,19 @@ export class UserClassController {
       statusCode: HttpStatus.OK,
       messageCode: 'CLASS_FETCHED_SUCCESSFULLY',
       data: classEntity,
+    })
+  }
+
+  @Get(':id/students')
+  @ApiOperation({ summary: 'Get students of a class' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the class to get students' })
+  async getStudentsOfClass(@Param('id') id: number, @Query() getStudentsOfClassDto: GetStudentsOfClassDto): Promise<ResponseDto> {
+    const students = await this.classService.getStudentsOfClass(id, getStudentsOfClassDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'STUDENTS_FETCHED_SUCCESSFULLY',
+      data: students.data,
+      meta: students.meta,
     })
   }
 }

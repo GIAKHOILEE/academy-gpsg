@@ -193,12 +193,16 @@ export class EnrollmentsService {
       // gắn deleted_at = null trước khi cập nhật
       await enrollmentsRepo.update(id, { deleted_at: null })
 
-      const enrollment = await enrollmentsRepo.findOne({ where: { id } })
+      const enrollment = await enrollmentsRepo
+        .createQueryBuilder('enrollment')
+        .leftJoinAndSelect('enrollment.student', 'student')
+        .where('enrollment.id = :id', { id })
+        .getOne()
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // xem student ở enrollment có is_temporary là false | null thì không cho sửa code
-      if (enrollment.student.is_temporary === false || enrollment.student.is_temporary === null)
-        throwAppException('ENROLLMENT_NOT_TEMPORARY', ErrorCode.ENROLLMENT_NOT_TEMPORARY, HttpStatus.BAD_REQUEST)
+      if ((enrollment.student.is_temporary === false || enrollment.student.is_temporary === null) && code)
+        throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
 
       if (code && enrollment.student.is_temporary === true) {
         const user = await userRepo.findOne({ where: { code } })
@@ -261,13 +265,25 @@ export class EnrollmentsService {
         }
       }
 
-      // nếu từ status pending sang các status khác thì lưu vào class-students
-      if (status && status !== StatusEnrollment.PENDING && enrollment.status === StatusEnrollment.PENDING) {
-        const classStudents = class_ids.map(class_id => ({
-          class_id,
-          student_id: enrollment.student_id,
-        }))
-        await classStudentsRepo.save(classStudents)
+      if (status && status !== enrollment.status) {
+        const isFromPending = enrollment.status === StatusEnrollment.PENDING
+        const isToPending = status === StatusEnrollment.PENDING
+
+        if (isFromPending && !isToPending) {
+          // Từ pending sang trạng thái khác → thêm vào class_students
+          const classStudents = enrollment.class_ids.map(class_id => ({
+            class_id,
+            student_id: enrollment.student_id,
+          }))
+          await classStudentsRepo.save(classStudents)
+        }
+
+        if (!isFromPending && isToPending) {
+          // Từ trạng thái khác về pending → xóa khỏi class_students
+          await classStudentsRepo.delete({
+            student_id: enrollment.student_id,
+          })
+        }
       }
 
       // cập nhật lại enrollment

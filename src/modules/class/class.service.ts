@@ -12,8 +12,10 @@ import { Semester } from './_semester/semester.entity'
 import { Classes } from './class.entity'
 import { IClasses } from './class.interface'
 import { CreateClassDto } from './dtos/create-class.dto'
-import { PaginateClassDto } from './dtos/paginate-class.dto'
+import { GetStudentsOfClassDto, PaginateClassDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
+import { IStudent } from '@modules/students/students.interface'
+import { ClassStudents } from './class-students/class-student.entity'
 
 @Injectable()
 export class ClassService {
@@ -30,6 +32,8 @@ export class ClassService {
     private scholasticRepository: Repository<Scholastic>,
     @InjectRepository(Semester)
     private semesterRepository: Repository<Semester>,
+    @InjectRepository(ClassStudents)
+    private classStudentsRepository: Repository<ClassStudents>,
   ) {}
 
   async createClass(createClassDto: CreateClassDto): Promise<IClasses> {
@@ -287,5 +291,63 @@ export class ClassService {
       },
     }))
     return { data: formattedClasses, meta }
+  }
+
+  //lấy danh sách học sinh của lớp
+  async getStudentsOfClass(id: number, getStudentsOfClassDto: GetStudentsOfClassDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
+    const { name, code, ...rest } = getStudentsOfClassDto
+
+    const classEntity = await this.classRepository.findOne({ where: { id }, select: ['id'] })
+    if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const classStudents = await this.classStudentsRepository
+      .createQueryBuilder('class_students')
+      .select([
+        'class_students.id',
+        'student.id',
+        'user.code',
+        'user.full_name',
+        'user.email',
+        'user.saint_name',
+        'user.gender',
+        'user.phone_number',
+        'user.address',
+        'user.avatar',
+        'user.birth_place',
+        'user.birth_date',
+        'user.parish',
+        'user.deanery',
+        'user.diocese',
+        'user.congregation',
+      ])
+      .leftJoin('class_students.student', 'student')
+      .leftJoin('student.user', 'user')
+
+    if (name) {
+      classStudents.andWhere('user.full_name ILIKE :name', { name: `%${name}%` })
+    }
+    if (code) {
+      classStudents.andWhere('user.code = :code', { code })
+    }
+
+    const { data, meta } = await paginate(classStudents, rest)
+    const formattedStudents: IStudent[] = data.map(classStudent => ({
+      id: classStudent.student.id,
+      code: classStudent.student.user.code,
+      full_name: classStudent.student.user.full_name,
+      email: classStudent.student.user.email,
+      saint_name: classStudent.student.user.saint_name,
+      gender: classStudent.student.user.gender,
+      phone_number: classStudent.student.user.phone_number,
+      address: classStudent.student.user.address,
+      avatar: classStudent.student.user.avatar,
+      birth_place: classStudent.student.user.birth_place,
+      birth_date: classStudent.student.user.birth_date,
+      parish: classStudent.student.user.parish,
+      deanery: classStudent.student.user.deanery,
+      diocese: classStudent.student.user.diocese,
+      congregation: classStudent.student.user.congregation,
+    }))
+    return { data: formattedStudents, meta }
   }
 }
