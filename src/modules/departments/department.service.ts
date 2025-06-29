@@ -8,6 +8,7 @@ import { IDepartment } from './department.interface'
 import { Department } from './departments.entity'
 import { CreateDepartmentDto } from './dtos/create-department.dto'
 import { UpdateDepartmentDto } from './dtos/update-department.dto'
+import { PaginateDepartmentDto } from './dtos/paginate-department.dto'
 
 @Injectable()
 export class DepartmentService {
@@ -33,7 +34,7 @@ export class DepartmentService {
     return this.departmentRepository.save(department)
   }
 
-  async getAll(pagination: PaginationDto): Promise<{ data: IDepartment[]; meta: PaginationMeta }> {
+  async getAll(pagination: PaginateDepartmentDto): Promise<{ data: IDepartment[]; meta: PaginationMeta }> {
     const query = this.departmentRepository.createQueryBuilder('department')
 
     const { data, meta } = await paginate(query, pagination)
