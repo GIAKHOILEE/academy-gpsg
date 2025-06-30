@@ -75,6 +75,7 @@ export const messages = {
     CLASS_HAS_SCHOLASTICS: 'Lớp học có niên khoá',
     CLASS_HAS_SEMESTERS: 'Lớp học có học kỳ',
     CLASS_HAS_DEPARTMENTS: 'Lớp học có khoa',
+    CLASS_FULL: 'Lớp học đã đầy',
     CODE_ALREADY_EXISTS: 'Mã đã tồn tại',
     NAME_ALREADY_EXISTS: 'Tên đã tồn tại',
     START_DATE_MUST_BE_BEFORE_END_DATE: 'Ngày bắt đầu phải trước ngày kết thúc',

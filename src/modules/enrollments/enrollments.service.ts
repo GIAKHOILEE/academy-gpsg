@@ -257,6 +257,28 @@ export class EnrollmentsService {
         enrollment.debt = totalFee - prepaid
       }
 
+      // nếu status khác pending thì cộng current_students của class, còn nếu pending thì trừ current_students của class
+      // nếu class mà có current_students = max_students thì không được thêm vào
+      if (status && status !== StatusEnrollment.PENDING) {
+        for (const class_id of class_ids) {
+          const classEntity = await classRepo.findOne({ where: { id: class_id } })
+          if (classEntity.current_students < classEntity.max_students) {
+            classEntity.current_students++
+            await classRepo.save(classEntity)
+          } else {
+            throwAppException('CLASS_FULL', ErrorCode.CLASS_FULL, HttpStatus.BAD_REQUEST)
+          }
+        }
+      } else {
+        for (const class_id of class_ids) {
+          const classEntity = await classRepo.findOne({ where: { id: class_id } })
+          if (classEntity.current_students > 0) {
+            classEntity.current_students--
+            await classRepo.save(classEntity)
+          }
+        }
+      }
+
       // Nếu status là hoàn thành thì trạng thái thanh toán là đã thanh toán, ngược lại là chưa thanh toán
       if (status) {
         if (status === StatusEnrollment.DONE) {
