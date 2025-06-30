@@ -203,8 +203,8 @@ export class EnrollmentsService {
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // xem student ở enrollment có is_temporary là false | null thì không cho sửa code
-      if (student_code && enrollment.student.user.code !== student_code)
-        throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
+      // if (student_code && enrollment.student.user.code !== student_code)
+      //   throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
 
       if (student_code && enrollment.student.is_temporary === true) {
         const user = await userRepo.findOne({ where: { code: student_code } })
