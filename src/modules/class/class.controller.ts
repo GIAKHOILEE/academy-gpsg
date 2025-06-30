@@ -61,6 +61,19 @@ export class AdminClassController {
     })
   }
 
+  @Get(':id/students')
+  @ApiOperation({ summary: 'Get students of a class' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the class to get students' })
+  async getStudentsOfClass(@Param('id') id: number, @Query() getStudentsOfClassDto: GetStudentsOfClassDto): Promise<ResponseDto> {
+    const students = await this.classService.getStudentsOfClass(id, getStudentsOfClassDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'STUDENTS_FETCHED_SUCCESSFULLY',
+      data: students.data,
+      meta: students.meta,
+    })
+  }
+
   @Patch(':id/is-active')
   @ApiOperation({ summary: 'Update the is_active status of a class by id' })
   @ApiParam({ name: 'id', type: Number, description: 'The id of the class to update' })

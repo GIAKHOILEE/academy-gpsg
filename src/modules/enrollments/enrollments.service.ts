@@ -196,12 +196,13 @@ export class EnrollmentsService {
       const enrollment = await enrollmentsRepo
         .createQueryBuilder('enrollment')
         .leftJoinAndSelect('enrollment.student', 'student')
+        .leftJoinAndSelect('student.user', 'user')
         .where('enrollment.id = :id', { id })
         .getOne()
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // xem student ở enrollment có is_temporary là false | null thì không cho sửa code
-      if ((enrollment.student.is_temporary === false || enrollment.student.is_temporary === null) && code)
+      if (code && enrollment.student.user.code !== code)
         throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
 
       if (code && enrollment.student.is_temporary === true) {
