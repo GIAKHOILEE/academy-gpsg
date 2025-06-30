@@ -6,7 +6,7 @@ export class UpdateEnrollmentsDto {
   @ApiPropertyOptional({ description: 'Mã student', example: '123456' })
   @IsString()
   @IsOptional()
-  code: string
+  student_code: string
 
   @ApiPropertyOptional({ description: 'Mã lớp', example: [1, 2, 3] })
   @IsArray()

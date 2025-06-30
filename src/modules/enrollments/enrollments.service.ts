@@ -87,6 +87,7 @@ export class EnrollmentsService {
         // Nếu không đăng nhập thì tạo user/student mới và gắn is_temporary = true
         const newStudent = {
           full_name: createEnrollmentDto.full_name,
+          saint_name: createEnrollmentDto.saint_name,
           email: createEnrollmentDto.email,
           phone_number: createEnrollmentDto.phone_number,
           address: createEnrollmentDto.address,
@@ -180,7 +181,7 @@ export class EnrollmentsService {
   }
 
   async updateEnrollment(id: number, updateEnrollmentDto: UpdateEnrollmentsDto): Promise<void> {
-    const { code, payment_method, status, prepaid, class_ids, ...rest } = updateEnrollmentDto
+    const { student_code, payment_method, status, prepaid, class_ids, ...rest } = updateEnrollmentDto
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
@@ -202,11 +203,11 @@ export class EnrollmentsService {
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // xem student ở enrollment có is_temporary là false | null thì không cho sửa code
-      if (code && enrollment.student.user.code !== code)
+      if (student_code && enrollment.student.user.code !== student_code)
         throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
 
-      if (code && enrollment.student.is_temporary === true) {
-        const user = await userRepo.findOne({ where: { code } })
+      if (student_code && enrollment.student.is_temporary === true) {
+        const user = await userRepo.findOne({ where: { code: student_code } })
 
         if (user) {
           // Nếu tìm thấy user thật với code này
@@ -225,7 +226,7 @@ export class EnrollmentsService {
           // Nếu không tìm thấy user thật thì giữ lại student cũ
           // chỉ cần gán code mới và đổi is_temporary = false
           await userRepo.update(enrollment.student.user_id, {
-            code,
+            code: student_code,
             is_temporary: false,
           })
           await studentRepo.update(enrollment.student_id, {
@@ -312,6 +313,7 @@ export class EnrollmentsService {
       // cập nhật lại enrollment
       const updatedEnrollment = this.enrollmentsRepository.create({
         ...enrollment,
+        status: status || enrollment.status,
         ...rest,
       })
       await enrollmentsRepo.save(updatedEnrollment)
