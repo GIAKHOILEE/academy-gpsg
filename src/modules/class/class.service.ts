@@ -294,10 +294,10 @@ export class ClassService {
   }
 
   //lấy danh sách học sinh của lớp
-  async getStudentsOfClass(id: number, getStudentsOfClassDto: GetStudentsOfClassDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
+  async getStudentsOfClass(class_id: number, getStudentsOfClassDto: GetStudentsOfClassDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
     const { name, code, ...rest } = getStudentsOfClassDto
 
-    const classEntity = await this.classRepository.findOne({ where: { id }, select: ['id'] })
+    const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const classStudents = await this.classStudentsRepository
@@ -306,22 +306,23 @@ export class ClassService {
         'class_students.id',
         'student.id',
         'user.code',
-        'user.full_name',
-        'user.email',
-        'user.saint_name',
         'user.gender',
-        'user.phone_number',
-        'user.address',
         'user.avatar',
-        'user.birth_place',
-        'user.birth_date',
-        'user.parish',
-        'user.deanery',
-        'user.diocese',
-        'user.congregation',
+        'class_students.full_name',
+        'class_students.email',
+        'class_students.saint_name',
+        'class_students.phone_number',
+        'class_students.address',
+        'class_students.birth_place',
+        'class_students.birth_date',
+        'class_students.parish',
+        'class_students.deanery',
+        'class_students.diocese',
+        'class_students.congregation',
       ])
       .leftJoin('class_students.student', 'student')
       .leftJoin('student.user', 'user')
+      .where('class_students.class_id = :class_id', { class_id })
 
     if (name) {
       classStudents.andWhere('user.full_name ILIKE :name', { name: `%${name}%` })
@@ -334,19 +335,19 @@ export class ClassService {
     const formattedStudents: IStudent[] = data.map(classStudent => ({
       id: classStudent.student.id,
       code: classStudent.student.user.code,
-      full_name: classStudent.student.user.full_name,
-      email: classStudent.student.user.email,
-      saint_name: classStudent.student.user.saint_name,
       gender: classStudent.student.user.gender,
-      phone_number: classStudent.student.user.phone_number,
-      address: classStudent.student.user.address,
       avatar: classStudent.student.user.avatar,
-      birth_place: classStudent.student.user.birth_place,
-      birth_date: classStudent.student.user.birth_date,
-      parish: classStudent.student.user.parish,
-      deanery: classStudent.student.user.deanery,
-      diocese: classStudent.student.user.diocese,
-      congregation: classStudent.student.user.congregation,
+      full_name: classStudent.full_name,
+      email: classStudent.email,
+      saint_name: classStudent.saint_name,
+      phone_number: classStudent.phone_number,
+      address: classStudent.address,
+      birth_place: classStudent.birth_place,
+      birth_date: classStudent.birth_date,
+      parish: classStudent.parish,
+      deanery: classStudent.deanery,
+      diocese: classStudent.diocese,
+      congregation: classStudent.congregation,
     }))
     return { data: formattedStudents, meta }
   }

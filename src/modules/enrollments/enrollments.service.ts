@@ -202,9 +202,9 @@ export class EnrollmentsService {
         .getOne()
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-      // xem student ở enrollment có is_temporary là false | null thì không cho sửa code
-      // if (student_code && enrollment.student.user.code !== student_code)
-      //   throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
+      // đơn mà có student code rồi thì không cho sửa code - nếu code mới giống code cũ thì cho pass
+      if (student_code && enrollment.student.user.code !== student_code)
+        throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
 
       if (student_code && enrollment.student.is_temporary === true) {
         const user = await userRepo.findOne({ where: { code: student_code } })
@@ -298,6 +298,17 @@ export class EnrollmentsService {
           const classStudents = enrollment.class_ids.map(class_id => ({
             class_id,
             student_id: enrollment.student_id,
+            full_name: rest.full_name || enrollment.full_name,
+            email: rest.email || enrollment.email,
+            saint_name: rest.saint_name || enrollment.saint_name,
+            phone_number: rest.phone_number || enrollment.phone_number,
+            address: rest.address || enrollment.address,
+            birth_date: rest.birth_date || enrollment.birth_date,
+            birth_place: rest.birth_place || enrollment.birth_place,
+            parish: rest.parish || enrollment.parish,
+            deanery: rest.deanery || enrollment.deanery,
+            diocese: rest.diocese || enrollment.diocese,
+            congregation: rest.congregation || enrollment.congregation,
           }))
           await classStudentsRepo.save(classStudents)
         }
