@@ -8,12 +8,15 @@ import { CreateSubjectDto } from './dtos/create-subject.dto'
 import { UpdateSubjectDto } from './dtos/update-subject.dto'
 import { Subject } from './subjects.entity'
 import { ISubject } from './subjects.interface'
+import { Classes } from '@modules/class/class.entity'
 
 @Injectable()
 export class SubjectsService {
   constructor(
     @InjectRepository(Subject)
     private readonly subjectRepository: Repository<Subject>,
+    @InjectRepository(Classes)
+    private readonly classRepository: Repository<Classes>,
   ) {}
 
   async create(createSubjectDto: CreateSubjectDto): Promise<ISubject> {
@@ -96,9 +99,14 @@ export class SubjectsService {
   }
 
   async delete(id: number): Promise<void> {
-    const subject = await this.subjectRepository.findOne({ where: { id } })
+    const subject = await this.subjectRepository.exists({ where: { id } })
     if (!subject) {
       throwAppException('SUBJECT_NOT_FOUND', ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    // môn học mà đang có lớp thì không được xóa
+    const classSubject = await this.classRepository.exists({ where: { subject_id: id } })
+    if (classSubject) {
+      throwAppException('SUBJECT_HAS_CLASS', ErrorCode.SUBJECT_HAS_CLASS, HttpStatus.BAD_REQUEST)
     }
     await this.subjectRepository.delete(id)
   }

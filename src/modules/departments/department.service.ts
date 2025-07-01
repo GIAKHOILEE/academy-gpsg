@@ -9,12 +9,15 @@ import { Department } from './departments.entity'
 import { CreateDepartmentDto } from './dtos/create-department.dto'
 import { UpdateDepartmentDto } from './dtos/update-department.dto'
 import { PaginateDepartmentDto } from './dtos/paginate-department.dto'
+import { Classes } from '@modules/class/class.entity'
 
 @Injectable()
 export class DepartmentService {
   constructor(
     @InjectRepository(Department)
     private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(Classes)
+    private readonly classRepository: Repository<Classes>,
   ) {}
 
   async create(createDepartmentDto: CreateDepartmentDto): Promise<IDepartment> {
@@ -100,9 +103,14 @@ export class DepartmentService {
   }
 
   async delete(id: number): Promise<void> {
-    const department = await this.departmentRepository.findOne({ where: { id } })
+    const department = await this.departmentRepository.exists({ where: { id } })
     if (!department) {
       throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    // mà có lớp thì không được xóa
+    const classDepartment = await this.classRepository.exists({ where: { department_id: id } })
+    if (classDepartment) {
+      throwAppException('DEPARTMENT_HAS_CLASS', ErrorCode.DEPARTMENT_HAS_CLASS, HttpStatus.BAD_REQUEST)
     }
     await this.departmentRepository.delete(id)
   }
