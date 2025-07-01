@@ -252,7 +252,7 @@ export class EnrollmentsService {
 
       if (prepaid) {
         // phải có status là nợ học phí mới được trả trước
-        if (enrollment.status !== StatusEnrollment.DEBT || status !== StatusEnrollment.DEBT)
+        if (enrollment.status !== StatusEnrollment.DEBT && status !== StatusEnrollment.DEBT)
           throwAppException('ENROLLMENT_NOT_DEBT', ErrorCode.ENROLLMENT_NOT_DEBT, HttpStatus.BAD_REQUEST)
         enrollment.prepaid = prepaid
         enrollment.debt = totalFee - prepaid
