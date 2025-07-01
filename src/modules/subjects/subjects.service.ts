@@ -34,7 +34,7 @@ export class SubjectsService {
   }
 
   async getAll(pagination: PaginationDto): Promise<{ data: ISubject[]; meta: PaginationMeta }> {
-    const queryBuilder = this.subjectRepository.createQueryBuilder('subject').select(['subject.id', 'subject.name', 'subject.image'])
+    const queryBuilder = this.subjectRepository.createQueryBuilder('subject').select(['subject.id', 'subject.code', 'subject.name', 'subject.image'])
     const { data, meta } = await paginate(queryBuilder, pagination)
 
     const formattedData = data.map(subject => ({
