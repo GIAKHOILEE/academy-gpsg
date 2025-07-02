@@ -10,6 +10,7 @@ export interface IClasses {
   id: number
   name?: string
   code?: string
+  image?: string
   status?: ClassStatus
   classroom?: string
   max_students?: number

@@ -18,6 +18,9 @@ export class Classes {
   @Column()
   code: string
 
+  @Column({ nullable: true })
+  image: string
+
   @Column({ default: ClassStatus.ENROLLING })
   status: ClassStatus
 
