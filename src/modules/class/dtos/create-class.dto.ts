@@ -25,6 +25,11 @@ export class CreateClassDto {
 
   @IsNumber()
   @IsNotEmpty()
+  @ApiProperty({ description: 'Số tín chỉ', example: 1 })
+  credit: number
+
+  @IsNumber()
+  @IsNotEmpty()
   @ApiProperty({ description: 'Số lượng học sinh tối đa', example: 30 })
   max_students: number
 

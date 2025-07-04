@@ -13,6 +13,7 @@ export interface IClasses {
   image?: string
   status?: ClassStatus
   classroom?: string
+  credit?: number
   max_students?: number
   price?: number
   current_students?: number

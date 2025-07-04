@@ -22,6 +22,12 @@ export class PaginateClassDto extends PaginationDto {
   status: ClassStatus
 
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Số tín chỉ', example: 1 })
+  @IsNumber()
+  @Type(() => Number)
+  credit: number
+
+  @IsOptional()
   @ApiPropertyOptional({ description: 'filter theo id môn học' })
   @IsNumber()
   @Type(() => Number)
