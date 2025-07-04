@@ -295,6 +295,9 @@ export class EnrollmentsService {
 
         if (isFromPending && !isToPending) {
           // Từ pending sang trạng thái khác → thêm vào class_students
+          // nếu student đã có trong class_students thì không thêm vào
+          const existClassStudents = await classStudentsRepo.find({ where: { student_id: enrollment.student_id } })
+          if (existClassStudents.length > 0) throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
           const classStudents = enrollment.class_ids.map(class_id => ({
             class_id,
             student_id: enrollment.student_id,
