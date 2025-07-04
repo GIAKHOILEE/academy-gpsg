@@ -5,11 +5,6 @@ import { IsArray, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator
 export class UpdateClassDto {
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Tên lớp', example: 'Lớp tiếng anh sơ cấp' })
-  name: string
-
-  @IsString()
-  @IsOptional()
   @ApiPropertyOptional({ description: 'Mã lớp', example: 'ENG_v1' })
   code: string
 

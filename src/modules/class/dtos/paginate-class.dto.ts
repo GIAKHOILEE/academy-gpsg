@@ -1,8 +1,8 @@
 import { PaginationDto } from '@common/pagination'
 import { ClassStatus } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { Transform, Type } from 'class-transformer'
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { Type } from 'class-transformer'
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class PaginateClassDto extends PaginationDto {
   @IsOptional()

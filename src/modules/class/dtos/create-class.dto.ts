@@ -5,11 +5,6 @@ import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'cla
 export class CreateClassDto {
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({ description: 'Tên lớp', example: 'Lớp tiếng anh sơ cấp' })
-  name: string
-
-  @IsString()
-  @IsNotEmpty()
   @ApiProperty({ description: 'Mã lớp', example: 'ENG_v1' })
   code: string
 

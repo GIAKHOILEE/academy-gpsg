@@ -79,7 +79,7 @@ export class ClassService {
 
     const formattedClass: IClasses = {
       id: savedClass.id,
-      name: savedClass.name,
+      name: subject.name, // tên lớp là tên môn học
       code: savedClass.code,
       image: savedClass.image,
       status: savedClass.status,

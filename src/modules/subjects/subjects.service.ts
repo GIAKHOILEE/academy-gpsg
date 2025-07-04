@@ -93,6 +93,9 @@ export class SubjectsService {
       if (existingSubject) {
         throwAppException('SUBJECT_ALREADY_EXISTS', ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
+
+      // sửa tên lớp
+      await this.classRepository.update({ subject_id: id }, { name: updateSubjectDto.name })
     }
 
     await this.subjectRepository.update(id, updateSubjectDto)
