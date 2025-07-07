@@ -331,6 +331,12 @@ export class EnrollmentsService {
         ...rest,
       })
       await enrollmentsRepo.save(updatedEnrollment)
+      // cập nhật class_students
+      const classStudents = updatedEnrollment.class_ids.map(class_id => ({
+        class_id,
+        ...rest,
+      }))
+      await classStudentsRepo.save(classStudents)
 
       await queryRunner.commitTransaction()
     } catch (error) {
@@ -509,7 +515,8 @@ export class EnrollmentsService {
       .select(['enrollment.id', 'enrollment.status', 'enrollment.registration_date', 'enrollment.payment_status'])
       .where('enrollment.payment_status = :payment_status', { payment_status: PaymentStatus.UNPAID })
       .andWhere('enrollment.status = :status', { status: StatusEnrollment.PENDING })
-      .andWhere('enrollment.registration_date < :date', { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) })
+      // .andWhere('enrollment.registration_date < :date', { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) })
+      .andWhere('enrollment.registration_date < :date', { date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) })
       .getMany()
 
     for (const enrollment of enrollments) {
