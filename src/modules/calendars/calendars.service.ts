@@ -25,6 +25,7 @@ export class CalendarsService {
       id: calendar.id,
       title: calendar.title,
       content: calendar.content,
+      image: calendar.image,
       day: calendar.day,
     }
 
@@ -59,6 +60,7 @@ export class CalendarsService {
       id: calendar.id,
       title: calendar.title,
       content: calendar.content,
+      image: calendar.image,
       day: calendar.day,
     }))
 
@@ -75,6 +77,7 @@ export class CalendarsService {
       id: calendar.id,
       title: calendar.title,
       content: calendar.content,
+      image: calendar.image,
       day: calendar.day,
     }
 

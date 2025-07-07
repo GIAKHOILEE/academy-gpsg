@@ -14,6 +14,11 @@ export class UpdateCalendarsDto {
 
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({ description: 'Image of the calendar' })
+  image: string
+
+  @IsOptional()
+  @IsString()
   @ApiPropertyOptional({ description: 'Day of the calendar', example: '2025-01-01' })
   day: string
 }

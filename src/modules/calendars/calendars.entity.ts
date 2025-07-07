@@ -11,6 +11,9 @@ export class Calendars {
   @Column({ type: 'text', nullable: true })
   content: string
 
+  @Column({ type: 'text', nullable: true })
+  image: string
+
   @Column()
   day: string
 

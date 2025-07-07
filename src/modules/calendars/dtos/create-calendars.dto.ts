@@ -12,6 +12,11 @@ export class CreateCalendarsDto {
   @ApiPropertyOptional({ description: 'Content of the calendar' })
   content: string
 
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Image of the calendar' })
+  image: string
+
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ description: 'Day of the calendar', example: '2025-01-01' })

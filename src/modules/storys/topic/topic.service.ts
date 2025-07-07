@@ -58,6 +58,7 @@ export class TopicService {
       return {
         id: topic.id,
         name: topic.name,
+        description: topic.description,
       }
     })
 
