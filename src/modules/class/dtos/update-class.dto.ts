@@ -33,11 +33,6 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Phòng học', example: 'A101' })
   classroom: string
 
-  @IsNumber()
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'Số tín chỉ', example: 1 })
-  credit: number
-
   @IsArray()
   @IsEnum(Schedule, { each: true })
   @IsOptional()

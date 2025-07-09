@@ -3,5 +3,6 @@ export interface ISubject {
   code: string
   name: string
   image?: string
+  credit?: number
   description?: string
 }

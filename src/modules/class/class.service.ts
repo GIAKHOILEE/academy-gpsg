@@ -44,7 +44,7 @@ export class ClassService {
 
     const subject = await this.subjectRepository
       .createQueryBuilder('subjects')
-      .select(['subjects.id', 'subjects.code', 'subjects.name'])
+      .select(['subjects.id', 'subjects.code', 'subjects.name', 'subjects.credit'])
       .where('subjects.id = :id', { id: subject_id })
       .getOne()
     if (!subject) throwAppException('SUBJECT_NOT_FOUND', ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -84,7 +84,7 @@ export class ClassService {
       image: savedClass.image,
       status: savedClass.status,
       classroom: savedClass.classroom,
-      credit: savedClass.credit,
+      credit: subject.credit,
       max_students: savedClass.max_students,
       price: savedClass.price,
       current_students: savedClass.current_students,
@@ -97,6 +97,7 @@ export class ClassService {
         id: subject.id,
         code: subject.code,
         name: subject.name,
+        credit: subject.credit,
       },
       teacher: {
         id: teacher.id,
@@ -185,7 +186,7 @@ export class ClassService {
       image: classEntity.image,
       status: classEntity.status,
       classroom: classEntity.classroom,
-      credit: classEntity.credit,
+      credit: classEntity.subject.credit,
       max_students: classEntity.max_students,
       price: classEntity.price,
       current_students: classEntity.current_students,
@@ -198,6 +199,7 @@ export class ClassService {
         id: classEntity.subject.id,
         code: classEntity.subject.code,
         name: classEntity.subject.name,
+        credit: classEntity.subject.credit,
       },
       teacher: {
         id: classEntity.teacher.id,
@@ -262,7 +264,7 @@ export class ClassService {
       image: classEntity.image,
       status: classEntity.status,
       classroom: classEntity.classroom,
-      credit: classEntity.credit,
+      credit: classEntity.subject.credit,
       max_students: classEntity.max_students,
       price: classEntity.price,
       current_students: classEntity.current_students,
@@ -275,6 +277,7 @@ export class ClassService {
         id: classEntity.subject.id,
         code: classEntity.subject.code,
         name: classEntity.subject.name,
+        credit: classEntity.subject.credit,
       },
       teacher: {
         id: classEntity.teacher.id,

@@ -15,6 +15,9 @@ export class Subject {
   @Column()
   image: string
 
+  @Column({ default: 1 })
+  credit: number
+
   @Column()
   description: string
 

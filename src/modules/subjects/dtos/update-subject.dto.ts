@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsOptional, IsString } from 'class-validator'
+import { IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateSubjectDto {
   @IsString()
@@ -16,6 +16,11 @@ export class UpdateSubjectDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Ảnh môn học' })
   image?: string
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Số tín chỉ' })
+  credit?: number
 
   @IsString()
   @IsOptional()
