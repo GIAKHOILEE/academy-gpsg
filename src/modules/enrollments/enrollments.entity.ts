@@ -42,6 +42,9 @@ export class Enrollments {
   @Column({ type: 'text', nullable: true })
   note: string
 
+  @Column({ type: 'text', nullable: true })
+  user_note: string
+
   // Đã ghi danh và có đăng nhập
   @Column({ default: false })
   is_logged: boolean

@@ -13,6 +13,7 @@ export interface IEnrollments {
   prepaid?: number
   debt?: number
   note?: string
+  user_note?: string
   is_logged?: boolean
   classes?: IClasses[]
   // thông tin sinh viên

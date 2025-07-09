@@ -48,6 +48,11 @@ export class UpdateEnrollmentsDto {
   @IsOptional()
   note: string
 
+  @ApiPropertyOptional({ description: 'User Ghi chú', example: 'user_note Ghi chú' })
+  @IsString()
+  @IsOptional()
+  user_note: string
+
   // thông tin sinh viên
   @ApiPropertyOptional({ description: 'Tên thánh', example: 'Tên thánh' })
   @IsString()
