@@ -203,8 +203,9 @@ export class EnrollmentsService {
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // đơn mà có student code rồi thì không cho sửa code - nếu code mới giống code cũ thì cho pass
-      if (student_code && enrollment.student.user.code !== student_code)
+      if (student_code && enrollment.student.user.code !== student_code && enrollment.student.user.code) {
         throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
+      }
 
       if (student_code && enrollment.student.is_temporary === true) {
         const user = await userRepo.findOne({ where: { code: student_code } })
@@ -262,6 +263,9 @@ export class EnrollmentsService {
       // nếu class mà có current_students = max_students thì không được thêm vào
       if (status && status !== StatusEnrollment.PENDING) {
         for (const class_id of class_ids) {
+          // nếu class đã có student thì không cần cộng current_students
+          const existClassStudents = await classStudentsRepo.exists({ where: { class_id, student_id: enrollment.student_id } })
+          if (existClassStudents) continue
           const classEntity = await classRepo.findOne({ where: { id: class_id } })
           if (classEntity.current_students < classEntity.max_students) {
             classEntity.current_students++
