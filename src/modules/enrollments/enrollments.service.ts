@@ -334,10 +334,11 @@ export class EnrollmentsService {
         status: status || enrollment.status,
         ...rest,
       })
-      await enrollmentsRepo.save(updatedEnrollment)
+      const savedEnrollment = await enrollmentsRepo.save(updatedEnrollment)
       // cập nhật class_students
       const classStudents = updatedEnrollment.class_ids.map(class_id => ({
         class_id,
+        student_id: savedEnrollment.student_id,
         ...rest,
       }))
       await classStudentsRepo.save(classStudents)
