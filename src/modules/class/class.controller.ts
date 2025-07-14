@@ -1,7 +1,8 @@
+import { PaginationDto } from '@common/pagination'
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Query, Request } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ClassService } from './class.service'
 import { CreateClassDto } from './dtos/create-class.dto'
@@ -131,6 +132,39 @@ export class UserClassController {
   @ApiParam({ name: 'id', type: Number, description: 'The id of the class to get students' })
   async getStudentsOfClass(@Param('id') id: number, @Query() getStudentsOfClassDto: GetStudentsOfClassDto): Promise<ResponseDto> {
     const students = await this.classService.getStudentsOfClass(id, getStudentsOfClassDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'STUDENTS_FETCHED_SUCCESSFULLY',
+      data: students.data,
+      meta: students.meta,
+    })
+  }
+}
+
+@ApiTags('Student Classes')
+@Controller('student/classes')
+@ApiBearerAuth()
+@Auth(Role.STUDENT)
+export class StudentClassController {
+  constructor(private readonly classService: ClassService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all classes of student' })
+  async getClassesOfStudent(@Request() req, @Query() paginateClassDto: PaginationDto): Promise<ResponseDto> {
+    const classes = await this.classService.getClassesOfStudent(req.user.userId, paginateClassDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'CLASSES_FETCHED_SUCCESSFULLY',
+      data: classes.data,
+      meta: classes.meta,
+    })
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a class by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the class to get students' })
+  async studentGetStudentsOfClass(@Param('id') id: number, @Query() getStudentsOfClassDto: GetStudentsOfClassDto): Promise<ResponseDto> {
+    const students = await this.classService.studentGetStudentsOfClass(id, getStudentsOfClassDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'STUDENTS_FETCHED_SUCCESSFULLY',

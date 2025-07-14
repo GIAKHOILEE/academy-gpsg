@@ -1,4 +1,4 @@
-import { paginate, PaginationMeta } from '@common/pagination'
+import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Department } from '@modules/departments/departments.entity'
@@ -357,6 +357,100 @@ export class ClassService {
       deanery: classStudent.deanery,
       diocese: classStudent.diocese,
       congregation: classStudent.congregation,
+    }))
+    return { data: formattedStudents, meta }
+  }
+
+  // lấy list class của 1 học sinh
+  async getClassesOfStudent(student_id: number, paginateClassDto: PaginationDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
+    const classEntities = await this.classStudentsRepository
+      .createQueryBuilder('class_students')
+      .select([
+        'class.id',
+        'class.name',
+        'class.code',
+        'class.image',
+        'class.status',
+        'class.classroom',
+        'class.max_students',
+        'class.price',
+        'class.current_students',
+        'class.schedule',
+        'class.start_time',
+        'class.end_time',
+        'class.opening_day',
+        'class.closing_day',
+      ])
+      .leftJoin('class_students.class', 'class')
+      .leftJoin('class.teacher', 'teacher')
+      .leftJoin('teacher.user', 'user')
+      .leftJoin('class.subject', 'subject')
+      .where('class_students.student_id = :student_id', { student_id })
+
+    const { data, meta } = await paginate(classEntities, paginateClassDto)
+    const formattedClasses: IClasses[] = data.map(classStudent => ({
+      id: classStudent.class.id,
+      name: classStudent.class.name,
+      code: classStudent.class.code,
+      image: classStudent.class.image,
+      status: classStudent.class.status,
+      classroom: classStudent.class.classroom,
+      credit: classStudent.class.subject.credit,
+      max_students: classStudent.class.max_students,
+      price: classStudent.class.price,
+      current_students: classStudent.class.current_students,
+      schedule: classStudent.class.schedule,
+      start_time: classStudent.class.start_time,
+      end_time: classStudent.class.end_time,
+      opening_day: classStudent.class.opening_day,
+      closing_day: classStudent.class.closing_day,
+      subject: {
+        id: classStudent.class.subject.id,
+        code: classStudent.class.subject.code,
+        name: classStudent.class.subject.name,
+        credit: classStudent.class.subject.credit,
+      },
+      teacher: {
+        id: classStudent.class.teacher.id,
+        code: classStudent.class.teacher.user.code,
+        full_name: classStudent.class.teacher.user.full_name,
+        email: classStudent.class.teacher.user.email,
+      },
+    }))
+    return { data: formattedClasses, meta }
+  }
+
+  // học sinh lấy danh sách học sinh của lớp
+  async studentGetStudentsOfClass(
+    class_id: number,
+    getStudentsOfClassDto: GetStudentsOfClassDto,
+  ): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
+    const { name, code, ...rest } = getStudentsOfClassDto
+
+    const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
+    if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const classStudents = await this.classStudentsRepository
+      .createQueryBuilder('class_students')
+      .select(['class_students.id', 'student.id', 'user.gender', 'user.avatar', 'class_students.full_name', 'class_students.saint_name'])
+      .leftJoin('class_students.student', 'student')
+      .leftJoin('student.user', 'user')
+      .where('class_students.class_id = :class_id', { class_id })
+
+    if (name) {
+      classStudents.andWhere('user.full_name ILIKE :name', { name: `%${name}%` })
+    }
+    if (code) {
+      classStudents.andWhere('user.code = :code', { code })
+    }
+
+    const { data, meta } = await paginate(classStudents, rest)
+    const formattedStudents: IStudent[] = data.map(classStudent => ({
+      id: classStudent.student.id,
+      gender: classStudent.student.user.gender,
+      avatar: classStudent.student.user.avatar,
+      full_name: classStudent.full_name,
+      saint_name: classStudent.saint_name,
     }))
     return { data: formattedStudents, meta }
   }

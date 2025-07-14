@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ClassService } from './class.service'
-import { AdminClassController, UserClassController } from './class.controller'
+import { AdminClassController, StudentClassController, UserClassController } from './class.controller'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Classes } from './class.entity'
 import { Subject } from '@modules/subjects/subjects.entity'
@@ -13,7 +13,7 @@ import { Student } from '@modules/students/students.entity'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Classes, Subject, Teacher, Department, Semester, Scholastic, ClassStudents, Student])],
-  controllers: [AdminClassController, UserClassController],
+  controllers: [AdminClassController, UserClassController, StudentClassController],
   providers: [ClassService],
 })
 export class ClassModule {}
