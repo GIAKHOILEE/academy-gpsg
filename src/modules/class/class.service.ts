@@ -366,6 +366,9 @@ export class ClassService {
     const classEntities = await this.classStudentsRepository
       .createQueryBuilder('class_students')
       .select([
+        'class_students.id',
+        'class_students.class_id',
+        'class_students.student_id',
         'class.id',
         'class.name',
         'class.code',
@@ -380,6 +383,14 @@ export class ClassService {
         'class.end_time',
         'class.opening_day',
         'class.closing_day',
+        'subject.id',
+        'subject.code',
+        'subject.name',
+        'subject.credit',
+        'teacher.id',
+        'user.code',
+        'user.full_name',
+        'user.email',
       ])
       .leftJoin('class_students.class', 'class')
       .leftJoin('class.teacher', 'teacher')
