@@ -211,18 +211,18 @@ export class EnrollmentsService {
         const user = await userRepo.findOne({ where: { code: student_code } })
 
         if (user) {
+          const oldStudentId = enrollment.student_id
+          const oldUserId = enrollment.student.user_id
           // Nếu tìm thấy user thật với code này
-          // 1. Xóa user/student tạm
-          await studentRepo.delete({ id: enrollment.student_id })
-          await userRepo.delete({ id: enrollment.student.user_id })
-
-          // 2. Gán student_id của enrollment sang user thật
+          // 1. Gán student_id mới vào enrollment
           enrollment.student_id = user.id
-
-          // 3. Cập nhật luôn enrollment
           await enrollmentsRepo.update(id, {
             student_id: user.id,
           })
+
+          // 2. Xóa user/student tạm
+          await studentRepo.delete({ id: oldStudentId })
+          await userRepo.delete({ id: oldUserId })
         } else {
           // Nếu không tìm thấy user thật thì giữ lại student cũ
           // chỉ cần gán code mới và đổi is_temporary = false
@@ -521,11 +521,11 @@ export class EnrollmentsService {
   async overDue10Day() {
     const enrollments = await this.enrollmentsRepository
       .createQueryBuilder('enrollment')
-      .select(['enrollment.id', 'enrollment.status', 'enrollment.registration_date', 'enrollment.payment_status'])
+      .select(['enrollment.id', 'enrollment.status', 'enrollment.created_at', 'enrollment.payment_status'])
       .where('enrollment.payment_status = :payment_status', { payment_status: PaymentStatus.UNPAID })
       .andWhere('enrollment.status = :status', { status: StatusEnrollment.PENDING })
-      // .andWhere('enrollment.registration_date < :date', { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) })
-      .andWhere('enrollment.registration_date < :date', { date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) })
+      // .andWhere('enrollment.created_at < :date', { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) })
+      .andWhere('enrollment.created_at < :date', { date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) })
       .getMany()
 
     for (const enrollment of enrollments) {
