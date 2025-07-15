@@ -1,15 +1,15 @@
-import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
+import { paginate, PaginationMeta } from '@common/pagination'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { Classes } from '@modules/class/class.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { IDepartment } from './department.interface'
 import { Department } from './departments.entity'
 import { CreateDepartmentDto } from './dtos/create-department.dto'
-import { UpdateDepartmentDto } from './dtos/update-department.dto'
 import { PaginateDepartmentDto } from './dtos/paginate-department.dto'
-import { Classes } from '@modules/class/class.entity'
+import { UpdateDepartmentDto } from './dtos/update-department.dto'
 
 @Injectable()
 export class DepartmentService {

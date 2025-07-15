@@ -181,7 +181,7 @@ export class EnrollmentsService {
   }
 
   async updateEnrollment(id: number, updateEnrollmentDto: UpdateEnrollmentsDto): Promise<void> {
-    const { student_code, payment_method, status, prepaid, class_ids, ...rest } = updateEnrollmentDto
+    const { student_code, status, prepaid, class_ids, ...rest } = updateEnrollmentDto
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()

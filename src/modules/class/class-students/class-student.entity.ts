@@ -1,7 +1,6 @@
 import { Student } from '@modules/students/students.entity'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { Classes } from '../class.entity'
-import { IEnrollments } from '@modules/enrollments/enrollments.interface'
 
 @Entity({ name: 'class_students' })
 export class ClassStudents {
