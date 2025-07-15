@@ -17,6 +17,11 @@ import { UserService } from './user.service'
 export class AdminUsersController {
   constructor(private readonly userService: UserService) {}
 
+  @Get('test')
+  async test(): Promise<string> {
+    return 'Hello World'
+  }
+
   // tạo tài khoản cho admin
   @ApiOperation({ summary: 'Tạo tài khoản mới cho Admin' })
   @ApiBearerAuth()
