@@ -1,6 +1,6 @@
 import { PaymentMethod } from '@enums/class.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class CreateEnrollmentsDto {
   @ApiProperty({ description: 'Mã lớp', example: [1, 2, 3] })

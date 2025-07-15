@@ -1,13 +1,13 @@
 import { ResponseDto } from '@common/response.dto'
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Request, UseGuards } from '@nestjs/common'
-import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
-import { EnrollmentsService } from './enrollments.service'
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
-import { Role } from '@enums/role.enum'
 import { Auth } from '@decorators/auth.decorator'
-import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
+import { Role } from '@enums/role.enum'
 import { OptionalJwtAuthGuard } from '@guards/optional-jwt-auth.guard'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Request, UseGuards } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
+import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
+import { EnrollmentsService } from './enrollments.service'
 
 @Controller('admin/enrollments')
 @ApiBearerAuth()

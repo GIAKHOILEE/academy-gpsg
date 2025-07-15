@@ -1,6 +1,5 @@
 import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { IClasses } from '@modules/class/class.interface'
-import { IStudent } from '@modules/students/students.interface'
 
 export interface IEnrollments {
   id: number
