@@ -14,6 +14,11 @@ export class UpdateEventDto {
 
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({ description: 'Description of the event', example: 'Event Description' })
+  description?: string
+
+  @IsOptional()
+  @IsString()
   @ApiPropertyOptional({ description: 'Content of the event', example: 'Event Content' })
   content?: string
 

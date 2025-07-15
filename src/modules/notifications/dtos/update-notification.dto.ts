@@ -9,6 +9,11 @@ export class UpdateNotificationDto {
 
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({ example: 'This is a notification description' })
+  description?: string
+
+  @IsOptional()
+  @IsString()
   @ApiPropertyOptional({ example: 'This is a notification content' })
   content?: string
 

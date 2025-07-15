@@ -22,6 +22,7 @@ export class StudyLinkService {
     const formatStudyLink = {
       id: savedStudyLink.id,
       title: savedStudyLink.title,
+      description: savedStudyLink.description,
       content: savedStudyLink.content,
       icon: savedStudyLink.icon,
       image: savedStudyLink.image,
@@ -41,6 +42,7 @@ export class StudyLinkService {
       return {
         id: studyLink.id,
         title: studyLink.title,
+        description: studyLink.description,
         content: studyLink.content,
         icon: studyLink.icon,
         image: studyLink.image,
@@ -63,6 +65,7 @@ export class StudyLinkService {
     const formatStudyLink = {
       id: studyLink.id,
       title: studyLink.title,
+      description: studyLink.description,
       content: studyLink.content,
       icon: studyLink.icon,
       image: studyLink.image,

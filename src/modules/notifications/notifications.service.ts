@@ -26,6 +26,7 @@ export class NotificationsService {
       id: savedNotification.id,
       title: savedNotification.title,
       thumbnail: savedNotification.thumbnail,
+      description: savedNotification.description,
       content: savedNotification.content,
       created_at: formatStringDate(savedNotification.created_at.toISOString()),
     }
@@ -55,6 +56,7 @@ export class NotificationsService {
       id: notification.id,
       title: notification.title,
       thumbnail: notification.thumbnail,
+      description: notification.description,
       content: notification.content,
       created_at: formatStringDate(notification.created_at.toISOString()),
     }
@@ -71,6 +73,7 @@ export class NotificationsService {
       id: notification.id,
       title: notification.title,
       thumbnail: notification.thumbnail,
+      description: notification.description,
       content: notification.content,
       created_at: formatStringDate(notification.created_at.toISOString()),
     }))

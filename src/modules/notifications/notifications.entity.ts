@@ -11,6 +11,9 @@ export class Notification {
   @Column()
   thumbnail: string
 
+  @Column({ nullable: true })
+  description: string
+
   @Column({ type: 'text' })
   content: string
 

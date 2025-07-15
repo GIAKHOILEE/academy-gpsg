@@ -8,6 +8,9 @@ export class StudyLink {
   @Column()
   title: string
 
+  @Column({ nullable: true })
+  description: string
+
   @Column({ type: 'text', nullable: true })
   content: string
 

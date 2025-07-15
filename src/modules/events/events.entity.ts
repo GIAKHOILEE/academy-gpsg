@@ -11,6 +11,9 @@ export class Event {
   @Column()
   thumbnail: string
 
+  @Column({ nullable: true })
+  description: string
+
   @Column({ type: 'text', nullable: true })
   content: string
 

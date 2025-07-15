@@ -9,6 +9,11 @@ export class CreateStudyLinkDto {
 
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Mô tả', example: 'Mô tả' })
+  description: string
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Nội dung', example: 'Nội dung' })
   content: string
 
