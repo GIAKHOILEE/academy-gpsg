@@ -241,7 +241,8 @@ export class StudentsService {
   }
 
   async getAllStudents(paginateStudentsDto: PaginateStudentsDto) {
-    const { full_name, email, phone_number, status, ...rest } = paginateStudentsDto
+    const { full_name, email, phone_number, status, code, ...rest } = paginateStudentsDto
+    console.log(paginateStudentsDto)
     const query = this.studentRepository
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.user', 'user')
@@ -251,15 +252,19 @@ export class StudentsService {
     }
 
     if (email) {
-      query.andWhere('user.email = :email', { email })
+      query.andWhere('user.email LIKE :email', { email: `%${email}%` })
     }
 
     if (phone_number) {
-      query.andWhere('user.phone_number = :phone_number', { phone_number })
+      query.andWhere('user.phone_number LIKE :phone_number', { phone_number: `%${phone_number}%` })
     }
 
     if (status) {
       query.andWhere('user.status = :status', { status })
+    }
+
+    if (code) {
+      query.andWhere('user.code LIKE :code', { code: `%${code}%` })
     }
 
     const { data, meta } = await paginate(query, rest)
