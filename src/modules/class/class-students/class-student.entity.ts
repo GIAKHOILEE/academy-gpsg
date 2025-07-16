@@ -22,45 +22,45 @@ export class ClassStudents {
   @JoinColumn({ name: 'student_id' })
   student: Student
 
-  // Tên thánh
-  @Column({ nullable: true })
-  saint_name: string
+  // // Tên thánh
+  // @Column({ nullable: true })
+  // saint_name: string
 
-  @Column({ nullable: true })
-  full_name: string
+  // @Column({ nullable: true })
+  // full_name: string
 
-  @Column({ nullable: true })
-  email: string
+  // @Column({ nullable: true })
+  // email: string
 
-  @Column({ nullable: true })
-  phone_number: string
+  // @Column({ nullable: true })
+  // phone_number: string
 
-  // ngày sinh
-  @Column({ nullable: true })
-  birth_date: string
+  // // ngày sinh
+  // @Column({ nullable: true })
+  // birth_date: string
 
-  @Column({ nullable: true })
-  address: string
+  // @Column({ nullable: true })
+  // address: string
 
-  // nơi sinh
-  @Column({ nullable: true })
-  birth_place: string
+  // // nơi sinh
+  // @Column({ nullable: true })
+  // birth_place: string
 
-  // giáo xứ
-  @Column({ nullable: true })
-  parish: string
+  // // giáo xứ
+  // @Column({ nullable: true })
+  // parish: string
 
-  // giáo hat
-  @Column({ nullable: true })
-  deanery: string
+  // // giáo hat
+  // @Column({ nullable: true })
+  // deanery: string
 
-  // giáo phận
-  @Column({ nullable: true })
-  diocese: string
+  // // giáo phận
+  // @Column({ nullable: true })
+  // diocese: string
 
-  // dòng tu
-  @Column({ nullable: true })
-  congregation: string
+  // // dòng tu
+  // @Column({ nullable: true })
+  // congregation: string
 
   @Column()
   student_id: number

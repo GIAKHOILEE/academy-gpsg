@@ -317,17 +317,17 @@ export class ClassService {
         'user.code',
         'user.gender',
         'user.avatar',
-        'class_students.full_name',
-        'class_students.email',
-        'class_students.saint_name',
-        'class_students.phone_number',
-        'class_students.address',
-        'class_students.birth_place',
-        'class_students.birth_date',
-        'class_students.parish',
-        'class_students.deanery',
-        'class_students.diocese',
-        'class_students.congregation',
+        'user.full_name',
+        'user.email',
+        'user.saint_name',
+        'user.phone_number',
+        'user.address',
+        'user.birth_place',
+        'user.birth_date',
+        'user.parish',
+        'user.deanery',
+        'user.diocese',
+        'user.congregation',
       ])
       .leftJoin('class_students.student', 'student')
       .leftJoin('student.user', 'user')
@@ -346,17 +346,17 @@ export class ClassService {
       code: classStudent.student.user.code,
       gender: classStudent.student.user.gender,
       avatar: classStudent.student.user.avatar,
-      full_name: classStudent.full_name,
-      email: classStudent.email,
-      saint_name: classStudent.saint_name,
-      phone_number: classStudent.phone_number,
-      address: classStudent.address,
-      birth_place: classStudent.birth_place,
-      birth_date: classStudent.birth_date,
-      parish: classStudent.parish,
-      deanery: classStudent.deanery,
-      diocese: classStudent.diocese,
-      congregation: classStudent.congregation,
+      full_name: classStudent.student.user.full_name,
+      email: classStudent.student.user.email,
+      saint_name: classStudent.student.user.saint_name,
+      phone_number: classStudent.student.user.phone_number,
+      address: classStudent.student.user.address,
+      birth_place: classStudent.student.user.birth_place,
+      birth_date: classStudent.student.user.birth_date,
+      parish: classStudent.student.user.parish,
+      deanery: classStudent.student.user.deanery,
+      diocese: classStudent.student.user.diocese,
+      congregation: classStudent.student.user.congregation,
     }))
     return { data: formattedStudents, meta }
   }
@@ -443,7 +443,7 @@ export class ClassService {
 
     const classStudents = await this.classStudentsRepository
       .createQueryBuilder('class_students')
-      .select(['class_students.id', 'student.id', 'user.gender', 'user.avatar', 'class_students.full_name', 'class_students.saint_name'])
+      .select(['class_students.id', 'student.id', 'user.gender', 'user.avatar', 'user.full_name', 'user.saint_name'])
       .leftJoin('class_students.student', 'student')
       .leftJoin('student.user', 'user')
       .where('class_students.class_id = :class_id', { class_id })
@@ -460,8 +460,8 @@ export class ClassService {
       id: classStudent.student.id,
       gender: classStudent.student.user.gender,
       avatar: classStudent.student.user.avatar,
-      full_name: classStudent.full_name,
-      saint_name: classStudent.saint_name,
+      full_name: classStudent.student.user.full_name,
+      saint_name: classStudent.student.user.saint_name,
     }))
     return { data: formattedStudents, meta }
   }
