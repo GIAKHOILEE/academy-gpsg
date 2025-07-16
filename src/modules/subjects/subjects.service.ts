@@ -63,6 +63,7 @@ export class SubjectsService {
       image: subject.image,
       credit: subject.credit,
       description: subject.description,
+      content: subject.content,
     }
     return formattedSubject
   }

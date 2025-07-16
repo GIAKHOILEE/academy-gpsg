@@ -21,6 +21,9 @@ export class Subject {
   @Column()
   description: string
 
+  @Column({ type: 'text', nullable: true })
+  content: string
+
   @OneToMany(() => Classes, classes => classes.subject, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   classes: Classes[]
 

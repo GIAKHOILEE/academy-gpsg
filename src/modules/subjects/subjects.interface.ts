@@ -5,4 +5,5 @@ export interface ISubject {
   image?: string
   credit?: number
   description?: string
+  content?: string
 }

@@ -26,4 +26,9 @@ export class CreateSubjectDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Mô tả môn học' })
   description?: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Nội dung môn học' })
+  content?: string
 }
