@@ -209,7 +209,6 @@ export class StudentsService {
         'students.graduate_year',
       ])
       .where('students.id = :id', { id })
-      .andWhere('(students.is_temporary = false OR students.is_temporary IS NULL)')
       .getOne()
 
     if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -247,7 +246,6 @@ export class StudentsService {
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.user', 'user')
       .where('students.deleted_at IS NULL')
-      .andWhere('(students.is_temporary = false OR students.is_temporary IS NULL)')
     if (full_name) {
       query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })
     }
