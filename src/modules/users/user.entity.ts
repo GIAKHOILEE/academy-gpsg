@@ -76,8 +76,8 @@ export class User {
   })
   status: UserStatus
 
-  @Column({ default: false, nullable: true })
-  is_temporary: boolean
+  // @Column({ default: false, nullable: true })
+  // is_temporary: boolean
 
   @CreateDateColumn()
   created_at: Date

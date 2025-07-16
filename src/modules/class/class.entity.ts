@@ -12,7 +12,7 @@ export class Classes {
   @PrimaryGeneratedColumn()
   id: number
 
-  @Column()
+  @Column({ nullable: true })
   name: string
 
   @Column()

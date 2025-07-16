@@ -39,8 +39,8 @@ export class Student {
   graduate_year: number
 
   // bảng tạm
-  @Column({ default: false })
-  is_temporary: boolean
+  // @Column({ default: false })
+  // is_temporary: boolean
 
   // danh sách lớp học
   @OneToMany(() => ClassStudents, classStudents => classStudents.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

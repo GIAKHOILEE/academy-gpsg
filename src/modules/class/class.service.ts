@@ -74,7 +74,7 @@ export class ClassService {
       .getOne()
     if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, department, scholastic, semester })
+    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, department, scholastic, semester, name: subject.name })
     const savedClass = await this.classRepository.save(classEntity)
 
     const formattedClass: IClasses = {

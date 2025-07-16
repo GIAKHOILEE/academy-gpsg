@@ -68,7 +68,7 @@ export const messages = {
     CLASS_NOT_FOUND: 'Lớp học không tồn tại',
     ENROLLMENT_NOT_FOUND: 'Đơn đăng ký không tồn tại',
     ENROLLMENT_NOT_DEBT: 'Status là nợ học phí mới được cập nhật prepaid',
-    ENROLLMENT_NOT_CHANGE_CODE_STUDENT: 'Không được đổi code của học sinh này',
+    ENROLLMENT_NOT_CHANGE_CODE_STUDENT: 'Không được đổi code của học sinh trong đơn này',
     SUBJECT_NOT_FOUND: 'Môn học không tồn tại',
     SUBJECT_HAS_CLASS: 'Môn học này đang có lớp học',
     TEACHER_NOT_FOUND: 'Giáo viên không tồn tại',
