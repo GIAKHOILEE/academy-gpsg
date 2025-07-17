@@ -50,6 +50,10 @@ export const messages = {
     USERNAME_ALREADY_EXISTS: 'Username already exists',
     OLD_PASSWORD_INCORRECT: 'Old password is incorrect',
     NEW_PASSWORD_CANNOT_BE_THE_SAME_AS_THE_OLD_PASSWORD: 'New password cannot be the same as the old password',
+    WITNESS_FAITH_MENU_NOT_FOUND: 'Witness faith menu not found',
+    WITNESS_FAITH_NOT_FOUND: 'Witness faith not found',
+    WITNESS_FAITH_MENU_ALREADY_EXISTS: 'Witness faith menu already exists',
+    WITNESS_FAITH_MENU_HAS_WITNESS_FAITH: 'Witness faith menu has witness faith',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -104,5 +108,9 @@ export const messages = {
     USERNAME_ALREADY_EXISTS: 'Tên đăng nhập đã tồn tại',
     OLD_PASSWORD_INCORRECT: 'Mật khẩu cũ không đúng',
     NEW_PASSWORD_CANNOT_BE_THE_SAME_AS_THE_OLD_PASSWORD: 'Mật khẩu mới không được trùng với mật khẩu cũ',
+    WITNESS_FAITH_MENU_NOT_FOUND: 'Menu chứng nhân đức tin không tồn tại',
+    WITNESS_FAITH_NOT_FOUND: 'Chứng nhân đức tin không tồn tại',
+    WITNESS_FAITH_MENU_ALREADY_EXISTS: 'Menu chứng nhân đức tin đã tồn tại',
+    WITNESS_FAITH_MENU_HAS_WITNESS_FAITH: 'Menu tang tồn tại chứng nhân đức tin',
   },
 }

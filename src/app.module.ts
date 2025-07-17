@@ -29,6 +29,7 @@ import { ClsModule } from 'nestjs-cls'
 import { AppService } from './app.service'
 import { LoggerMiddleware } from './middleware/logger.middleware'
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module'
+import { WitnessFaithModule } from './modules/witness-faiths/witness-faith.module'
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { EnrollmentsModule } from './modules/enrollments/enrollments.module'
     FooterModule,
     CloudinaryModule,
     EnrollmentsModule,
+    WitnessFaithModule,
   ],
   providers: [AppService, SuperAdminSeeder],
 })

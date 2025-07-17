@@ -1,4 +1,4 @@
-import { paginate } from '@common/pagination'
+import { paginate, PaginationMeta } from '@common/pagination'
 import { hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
@@ -11,6 +11,7 @@ import { CreateStudentsDto } from './dtos/create-students.dto'
 import { PaginateStudentsDto } from './dtos/paginate-students.dto'
 import { UpdateStudentsDto } from './dtos/update-students.dto'
 import { Student } from './students.entity'
+import { IStudent } from './students.interface'
 
 @Injectable()
 export class StudentsService {
@@ -240,9 +241,8 @@ export class StudentsService {
     return formattedStudent
   }
 
-  async getAllStudents(paginateStudentsDto: PaginateStudentsDto) {
+  async getAllStudents(paginateStudentsDto: PaginateStudentsDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
     const { full_name, email, phone_number, status, code, ...rest } = paginateStudentsDto
-    console.log(paginateStudentsDto)
     const query = this.studentRepository
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.user', 'user')
