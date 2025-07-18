@@ -86,4 +86,9 @@ export class UpdateClassDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Khoa', example: 1 })
   department_id: number
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Link bài viết', example: 'https://example.com/post' })
+  post_link: string
 }

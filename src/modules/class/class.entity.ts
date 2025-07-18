@@ -106,6 +106,9 @@ export class Classes {
   @OneToMany(() => ClassStudents, classStudents => classStudents.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   class_students: ClassStudents[]
 
+  @Column({ nullable: true })
+  post_link: string
+
   @CreateDateColumn()
   created_at: Date
 

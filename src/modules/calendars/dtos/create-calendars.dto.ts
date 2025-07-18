@@ -21,4 +21,9 @@ export class CreateCalendarsDto {
   @IsString()
   @ApiProperty({ description: 'Day of the calendar', example: '2025-01-01' })
   day: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Description of the calendar', example: 'Description of the calendar' })
+  description: string
 }

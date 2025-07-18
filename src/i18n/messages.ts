@@ -55,6 +55,8 @@ export const messages = {
     WITNESS_FAITH_MENU_ALREADY_EXISTS: 'Witness faith menu already exists',
     WITNESS_FAITH_MENU_HAS_WITNESS_FAITH: 'Witness faith menu has witness faith',
     BANNER_NOT_FOUND: 'Banner not found',
+    POST_CATALOG_NOT_FOUND: 'Post catalog not found',
+    POST_NOT_FOUND: 'Post not found',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -114,5 +116,7 @@ export const messages = {
     WITNESS_FAITH_MENU_ALREADY_EXISTS: 'Menu chứng nhân đức tin đã tồn tại',
     WITNESS_FAITH_MENU_HAS_WITNESS_FAITH: 'Menu tang tồn tại chứng nhân đức tin',
     BANNER_NOT_FOUND: 'Banner không tồn tại',
+    POST_CATALOG_NOT_FOUND: 'Danh mục bài viết không tồn tại',
+    POST_NOT_FOUND: 'Bài viết không tồn tại',
   },
 }

@@ -3,5 +3,6 @@ export interface ICalendars {
   title?: string
   content?: string
   image?: string
+  description?: string
   day?: string
 }

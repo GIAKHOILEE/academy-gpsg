@@ -18,7 +18,10 @@ export class EventsService {
   ) {}
 
   async createEvent(createEventDto: CreateEventDto): Promise<IEvent> {
-    if (createEventDto.start_date && createEventDto.end_date && createEventDto.start_date > createEventDto.end_date) {
+    const startDate = createEventDto.start_date ? new Date(createEventDto.start_date) : null
+    const endDate = createEventDto.end_date ? new Date(createEventDto.end_date) : null
+
+    if (startDate && endDate && startDate > endDate) {
       throwAppException('START_DATE_MUST_BE_BEFORE_END_DATE', ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
     }
 
@@ -42,16 +45,11 @@ export class EventsService {
     const event = await this.eventRepository.findOne({ where: { id } })
     if (!event) throwAppException('EVENT_NOT_FOUND', ErrorCode.EVENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    if (updateEventDto.start_date && updateEventDto.end_date && updateEventDto.start_date > updateEventDto.end_date) {
-      throwAppException('START_DATE_MUST_BE_BEFORE_END_DATE', ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
-    }
+    const startDate = updateEventDto.start_date ? new Date(updateEventDto.start_date) : null
+    const endDate = updateEventDto.end_date ? new Date(updateEventDto.end_date) : null
 
-    if (updateEventDto.start_date && updateEventDto.start_date > event.end_date) {
+    if (startDate && endDate && startDate > endDate) {
       throwAppException('START_DATE_MUST_BE_BEFORE_END_DATE', ErrorCode.START_DATE_MUST_BE_BEFORE_END_DATE, HttpStatus.BAD_REQUEST)
-    }
-
-    if (updateEventDto.end_date && updateEventDto.end_date < event.start_date) {
-      throwAppException('END_DATE_MUST_BE_AFTER_START_DATE', ErrorCode.END_DATE_MUST_BE_AFTER_START_DATE, HttpStatus.BAD_REQUEST)
     }
 
     await this.eventRepository.update(id, updateEventDto)

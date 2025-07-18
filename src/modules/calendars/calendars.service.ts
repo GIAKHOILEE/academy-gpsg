@@ -27,6 +27,7 @@ export class CalendarsService {
       content: calendar.content,
       image: calendar.image,
       day: calendar.day,
+      description: calendar.description,
     }
 
     return calendarResponse
@@ -62,6 +63,7 @@ export class CalendarsService {
       content: calendar.content,
       image: calendar.image,
       day: calendar.day,
+      description: calendar.description,
     }))
 
     return { data: formattedData, meta }
@@ -79,6 +81,7 @@ export class CalendarsService {
       content: calendar.content,
       image: calendar.image,
       day: calendar.day,
+      description: calendar.description,
     }
 
     return calendarResponse

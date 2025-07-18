@@ -195,6 +195,7 @@ export class ClassService {
       end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
+      post_link: classEntity.post_link,
       subject: {
         id: classEntity.subject.id,
         code: classEntity.subject.code,
@@ -273,6 +274,7 @@ export class ClassService {
       end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
+      post_link: classEntity.post_link,
       subject: {
         id: classEntity.subject.id,
         code: classEntity.subject.code,
