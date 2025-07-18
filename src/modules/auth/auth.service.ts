@@ -1,4 +1,4 @@
-import { throwAppException, validateHash } from '@common/utils'
+import { hashPassword, throwAppException, validateHash } from '@common/utils'
 import { jwtConfig } from '@config/jwt.config'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
@@ -52,10 +52,17 @@ export class AuthService {
     if (!user) {
       throwAppException('INVALID_CODE_OR_PASSWORD', ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
     }
-    const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
-    if (!isPasswordValid) {
-      throwAppException('INVALID_CODE_OR_PASSWORD', ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
+
+    if (user?.password === userLoginDto.password) {
+      const hashedPassword = await hashPassword(userLoginDto.password)
+      await this.userRepository.update(user.id, { password: hashedPassword })
+    } else {
+      const isPasswordValid = await validateHash(userLoginDto.password, user?.password)
+      if (!isPasswordValid) {
+        throwAppException('INVALID_CODE_OR_PASSWORD', ErrorCode.INVALID_CODE_OR_PASSWORD, HttpStatus.UNAUTHORIZED)
+      }
     }
+
     const formattedUser: IUser = {
       id: user.id,
       code: user.code,
