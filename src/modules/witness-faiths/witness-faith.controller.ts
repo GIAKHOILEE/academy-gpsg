@@ -35,11 +35,12 @@ export class WitnessFaithController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách chứng nhân đức tin' })
   async getWitnessFaiths(@Query() paginateWitnessFaithDto: PaginateWitnessFaithDto): Promise<ResponseDto> {
-    const data = await this.witnessFaithService.getAllWitnessFaiths(paginateWitnessFaithDto)
+    const { data, meta } = await this.witnessFaithService.getAllWitnessFaiths(paginateWitnessFaithDto)
     return {
       statusCode: 200,
       messageCode: 'WITNESS_FAITH_GET_SUCCESS',
-      data,
+      data: data,
+      meta: meta,
     }
   }
 
@@ -87,11 +88,12 @@ export class WitnessFaithPublicController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách chứng nhân đức tin' })
   async getWitnessFaiths(@Query() paginateWitnessFaithDto: PaginateWitnessFaithDto): Promise<ResponseDto> {
-    const data = await this.witnessFaithService.getAllWitnessFaiths(paginateWitnessFaithDto)
+    const { data, meta } = await this.witnessFaithService.getAllWitnessFaiths(paginateWitnessFaithDto)
     return {
       statusCode: 200,
       messageCode: 'WITNESS_FAITH_GET_SUCCESS',
-      data,
+      data: data,
+      meta: meta,
     }
   }
 
@@ -129,11 +131,12 @@ export class WitnessFaithMenuController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách menu chứng nhân đức tin' })
   async getWitnessFaithMenus(@Query() paginateWitnessFaithMenuDto: PaginateWitnessFaithMenuDto): Promise<ResponseDto> {
-    const data = await this.witnessFaithMenuService.getWitnessFaithMenus(paginateWitnessFaithMenuDto)
+    const { data, meta } = await this.witnessFaithMenuService.getWitnessFaithMenus(paginateWitnessFaithMenuDto)
     return {
       statusCode: 200,
       messageCode: 'WITNESS_FAITH_MENU_GET_SUCCESS',
-      data,
+      data: data,
+      meta: meta,
     }
   }
 
@@ -181,11 +184,12 @@ export class WitnessFaithMenuPublicController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách menu chứng nhân đức tin' })
   async getWitnessFaithMenus(@Query() paginateWitnessFaithMenuDto: PaginateWitnessFaithMenuDto): Promise<ResponseDto> {
-    const data = await this.witnessFaithMenuService.getWitnessFaithMenus(paginateWitnessFaithMenuDto)
+    const { data, meta } = await this.witnessFaithMenuService.getWitnessFaithMenus(paginateWitnessFaithMenuDto)
     return {
       statusCode: 200,
       messageCode: 'WITNESS_FAITH_MENU_GET_SUCCESS',
-      data,
+      data: data,
+      meta: meta,
     }
   }
 
