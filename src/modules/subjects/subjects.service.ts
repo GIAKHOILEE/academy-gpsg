@@ -91,7 +91,7 @@ export class SubjectsService {
   }
 
   async update(id: number, updateSubjectDto: UpdateSubjectDto): Promise<void> {
-    const { department_id, ...rest } = updateSubjectDto
+    const { department_id } = updateSubjectDto
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
       throwAppException('SUBJECT_NOT_FOUND', ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
