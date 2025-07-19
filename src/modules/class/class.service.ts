@@ -6,7 +6,7 @@ import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { LessThan, Repository } from 'typeorm'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { Semester } from './_semester/semester.entity'
 import { Classes } from './class.entity'
@@ -16,6 +16,8 @@ import { GetStudentsOfClassDto, PaginateClassDto } from './dtos/paginate-class.d
 import { UpdateClassDto } from './dtos/update-class.dto'
 import { IStudent } from '@modules/students/students.interface'
 import { ClassStudents } from './class-students/class-student.entity'
+import { ClassStatus } from '@enums/class.enum'
+import { Cron, CronExpression } from '@nestjs/schedule'
 
 @Injectable()
 export class ClassService {
@@ -500,5 +502,16 @@ export class ClassService {
       saint_name: classStudent.student.user.saint_name,
     }))
     return { data: formattedStudents, meta }
+  }
+
+  // cronjob cuối ngày closing_day chuyển status qua END_CLASS
+  @Cron(CronExpression.EVERY_10_SECONDS)
+  async cronjobUpdateClassStatus(): Promise<void> {
+    const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.closing_day']).getMany()
+    for (const classEntity of classes) {
+      if (classEntity.closing_day < new Date().toISOString()) {
+        await this.classRepository.update(classEntity.id, { status: ClassStatus.END_CLASS })
+      }
+    }
   }
 }
