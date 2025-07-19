@@ -45,7 +45,10 @@ export class SubjectsService {
   }
 
   async getAll(pagination: PaginationDto): Promise<{ data: ISubject[]; meta: PaginationMeta }> {
-    const queryBuilder = this.subjectRepository.createQueryBuilder('subject').select(['subject.id', 'subject.code', 'subject.name', 'subject.image'])
+    const queryBuilder = this.subjectRepository
+      .createQueryBuilder('subject')
+      .select(['subject.id', 'subject.code', 'subject.name', 'subject.image'])
+      .leftJoinAndSelect('subject.department', 'department')
     const { data, meta } = await paginate(queryBuilder, pagination)
 
     const formattedData = data.map(subject => ({
@@ -67,7 +70,7 @@ export class SubjectsService {
   }
 
   async getById(id: number): Promise<ISubject> {
-    const subject = await this.subjectRepository.findOne({ where: { id } })
+    const subject = await this.subjectRepository.findOne({ where: { id }, relations: ['department'] })
     if (!subject) {
       throwAppException('SUBJECT_NOT_FOUND', ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
