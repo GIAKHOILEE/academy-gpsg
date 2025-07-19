@@ -33,6 +33,7 @@ import { WitnessFaithModule } from './modules/witness-faiths/witness-faith.modul
 import { PostModule } from '@modules/post/post.module'
 import { PostCatalogModule } from '@modules/post-catalog/post-catalog.module'
 import { BannerModule } from '@modules/banner/banner.module'
+import { NavigationModule } from '@modules/navigation/navigation.module'
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { BannerModule } from '@modules/banner/banner.module'
     BannerModule,
     PostCatalogModule,
     PostModule,
+    NavigationModule,
   ],
   providers: [AppService, SuperAdminSeeder],
 })
