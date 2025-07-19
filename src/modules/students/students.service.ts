@@ -12,6 +12,7 @@ import { PaginateStudentsDto } from './dtos/paginate-students.dto'
 import { UpdateStudentsDto } from './dtos/update-students.dto'
 import { Student } from './students.entity'
 import { IStudent } from './students.interface'
+import { Enrollments } from '@modules/enrollments/enrollments.entity'
 
 @Injectable()
 export class StudentsService {
@@ -167,6 +168,10 @@ export class StudentsService {
 
       const user = await userRepo.findOne({ where: { id: student.user_id } })
       if (!user) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      // nếu student có trong enrollments thì không xóa
+      const enrollments = await queryRunner.manager.getRepository(Enrollments).exists({ where: { student_id: student.id } })
+      if (enrollments) throwAppException('STUDENT_HAS_ENROLLMENTS', ErrorCode.STUDENT_HAS_ENROLLMENTS, HttpStatus.BAD_REQUEST)
 
       await studentRepo.delete(student.id)
       await userRepo.delete(user.id)

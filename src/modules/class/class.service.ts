@@ -505,7 +505,7 @@ export class ClassService {
   }
 
   // cronjob cuối ngày closing_day chuyển status qua END_CLASS
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cronjobUpdateClassStatus(): Promise<void> {
     const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.closing_day']).getMany()
     for (const classEntity of classes) {
