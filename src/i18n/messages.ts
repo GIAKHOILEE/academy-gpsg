@@ -58,6 +58,7 @@ export const messages = {
     BANNER_NOT_FOUND: 'Banner not found',
     POST_CATALOG_NOT_FOUND: 'Post catalog not found',
     POST_NOT_FOUND: 'Post not found',
+    POST_CATALOG_HAS_POST: 'Post catalog has post',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -121,5 +122,6 @@ export const messages = {
     POST_NOT_FOUND: 'Bài viết không tồn tại',
     TEACHER_HAS_CLASSES: 'Giáo viên này đang có lớp học',
     DEPARTMENT_HAS_SUBJECT: 'Khoa này đang có môn học',
+    POST_CATALOG_HAS_POST: 'Danh mục này có bài viết',
   },
 }

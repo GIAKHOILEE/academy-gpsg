@@ -8,12 +8,15 @@ import { PaginatePostCatalogDto } from './dtos/paginate-post-catalog.dto'
 import { PostCatalog } from './post-catalog.entity'
 import { IPostCatalog } from './post-catalog.interface'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { Post } from '@modules/post/post.entity'
 
 @Injectable()
 export class PostCatalogService {
   constructor(
     @InjectRepository(PostCatalog)
     private readonly postCatalogRepository: Repository<PostCatalog>,
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
   ) {}
 
   async create(createPostCatalogDto: CreatePostCatalogDto): Promise<IPostCatalog> {
@@ -252,6 +255,10 @@ export class PostCatalogService {
     const postCatalog = await this.postCatalogRepository.findOneBy({ id })
     if (!postCatalog) {
       throwAppException('POST_CATALOG_NOT_FOUND', ErrorCode.POST_CATALOG_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    const post = await this.postRepository.exists({ where: { post_catalog: { id: id } } })
+    if (post) {
+      throwAppException('POST_CATALOG_HAS_POST', ErrorCode.POST_CATALOG_HAS_POST, HttpStatus.BAD_REQUEST)
     }
     await this.postCatalogRepository.delete(id)
     return
