@@ -734,7 +734,6 @@ export class EnrollmentsService {
       queryBuilder.andWhere('enrollment.deleted_at IS NULL')
     }
 
-    console.log(queryBuilder.getQueryAndParameters())
     const { data, meta } = await paginate(queryBuilder, paginateEnrollmentsDto)
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
@@ -764,7 +763,7 @@ export class EnrollmentsService {
   }
 
   // 10 ngày không thanh toán thì tự động soft delete
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async overDue10Day() {
     const enrollments = await this.enrollmentsRepository
       .createQueryBuilder('enrollment')

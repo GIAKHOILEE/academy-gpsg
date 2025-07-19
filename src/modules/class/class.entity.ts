@@ -27,7 +27,7 @@ export class Classes {
   @Column()
   classroom: string
 
-  @Column()
+  @Column({ default: 9999 })
   max_students: number
 
   @Column()

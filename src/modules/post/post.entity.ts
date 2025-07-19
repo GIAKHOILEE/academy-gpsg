@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, JoinColumn } from 'typeorm'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
+import { PostStatus } from '@enums/post.enum'
 
 @Entity('posts')
 export class Post {
@@ -30,6 +31,9 @@ export class Post {
   @ManyToOne(() => PostCatalog, catalog => catalog.posts, { onUpdate: 'CASCADE', onDelete: 'CASCADE' })
   @JoinColumn({ name: 'post_catalog_id' })
   post_catalog: PostCatalog
+
+  @Column({ default: PostStatus.BOTTOM })
+  status: PostStatus
 
   @CreateDateColumn()
   created_at: Date
