@@ -36,7 +36,8 @@ export class BannerAdminController {
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_BANNERS_SUCCESS',
-      data: banners,
+      data: banners.data,
+      meta: banners.meta,
     })
   }
 
@@ -113,7 +114,8 @@ export class BannerUserController {
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_BANNERS_SUCCESS',
-      data: banners,
+      data: banners.data,
+      meta: banners.meta,
     })
   }
 

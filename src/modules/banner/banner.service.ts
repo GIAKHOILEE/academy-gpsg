@@ -2,7 +2,7 @@ import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { paginate } from 'src/common/pagination'
+import { PaginationMeta, paginate } from 'src/common/pagination'
 import { Repository } from 'typeorm'
 import { Banner } from './banner.entity'
 import { IBanner } from './banner.interface'
@@ -33,7 +33,7 @@ export class BannerService {
     return this.bannerRepository.save(banner)
   }
 
-  async getManyBanner(params: PaginateBannerDto, isAdmin: boolean): Promise<any> {
+  async getManyBanner(params: PaginateBannerDto, isAdmin: boolean): Promise<{ data: IBanner[]; meta: PaginationMeta }> {
     const queryBuilder = this.bannerRepository
       .createQueryBuilder('banner')
       .select(['banner.id', 'banner.image', 'banner.url', 'banner.index', 'banner.isActive'])
@@ -42,9 +42,9 @@ export class BannerService {
       queryBuilder.where('banner.isActive = :isActive', { isActive: true })
     }
 
-    const metadata = await paginate(queryBuilder, params)
+    const { data, meta } = await paginate(queryBuilder, params)
 
-    const formatBanner = metadata.data.map(banner => {
+    const formatBanner = data.map(banner => {
       return {
         id: banner.id,
         image: banner.image,
@@ -55,8 +55,8 @@ export class BannerService {
     })
 
     return {
-      ...metadata,
       data: formatBanner,
+      meta,
     }
   }
 
