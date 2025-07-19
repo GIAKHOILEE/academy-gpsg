@@ -9,6 +9,7 @@ import { UpdateSubjectDto } from './dtos/update-subject.dto'
 import { Subject } from './subjects.entity'
 import { ISubject } from './subjects.interface'
 import { Classes } from '@modules/class/class.entity'
+import { Department } from '@modules/departments/departments.entity'
 
 @Injectable()
 export class SubjectsService {
@@ -17,10 +18,17 @@ export class SubjectsService {
     private readonly subjectRepository: Repository<Subject>,
     @InjectRepository(Classes)
     private readonly classRepository: Repository<Classes>,
+    @InjectRepository(Department)
+    private readonly departmentRepository: Repository<Department>,
   ) {}
 
   async create(createSubjectDto: CreateSubjectDto): Promise<ISubject> {
-    const { code, name, image, description, credit } = createSubjectDto
+    const { code, name, image, description, credit, department_id } = createSubjectDto
+
+    const department = await this.departmentRepository.findOne({ where: { id: department_id } })
+    if (!department) {
+      throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
 
     const existingCode = await this.subjectRepository.findOne({ where: { code: createSubjectDto.code } })
     if (existingCode) {
@@ -32,7 +40,7 @@ export class SubjectsService {
       throwAppException('SUBJECT_ALREADY_EXISTS', ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
-    const subject = this.subjectRepository.create({ code, name, image, description, credit })
+    const subject = this.subjectRepository.create({ code, name, image, description, credit, department_id, department })
     return this.subjectRepository.save(subject)
   }
 
@@ -47,6 +55,13 @@ export class SubjectsService {
       image: subject.image,
       credit: subject.credit,
       description: subject.description,
+      department: subject?.department
+        ? {
+            id: subject.department.id,
+            code: subject.department.code,
+            name: subject.department.name,
+          }
+        : null,
     }))
     return { data: formattedData, meta }
   }
@@ -64,11 +79,19 @@ export class SubjectsService {
       credit: subject.credit,
       description: subject.description,
       content: subject.content,
+      department: subject?.department
+        ? {
+            id: subject.department.id,
+            code: subject.department.code,
+            name: subject.department.name,
+          }
+        : null,
     }
     return formattedSubject
   }
 
   async update(id: number, updateSubjectDto: UpdateSubjectDto): Promise<void> {
+    const { department_id, ...rest } = updateSubjectDto
     const subject = await this.subjectRepository.findOne({ where: { id } })
     if (!subject) {
       throwAppException('SUBJECT_NOT_FOUND', ErrorCode.SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -86,6 +109,16 @@ export class SubjectsService {
       }
     }
 
+    // sửa khoa
+    let department = subject.department
+    if (department_id) {
+      department = await this.departmentRepository.findOne({ where: { id: department_id } })
+      if (!department) {
+        throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+      subject.department = department
+    }
+
     if (updateSubjectDto.name) {
       const existingSubject = await this.subjectRepository
         .createQueryBuilder('subject')
@@ -101,7 +134,7 @@ export class SubjectsService {
       await this.classRepository.update({ subject_id: id }, { name: updateSubjectDto.name })
     }
 
-    await this.subjectRepository.update(id, updateSubjectDto)
+    await this.subjectRepository.update(id, { ...updateSubjectDto, department })
   }
 
   async delete(id: number): Promise<void> {

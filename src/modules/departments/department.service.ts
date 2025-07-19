@@ -10,6 +10,7 @@ import { Department } from './departments.entity'
 import { CreateDepartmentDto } from './dtos/create-department.dto'
 import { PaginateDepartmentDto } from './dtos/paginate-department.dto'
 import { UpdateDepartmentDto } from './dtos/update-department.dto'
+import { Subject } from '@modules/subjects/subjects.entity'
 
 @Injectable()
 export class DepartmentService {
@@ -18,6 +19,8 @@ export class DepartmentService {
     private readonly departmentRepository: Repository<Department>,
     @InjectRepository(Classes)
     private readonly classRepository: Repository<Classes>,
+    @InjectRepository(Subject)
+    private readonly subjectRepository: Repository<Subject>,
   ) {}
 
   async create(createDepartmentDto: CreateDepartmentDto): Promise<IDepartment> {
@@ -112,6 +115,12 @@ export class DepartmentService {
     if (classDepartment) {
       throwAppException('DEPARTMENT_HAS_CLASS', ErrorCode.DEPARTMENT_HAS_CLASS, HttpStatus.BAD_REQUEST)
     }
+    // có môn thì không được xóa
+    const subjectDepartment = await this.subjectRepository.exists({ where: { department_id: id } })
+    if (subjectDepartment) {
+      throwAppException('DEPARTMENT_HAS_SUBJECT', ErrorCode.DEPARTMENT_HAS_SUBJECT, HttpStatus.BAD_REQUEST)
+    }
+
     await this.departmentRepository.delete(id)
   }
 }

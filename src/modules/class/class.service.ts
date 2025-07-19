@@ -241,9 +241,10 @@ export class ClassService {
     const query = this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
+      .leftJoin('subject.department', 'department') // chỉ JOIN để lọc
       .leftJoinAndSelect('classes.teacher', 'teacher')
       .leftJoinAndSelect('teacher.user', 'user')
-      .leftJoinAndSelect('classes.department', 'department')
+      .leftJoin('classes.department', 'departmentClass') // chỉ JOIN để lọc
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
 
@@ -253,8 +254,15 @@ export class ClassService {
     if (teacher_id) {
       query.andWhere('teacher.id = :teacher_id', { teacher_id })
     }
+
+    // nếu class không có department thì lấy department của subject
     if (department_id) {
-      query.andWhere('department.id = :department_id', { department_id })
+      query.andWhere(
+        `
+        COALESCE(departmentClass.id, subject.department_id) = :department_id
+      `,
+        { department_id },
+      )
     }
     if (scholastic_id) {
       query.andWhere('scholastic.id = :scholastic_id', { scholastic_id })
@@ -313,13 +321,19 @@ export class ClassService {
             name: classEntity.semester.name,
           }
         : null,
-      department: classEntity?.department
+      department: classEntity.department
         ? {
             id: classEntity.department.id,
             code: classEntity.department.code,
             name: classEntity.department.name,
           }
-        : null,
+        : classEntity.subject?.department
+          ? {
+              id: classEntity.subject.department.id,
+              code: classEntity.subject.department.code,
+              name: classEntity.subject.department.name,
+            }
+          : null,
     }))
     return { data: formattedClasses, meta }
   }

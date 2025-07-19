@@ -84,8 +84,8 @@ export class CreateClassDto {
   semester_id: number
 
   @IsNumber()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Khoa', example: 1 })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Khoa', example: 1 })
   department_id: number
 
   @IsString()

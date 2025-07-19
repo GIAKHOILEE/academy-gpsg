@@ -2,6 +2,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateSubjectDto {
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'ID khoa' })
+  department_id: number
+
   @IsString()
   @IsNotEmpty()
   @ApiProperty({ description: 'Mã môn học' })

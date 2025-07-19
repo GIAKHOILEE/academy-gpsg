@@ -21,6 +21,7 @@ export const messages = {
     TEACHER_NOT_FOUND: 'Teacher not found',
     DEPARTMENT_NOT_FOUND: 'Department not found',
     DEPARTMENT_HAS_CLASS: 'Department has class',
+    DEPARTMENT_HAS_SUBJECT: 'Department has subject',
     CLASS_HAS_STUDENTS: 'Class has students',
     CLASS_HAS_TEACHERS: 'Class has teachers',
     CLASS_HAS_SUBJECTS: 'Class has subjects',
@@ -119,5 +120,6 @@ export const messages = {
     POST_CATALOG_NOT_FOUND: 'Danh mục bài viết không tồn tại',
     POST_NOT_FOUND: 'Bài viết không tồn tại',
     TEACHER_HAS_CLASSES: 'Giáo viên này đang có lớp học',
+    DEPARTMENT_HAS_SUBJECT: 'Khoa này đang có môn học',
   },
 }
