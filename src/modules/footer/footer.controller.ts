@@ -12,7 +12,7 @@ import { FooterEnum } from '@enums/footer.enum'
 ================================================*/
 @ApiTags('Admin Footer')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @Controller('admin/footer')
 export class FooterAdminController {
   constructor(private readonly footerService: FooterService) {}

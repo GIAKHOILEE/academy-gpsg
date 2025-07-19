@@ -30,7 +30,8 @@ import { AppService } from './app.service'
 import { LoggerMiddleware } from './middleware/logger.middleware'
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module'
 import { WitnessFaithModule } from './modules/witness-faiths/witness-faith.module'
-import { BannersModule } from './modules/banners/banners.module'
+import { PostCatalog } from '@modules/post-catalog/post-catalog.entity'
+import { PostModule } from '@modules/post/post.module'
 
 @Module({
   imports: [
@@ -63,7 +64,9 @@ import { BannersModule } from './modules/banners/banners.module'
     CloudinaryModule,
     EnrollmentsModule,
     WitnessFaithModule,
-    BannersModule,
+    // BannersModule,
+    PostCatalog,
+    PostModule,
   ],
   providers: [AppService, SuperAdminSeeder],
 })

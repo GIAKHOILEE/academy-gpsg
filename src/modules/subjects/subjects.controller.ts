@@ -11,11 +11,11 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 @Controller('admin/subjects')
 @ApiTags('Subjects')
 @ApiBearerAuth()
+@Auth(Role.ADMIN, Role.STAFF)
 export class SubjectsController {
   constructor(private readonly subjectsService: SubjectsService) {}
 
   @Post()
-  @Auth(Role.ADMIN)
   async create(@Body() createSubjectDto: CreateSubjectDto): Promise<ResponseDto> {
     const subject = await this.subjectsService.create(createSubjectDto)
     return new ResponseDto({
@@ -26,7 +26,6 @@ export class SubjectsController {
   }
 
   @Get()
-  @Auth(Role.ADMIN)
   async getAll(@Query() pagination: PaginateSubjectDto): Promise<ResponseDto> {
     const subjects = await this.subjectsService.getAll(pagination)
     return new ResponseDto({
@@ -38,7 +37,6 @@ export class SubjectsController {
   }
 
   @Get(':id')
-  @Auth(Role.ADMIN)
   async getById(@Param('id') id: string): Promise<ResponseDto> {
     const subject = await this.subjectsService.getById(Number(id))
     return new ResponseDto({
@@ -49,7 +47,6 @@ export class SubjectsController {
   }
 
   @Put(':id')
-  @Auth(Role.ADMIN)
   async update(@Param('id') id: string, @Body() updateSubjectDto: UpdateSubjectDto): Promise<ResponseDto> {
     await this.subjectsService.update(Number(id), updateSubjectDto)
     return new ResponseDto({
@@ -59,7 +56,6 @@ export class SubjectsController {
   }
 
   @Delete(':id')
-  @Auth(Role.ADMIN)
   async delete(@Param('id') id: string): Promise<ResponseDto> {
     await this.subjectsService.delete(Number(id))
     return new ResponseDto({

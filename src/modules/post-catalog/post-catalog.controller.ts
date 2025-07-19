@@ -13,7 +13,7 @@ import { Role } from '@enums/role.enum'
 @Controller('admin/post-catalog')
 @ApiTags('Admin post-catalog')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 export class PostCatalogAdminController {
   constructor(private readonly postCatalogService: PostCatalogService) {}
 

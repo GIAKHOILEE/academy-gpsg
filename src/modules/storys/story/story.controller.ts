@@ -11,7 +11,7 @@ import { StoryService } from './story.service'
 @ApiTags('Admin Stories')
 @Controller('admin/stories')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 export class AdminStoryController {
   constructor(private readonly storyService: StoryService) {}
 

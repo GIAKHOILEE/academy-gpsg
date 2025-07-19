@@ -9,7 +9,7 @@ import { PaginateStudentsDto } from './dtos/paginate-students.dto'
 import { UpdateStudentsDto } from './dtos/update-students.dto'
 
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @Controller('admin/students')
 @ApiTags('Admin Students')
 export class StudentsController {

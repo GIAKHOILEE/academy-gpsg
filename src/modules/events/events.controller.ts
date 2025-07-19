@@ -10,7 +10,7 @@ import { EventsService } from './events.service'
 
 @ApiTags('Admin Events')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @Controller('admin/events')
 export class AdminEventsController {
   constructor(private readonly eventsService: EventsService) {}

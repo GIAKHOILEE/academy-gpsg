@@ -12,7 +12,7 @@ import { StudyLinkService } from './study-link.service'
 =================================================*/
 @Controller('admin/study-link')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @ApiTags('Admin study link')
 export class StudyLinkController {
   constructor(private readonly studyLinkService: StudyLinkService) {}

@@ -12,7 +12,7 @@ import { NotificationsService } from './notifications.service'
 
 @ApiTags('Admin Notifications')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @Controller('admin/notifications')
 export class AdminNotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

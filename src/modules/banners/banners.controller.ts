@@ -12,7 +12,7 @@ import { Role } from '@enums/role.enum'
 @ApiTags('Admin Banners')
 @Controller('admin/banners')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 export class AdminBannersController {
   constructor(private readonly bannersService: BannersService) {}
 

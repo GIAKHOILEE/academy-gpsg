@@ -12,7 +12,7 @@ import { Role } from '@enums/role.enum'
   ======================ADMIN=====================
   ===============================================*/
 @Controller('admin/post')
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @ApiBearerAuth()
 @ApiTags('Admin post')
 export class PostControllerAdmin {

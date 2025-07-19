@@ -11,7 +11,7 @@ import { UpdateClassDto } from './dtos/update-class.dto'
 
 @ApiTags('Admin Classes')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @Controller('admin/classes')
 export class AdminClassController {
   constructor(private readonly classService: ClassService) {}

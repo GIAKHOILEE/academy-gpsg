@@ -15,7 +15,7 @@ import { UpdateWitnessFaithMenuDto } from './_witness-faith-menu/dtos/update-wit
 import { UpdateWitnessFaithDto } from './dtos/update-witness-faith.dto'
 
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @Controller('admin/witness-faiths')
 @ApiTags('Admin Witness Faiths')
 export class WitnessFaithController {
@@ -111,7 +111,7 @@ export class WitnessFaithPublicController {
 }
 
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @Controller('admin/witness-faith/menus')
 @ApiTags('Admin Witness Faith Menus')
 export class WitnessFaithMenuController {

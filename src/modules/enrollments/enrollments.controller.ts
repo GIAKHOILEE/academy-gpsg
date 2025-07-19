@@ -11,7 +11,7 @@ import { EnrollmentsService } from './enrollments.service'
 
 @Controller('admin/enrollments')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @ApiTags('Admin Enrollments')
 export class AdminEnrollmentsController {
   constructor(private readonly enrollmentsService: EnrollmentsService) {}

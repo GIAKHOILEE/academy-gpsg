@@ -11,7 +11,7 @@ import { PaginateDepartmentDto } from './dtos/paginate-department.dto'
 @Controller('admin/departments')
 @ApiTags('Admin Departments')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 export class AdminDepartmentController {
   constructor(private readonly departmentService: DepartmentService) {}
 

@@ -11,7 +11,7 @@ import { PaginateScholasticDto } from './dtos/paginate-scholastic.dto'
 @ApiTags('Admin Scholastic')
 @Controller('admin/scholastic')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 export class AdminScholasticController {
   constructor(private readonly scholasticService: ScholasticService) {}
 

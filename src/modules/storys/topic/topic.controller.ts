@@ -12,7 +12,7 @@ import { TopicService } from './topic.service'
 @ApiTags('Admin Topics')
 @Controller('admin/topics')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 export class AdminTopicController {
   constructor(private readonly topicService: TopicService) {}
 

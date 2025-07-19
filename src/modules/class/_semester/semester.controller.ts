@@ -11,7 +11,7 @@ import { PaginateSemesterDto } from './dtos/paginate-semester.dto'
 @ApiTags('Admin Semester')
 @Controller('admin/semester')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 export class AdminSemesterController {
   constructor(private readonly semesterService: SemesterService) {}
 

@@ -11,7 +11,7 @@ import { ResponseDto } from 'src/common/response.dto'
 ================================================*/
 @ApiTags('Admin contact')
 @Controller('admin/contact')
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 @ApiBearerAuth()
 export class ContactAdminController {
   constructor(private readonly contactService: ContactService) {}
