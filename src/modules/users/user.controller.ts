@@ -14,6 +14,8 @@ import { UserService } from './user.service'
 // ============================================
 @ApiTags('admin/users')
 @Controller('admin/users')
+@Auth(Role.ADMIN)
+@ApiBearerAuth()
 export class AdminUsersController {
   constructor(private readonly userService: UserService) {}
 
@@ -24,9 +26,7 @@ export class AdminUsersController {
 
   // tạo tài khoản cho admin
   @ApiOperation({ summary: 'Tạo tài khoản mới cho Admin' })
-  @ApiBearerAuth()
   @Post('register-admin')
-  @Auth(Role.ADMIN)
   async registerAdmin(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
     const user = await this.userService.create(createUserDto, Role.ADMIN)
     return new ResponseDto({
@@ -36,11 +36,20 @@ export class AdminUsersController {
     })
   }
 
+  @ApiOperation({ summary: 'Tạo tài khoản mới cho nhân viên' })
+  @Post('register-staff')
+  async registerStaff(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
+    const user = await this.userService.createStaff(createUserDto)
+    return new ResponseDto({
+      messageCode: 'STAFF_CREATED_SUCCESS',
+      statusCode: 200,
+      data: user,
+    })
+  }
+
   // lấy danh sách admin
   @ApiOperation({ summary: 'Lấy danh sách Admin' })
-  @ApiBearerAuth()
   @Get('admin')
-  @Auth(Role.ADMIN)
   async getAdmin(@Query() paginateUserDto: PaginateUserDto): Promise<ResponseDto> {
     const users = await this.userService.getAllUsers(paginateUserDto, Role.ADMIN)
     return new ResponseDto({
@@ -108,9 +117,7 @@ export class AdminUsersController {
 
   @ApiOperation({ summary: 'Cập nhật trạng thái của Admin' })
   @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiBearerAuth()
   @Put(':id/status')
-  @Auth(Role.ADMIN)
   async updateStatus(@Param('id', ParseIntPipe) id: number, @Body('status') status: UserStatus): Promise<ResponseDto> {
     await this.userService.updateStatus(id, status)
     return new ResponseDto({
@@ -121,9 +128,7 @@ export class AdminUsersController {
 
   @ApiOperation({ summary: 'Cập nhật thông tin của Admin' })
   @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiBearerAuth()
   @Put(':id')
-  @Auth(Role.ADMIN)
   async updateUser(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto): Promise<ResponseDto> {
     await this.userService.updateUser(id, updateUserDto)
     return new ResponseDto({

@@ -196,31 +196,41 @@ export class ClassService {
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       post_link: classEntity.post_link,
-      subject: {
-        id: classEntity.subject.id,
-        code: classEntity.subject.code,
-        name: classEntity.subject.name,
-        credit: classEntity.subject.credit,
-      },
-      teacher: {
-        id: classEntity.teacher.id,
-        code: classEntity.teacher.user.code,
-        full_name: classEntity.teacher.user.full_name,
-        email: classEntity.teacher.user.email,
-      },
-      scholastic: {
-        id: classEntity.scholastic.id,
-        name: classEntity.scholastic.name,
-      },
-      semester: {
-        id: classEntity.semester.id,
-        name: classEntity.semester.name,
-      },
-      department: {
-        id: classEntity.department.id,
-        code: classEntity.department.code,
-        name: classEntity.department.name,
-      },
+      subject: classEntity?.subject
+        ? {
+            id: classEntity.subject.id,
+            code: classEntity.subject.code,
+            name: classEntity.subject.name,
+            credit: classEntity.subject.credit,
+          }
+        : null,
+      teacher: classEntity?.teacher
+        ? {
+            id: classEntity.teacher.id,
+            code: classEntity.teacher.user.code,
+            full_name: classEntity.teacher.user.full_name,
+            email: classEntity.teacher.user.email,
+          }
+        : null,
+      scholastic: classEntity?.scholastic
+        ? {
+            id: classEntity.scholastic.id,
+            name: classEntity.scholastic.name,
+          }
+        : null,
+      semester: classEntity?.semester
+        ? {
+            id: classEntity.semester.id,
+            name: classEntity.semester.name,
+          }
+        : null,
+      department: classEntity?.department
+        ? {
+            id: classEntity.department.id,
+            code: classEntity.department.code,
+            name: classEntity.department.name,
+          }
+        : null,
     }
     return formattedClass
   }
@@ -275,31 +285,41 @@ export class ClassService {
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       post_link: classEntity.post_link,
-      subject: {
-        id: classEntity.subject.id,
-        code: classEntity.subject.code,
-        name: classEntity.subject.name,
-        credit: classEntity.subject.credit,
-      },
-      teacher: {
-        id: classEntity.teacher.id,
-        code: classEntity.teacher.user.code,
-        full_name: classEntity.teacher.user.full_name,
-        email: classEntity.teacher.user.email,
-      },
-      scholastic: {
-        id: classEntity.scholastic.id,
-        name: classEntity.scholastic.name,
-      },
-      semester: {
-        id: classEntity.semester.id,
-        name: classEntity.semester.name,
-      },
-      department: {
-        id: classEntity.department.id,
-        code: classEntity.department.code,
-        name: classEntity.department.name,
-      },
+      subject: classEntity?.subject
+        ? {
+            id: classEntity.subject.id,
+            code: classEntity.subject.code,
+            name: classEntity.subject.name,
+            credit: classEntity.subject.credit,
+          }
+        : null,
+      teacher: classEntity?.teacher
+        ? {
+            id: classEntity.teacher.id,
+            code: classEntity.teacher.user.code,
+            full_name: classEntity.teacher.user.full_name,
+            email: classEntity.teacher.user.email,
+          }
+        : null,
+      scholastic: classEntity?.scholastic
+        ? {
+            id: classEntity.scholastic.id,
+            name: classEntity.scholastic.name,
+          }
+        : null,
+      semester: classEntity?.semester
+        ? {
+            id: classEntity.semester.id,
+            name: classEntity.semester.name,
+          }
+        : null,
+      department: classEntity?.department
+        ? {
+            id: classEntity.department.id,
+            code: classEntity.department.code,
+            name: classEntity.department.name,
+          }
+        : null,
     }))
     return { data: formattedClasses, meta }
   }

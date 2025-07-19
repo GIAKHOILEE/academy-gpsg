@@ -118,5 +118,6 @@ export const messages = {
     BANNER_NOT_FOUND: 'Banner không tồn tại',
     POST_CATALOG_NOT_FOUND: 'Danh mục bài viết không tồn tại',
     POST_NOT_FOUND: 'Bài viết không tồn tại',
+    TEACHER_HAS_CLASSES: 'Giáo viên này đang có lớp học',
   },
 }

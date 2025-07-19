@@ -34,7 +34,15 @@ export class StudyLinkService {
   async getManyStudyLink(params: PaginateStudyLinkDto): Promise<{ data: IStudyLink[]; meta: PaginationMeta }> {
     const queryBuilder = this.studyLinkRepository
       .createQueryBuilder('study_link')
-      .select(['study_link.id', 'study_link.title', 'study_link.content', 'study_link.icon', 'study_link.image', 'study_link.url'])
+      .select([
+        'study_link.id',
+        'study_link.title',
+        'study_link.content',
+        'study_link.description',
+        'study_link.icon',
+        'study_link.image',
+        'study_link.url',
+      ])
 
     const { data, meta } = await paginate(queryBuilder, params)
 

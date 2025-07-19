@@ -12,6 +12,7 @@ import { CreateTeachersDto } from './dtos/create-teachers.dto'
 import { PaginateTeachersDto } from './dtos/paginate-teachers.dto'
 import { UpdateTeachersDto } from './dtos/update-teachers.dto'
 import { Teacher } from './teachers.entity'
+import { Classes } from '../class/class.entity'
 
 @Injectable()
 export class TeachersService {
@@ -166,6 +167,9 @@ export class TeachersService {
     await queryRunner.startTransaction()
 
     try {
+      const classes = await queryRunner.manager.getRepository(Classes).exists({ where: { teacher_id: id } })
+      if (classes) throwAppException('TEACHER_HAS_CLASSES', ErrorCode.TEACHER_HAS_CLASSES, HttpStatus.BAD_REQUEST)
+
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
 

@@ -39,6 +39,24 @@ export class UserService {
     return this.usersRepository.save(user)
   }
 
+  async createStaff(createUserDto: CreateUserDto): Promise<User> {
+    const { username, password, full_name, ...rest } = createUserDto
+    const existingUser = await this.usersRepository.createQueryBuilder('users').where('users.username = :username', { username }).getOne()
+    if (existingUser) {
+      throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
+    }
+    const hashedPassword = await hashPassword(password)
+    const user = this.usersRepository.create({
+      username,
+      full_name,
+      password: hashedPassword,
+      role: Role.STAFF,
+      status: UserStatus.ACTIVE,
+      ...rest,
+    })
+    return this.usersRepository.save(user)
+  }
+
   async getAllUsers(paginateUserDto: PaginateUserDto, role?: Role): Promise<{ data: IUser[]; meta: PaginationMeta }> {
     const queryBuilder = this.usersRepository.createQueryBuilder('users')
     if (role) {
