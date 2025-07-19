@@ -32,9 +32,6 @@ export class Post {
   @JoinColumn({ name: 'post_catalog_id' })
   post_catalog: PostCatalog
 
-  @Column({ default: PostStatus.BOTTOM })
-  status: PostStatus
-
   @CreateDateColumn()
   created_at: Date
 

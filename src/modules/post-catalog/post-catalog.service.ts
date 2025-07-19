@@ -9,6 +9,7 @@ import { PostCatalog } from './post-catalog.entity'
 import { IPostCatalog } from './post-catalog.interface'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Post } from '@modules/post/post.entity'
+import { PostStatus } from '@enums/post.enum'
 
 @Injectable()
 export class PostCatalogService {
@@ -19,7 +20,7 @@ export class PostCatalogService {
     private readonly postRepository: Repository<Post>,
   ) {}
 
-  async create(createPostCatalogDto: CreatePostCatalogDto): Promise<IPostCatalog> {
+  async create(createPostCatalogDto: CreatePostCatalogDto, status: PostStatus = PostStatus.BOTTOM): Promise<IPostCatalog> {
     const { name, parent_id } = createPostCatalogDto
 
     const postCatalogMaxIndex = await this.postCatalogRepository
@@ -34,7 +35,11 @@ export class PostCatalogService {
 
     let parent: PostCatalog = null
     if (parent_id) {
-      const exitParent = await this.postCatalogRepository.findOneBy({ id: parent_id })
+      const exitParent = await this.postCatalogRepository
+        .createQueryBuilder('post_catalog')
+        .where('post_catalog.id = :id', { id: parent_id })
+        .andWhere('post_catalog.status = :status', { status })
+        .getOne()
       if (!exitParent) {
         throwAppException('POST_CATALOG_NOT_FOUND', ErrorCode.POST_CATALOG_NOT_FOUND, HttpStatus.NOT_FOUND)
       }
@@ -45,12 +50,13 @@ export class PostCatalogService {
       slug: convertToSlug(name),
       index: newIndex,
       parent,
+      status,
     })
 
     return await this.postCatalogRepository.save(newPostCatalog)
   }
 
-  async findAll(paginatePostCatalogDto: PaginatePostCatalogDto, isAdmin: boolean): Promise<any> {
+  async findAll(paginatePostCatalogDto: PaginatePostCatalogDto, isAdmin: boolean, status: PostStatus = PostStatus.BOTTOM): Promise<any> {
     const { parent_id, id, ...rest } = paginatePostCatalogDto
     const queryBuilder = this.postCatalogRepository
       .createQueryBuilder('post_catalog')
@@ -67,6 +73,9 @@ export class PostCatalogService {
     }
     if (id) {
       queryBuilder.andWhere('post_catalog.id = :id', { id })
+    }
+    if (status) {
+      queryBuilder.andWhere('post_catalog.status = :status', { status })
     }
     const { data, meta } = await paginate(queryBuilder, rest)
 
@@ -118,7 +127,7 @@ export class PostCatalogService {
     )
   }
 
-  async findAllPostCatalogByUser(paginatePostCatalogDto: PaginatePostCatalogDto): Promise<any> {
+  async findAllPostCatalogByUser(paginatePostCatalogDto: PaginatePostCatalogDto, status: PostStatus = PostStatus.BOTTOM): Promise<any> {
     const { parent_id, id, ...rest } = paginatePostCatalogDto
     const queryBuilder = this.postCatalogRepository
       .createQueryBuilder('post_catalog')
@@ -134,6 +143,9 @@ export class PostCatalogService {
     if (id) {
       const rootCatalog = await this.findRootCatalog(Number(id))
       queryBuilder.andWhere('post_catalog.id = :id', { id: rootCatalog.id })
+    }
+    if (status) {
+      queryBuilder.andWhere('post_catalog.status = :status', { status })
     }
     const { data, meta } = await paginate(queryBuilder, rest)
 

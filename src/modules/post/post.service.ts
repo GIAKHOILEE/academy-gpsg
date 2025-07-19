@@ -10,7 +10,6 @@ import { Post } from './post.entity'
 import { IPost } from './post.interface'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { PostStatus } from '@enums/post.enum'
 
 @Injectable()
 export class PostService {
@@ -21,7 +20,7 @@ export class PostService {
     private readonly postCatalogRepository: Repository<PostCatalog>,
   ) {}
 
-  async create(createPostDto: CreatePostDto, status: PostStatus = PostStatus.BOTTOM): Promise<IPost> {
+  async create(createPostDto: CreatePostDto): Promise<IPost> {
     const { title, content, image, post_catalog_id, description } = createPostDto
 
     const slug = convertToSlug(title)
@@ -43,7 +42,6 @@ export class PostService {
       is_banner: true,
       post_catalog: catalog,
       description,
-      status,
     })
 
     const savedPost = await this.postRepository.save(post)
@@ -66,7 +64,7 @@ export class PostService {
     return formatPost
   }
 
-  async getManyPost(params: PaginatePostDto, isAdmin: boolean, status: PostStatus = PostStatus.BOTTOM): Promise<any> {
+  async getManyPost(params: PaginatePostDto, isAdmin: boolean): Promise<any> {
     const { is_banner, ...paginationParams } = params
     const queryBuilder = this.postRepository
       .createQueryBuilder('post')
@@ -78,7 +76,6 @@ export class PostService {
         'post.image',
         'post.is_active',
         'post.is_banner',
-        'post.status',
         'post.description',
         'post_catalog.id',
         'post_catalog.name',
@@ -89,15 +86,10 @@ export class PostService {
       queryBuilder.where('post.is_active = :is_active', { is_active: true })
     }
 
-    if (status) {
-      queryBuilder.andWhere('post.status = :status', { status })
-    }
-
     if (is_banner) {
       queryBuilder.andWhere('post.is_banner = :is_banner', { is_banner: is_banner === 'true' })
     }
 
-    console.log(queryBuilder.getQueryAndParameters())
     const { data, meta } = await paginate(queryBuilder, paginationParams)
 
     const formatPost = data.map(post => {

@@ -7,7 +7,6 @@ import { UpdatePostDto } from './dtos/update-post.dto'
 import { PostService } from './post.service'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { PostStatus } from '@enums/post.enum'
 
 /*===============================================
   ======================ADMIN=====================
@@ -18,81 +17,6 @@ import { PostStatus } from '@enums/post.enum'
 @ApiTags('Admin post')
 export class PostControllerAdmin {
   constructor(private readonly postService: PostService) {}
-  // ========================== TOP ==========================
-  @Post('top')
-  @ApiOperation({ summary: 'Create a new post' })
-  async createTopPost(@Body() createPostDto: CreatePostDto): Promise<ResponseDto> {
-    const post = await this.postService.create(createPostDto, PostStatus.TOP)
-    return new ResponseDto({
-      statusCode: 201,
-      messageCode: 'CREATE_POST_SUCCESS',
-      data: post,
-    })
-  }
-
-  @Get('top')
-  @ApiOperation({ summary: 'Get all top posts' })
-  async getAllTopPosts(@Query() query: PaginatePostDto): Promise<ResponseDto> {
-    const posts = await this.postService.getManyPost(query, true, PostStatus.TOP)
-    return new ResponseDto({
-      statusCode: 200,
-      messageCode: 'GET_ALL_TOP_POSTS_SUCCESS',
-      data: posts.data,
-      meta: posts.meta,
-    })
-  }
-
-  @Get('top/:id')
-  @ApiOperation({ summary: 'Get a top post by id' })
-  async getTopPostById(@Param('id') id: string): Promise<ResponseDto> {
-    const post = await this.postService.getPostById(Number(id))
-    return new ResponseDto({
-      statusCode: 200,
-      messageCode: 'GET_TOP_POST_BY_ID_SUCCESS',
-      data: post,
-    })
-  }
-
-  @Put('top/:id')
-  @ApiOperation({ summary: 'Update a top post by id' })
-  async updateTopPostById(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto): Promise<ResponseDto> {
-    await this.postService.update(Number(id), updatePostDto)
-    return new ResponseDto({
-      statusCode: 200,
-      messageCode: 'UPDATE_TOP_POST_SUCCESS',
-    })
-  }
-
-  @Delete('top/:id')
-  @ApiOperation({ summary: 'Delete a top post by id' })
-  async deleteTopPostById(@Param('id') id: string): Promise<ResponseDto> {
-    await this.postService.delete(Number(id))
-    return new ResponseDto({
-      statusCode: 200,
-      messageCode: 'DELETE_TOP_POST_SUCCESS',
-    })
-  }
-
-  @Put('top/is-active/:id')
-  @ApiOperation({ summary: 'Update is active of top post' })
-  async updateTopPostIsActive(@Param('id') id: string): Promise<ResponseDto> {
-    await this.postService.updateIsActive(Number(id))
-    return new ResponseDto({
-      statusCode: 200,
-      messageCode: 'UPDATE_TOP_POST_IS_ACTIVE_SUCCESS',
-    })
-  }
-
-  @Put('top/is-banner/:id')
-  @ApiOperation({ summary: 'Update is banner of top post' })
-  async updateTopPostIsBanner(@Param('id') id: string): Promise<ResponseDto> {
-    await this.postService.updateIsBanner(Number(id))
-    return new ResponseDto({
-      statusCode: 200,
-      messageCode: 'UPDATE_TOP_POST_IS_BANNER_SUCCESS',
-    })
-  }
-
   // ========================== BOTTOM ==========================
   @Post()
   @ApiOperation({ summary: 'Create a new post' })
