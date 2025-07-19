@@ -141,15 +141,15 @@ export class TeachersService {
       await queryRunner.manager.save(User, updatedUser)
 
       const updatedTeacher = queryRunner.manager.getRepository(Teacher).merge(teacher, {
-        other_name: other_name ?? teacher.other_name,
-        degree: degree ?? teacher.degree,
-        specialized: specialized ?? teacher.specialized,
-        professional_certificate: professional_certificate ?? teacher.professional_certificate,
-        teacher_certificate: teacher_certificate ?? teacher.teacher_certificate,
-        subject_teaching: subject_teaching ?? teacher.subject_teaching,
-        boarding: boarding ?? teacher.boarding,
-        start_date: start_date ?? teacher.start_date,
-        cv: cv ?? teacher.cv,
+        other_name: other_name,
+        degree: degree,
+        specialized: specialized,
+        professional_certificate: professional_certificate,
+        teacher_certificate: teacher_certificate,
+        subject_teaching: subject_teaching,
+        boarding: boarding,
+        start_date: start_date,
+        cv: cv,
       })
       await queryRunner.manager.save(Teacher, updatedTeacher)
       await queryRunner.commitTransaction()

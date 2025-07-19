@@ -32,6 +32,7 @@ import { EnrollmentsModule } from './modules/enrollments/enrollments.module'
 import { WitnessFaithModule } from './modules/witness-faiths/witness-faith.module'
 import { PostModule } from '@modules/post/post.module'
 import { PostCatalogModule } from '@modules/post-catalog/post-catalog.module'
+import { BannerModule } from '@modules/banner/banner.module'
 
 @Module({
   imports: [
@@ -64,7 +65,7 @@ import { PostCatalogModule } from '@modules/post-catalog/post-catalog.module'
     CloudinaryModule,
     EnrollmentsModule,
     WitnessFaithModule,
-    // BannersModule,
+    BannerModule,
     PostCatalogModule,
     PostModule,
   ],

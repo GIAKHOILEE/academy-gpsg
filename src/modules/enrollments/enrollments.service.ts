@@ -582,17 +582,7 @@ export class EnrollmentsService {
           const classStudents = enrollment.class_ids.map(class_id => ({
             class_id,
             student_id: enrollment.student_id,
-            full_name: rest.full_name || enrollment.full_name,
-            email: rest.email || enrollment.email,
-            saint_name: rest.saint_name || enrollment.saint_name,
-            phone_number: rest.phone_number || enrollment.phone_number,
-            address: rest.address || enrollment.address,
-            birth_date: rest.birth_date || enrollment.birth_date,
-            birth_place: rest.birth_place || enrollment.birth_place,
-            parish: rest.parish || enrollment.parish,
-            deanery: rest.deanery || enrollment.deanery,
-            diocese: rest.diocese || enrollment.diocese,
-            congregation: rest.congregation || enrollment.congregation,
+            ...rest,
           }))
           await classStudentsRepo.save(classStudents)
         }
