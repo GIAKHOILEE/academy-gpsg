@@ -20,3 +20,15 @@ export class FilterDashboardDto {
   // @IsOptional()
   // status?: BorrowStatus
 }
+
+export class RevenueStatisticsDto {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Từ ngày', example: '2025-01-01' })
+  start_date: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Đến ngày', example: '2025-05-30' })
+  end_date: string
+}

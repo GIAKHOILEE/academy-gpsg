@@ -711,12 +711,6 @@ export class EnrollmentsService {
   ): Promise<{
     data: IEnrollments[]
     meta: PaginationMeta
-    summary: {
-      total_revenue: number
-      total_prepaid: number
-      total_debt: number
-      total_fee: number
-    }
   }> {
     const queryBuilder = this.enrollmentsRepository.createQueryBuilder('enrollment')
     queryBuilder
@@ -762,23 +756,9 @@ export class EnrollmentsService {
       }
     })
 
-    // Tính tổng tiền đã trả & chưa trả
-    const totalResult = await this.enrollmentsRepository
-      .createQueryBuilder('enrollment')
-      .select('SUM(enrollment.prepaid)', 'total_prepaid')
-      .addSelect('SUM(enrollment.debt)', 'total_debt')
-      .addSelect('SUM(enrollment.total_fee)', 'total_fee')
-      .getRawOne()
-
     return {
       data: formatEnrollments,
       meta,
-      summary: {
-        total_revenue: totalResult.total_prepaid + totalResult.total_debt + totalResult.total_fee,
-        total_prepaid: totalResult.total_prepaid,
-        total_debt: totalResult.total_debt,
-        total_fee: totalResult.total_fee,
-      },
     }
   }
 

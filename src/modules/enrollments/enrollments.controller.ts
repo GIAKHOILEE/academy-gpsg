@@ -19,40 +19,24 @@ export class AdminEnrollmentsController {
   @ApiOperation({ summary: 'Lấy danh sách đăng ký' })
   @Get()
   async getManyEnrollment(@Query() paginateEnrollmentsDto: PaginateEnrollmentsDto): Promise<ResponseDto> {
-    const { data, meta, summary } = await this.enrollmentsService.getManyEnrollment(paginateEnrollmentsDto)
+    const { data, meta } = await this.enrollmentsService.getManyEnrollment(paginateEnrollmentsDto)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'ENROLLMENTS_GET_SUCCESS',
       data,
-      meta: {
-        ...meta,
-        summary: {
-          total_revenue: summary.total_revenue,
-          total_prepaid: summary.total_prepaid,
-          total_debt: summary.total_debt,
-          total_fee: summary.total_fee,
-        },
-      },
+      meta,
     })
   }
 
   @ApiOperation({ summary: 'Lấy danh sách đăng ký đã xóa' })
   @Get('deleted')
   async getManySoftDelete(@Query() paginateEnrollmentsDto: PaginateEnrollmentsDto): Promise<ResponseDto> {
-    const { data, meta, summary } = await this.enrollmentsService.getManyEnrollment(paginateEnrollmentsDto, true)
+    const { data, meta } = await this.enrollmentsService.getManyEnrollment(paginateEnrollmentsDto, true)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'ENROLLMENTS_GET_SUCCESS',
       data,
-      meta: {
-        ...meta,
-        summary: {
-          total_revenue: summary.total_revenue,
-          total_prepaid: summary.total_prepaid,
-          total_debt: summary.total_debt,
-          total_fee: summary.total_fee,
-        },
-      },
+      meta,
     })
   }
 

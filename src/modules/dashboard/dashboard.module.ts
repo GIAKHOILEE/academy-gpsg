@@ -4,8 +4,9 @@ import { DashboardController, DashboardControllerUser } from './dashboard.contro
 import { DashboardService } from './dashboard.service'
 import { Visitor } from '../visitor/visitor.entity'
 import { VisitorService } from '../visitor/visitor.service'
+import { Enrollments } from '@modules/enrollments/enrollments.entity'
 @Module({
-  imports: [TypeOrmModule.forFeature([Visitor])],
+  imports: [TypeOrmModule.forFeature([Visitor, Enrollments])],
   controllers: [DashboardController, DashboardControllerUser],
   providers: [DashboardService, VisitorService],
 })
