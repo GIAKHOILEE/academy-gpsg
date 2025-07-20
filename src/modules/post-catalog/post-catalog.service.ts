@@ -268,7 +268,7 @@ export class PostCatalogService {
     if (!postCatalog) {
       throwAppException('POST_CATALOG_NOT_FOUND', ErrorCode.POST_CATALOG_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
-    const post = await this.postRepository.exists({ where: { post_catalog: { id: id } } })
+    const post = await this.postRepository.createQueryBuilder('post').where('post.post_catalog_id = :id', { id }).getOne()
     if (post) {
       throwAppException('POST_CATALOG_HAS_POST', ErrorCode.POST_CATALOG_HAS_POST, HttpStatus.BAD_REQUEST)
     }
