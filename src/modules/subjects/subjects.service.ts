@@ -40,14 +40,14 @@ export class SubjectsService {
       throwAppException('SUBJECT_ALREADY_EXISTS', ErrorCode.SUBJECT_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
-    const subject = this.subjectRepository.create({ code, name, image, description, credit, department_id, department })
+    const subject = this.subjectRepository.create({ code, name, image, description, credit, department_id, department, post_link })
     return this.subjectRepository.save(subject)
   }
 
   async getAll(pagination: PaginationDto): Promise<{ data: ISubject[]; meta: PaginationMeta }> {
     const queryBuilder = this.subjectRepository
       .createQueryBuilder('subject')
-      .select(['subject.id', 'subject.code', 'subject.name', 'subject.image'])
+      .select(['subject.id', 'subject.code', 'subject.name', 'subject.image', 'subject.post_link'])
       .leftJoinAndSelect('subject.department', 'department')
     const { data, meta } = await paginate(queryBuilder, pagination)
 
@@ -58,7 +58,7 @@ export class SubjectsService {
       image: subject.image,
       credit: subject.credit,
       description: subject.description,
-      post_link: subject.post_link,
+      post_link: subject?.post_link ? subject.post_link : null,
       department: subject?.department
         ? {
             id: subject.department.id,
@@ -83,7 +83,7 @@ export class SubjectsService {
       credit: subject.credit,
       description: subject.description,
       content: subject.content,
-      post_link: subject.post_link,
+      post_link: subject?.post_link ? subject.post_link : null,
       department: subject?.department
         ? {
             id: subject.department.id,
