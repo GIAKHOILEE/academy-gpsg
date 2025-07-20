@@ -251,6 +251,10 @@ export class ClassService {
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
 
+    // nếu không có status thì mặc định lấy hết trừ status số 4
+    if (!paginateClassDto.status) {
+      query.andWhere('classes.status != :status', { status: ClassStatus.END_CLASS })
+    }
     if (subject_id) {
       query.andWhere('subject.id = :subject_id', { subject_id })
     }
@@ -374,7 +378,7 @@ export class ClassService {
       .where('class_students.class_id = :class_id', { class_id })
 
     if (name) {
-      classStudents.andWhere('user.full_name ILIKE :name', { name: `%${name}%` })
+      classStudents.andWhere('user.full_name LIKE :name', { name: `%${name}%` })
     }
     if (code) {
       classStudents.andWhere('user.code = :code', { code })
@@ -489,7 +493,7 @@ export class ClassService {
       .where('class_students.class_id = :class_id', { class_id })
 
     if (name) {
-      classStudents.andWhere('user.full_name ILIKE :name', { name: `%${name}%` })
+      classStudents.andWhere('user.full_name LIKE :name', { name: `%${name}%` })
     }
     if (code) {
       classStudents.andWhere('user.code = :code', { code })
