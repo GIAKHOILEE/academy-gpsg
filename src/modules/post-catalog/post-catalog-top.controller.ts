@@ -6,7 +6,7 @@ import { PaginatePostCatalogDto } from './dtos/paginate-post-catalog.dto'
 import { PostCatalogService } from './post-catalog.service'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { PostStatus } from '@enums/post.enum'
+import { PostCatalogType } from '@enums/post.enum'
 
 /*===========================================
 ==================ADMIN=====================
@@ -21,7 +21,7 @@ export class PostCatalogTopAdminController {
   @Post()
   @ApiOperation({ summary: 'Create post-catalog' })
   async create(@Body() createPostCatalogDto: CreatePostCatalogDto): Promise<ResponseDto> {
-    const postCatalog = await this.postCatalogService.create(createPostCatalogDto, PostStatus.TOP)
+    const postCatalog = await this.postCatalogService.create(createPostCatalogDto, PostCatalogType.TOP)
     return new ResponseDto({
       messageCode: 'CREATE_POST_CATALOG_SUCCESS',
       statusCode: 200,
@@ -32,7 +32,7 @@ export class PostCatalogTopAdminController {
   @Get()
   @ApiOperation({ summary: 'Get all post-catalog' })
   async findAll(@Query() paginatePostCatalogDto: PaginatePostCatalogDto): Promise<ResponseDto> {
-    const postCatalog = await this.postCatalogService.findAll(paginatePostCatalogDto, true, PostStatus.TOP)
+    const postCatalog = await this.postCatalogService.findAll(paginatePostCatalogDto, true, PostCatalogType.TOP)
     return new ResponseDto({
       messageCode: 'GET_ALL_POST_CATALOG_SUCCESS',
       statusCode: 200,
@@ -107,7 +107,7 @@ export class PostCatalogTopControllerUser {
   @Get()
   @ApiOperation({ summary: 'Get all post-catalog' })
   async findAll(@Query() paginatePostCatalogDto: PaginatePostCatalogDto): Promise<ResponseDto> {
-    const postCatalog = await this.postCatalogService.findAllPostCatalogByUser(paginatePostCatalogDto, PostStatus.TOP)
+    const postCatalog = await this.postCatalogService.findAllPostCatalogByUser(paginatePostCatalogDto, PostCatalogType.TOP)
     return new ResponseDto({
       messageCode: 'GET_ALL_POST_CATALOG_SUCCESS',
       statusCode: 200,

@@ -1,6 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, JoinColumn } from 'typeorm'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
-import { PostStatus } from '@enums/post.enum'
 
 @Entity('posts')
 export class Post {

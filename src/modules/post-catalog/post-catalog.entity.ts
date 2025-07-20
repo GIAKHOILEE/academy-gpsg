@@ -10,7 +10,7 @@ import {
   JoinColumn,
 } from 'typeorm'
 import { Post } from '../post/post.entity'
-import { PostStatus } from '@enums/post.enum'
+import { PostCatalogType } from '@enums/post.enum'
 
 @Entity('post_catalogs')
 export class PostCatalog {
@@ -26,8 +26,8 @@ export class PostCatalog {
   @Column({ length: 255 })
   slug: string
 
-  @Column({ default: PostStatus.BOTTOM })
-  status: PostStatus
+  @Column({ default: PostCatalogType.BOTTOM })
+  type: PostCatalogType
 
   @ManyToOne(() => PostCatalog, catalog => catalog.children, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'parent_id' })
