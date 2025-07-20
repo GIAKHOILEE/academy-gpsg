@@ -211,6 +211,7 @@ export class ClassService {
             id: classEntity.teacher.id,
             code: classEntity.teacher.user.code,
             full_name: classEntity.teacher.user.full_name,
+            saint_name: classEntity.teacher.user.saint_name,
             email: classEntity.teacher.user.email,
           }
         : null,
@@ -308,6 +309,7 @@ export class ClassService {
             id: classEntity.teacher.id,
             code: classEntity.teacher.user.code,
             full_name: classEntity.teacher.user.full_name,
+            saint_name: classEntity.teacher.user.saint_name,
             email: classEntity.teacher.user.email,
           }
         : null,
