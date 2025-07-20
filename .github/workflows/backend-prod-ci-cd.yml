@@ -1,0 +1,52 @@
+name: Backend hvm prod CI/CD
+
+on:
+    push:
+      branches:
+        - main
+  
+jobs:
+    build-and-push:
+      runs-on: ubuntu-22.04
+  
+      steps:
+        # Checkout source code
+        - name: Checkout source code
+          uses: actions/checkout@v3
+  
+  
+        # Log in to Docker Hub
+        - name: Log in to Docker Hub
+          uses: docker/login-action@v2
+          with:
+            username: ${{ secrets.DOCKER_USERNAME }}
+            password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+  
+        # Build and push Docker image
+        - name: Build and push Docker image
+          uses: docker/build-push-action@v4
+          with:
+            context: .
+            push: true
+            tags: ${{ secrets.DOCKER_USERNAME }}/hvm-be:latest
+            build-args: | 
+              PORT=4002
+  
+    deploy:
+      needs: build-and-push
+      runs-on: ubuntu-latest
+  
+      steps:
+        # SSH and deploy
+        - name: Deploy to server
+          uses: appleboy/ssh-action@v0.1.6
+          with:
+            host: ${{ secrets.SERVER_HOST }}
+            username: ${{ secrets.SERVER_USER }}
+            password: ${{ secrets.SERVER_PASSWORD }}
+            script: |
+              cd /var/server/prod/hvm-be
+              docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_ACCESS_TOKEN }}
+              docker pull ${{ secrets.DOCKER_USERNAME }}/hvm-be:latest
+              docker compose -p hvm-be-prod down
+              docker compose -p hvm-be-prod up -d
