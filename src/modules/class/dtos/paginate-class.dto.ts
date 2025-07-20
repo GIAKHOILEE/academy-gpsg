@@ -50,12 +50,6 @@ export class PaginateClassDto extends PaginationDto {
   @IsNumber()
   @Type(() => Number)
   department_id: number
-
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'filter theo link bài viết' })
-  @IsString()
-  @Type(() => String)
-  post_link: string
 }
 
 export class GetStudentsOfClassDto extends PaginationDto {

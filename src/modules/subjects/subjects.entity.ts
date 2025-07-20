@@ -26,6 +26,9 @@ export class Subject {
   content: string
 
   @Column({ nullable: true })
+  post_link: string
+
+  @Column({ nullable: true })
   department_id: number
 
   @ManyToOne(() => Department, department => department.subjects, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

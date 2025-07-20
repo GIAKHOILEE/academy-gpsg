@@ -8,6 +8,7 @@ export interface ISubject {
   credit?: number
   description?: string
   content?: string
+  post_link?: string
   department_id?: number
   department?: IDepartment
 }

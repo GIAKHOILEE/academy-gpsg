@@ -23,7 +23,7 @@ export class SubjectsService {
   ) {}
 
   async create(createSubjectDto: CreateSubjectDto): Promise<ISubject> {
-    const { code, name, image, description, credit, department_id } = createSubjectDto
+    const { code, name, image, description, credit, department_id, post_link } = createSubjectDto
 
     const department = await this.departmentRepository.findOne({ where: { id: department_id } })
     if (!department) {
@@ -58,6 +58,7 @@ export class SubjectsService {
       image: subject.image,
       credit: subject.credit,
       description: subject.description,
+      post_link: subject.post_link,
       department: subject?.department
         ? {
             id: subject.department.id,
@@ -82,6 +83,7 @@ export class SubjectsService {
       credit: subject.credit,
       description: subject.description,
       content: subject.content,
+      post_link: subject.post_link,
       department: subject?.department
         ? {
             id: subject.department.id,

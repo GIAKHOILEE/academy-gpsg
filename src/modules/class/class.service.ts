@@ -197,13 +197,13 @@ export class ClassService {
       end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
-      post_link: classEntity.post_link,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
             code: classEntity.subject.code,
             name: classEntity.subject.name,
             credit: classEntity.subject.credit,
+            post_link: classEntity.subject.post_link,
           }
         : null,
       teacher: classEntity?.teacher
@@ -294,13 +294,13 @@ export class ClassService {
       end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
-      post_link: classEntity.post_link,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
             code: classEntity.subject.code,
             name: classEntity.subject.name,
             credit: classEntity.subject.credit,
+            post_link: classEntity.subject.post_link,
           }
         : null,
       teacher: classEntity?.teacher

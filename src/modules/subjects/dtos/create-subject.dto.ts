@@ -36,4 +36,9 @@ export class CreateSubjectDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Nội dung môn học' })
   content?: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Link bài viết' })
+  post_link: string
 }
