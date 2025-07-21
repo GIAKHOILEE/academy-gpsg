@@ -244,10 +244,10 @@ export class ClassService {
     const query = this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
-      .leftJoin('subject.department', 'department') // chỉ JOIN để lọc
+      .leftJoinAndSelect('subject.department', 'department') // chỉ JOIN để lọc
       .leftJoinAndSelect('classes.teacher', 'teacher')
       .leftJoinAndSelect('teacher.user', 'user')
-      .leftJoin('classes.department', 'departmentClass') // chỉ JOIN để lọc
+      .leftJoinAndSelect('classes.department', 'departmentClass') // chỉ JOIN để lọc
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
 
@@ -344,6 +344,7 @@ export class ClassService {
             }
           : null,
     }))
+    console.log(formattedClasses)
     return { data: formattedClasses, meta }
   }
 
