@@ -756,7 +756,12 @@ export class EnrollmentsService {
 
   // delete
   async deleteEnrollment(id: number): Promise<void> {
-    const enrollment = await this.enrollmentsRepository.exists({ where: { id } })
+    const enrollment = await this.enrollmentsRepository
+      .createQueryBuilder('enrollment')
+      .select(['enrollment.id'])
+      .where('enrollment.id = :id', { id })
+      .withDeleted()
+      .getOne()
     if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     await this.enrollmentsRepository.delete(id)
