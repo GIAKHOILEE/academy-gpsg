@@ -14,8 +14,8 @@ export class CreateClassDto {
   status: ClassStatus
 
   @IsString()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Phòng học', example: 'A101' })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Phòng học', example: 'A101' })
   classroom: string
 
   @IsNumber()

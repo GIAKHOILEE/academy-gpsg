@@ -21,7 +21,7 @@ export class Classes {
   @Column({ default: ClassStatus.ENROLLING })
   status: ClassStatus
 
-  @Column()
+  @Column({ nullable: true })
   classroom: string
 
   @Column({ default: 9999 })
