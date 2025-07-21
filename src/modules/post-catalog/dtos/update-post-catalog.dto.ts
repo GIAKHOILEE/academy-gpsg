@@ -1,16 +1,21 @@
-import { ApiProperty } from '@nestjs/swagger'
+import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNumber, IsOptional, IsString } from 'class-validator'
 
-export class UpdateBookDtoPostCatalogDto {
+export class UpdatePostCatalogDto {
   @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'string', description: 'Ten danh muc' })
+  @ApiPropertyOptional({ example: 'string', description: 'Ten danh muc' })
   name: string
 
   @IsOptional()
   @IsNumber()
-  @ApiProperty({ example: 1, description: 'Id danh muc cha' })
+  @ApiPropertyOptional({ example: 1, description: 'Id danh muc cha' })
   parent_id: number
 
   index: number
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ example: 'string', description: 'Icon' })
+  icon: string
 }

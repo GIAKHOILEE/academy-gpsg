@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreatePostCatalogDto {
@@ -9,8 +9,13 @@ export class CreatePostCatalogDto {
 
   @IsOptional()
   @IsNumber()
-  @ApiProperty({ example: 1, description: 'Id danh muc cha' })
+  @ApiPropertyOptional({ example: 1, description: 'Id danh muc cha' })
   parent_id: number
 
   index: number
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ example: 'string', description: 'Icon' })
+  icon: string
 }

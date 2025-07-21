@@ -1,12 +1,13 @@
+import { Auth } from '@decorators/auth.decorator'
+import { PostCatalogType } from '@enums/post.enum'
+import { Role } from '@enums/role.enum'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from 'src/common/response.dto'
 import { CreatePostCatalogDto } from './dtos/create-post-catalog.dto'
 import { PaginatePostCatalogDto } from './dtos/paginate-post-catalog.dto'
+import { UpdatePostCatalogDto } from './dtos/update-post-catalog.dto'
 import { PostCatalogService } from './post-catalog.service'
-import { Auth } from '@decorators/auth.decorator'
-import { Role } from '@enums/role.enum'
-import { PostCatalogType } from '@enums/post.enum'
 
 /*===========================================
 ==================ADMIN=====================
@@ -55,7 +56,7 @@ export class PostCatalogTopAdminController {
   @Put(':id')
   @ApiOperation({ summary: 'Update post-catalog by id' })
   @ApiParam({ name: 'id', type: Number, description: 'Post catalog id' })
-  async update(@Param('id') id: number, @Body() updatePostCatalogDto: CreatePostCatalogDto): Promise<ResponseDto> {
+  async update(@Param('id') id: number, @Body() updatePostCatalogDto: UpdatePostCatalogDto): Promise<ResponseDto> {
     const postCatalog = await this.postCatalogService.update(id, updatePostCatalogDto)
     return new ResponseDto({
       messageCode: 'UPDATE_POST_CATALOG_SUCCESS',
