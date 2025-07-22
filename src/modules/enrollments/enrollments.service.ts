@@ -1,6 +1,6 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { generateRandomString, hashPassword, throwAppException } from '@common/utils'
-import { ClassStatus, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { generateRandomString, hashPassword, mapScheduleToVietnamese, throwAppException } from '@common/utils'
+import { ClassStatus, PaymentMethod, PaymentStatus, Schedule, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -11,12 +11,13 @@ import { User } from '@modules/users/user.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, Repository } from 'typeorm'
+import { DataSource, In, Repository } from 'typeorm'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
 import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
+import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 
 @Injectable()
 export class EnrollmentsService {
@@ -28,6 +29,7 @@ export class EnrollmentsService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Classes)
     private readonly classRepository: Repository<Classes>,
+    private readonly emailService: BrevoMailerService,
   ) {}
 
   // async createEnrollment(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, userId?: number): Promise<IEnrollments> {
@@ -511,6 +513,16 @@ export class EnrollmentsService {
           })
           student = await studentRepo.save(student)
         }
+
+        // Send email đăng ký tài khoản thành công
+        if (user.email) {
+          await this.emailService.sendMail([{ email: user.email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'done-enrollment', {
+            name: user.full_name,
+            username: user.code,
+            password: user.password,
+            loginLink: `${process.env.FRONTEND_URL}`,
+          })
+        }
         // Gán vào enrollment
         enrollment.student_id = student.id
         // await enrollmentsRepo.update(id, { student_id: student.id })
@@ -600,13 +612,44 @@ export class EnrollmentsService {
         ...rest,
       })
       await enrollmentsRepo.save(updatedEnrollment)
-      // cập nhật class_students do đống field này bên class_students
-      // const classStudents = updatedEnrollment.class_ids.map(class_id => ({
-      //   class_id,
-      //   student_id: savedEnrollment.student_id,
-      //   ...rest,
-      // }))
-      // await classStudentsRepo.save(classStudents)
+
+      // Send email khi đơn update
+      if (enrollment.email) {
+        const listClass = await classRepo
+          .createQueryBuilder('class')
+          .select(['class.id', 'class.name', 'class.price', 'class.schedule'])
+          .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
+          .getMany()
+
+        const formatClass = listClass.map((classEntity: Classes, index: number) => ({
+          id: classEntity.id,
+          name: classEntity.name,
+          price: classEntity.price,
+          schedule: mapScheduleToVietnamese(classEntity.schedule),
+          index: index + 1,
+        }))
+        await this.emailService.sendMail(
+          [{ email: enrollment.email, name: enrollment.full_name }],
+          'Xác nhận đơn đăng ký thành công',
+          'update-enrollment',
+          {
+            saint_name: enrollment?.saint_name,
+            full_name: enrollment?.full_name,
+            birth_date: enrollment?.birth_date,
+            birth_place: enrollment?.birth_place,
+            phone: enrollment?.phone_number,
+            email: enrollment?.email,
+            parish: enrollment?.parish,
+            address: enrollment?.address,
+            total_fee: enrollment?.total_fee,
+            prepaid: enrollment?.prepaid,
+            debt: enrollment?.debt,
+            payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
+            classes: formatClass,
+          },
+        )
+      }
+
       await queryRunner.commitTransaction()
     } catch (error) {
       await queryRunner.rollbackTransaction()

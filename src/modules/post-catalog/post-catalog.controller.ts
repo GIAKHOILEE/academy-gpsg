@@ -87,7 +87,7 @@ export class PostCatalogAdminController {
     })
   }
 
-  @Delete()
+  @Delete(':id')
   @ApiOperation({ summary: 'Delete post-catalog' })
   @ApiParam({ name: 'id', type: Number, description: 'Post catalog id' })
   async delete(@Param('id') id: number): Promise<ResponseDto> {

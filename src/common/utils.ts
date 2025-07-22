@@ -4,6 +4,7 @@ import { HttpStatus } from '@nestjs/common'
 import * as bcrypt from 'bcryptjs'
 import { ClsServiceManager } from 'nestjs-cls'
 import { AppException } from './exeption'
+import { Schedule } from '@enums/class.enum'
 
 export function generateHash(password: string): string {
   return bcrypt.hashSync(password, 10)
@@ -74,4 +75,18 @@ export function throwAppException(message: string, code: ErrorCode, status = Htt
   const lang = req?.headers['accept-language']?.split(',')[0] || 'vi'
   const messageTranslated = getLocalizedMessage(message, lang)
   throw new AppException(messageTranslated, code, status)
+}
+
+export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
+  const dayMap: { [key in Schedule]: string } = {
+    [Schedule.SUNDAY]: 'Chủ nhật',
+    [Schedule.MONDAY]: 'Thứ 2',
+    [Schedule.TUESDAY]: 'Thứ 3',
+    [Schedule.WEDNESDAY]: 'Thứ 4',
+    [Schedule.THURSDAY]: 'Thứ 5',
+    [Schedule.FRIDAY]: 'Thứ 6',
+    [Schedule.SATURDAY]: 'Thứ 7',
+  }
+
+  return schedule.map(day => dayMap[day])
 }

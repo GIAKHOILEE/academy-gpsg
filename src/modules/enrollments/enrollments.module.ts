@@ -8,10 +8,12 @@ import { Classes } from '@modules/class/class.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { User } from '@modules/users/user.entity'
 import { ScheduleModule } from '@nestjs/schedule'
+import { BrevoMailerService } from '@services/brevo-mailer/email.service'
+import { HttpModule } from '@nestjs/axios'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Enrollments, Student, Classes, ClassStudents, User]), ScheduleModule.forRoot()],
+  imports: [TypeOrmModule.forFeature([Enrollments, Student, Classes, ClassStudents, User]), ScheduleModule.forRoot(), HttpModule],
   controllers: [AdminEnrollmentsController, EnrollmentsController],
-  providers: [EnrollmentsService],
+  providers: [EnrollmentsService, BrevoMailerService],
 })
 export class EnrollmentsModule {}
