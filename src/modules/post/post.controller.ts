@@ -7,6 +7,7 @@ import { UpdatePostDto } from './dtos/update-post.dto'
 import { PostService } from './post.service'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
+import { PostCatalogType } from '@enums/post.enum'
 
 /*===============================================
   ======================ADMIN=====================
@@ -32,10 +33,22 @@ export class PostControllerAdmin {
   @Get()
   @ApiOperation({ summary: 'Get all posts' })
   async getAllPosts(@Query() query: PaginatePostDto): Promise<ResponseDto> {
-    const posts = await this.postService.getManyPost(query, true)
+    const posts = await this.postService.getManyPost(query, true, PostCatalogType.BOTTOM)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_SUCCESS',
+      data: posts.data,
+      meta: posts.meta,
+    })
+  }
+
+  @Get('top')
+  @ApiOperation({ summary: 'Get all posts top' })
+  async getAllPostsTop(@Query() query: PaginatePostDto): Promise<ResponseDto> {
+    const posts = await this.postService.getManyPost(query, true, PostCatalogType.TOP)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'GET_ALL_POSTS_TOP_SUCCESS',
       data: posts.data,
       meta: posts.meta,
     })
@@ -103,10 +116,22 @@ export class PostControllerUser {
   @Get()
   @ApiOperation({ summary: 'Get all posts' })
   async getAllPostsByUser(@Query() query: PaginatePostDto): Promise<ResponseDto> {
-    const posts = await this.postService.getManyPost(query, false)
+    const posts = await this.postService.getManyPost(query, false, PostCatalogType.BOTTOM)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_SUCCESS',
+      data: posts.data,
+      meta: posts.meta,
+    })
+  }
+
+  @Get('top')
+  @ApiOperation({ summary: 'Get all posts top' })
+  async getAllPostsTopByUser(@Query() query: PaginatePostDto): Promise<ResponseDto> {
+    const posts = await this.postService.getManyPost(query, false, PostCatalogType.TOP)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'GET_ALL_POSTS_TOP_SUCCESS',
       data: posts.data,
       meta: posts.meta,
     })

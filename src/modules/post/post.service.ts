@@ -10,6 +10,7 @@ import { Post } from './post.entity'
 import { IPost } from './post.interface'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { PostCatalogType } from '@enums/post.enum'
 
 @Injectable()
 export class PostService {
@@ -64,7 +65,7 @@ export class PostService {
     return formatPost
   }
 
-  async getManyPost(params: PaginatePostDto, isAdmin: boolean): Promise<any> {
+  async getManyPost(params: PaginatePostDto, isAdmin: boolean, type: PostCatalogType): Promise<any> {
     const { is_banner, ...paginationParams } = params
     const queryBuilder = this.postRepository
       .createQueryBuilder('post')
@@ -81,9 +82,10 @@ export class PostService {
         'post_catalog.name',
         'post_catalog.slug',
       ])
+      .where('post_catalog.type = :type', { type: type })
 
     if (!isAdmin) {
-      queryBuilder.where('post.is_active = :is_active', { is_active: true })
+      queryBuilder.andWhere('post.is_active = :is_active', { is_active: true })
     }
 
     if (is_banner) {
