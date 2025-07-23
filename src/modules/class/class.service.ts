@@ -213,6 +213,7 @@ export class ClassService {
             full_name: classEntity.teacher.user.full_name,
             saint_name: classEntity.teacher.user.saint_name,
             email: classEntity.teacher.user.email,
+            other_name: classEntity.teacher.other_name,
           }
         : null,
       scholastic: classEntity?.scholastic
@@ -316,6 +317,7 @@ export class ClassService {
             full_name: classEntity.teacher.user.full_name,
             saint_name: classEntity.teacher.user.saint_name,
             email: classEntity.teacher.user.email,
+            other_name: classEntity.teacher.other_name,
           }
         : null,
       scholastic: classEntity?.scholastic
@@ -344,7 +346,6 @@ export class ClassService {
             }
           : null,
     }))
-    console.log(formattedClasses)
     return { data: formattedClasses, meta }
   }
 
@@ -438,6 +439,7 @@ export class ClassService {
         'user.full_name',
         'user.saint_name',
         'user.email',
+        'teacher.other_name',
       ])
       .leftJoin('class_students.class', 'class')
       .leftJoin('class.teacher', 'teacher')
@@ -474,6 +476,7 @@ export class ClassService {
         full_name: classStudent.class.teacher.user.full_name,
         saint_name: classStudent.class.teacher.user.saint_name,
         email: classStudent.class.teacher.user.email,
+        other_name: classStudent.class.teacher.other_name,
       },
     }))
     return { data: formattedClasses, meta }

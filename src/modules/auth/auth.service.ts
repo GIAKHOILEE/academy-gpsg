@@ -69,17 +69,26 @@ export class AuthService {
       email: user.email,
       role: user.role,
       status: user.status,
+      saint_name: user?.saint_name ?? '',
     }
     return formattedUser
   }
 
-  async createAccessToken(data: { role: Role; userId: number; username: string; email: string; code: string }): Promise<TokenPayloadDto> {
+  async createAccessToken(data: {
+    role: Role
+    userId: number
+    username: string
+    email: string
+    code: string
+    saint_name: string
+  }): Promise<TokenPayloadDto> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           userId: data.userId,
           username: data.username ?? '',
           email: data.email,
+          saint_name: data.saint_name,
           code: data.code ?? '',
           type: 'ACCESS_TOKEN',
           role: data.role,
@@ -131,6 +140,7 @@ export class AuthService {
       return this.createAccessToken({
         userId: user.id,
         username: user.username,
+        saint_name: user.saint_name,
         email: user.email,
         role: user.role,
         code: user.code,

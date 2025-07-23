@@ -21,6 +21,7 @@ export class AuthController {
       role: userAndRole.role,
       email: userAndRole.email,
       code: userAndRole.code ?? '',
+      saint_name: userAndRole?.saint_name ?? '',
     })
     /*==========================================
     =========login with Bearer token============
@@ -65,6 +66,7 @@ export class AuthController {
       userId: userAndRole.id,
       role: userAndRole.role,
       email: userAndRole.email,
+      saint_name: userAndRole.saint_name,
     })
     return res.status(HttpStatus.OK).json(new LoginPayloadDto(userAndRole, token))
   }
