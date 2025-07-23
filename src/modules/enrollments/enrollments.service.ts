@@ -1,6 +1,12 @@
 import { paginate, PaginationMeta } from '@common/pagination'
 import { generateRandomString, hashPassword, mapScheduleToVietnamese, throwAppException } from '@common/utils'
-import { ClassStatus, PaymentMethod, PaymentStatus, Schedule, StatusEnrollment } from '@enums/class.enum'
+import {
+  ClassStatus,
+  PaymentMethod,
+  PaymentStatus,
+  // Schedule,
+  StatusEnrollment,
+} from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -11,7 +17,7 @@ import { User } from '@modules/users/user.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, In, Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
