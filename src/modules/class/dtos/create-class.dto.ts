@@ -8,19 +8,14 @@ export class CreateClassDto {
   @ApiProperty({ description: 'Mã lớp', example: 'ENG_v1' })
   code: string
 
-  @IsString()
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'Ảnh lớp', example: 'https://example.com/image.jpg' })
-  image: string
-
   @IsEnum(ClassStatus)
   @IsNotEmpty()
   @ApiProperty({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
   status: ClassStatus
 
   @IsString()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Phòng học', example: 'A101' })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Phòng học', example: 'A101' })
   classroom: string
 
   @IsNumber()

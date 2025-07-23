@@ -6,7 +6,7 @@ import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { LessThan, Repository } from 'typeorm'
+import { Repository } from 'typeorm'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { Semester } from './_semester/semester.entity'
 import { Classes } from './class.entity'
@@ -83,11 +83,10 @@ export class ClassService {
       id: savedClass.id,
       name: subject.name, // tên lớp là tên môn học
       code: savedClass.code,
-      image: savedClass.image,
       status: savedClass.status,
       classroom: savedClass.classroom,
       credit: subject.credit,
-      max_students: savedClass.max_students,
+      max_students: savedClass.max_students == 0 ? 999999 : savedClass.max_students,
       price: savedClass.price,
       current_students: savedClass.current_students,
       schedule: savedClass.schedule,
@@ -185,7 +184,7 @@ export class ClassService {
       id: classEntity.id,
       name: classEntity.name,
       code: classEntity.code,
-      image: classEntity.image,
+      image: classEntity.subject.image,
       status: classEntity.status,
       classroom: classEntity.classroom,
       credit: classEntity.subject.credit,
@@ -202,6 +201,7 @@ export class ClassService {
             id: classEntity.subject.id,
             code: classEntity.subject.code,
             name: classEntity.subject.name,
+            image: classEntity.subject.image,
             credit: classEntity.subject.credit,
             post_link: classEntity.subject.post_link,
           }
@@ -213,6 +213,7 @@ export class ClassService {
             full_name: classEntity.teacher.user.full_name,
             saint_name: classEntity.teacher.user.saint_name,
             email: classEntity.teacher.user.email,
+            other_name: classEntity.teacher.other_name,
           }
         : null,
       scholastic: classEntity?.scholastic
@@ -244,10 +245,10 @@ export class ClassService {
     const query = this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
-      .leftJoin('subject.department', 'department') // chỉ JOIN để lọc
+      .leftJoinAndSelect('subject.department', 'department') // chỉ JOIN để lọc
       .leftJoinAndSelect('classes.teacher', 'teacher')
       .leftJoinAndSelect('teacher.user', 'user')
-      .leftJoin('classes.department', 'departmentClass') // chỉ JOIN để lọc
+      .leftJoinAndSelect('classes.department', 'departmentClass') // chỉ JOIN để lọc
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
 
@@ -287,7 +288,7 @@ export class ClassService {
       id: classEntity.id,
       name: classEntity.name,
       code: classEntity.code,
-      image: classEntity.image,
+      image: classEntity.subject.image,
       status: classEntity.status,
       classroom: classEntity.classroom,
       credit: classEntity.subject.credit,
@@ -305,6 +306,7 @@ export class ClassService {
             code: classEntity.subject.code,
             name: classEntity.subject.name,
             credit: classEntity.subject.credit,
+            image: classEntity.subject.image,
             post_link: classEntity.subject.post_link,
           }
         : null,
@@ -315,6 +317,7 @@ export class ClassService {
             full_name: classEntity.teacher.user.full_name,
             saint_name: classEntity.teacher.user.saint_name,
             email: classEntity.teacher.user.email,
+            other_name: classEntity.teacher.other_name,
           }
         : null,
       scholastic: classEntity?.scholastic
@@ -416,7 +419,6 @@ export class ClassService {
         'class.id',
         'class.name',
         'class.code',
-        'class.image',
         'class.status',
         'class.classroom',
         'class.max_students',
@@ -428,13 +430,16 @@ export class ClassService {
         'class.opening_day',
         'class.closing_day',
         'subject.id',
+        'subject.image',
         'subject.code',
         'subject.name',
         'subject.credit',
         'teacher.id',
         'user.code',
         'user.full_name',
+        'user.saint_name',
         'user.email',
+        'teacher.other_name',
       ])
       .leftJoin('class_students.class', 'class')
       .leftJoin('class.teacher', 'teacher')
@@ -447,7 +452,7 @@ export class ClassService {
       id: classStudent.class.id,
       name: classStudent.class.name,
       code: classStudent.class.code,
-      image: classStudent.class.image,
+      image: classStudent.class.subject.image,
       status: classStudent.class.status,
       classroom: classStudent.class.classroom,
       credit: classStudent.class.subject.credit,
@@ -469,7 +474,9 @@ export class ClassService {
         id: classStudent.class.teacher.id,
         code: classStudent.class.teacher.user.code,
         full_name: classStudent.class.teacher.user.full_name,
+        saint_name: classStudent.class.teacher.user.saint_name,
         email: classStudent.class.teacher.user.email,
+        other_name: classStudent.class.teacher.other_name,
       },
     }))
     return { data: formattedClasses, meta }

@@ -18,13 +18,10 @@ export class Classes {
   @Column()
   code: string
 
-  @Column({ nullable: true })
-  image: string
-
   @Column({ default: ClassStatus.ENROLLING })
   status: ClassStatus
 
-  @Column()
+  @Column({ nullable: true })
   classroom: string
 
   @Column({ default: 9999 })

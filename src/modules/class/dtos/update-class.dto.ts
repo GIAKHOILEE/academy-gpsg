@@ -8,11 +8,6 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Mã lớp', example: 'ENG_v1' })
   code: string
 
-  @IsString()
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'Ảnh lớp', example: 'https://example.com/image.jpg' })
-  image: string
-
   @IsNumber()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Số lượng học sinh tối đa', example: 30 })

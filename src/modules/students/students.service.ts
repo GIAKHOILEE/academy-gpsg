@@ -13,6 +13,7 @@ import { UpdateStudentsDto } from './dtos/update-students.dto'
 import { Student } from './students.entity'
 import { IStudent } from './students.interface'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
+import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 
 @Injectable()
 export class StudentsService {
@@ -20,6 +21,7 @@ export class StudentsService {
     private readonly dataSource: DataSource,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    private readonly emailService: BrevoMailerService,
   ) {}
 
   async createStudent(createStudentDto: CreateStudentsDto): Promise<void> {
@@ -83,6 +85,16 @@ export class StudentsService {
       })
 
       await queryRunner.manager.save(Student, student)
+
+      // Send email
+      if (email) {
+        await this.emailService.sendMail([{ email: email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
+          name: user.full_name,
+          username: user.code,
+          password: password ?? code,
+          loginLink: `${process.env.FRONTEND_URL}`,
+        })
+      }
 
       await queryRunner.commitTransaction()
 

@@ -3,6 +3,7 @@ export interface IPostCatalog {
   index?: number
   name: string
   slug: string
+  icon?: string
   parent?: IPostCatalog | null
   children?: IPostCatalog[]
   is_active?: boolean

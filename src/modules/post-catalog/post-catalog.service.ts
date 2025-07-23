@@ -60,7 +60,15 @@ export class PostCatalogService {
     const { parent_id, id, ...rest } = paginatePostCatalogDto
     const queryBuilder = this.postCatalogRepository
       .createQueryBuilder('post_catalog')
-      .select(['post_catalog.id', 'post_catalog.name', 'post_catalog.slug', 'post_catalog.index', 'post_catalog.is_active', 'post_catalog.parent_id'])
+      .select([
+        'post_catalog.id',
+        'post_catalog.name',
+        'post_catalog.slug',
+        'post_catalog.index',
+        'post_catalog.is_active',
+        'post_catalog.parent_id',
+        'post_catalog.icon',
+      ])
     if (!id && !parent_id) {
       queryBuilder.andWhere('post_catalog.parent_id IS NULL')
     }
@@ -89,6 +97,7 @@ export class PostCatalogService {
           slug: catalog.slug,
           index: catalog.index,
           is_active: catalog.is_active,
+          icon: catalog.icon,
           parent: null,
           children,
         }
@@ -105,7 +114,7 @@ export class PostCatalogService {
   private async fetchChildren(parentId: number, isAdmin: boolean): Promise<any[]> {
     const children = await this.postCatalogRepository
       .createQueryBuilder('post_catalog')
-      .select(['post_catalog.id', 'post_catalog.name', 'post_catalog.slug', 'post_catalog.index', 'post_catalog.is_active'])
+      .select(['post_catalog.id', 'post_catalog.name', 'post_catalog.slug', 'post_catalog.index', 'post_catalog.is_active', 'post_catalog.icon'])
       .where('post_catalog.parent_id = :parentId', { parentId })
       .andWhere(isAdmin ? '1=1' : 'post_catalog.is_active = :is_active', { is_active: true })
       .orderBy('post_catalog.index', 'ASC')
@@ -121,6 +130,7 @@ export class PostCatalogService {
           slug: child.slug,
           index: child.index,
           is_active: child.is_active,
+          icon: child.icon,
           children: grandChildren,
         }
       }),
@@ -131,7 +141,15 @@ export class PostCatalogService {
     const { parent_id, id, ...rest } = paginatePostCatalogDto
     const queryBuilder = this.postCatalogRepository
       .createQueryBuilder('post_catalog')
-      .select(['post_catalog.id', 'post_catalog.name', 'post_catalog.slug', 'post_catalog.index', 'post_catalog.is_active', 'post_catalog.parent_id'])
+      .select([
+        'post_catalog.id',
+        'post_catalog.name',
+        'post_catalog.slug',
+        'post_catalog.index',
+        'post_catalog.is_active',
+        'post_catalog.parent_id',
+        'post_catalog.icon',
+      ])
     queryBuilder.andWhere('post_catalog.is_active = :is_active', { is_active: true })
     if (!id && !parent_id) {
       queryBuilder.andWhere('post_catalog.parent_id IS NULL')
@@ -159,6 +177,7 @@ export class PostCatalogService {
           slug: catalog.slug,
           index: catalog.index,
           is_active: catalog.is_active,
+          icon: catalog.icon,
           parent: null,
           children,
         }

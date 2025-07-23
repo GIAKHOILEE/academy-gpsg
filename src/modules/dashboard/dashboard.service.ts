@@ -15,6 +15,7 @@ export class DashboardService {
     total_prepaid: number
     total_debt: number
     total_fee: number
+    total_enrollment: number
   }> {
     const { start_date, end_date } = revenueStatisticsDto
     // Tính tổng tiền đã trả & chưa trả
@@ -23,6 +24,7 @@ export class DashboardService {
       .select('SUM(enrollment.prepaid)', 'total_prepaid')
       .addSelect('SUM(enrollment.debt)', 'total_debt')
       .addSelect('SUM(enrollment.total_fee)', 'total_fee')
+      .addSelect('COUNT(enrollment.id)', 'total_enrollment')
 
     if (start_date) {
       queryBuilder.andWhere('enrollment.registration_date >= :start_date', { start_date })
@@ -39,6 +41,7 @@ export class DashboardService {
       total_prepaid: totalResult.total_prepaid || 0,
       total_debt: totalResult.total_debt || 0,
       total_fee: totalResult.total_fee || 0,
+      total_enrollment: totalResult.total_enrollment || 0,
     }
   }
 }

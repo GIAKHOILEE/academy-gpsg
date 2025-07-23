@@ -1,12 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToMany,
-  DeleteDateColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, DeleteDateColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 import { NavigationSub } from '../navigation-sub/navigation-sub.entity'
 
 @Entity('navigations')

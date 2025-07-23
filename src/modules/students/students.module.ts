@@ -4,11 +4,13 @@ import { StudentsService } from './students.service'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Student } from './students.entity'
 import { User } from '../users/user.entity'
+import { BrevoMailerService } from '@services/brevo-mailer/email.service'
+import { HttpModule } from '@nestjs/axios'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, User])],
+  imports: [TypeOrmModule.forFeature([Student, User]), HttpModule],
   controllers: [StudentsController],
-  providers: [StudentsService],
+  providers: [StudentsService, BrevoMailerService],
   exports: [StudentsService],
 })
 export class StudentsModule {}

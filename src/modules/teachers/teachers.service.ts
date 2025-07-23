@@ -13,6 +13,7 @@ import { PaginateTeachersDto } from './dtos/paginate-teachers.dto'
 import { UpdateTeachersDto } from './dtos/update-teachers.dto'
 import { Teacher } from './teachers.entity'
 import { Classes } from '../class/class.entity'
+import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 
 @Injectable()
 export class TeachersService {
@@ -20,6 +21,7 @@ export class TeachersService {
     private readonly dataSource: DataSource,
     @InjectRepository(Teacher)
     private readonly teacherRepository: Repository<Teacher>,
+    private readonly emailService: BrevoMailerService,
   ) {}
 
   async createTeacher(createTeacherDto: CreateTeachersDto): Promise<void> {
@@ -87,6 +89,16 @@ export class TeachersService {
       })
 
       await queryRunner.manager.save(Teacher, teacher)
+
+      // Send email
+      if (email) {
+        await this.emailService.sendMail([{ email: email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
+          name: user.full_name,
+          username: user.code,
+          password: password ?? code,
+          loginLink: `${process.env.FRONTEND_URL}`,
+        })
+      }
 
       await queryRunner.commitTransaction()
     } catch (error) {
