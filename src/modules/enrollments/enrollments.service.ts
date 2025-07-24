@@ -20,6 +20,8 @@ import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
 import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
+import { Voucher } from '@modules/voucher/voucher.entity'
+import { VoucherType } from '@enums/voucher.enum'
 
 const logoBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'logo.jpg'))
 const backgroundBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'background.png'))
@@ -42,6 +44,8 @@ export class EnrollmentsService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Classes)
     private readonly classRepository: Repository<Classes>,
+    @InjectRepository(Voucher)
+    private readonly voucherRepository: Repository<Voucher>,
     private readonly emailService: BrevoMailerService,
   ) {}
 
@@ -431,9 +435,21 @@ export class EnrollmentsService {
       if (classEntities.length !== class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // Tổng tiền học
-      const totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
+      let totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
       const prepaid = 0 // trả trước
       const debt = totalFee - prepaid // nợ học phí
+
+      // check voucher
+      if (createEnrollmentDto.voucher_id) {
+        const voucher = await this.voucherRepository.findOne({ where: { id: createEnrollmentDto.voucher_id } })
+        if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (voucher.type === VoucherType.PERCENTAGE) {
+          createEnrollmentDto.discount = (totalFee * voucher.discount) / 100
+        } else if (voucher.type === VoucherType.FIXED) {
+          createEnrollmentDto.discount = voucher.discount
+        }
+        createEnrollmentDto.voucher_id = voucher.id
+      }
 
       const enrollment = this.enrollmentsRepository.create({
         ...createEnrollmentDto,
@@ -565,6 +581,17 @@ export class EnrollmentsService {
         enrollment.debt = totalFee - prepaid
       }
 
+      if (updateEnrollmentDto.voucher_id) {
+        const voucher = await this.voucherRepository.findOne({ where: { id: updateEnrollmentDto.voucher_id } })
+        if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (voucher.type === VoucherType.PERCENTAGE) {
+          enrollment.discount = (totalFee * voucher.discount) / 100
+        } else if (voucher.type === VoucherType.FIXED) {
+          enrollment.discount = voucher.discount
+        }
+        enrollment.voucher_id = voucher.id
+      }
+
       // nếu status khác pending thì cộng current_students của class, còn nếu pending thì trừ current_students của class
       // nếu class mà có current_students = max_students thì không được thêm vào
       if (status && status !== StatusEnrollment.PENDING) {
@@ -673,6 +700,7 @@ export class EnrollmentsService {
             total_fee: enrollment?.total_fee,
             prepaid: enrollment?.prepaid,
             debt: enrollment?.debt,
+            discount: enrollment?.discount,
             payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
             classes: formatClass,
             day,
@@ -713,6 +741,7 @@ export class EnrollmentsService {
             total_fee: enrollment?.total_fee,
             prepaid: enrollment?.prepaid,
             debt: enrollment?.debt,
+            discount: enrollment?.discount,
             payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
             classes: formatClass,
             day,

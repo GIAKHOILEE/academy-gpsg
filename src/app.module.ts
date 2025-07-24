@@ -34,6 +34,7 @@ import { PostModule } from '@modules/post/post.module'
 import { PostCatalogModule } from '@modules/post-catalog/post-catalog.module'
 import { BannerModule } from '@modules/banner/banner.module'
 import { NavigationModule } from '@modules/navigation/navigation.module'
+import { VoucherModule } from '@modules/voucher/voucher.module'
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { NavigationModule } from '@modules/navigation/navigation.module'
     PostCatalogModule,
     PostModule,
     NavigationModule,
+    VoucherModule,
   ],
   providers: [AppService, SuperAdminSeeder],
 })
