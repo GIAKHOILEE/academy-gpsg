@@ -1,74 +1,73 @@
-<!doctype html>
-<html lang="vi">
+<html lang='vi'>
 
-<head>
-  <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
-  <meta name="description" content="Thông tin tài khoản thư viện." />
-  <style type="text/css">
-    body {
-      margin: 0;
-      background-color: #f2f3f8;
-      font-family: 'Open Sans', sans-serif;
-    }
-    .container {
-      max-width: 670px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-      text-align: center;
-      padding: 24px;
-    }
-    h1 {
-      color: #8B4513;
-      font-size: 24px;
-    }
-    p {
-      color: #555;
-      font-size: 16px;
-      line-height: 1.6;
-    }
-    .info {
-      background: #f4f4f4;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-      font-size: 18px;
-    }
-    .btn {
-      display: inline-block;
-      background: #8B4513;
-      color: #fff;
-      padding: 12px 20px;
-      text-decoration: none;
-      border-radius: 5px;
-      font-size: 16px;
-      font-weight: bold;
-    }
-    .btn:hover {
-      background: #6b3310;
-    }
-  </style>
-</head>
+  <head>
+    <meta content='text/html; charset=utf-8' http-equiv='Content-Type' />
+    <meta name='description' content='Thông tin tài khoản thư viện.' />
+    <style type='text/css'>
+      body {
+        margin: 0;
+        background-color: #f2f3f8;
+        font-family: 'Open Sans', sans-serif;
+      }
+      .container {
+        max-width: 670px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        text-align: center;
+        padding: 24px;
+      }
+      h1 {
+        color: #8b4513;
+        font-size: 24px;
+      }
+      p {
+        color: #555;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      .info {
+        background: #f4f4f4;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-size: 18px;
+      }
+      .btn {
+        display: inline-block;
+        background: #8b4513;
+        color: #fff;
+        padding: 12px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: bold;
+      }
+      .btn:hover {
+        background: #6b3310;
+      }
+    </style>
+  </head>
 
-<body>
-  <table width="100%" bgcolor="#f2f3f8">
-    <tr>
-      <td>
-        <div class="container">
-          <h1>Chào mừng {{name}}!</h1>
-          <p>Bạn đã được tạo tài khoản trong hệ thống Học Viện Mục Vụ. Dưới đây là thông tin đăng nhập của bạn:</p>
-          <div class="info">
-            <p><strong>Tên đăng nhập:</strong> {{username}}</p>
-            <p><strong>Mật khẩu:</strong> {{password}}</p>
+  <body>
+    <table width='100%' bgcolor='#f2f3f8'>
+      <tr>
+        <td>
+          <div class='container'>
+            <h1>Chào mừng {{name}}!</h1>
+            <p>Bạn đã được tạo tài khoản trong hệ thống Học Viện Mục Vụ. Dưới đây là thông tin đăng nhập của bạn:</p>
+            <div class='info'>
+              <p><strong>Tên đăng nhập:</strong> {{username}}</p>
+              <p><strong>Mật khẩu:</strong> {{password}}</p>
+            </div>
+            <p>Hãy nhấn vào nút bên dưới để đăng nhập:</p>
+            <a href='{{loginLink}}' class='btn' style='color: #fff;'>Đăng nhập ngay</a>
+            <p>Nếu có bất kỳ vấn đề nào, vui lòng liên hệ với chúng tôi qua email hoặc số điện thoại hỗ trợ.</p>
           </div>
-          <p>Hãy nhấn vào nút bên dưới để đăng nhập:</p>
-          <a href="{{loginLink}}" class="btn" style="color: #fff;">Đăng nhập ngay</a>
-          <p>Nếu có bất kỳ vấn đề nào, vui lòng liên hệ với chúng tôi qua email hoặc số điện thoại hỗ trợ.</p>
-        </div>
-      </td>
-    </tr>
-  </table>
-</body>
+        </td>
+      </tr>
+    </table>
+  </body>
 
 </html>
