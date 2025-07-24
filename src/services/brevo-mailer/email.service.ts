@@ -2,11 +2,9 @@ import { HttpService } from '@nestjs/axios'
 import { Injectable } from '@nestjs/common'
 import * as fs from 'fs'
 import * as Handlebars from 'handlebars'
-import { IReceiver } from './receiver.interface'
 import * as path from 'path'
 import { firstValueFrom } from 'rxjs'
-import puppeteer from 'puppeteer'
-import { v4 as uuidv4 } from 'uuid'
+import { IReceiver } from './receiver.interface'
 
 export type Attachment = {
   filename: string
