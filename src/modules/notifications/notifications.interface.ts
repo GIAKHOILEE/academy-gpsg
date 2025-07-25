@@ -1,5 +1,8 @@
 export interface INotification {
   id: number
+  index?: number
+  is_active?: boolean
+  is_banner?: boolean
   title?: string
   thumbnail?: string
   description?: string

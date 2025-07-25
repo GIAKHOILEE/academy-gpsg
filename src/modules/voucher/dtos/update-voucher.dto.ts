@@ -6,6 +6,14 @@ export class UpdateVoucherDto {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({
+    description: 'The name of the voucher',
+    example: 'Voucher 1',
+  })
+  name: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
     description: 'The code of the voucher',
     example: '123456',
   })

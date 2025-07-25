@@ -9,11 +9,15 @@ import { PaginateVoucherDto } from './dtos/paginate-voucher.dto'
 import { UpdateVoucherDto } from './dtos/update-voucher.dto'
 import { Voucher } from './voucher.entity'
 import { IVoucher } from './voucher.interface'
+import { Student } from '@modules/students/students.entity'
+import { IStudent } from '@modules/students/students.interface'
 @Injectable()
 export class VoucherService {
   constructor(
     @InjectRepository(Voucher)
     private readonly voucherRepository: Repository<Voucher>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
   ) {}
 
   async createVoucher(createVoucherDto: CreateVoucherDto): Promise<IVoucher> {
@@ -28,6 +32,7 @@ export class VoucherService {
     const formattedVoucher: IVoucher = {
       id: savedVoucher.id,
       code: savedVoucher.code,
+      name: savedVoucher.name,
       type: savedVoucher.type,
       discount: savedVoucher.discount,
     }
@@ -62,11 +67,28 @@ export class VoucherService {
       throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
+    let student: IStudent | null = null
+    if (voucher.student_id) {
+      student = await this.studentRepository
+        .createQueryBuilder('student')
+        .select(['student.id', 'user.full_name', 'user.avatar', 'user.birth_date', 'user.gender', 'user.phone_number', 'user.address'])
+        .leftJoin('student.user', 'user')
+        .where('student.id = :id', { id: voucher.student_id })
+        .getRawOne()
+    }
+
     const formattedVoucher: IVoucher = {
       id: voucher.id,
       code: voucher.code,
+      name: voucher.name,
       type: voucher.type,
       discount: voucher.discount,
+      student_id: voucher?.student_id,
+      enrollment_id: voucher?.enrollment_id,
+      actual_discount: voucher?.actual_discount,
+      is_used: voucher?.is_used,
+      use_at: voucher?.use_at,
+      student: student || null,
     }
     return formattedVoucher
   }
@@ -79,8 +101,14 @@ export class VoucherService {
     const formattedData: IVoucher[] = data.map((voucher: Voucher) => ({
       id: voucher.id,
       code: voucher.code,
+      name: voucher.name,
       type: voucher.type,
       discount: voucher.discount,
+      student_id: voucher?.student_id,
+      enrollment_id: voucher?.enrollment_id,
+      actual_discount: voucher?.actual_discount,
+      is_used: voucher?.is_used,
+      use_at: voucher?.use_at,
     }))
 
     return { data: formattedData, meta }

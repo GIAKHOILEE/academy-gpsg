@@ -8,10 +8,10 @@ export class CreateEnrollmentsDto {
   @IsNotEmpty()
   class_ids: number[]
 
-  @ApiPropertyOptional({ description: 'ID voucher', example: 1 })
-  @IsNumber()
+  @ApiPropertyOptional({ description: 'Mã Voucher', example: 'VC_001' })
+  @IsString()
   @IsOptional()
-  voucher_id: number
+  voucher_code: string
   discount: number
 
   @ApiProperty({ description: 'Phương thức thanh toán', enum: PaymentMethod, example: PaymentMethod.CASH })

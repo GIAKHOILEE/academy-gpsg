@@ -19,11 +19,27 @@ export class NotificationsService {
   ) {}
 
   async createNotification(createNotificationDto: CreateNotificationDto): Promise<INotification> {
-    const notification = this.notificationRepository.create(createNotificationDto)
+    const notificationMaxIndex = await this.notificationRepository
+      .createQueryBuilder('notification')
+      .select('MAX(notification.index) as maxIndex')
+      .getRawOne()
+
+    let maxIndex = 1.0001
+    if (notificationMaxIndex?.maxIndex) {
+      maxIndex = notificationMaxIndex.maxIndex + 100
+    }
+
+    const notification = this.notificationRepository.create({
+      ...createNotificationDto,
+      index: maxIndex,
+    })
     const savedNotification = await this.notificationRepository.save(notification)
 
     const formattedNotification: INotification = {
       id: savedNotification.id,
+      index: savedNotification.index,
+      is_active: savedNotification.is_active,
+      is_banner: savedNotification.is_banner,
       title: savedNotification.title,
       thumbnail: savedNotification.thumbnail,
       description: savedNotification.description,

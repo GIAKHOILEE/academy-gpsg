@@ -440,15 +440,16 @@ export class EnrollmentsService {
       const debt = totalFee - prepaid // nợ học phí
 
       // check voucher
-      if (createEnrollmentDto.voucher_id) {
-        const voucher = await this.voucherRepository.findOne({ where: { id: createEnrollmentDto.voucher_id } })
+      if (createEnrollmentDto.voucher_code) {
+        const voucher = await this.voucherRepository.findOne({ where: { code: createEnrollmentDto.voucher_code } })
         if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (voucher.is_used) throwAppException('VOUCHER_ALREADY_USED', ErrorCode.VOUCHER_ALREADY_USED, HttpStatus.BAD_REQUEST)
         if (voucher.type === VoucherType.PERCENTAGE) {
           createEnrollmentDto.discount = (totalFee * voucher.discount) / 100
         } else if (voucher.type === VoucherType.FIXED) {
           createEnrollmentDto.discount = voucher.discount
         }
-        createEnrollmentDto.voucher_id = voucher.id
+        createEnrollmentDto.voucher_code = voucher.code
       }
 
       const enrollment = this.enrollmentsRepository.create({
@@ -581,15 +582,28 @@ export class EnrollmentsService {
         enrollment.debt = totalFee - prepaid
       }
 
-      if (updateEnrollmentDto.voucher_id) {
-        const voucher = await this.voucherRepository.findOne({ where: { id: updateEnrollmentDto.voucher_id } })
+      if (updateEnrollmentDto.voucher_code) {
+        const voucher = await this.voucherRepository.findOne({ where: { code: updateEnrollmentDto.voucher_code } })
         if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (voucher.is_used && voucher.enrollment_id !== enrollment.id)
+          throwAppException('VOUCHER_ALREADY_USED', ErrorCode.VOUCHER_ALREADY_USED, HttpStatus.BAD_REQUEST)
         if (voucher.type === VoucherType.PERCENTAGE) {
           enrollment.discount = (totalFee * voucher.discount) / 100
         } else if (voucher.type === VoucherType.FIXED) {
           enrollment.discount = voucher.discount
         }
-        enrollment.voucher_id = voucher.id
+        enrollment.voucher_code = voucher.code
+
+        // update voucher nếu status đã thanh toán
+        if (status === StatusEnrollment.DONE) {
+          await this.voucherRepository.update(voucher.id, {
+            student_id: enrollment.student_id,
+            is_used: true,
+            enrollment_id: enrollment.id,
+            use_at: new Date().toISOString(),
+            actual_discount: enrollment.discount,
+          })
+        }
       }
 
       // nếu status khác pending thì cộng current_students của class, còn nếu pending thì trừ current_students của class

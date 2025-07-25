@@ -6,6 +6,14 @@ export class CreateVoucherDto {
   @IsNotEmpty()
   @IsString()
   @ApiProperty({
+    description: 'The name of the voucher',
+    example: 'Voucher 1',
+  })
+  name: string
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
     description: 'The code of the voucher',
     example: '123456',
   })

@@ -23,7 +23,7 @@ export class Enrollments {
   status: StatusEnrollment
 
   @Column({ nullable: true })
-  voucher_id: number
+  voucher_code: string
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   discount: number

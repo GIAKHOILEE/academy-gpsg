@@ -82,7 +82,12 @@ export class PostService {
         'post_catalog.name',
         'post_catalog.slug',
       ])
-      .where('post_catalog.type = :type', { type: type })
+
+    if (type) {
+      queryBuilder.andWhere('post_catalog.type = :type', { type: type })
+    } else {
+      queryBuilder.andWhere('post.post_catalog IS NULL')
+    }
 
     if (!isAdmin) {
       queryBuilder.andWhere('post.is_active = :is_active', { is_active: true })

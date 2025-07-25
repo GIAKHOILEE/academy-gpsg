@@ -62,6 +62,7 @@ export const messages = {
     POST_CATALOG_HAS_POST: 'Post catalog has post',
     VOUCHER_CODE_ALREADY_EXISTS: 'Voucher code already exists',
     VOUCHER_NOT_FOUND: 'Voucher not found',
+    VOUCHER_ALREADY_USED: 'Voucher already used',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -129,5 +130,6 @@ export const messages = {
     POST_CATALOG_HAS_POST: 'Danh mục này có bài viết',
     VOUCHER_CODE_ALREADY_EXISTS: 'Mã voucher đã tồn tại',
     VOUCHER_NOT_FOUND: 'Voucher không tồn tại',
+    VOUCHER_ALREADY_USED: 'Voucher đã được sử dụng',
   },
 }

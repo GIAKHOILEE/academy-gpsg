@@ -10,4 +10,12 @@ export class PaginateVoucherDto extends PaginationDto {
     example: '123456',
   })
   code: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'The name of the voucher',
+    example: 'Voucher 1',
+  })
+  name: string
 }
