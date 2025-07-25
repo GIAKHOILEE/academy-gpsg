@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable, Post } from '@nestjs/common'
 
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -57,6 +57,51 @@ export class NotificationsService {
     await this.notificationRepository.update(id, updateNotificationDto)
   }
 
+  async updateIsActive(id: number): Promise<void> {
+    const notification = await this.notificationRepository
+      .createQueryBuilder('notification')
+      .select(['notification.id', 'notification.is_active'])
+      .where('notification.id = :id', { id })
+      .getOne()
+
+    if (!notification) {
+      throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND)
+    }
+    await this.notificationRepository
+      .createQueryBuilder('notification')
+      .update(Notification)
+      .set({ is_active: !notification.is_active })
+      .where('id = :id', { id })
+      .execute()
+    return
+  }
+
+  async updateIsBanner(id: number): Promise<void> {
+    const notification = await this.notificationRepository
+      .createQueryBuilder('notification')
+      .select(['notification.id', 'notification.is_banner'])
+      .where('notification.id = :id', { id })
+      .getOne()
+
+    if (!notification) {
+      throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND)
+    }
+    await this.notificationRepository
+      .createQueryBuilder('notification')
+      .update(Notification)
+      .set({ is_banner: !notification.is_banner })
+      .where('id = :id', { id })
+      .execute()
+    return
+  }
+  async updateIndex(id: number, index: number): Promise<void> {
+    const notification = await this.notificationRepository.findOne({ where: { id } })
+    if (!notification) {
+      throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND)
+    }
+    await this.notificationRepository.createQueryBuilder('notification').update(Notification).set({ index }).where('id = :id', { id }).execute()
+  }
+
   async deleteNotification(id: number): Promise<void> {
     const notification = await this.notificationRepository.exists({ where: { id } })
     if (!notification) throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -70,6 +115,9 @@ export class NotificationsService {
 
     const formattedNotification: INotification = {
       id: notification.id,
+      index: notification.index,
+      is_active: notification.is_active,
+      is_banner: notification.is_banner,
       title: notification.title,
       thumbnail: notification.thumbnail,
       description: notification.description,
@@ -80,13 +128,22 @@ export class NotificationsService {
     return formattedNotification
   }
 
-  async getNotifications(paginateNotificationDto: PaginateNotificationDto): Promise<{ data: INotification[]; meta: PaginationMeta }> {
+  async getNotifications(
+    paginateNotificationDto: PaginateNotificationDto,
+    isAdmin: boolean,
+  ): Promise<{ data: INotification[]; meta: PaginationMeta }> {
     const query = this.notificationRepository.createQueryBuilder('notification')
+    if (!isAdmin) {
+      query.where('notification.is_active = :isActive', { isActive: true })
+    }
 
     const { data, meta } = await paginate(query, paginateNotificationDto)
 
     const formattedNotifications: INotification[] = data.map(notification => ({
       id: notification.id,
+      index: notification.index,
+      is_active: notification.is_active,
+      is_banner: notification.is_banner,
       title: notification.title,
       thumbnail: notification.thumbnail,
       description: notification.description,

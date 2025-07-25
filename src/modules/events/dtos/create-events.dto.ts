@@ -2,6 +2,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class CreateEventDto {
+  index?: number
+
+  isActive?: boolean
+
+  isBanner?: boolean
+
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ description: 'Title of the event', example: 'Event Title' })

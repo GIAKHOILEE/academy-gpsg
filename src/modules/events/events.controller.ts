@@ -29,7 +29,7 @@ export class AdminEventsController {
   @Get()
   @ApiOperation({ summary: 'Get all events' })
   async getEvents(@Query() paginateEventDto: PaginateEventDto): Promise<ResponseDto> {
-    const events = await this.eventsService.getEvents(paginateEventDto)
+    const events = await this.eventsService.getEvents(paginateEventDto, true)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'EVENTS_FETCHED_SUCCESSFULLY',
@@ -61,6 +61,40 @@ export class AdminEventsController {
     })
   }
 
+  @Put('is-active/:id')
+  @ApiParam({ name: 'id', type: Number, description: 'Event id' })
+  @ApiOperation({ summary: 'Update is active a event by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'Event id' })
+  async updateIsActive(@Param('id') id: number): Promise<ResponseDto> {
+    await this.eventsService.updateIsActive(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'EVENT_UPDATED_SUCCESSFULLY',
+    })
+  }
+
+  @Put('is-banner/:id')
+  @ApiOperation({ summary: 'Update is banner a event by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'Event id' })
+  async updateIsBanner(@Param('id') id: number): Promise<ResponseDto> {
+    await this.eventsService.updateIsBanner(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'EVENT_UPDATED_SUCCESSFULLY',
+    })
+  }
+
+  @Put('index/:id')
+  @ApiOperation({ summary: 'Update index a event by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'Event id' })
+  async updateIndex(@Param('id') id: number, @Query('index') index: number): Promise<ResponseDto> {
+    await this.eventsService.updateIndex(id, index)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'EVENT_UPDATED_SUCCESSFULLY',
+    })
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a event' })
   @ApiParam({ name: 'id', type: Number, description: 'Event id' })
@@ -81,7 +115,7 @@ export class UserEventsController {
   @Get()
   @ApiOperation({ summary: 'Get all events' })
   async getEvents(@Query() paginateEventDto: PaginateEventDto): Promise<ResponseDto> {
-    const events = await this.eventsService.getEvents(paginateEventDto)
+    const events = await this.eventsService.getEvents(paginateEventDto, false)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'EVENTS_FETCHED_SUCCESSFULLY',

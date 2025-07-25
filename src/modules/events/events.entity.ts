@@ -5,6 +5,15 @@ export class Event {
   @PrimaryGeneratedColumn()
   id: number
 
+  @Column({ type: 'float', default: 1.001 })
+  index: number
+
+  @Column({ type: 'boolean', default: true })
+  is_active: boolean
+
+  @Column({ type: 'boolean', default: false })
+  is_banner: boolean
+
   @Column()
   title: string
 
