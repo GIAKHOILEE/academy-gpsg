@@ -221,31 +221,61 @@ export class PostService {
   }
 
   async getPostSlice(pagination: PaginationDto): Promise<any> {
-    const rawSql = `
-    SELECT id, \`index\`, is_active, is_banner, title, thumbnail AS image, description, created_at, 'notification' as source
-    FROM notifications
-    WHERE is_banner = true
+    const { page = 1, limit = 10, orderBy = 'created_at', orderDirection = 'DESC' } = pagination
 
-    UNION ALL
+    const offset = (page - 1) * limit
 
-    SELECT id, \`index\`, is_active, is_banner, title, thumbnail AS image, description, created_at, 'event' as source
-    FROM events
-    WHERE is_banner = true
+    const baseSql = `
+      SELECT is_active, is_banner, title, thumbnail AS image, description, created_at, 'notification' as source
+      FROM notifications
+      WHERE is_banner = true
+  
+      UNION ALL
+  
+      SELECT is_active, is_banner, title, thumbnail AS image, description, created_at, 'event' as source
+      FROM events
+      WHERE is_banner = true
+  
+      UNION ALL
+  
+      SELECT is_active, is_banner, title, image, description, created_at, 'post' as source
+      FROM posts
+      WHERE is_banner = true
+    `
 
-    UNION ALL
+    // Đếm tổng số
+    const countSql = `SELECT COUNT(*) as total FROM (${baseSql}) as combined`
 
-    SELECT id, \`index\`, is_active, is_banner, title, image, description, created_at, 'post' as source
-    FROM posts
-    WHERE is_banner = true
-  `
+    const totalResult = await this.dataSource.query(countSql)
+    const total = parseInt(totalResult[0]?.total || 0)
 
-    // Tạo một "subquery" tạm từ raw SQL để wrap lại bằng QueryBuilder
-    const qb = this.dataSource.createQueryBuilder().select('*').from(`(${rawSql})`, 'combined')
-    const { data, meta } = await paginate(qb, pagination)
+    // Lấy dữ liệu phân trang
+    const dataSql = `
+      SELECT * FROM (${baseSql}) as combined
+      ORDER BY ${orderBy} ${orderDirection}
+      LIMIT ${limit}
+      OFFSET ${offset}
+    `
 
+    const data = await this.dataSource.query(dataSql)
+
+    const formatData = data.map(item => {
+      return {
+        title: item.title,
+        image: item.image,
+        description: item.description,
+        created_at: item.created_at,
+        source: item.source,
+      }
+    })
     return {
-      data,
-      meta,
+      data: formatData,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      },
     }
   }
 }

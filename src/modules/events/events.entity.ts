@@ -11,7 +11,7 @@ export class Event {
   @Column({ type: 'boolean', default: true })
   is_active: boolean
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: true })
   is_banner: boolean
 
   @Column()
