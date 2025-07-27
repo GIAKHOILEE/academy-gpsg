@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { paginate } from 'src/common/pagination'
+import { paginate, PaginationDto } from 'src/common/pagination'
 import { convertToSlug, throwAppException } from 'src/common/utils'
 import { Repository } from 'typeorm'
 import { CreatePostDto } from './dtos/create-post.dto'
@@ -11,6 +11,7 @@ import { IPost } from './post.interface'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { PostCatalogType } from '@enums/post.enum'
+import { DataSource } from 'typeorm'
 
 @Injectable()
 export class PostService {
@@ -19,6 +20,7 @@ export class PostService {
     private readonly postRepository: Repository<Post>,
     @InjectRepository(PostCatalog)
     private readonly postCatalogRepository: Repository<PostCatalog>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(createPostDto: CreatePostDto): Promise<IPost> {
@@ -216,5 +218,34 @@ export class PostService {
     }
     await this.postRepository.createQueryBuilder('post').softDelete().where('id = :id', { id }).execute()
     return
+  }
+
+  async getPostSlice(pagination: PaginationDto): Promise<any> {
+    const rawSql = `
+    SELECT id, \`index\`, is_active, is_banner, title, thumbnail AS image, description, created_at, 'notification' as source
+    FROM notifications
+    WHERE is_banner = true
+
+    UNION ALL
+
+    SELECT id, \`index\`, is_active, is_banner, title, thumbnail AS image, description, created_at, 'event' as source
+    FROM events
+    WHERE is_banner = true
+
+    UNION ALL
+
+    SELECT id, \`index\`, is_active, is_banner, title, image, description, created_at, 'post' as source
+    FROM posts
+    WHERE is_banner = true
+  `
+
+    // Tạo một "subquery" tạm từ raw SQL để wrap lại bằng QueryBuilder
+    const qb = this.dataSource.createQueryBuilder().select('*').from(`(${rawSql})`, 'combined')
+    const { data, meta } = await paginate(qb, pagination)
+
+    return {
+      data,
+      meta,
+    }
   }
 }

@@ -149,6 +149,18 @@ export class PostControllerUser {
     })
   }
 
+  @Get('slice')
+  @ApiOperation({ summary: 'Get all posts slice' })
+  async getAllPostsSlice(@Query() query: PaginatePostDto): Promise<ResponseDto> {
+    const posts = await this.postService.getPostSlice(query)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'GET_ALL_POSTS_SLICE_SUCCESS',
+      data: posts.data,
+      meta: posts.meta,
+    })
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a post by id' })
   async getPostByIdByUser(@Param('id') id: string): Promise<ResponseDto> {

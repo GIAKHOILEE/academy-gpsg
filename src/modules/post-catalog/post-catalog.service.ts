@@ -211,7 +211,7 @@ export class PostCatalogService {
   }
 
   async update(id: number, updatePostCatalogDto: CreatePostCatalogDto): Promise<void> {
-    const { parent_id, name } = updatePostCatalogDto
+    const { parent_id, name, icon } = updatePostCatalogDto
     const postCatalog = await this.postCatalogRepository
       .createQueryBuilder('post_catalogs')
       .leftJoin('post_catalogs.parent', 'parent')
@@ -226,6 +226,7 @@ export class PostCatalogService {
       name: name ? name : postCatalog.name,
       slug: name ? convertToSlug(name) : postCatalog.slug,
       parent: postCatalog.parent,
+      icon: icon ? icon : postCatalog.icon,
     }
 
     // if (name) {
