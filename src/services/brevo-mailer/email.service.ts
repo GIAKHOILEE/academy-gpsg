@@ -26,7 +26,7 @@ export class BrevoMailerService {
         'content-type': 'application/json',
       }
 
-      const emailData = {
+      const emailData: any = {
         sender: {
           name: process.env.SENDER_NAME,
           email: process.env.SENDER_EMAIL,
@@ -34,14 +34,14 @@ export class BrevoMailerService {
         to: receivers,
         subject: subject,
         htmlContent: this.readAndSendHbs(filePath, data),
-        attachment: attachment
-          ? [
-              {
-                name: attachment.filename,
-                content: attachment.content.toString('base64'),
-              },
-            ]
-          : [],
+      }
+      if (attachment) {
+        emailData.attachment = [
+          {
+            name: attachment.filename,
+            content: attachment.content.toString('base64'),
+          },
+        ]
       }
 
       const response = await firstValueFrom(this.httpService.post(this.apiUrl, emailData, { headers }))
