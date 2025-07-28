@@ -77,8 +77,8 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Học kỳ', example: 1 })
   semester_id: number
 
-  @IsNumber()
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'Khoa', example: 1 })
-  department_id: number
+  // @IsNumber()
+  // @IsOptional()
+  // @ApiPropertyOptional({ description: 'Khoa', example: 1 })
+  // department_id: number
 }

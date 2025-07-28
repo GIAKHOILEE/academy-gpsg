@@ -122,6 +122,7 @@ export class SubjectsService {
         throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
       }
       subject.department = department
+      subject.department_id = department_id
     }
 
     if (updateSubjectDto.name) {
