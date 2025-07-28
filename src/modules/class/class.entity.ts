@@ -1,5 +1,4 @@
 import { ClassStatus, Schedule } from '@enums/class.enum'
-import { Department } from '@modules/departments/departments.entity'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
@@ -90,14 +89,6 @@ export class Classes {
 
   @Column({ nullable: true })
   semester_id: number
-
-  // khoa
-  @ManyToOne(() => Department, department => department.classes, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'department_id' })
-  department: Department
-
-  @Column({ nullable: true })
-  department_id: number
 
   // danh sách học sinh
   @OneToMany(() => ClassStudents, classStudents => classStudents.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

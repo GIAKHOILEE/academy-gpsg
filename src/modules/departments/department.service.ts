@@ -1,7 +1,7 @@
 import { paginate, PaginationMeta } from '@common/pagination'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { Classes } from '@modules/class/class.entity'
+import { Subject } from '@modules/subjects/subjects.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -10,15 +10,12 @@ import { Department } from './departments.entity'
 import { CreateDepartmentDto } from './dtos/create-department.dto'
 import { PaginateDepartmentDto } from './dtos/paginate-department.dto'
 import { UpdateDepartmentDto } from './dtos/update-department.dto'
-import { Subject } from '@modules/subjects/subjects.entity'
 
 @Injectable()
 export class DepartmentService {
   constructor(
     @InjectRepository(Department)
     private readonly departmentRepository: Repository<Department>,
-    @InjectRepository(Classes)
-    private readonly classRepository: Repository<Classes>,
     @InjectRepository(Subject)
     private readonly subjectRepository: Repository<Subject>,
   ) {}
@@ -146,11 +143,6 @@ export class DepartmentService {
     const department = await this.departmentRepository.exists({ where: { id } })
     if (!department) {
       throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
-    }
-    // mà có lớp thì không được xóa
-    const classDepartment = await this.classRepository.exists({ where: { department_id: id } })
-    if (classDepartment) {
-      throwAppException('DEPARTMENT_HAS_CLASS', ErrorCode.DEPARTMENT_HAS_CLASS, HttpStatus.BAD_REQUEST)
     }
     // có môn thì không được xóa
     const subjectDepartment = await this.subjectRepository.exists({ where: { department_id: id } })
