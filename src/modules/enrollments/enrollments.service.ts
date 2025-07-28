@@ -670,7 +670,6 @@ export class EnrollmentsService {
 
       // Send email khi đơn update
       if (enrollment.email) {
-        console.log('vào đây')
         const listClass = await classRepo
           .createQueryBuilder('class')
           .select([
@@ -698,10 +697,7 @@ export class EnrollmentsService {
           end_date: classEntity.closing_day,
         }))
 
-        console.log('status', status)
-
         if (status === StatusEnrollment.DEBT || status === StatusEnrollment.PAY_LATE) {
-          console.log('day', day, 'month', month, 'year', year)
           const pdfBuffer = await renderPdfFromTemplateV2('pdf-enrollment-register-success', {
             logo,
             background,
@@ -843,6 +839,7 @@ export class EnrollmentsService {
         'class.closing_day',
       ])
       .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
+      .withDeleted()
       .getMany()
     if (listClass.length !== enrollment.class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
     const formatEnrollment: IEnrollments = {
