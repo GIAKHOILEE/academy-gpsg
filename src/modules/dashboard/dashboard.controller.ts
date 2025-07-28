@@ -51,4 +51,17 @@ export class DashboardControllerUser {
       data: revenue,
     })
   }
+
+  @Get('/voucher')
+  @ApiOperation({ summary: 'Lấy thống kê voucher' })
+  @Auth(Role.ADMIN)
+  @ApiBearerAuth()
+  async voucherStatistics(): Promise<ResponseDto> {
+    const voucher = await this.dashboardService.voucherStatistics()
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_VOUCHER_SUCCESS',
+      data: voucher,
+    })
+  }
 }

@@ -1,9 +1,9 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { throwAppException } from '@common/utils'
+import { arrayToObject, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { CreateVoucherDto } from './dtos/create-voucher.dto'
 import { PaginateVoucherDto } from './dtos/paginate-voucher.dto'
 import { UpdateVoucherDto } from './dtos/update-voucher.dto'
@@ -61,8 +61,8 @@ export class VoucherService {
     await this.voucherRepository.delete(id)
   }
 
-  async getVoucherById(id: number): Promise<IVoucher> {
-    const voucher = await this.voucherRepository.findOne({ where: { id } })
+  async getVoucherByCode(code: string): Promise<IVoucher> {
+    const voucher = await this.voucherRepository.findOne({ where: { code } })
     if (!voucher) {
       throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
@@ -71,7 +71,7 @@ export class VoucherService {
     if (voucher.student_id) {
       student = await this.studentRepository
         .createQueryBuilder('student')
-        .select(['student.id', 'user.full_name', 'user.avatar', 'user.birth_date', 'user.gender', 'user.phone_number', 'user.address'])
+        .select(['student.id', 'user.full_name', 'user.saint_name'])
         .leftJoin('student.user', 'user')
         .where('student.id = :id', { id: voucher.student_id })
         .getRawOne()
@@ -84,6 +84,51 @@ export class VoucherService {
       type: voucher.type,
       discount: voucher.discount,
       student_id: voucher?.student_id,
+      full_name: student?.full_name,
+      saint_name: student?.saint_name,
+      enrollment_id: voucher?.enrollment_id,
+      actual_discount: voucher?.actual_discount,
+      is_used: voucher?.is_used,
+      use_at: voucher?.use_at,
+    }
+    return formattedVoucher
+  }
+
+  async getVoucherById(id: number): Promise<IVoucher> {
+    const voucher = await this.voucherRepository.findOne({ where: { id } })
+    if (!voucher) {
+      throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    let student: IStudent | null = null
+    if (voucher.student_id) {
+      student = await this.studentRepository
+        .createQueryBuilder('student')
+        .select([
+          'student.id',
+          'user.full_name',
+          'user.saint_name',
+          'user.avatar',
+          'user.birth_date',
+          'user.gender',
+          'user.phone_number',
+          'user.address',
+        ])
+        .leftJoin('student.user', 'user')
+        .where('student.id = :id', { id: voucher.student_id })
+        .getRawOne()
+    }
+    console.log(student)
+
+    const formattedVoucher: IVoucher = {
+      id: voucher.id,
+      code: voucher.code,
+      name: voucher.name,
+      type: voucher.type,
+      discount: voucher.discount,
+      student_id: voucher?.student_id,
+      full_name: student?.full_name,
+      saint_name: student?.saint_name,
       enrollment_id: voucher?.enrollment_id,
       actual_discount: voucher?.actual_discount,
       is_used: voucher?.is_used,
@@ -98,6 +143,17 @@ export class VoucherService {
 
     const { data, meta } = await paginate(query, paginateVoucherDto)
 
+    const studentIds = data.map(voucher => voucher.student_id)
+    const students = await this.studentRepository
+      .createQueryBuilder('student')
+      .select(['student.id', 'user.full_name', 'user.saint_name'])
+      .leftJoin('student.user', 'user')
+      .where('student.id IN (:...studentIds)', { studentIds })
+      .getMany()
+
+    const arraytoObjectStudent = arrayToObject(students, 'id')
+
+    console.log(arraytoObjectStudent)
     const formattedData: IVoucher[] = data.map((voucher: Voucher) => ({
       id: voucher.id,
       code: voucher.code,
@@ -105,6 +161,8 @@ export class VoucherService {
       type: voucher.type,
       discount: voucher.discount,
       student_id: voucher?.student_id,
+      full_name: arraytoObjectStudent[voucher.student_id]?.user?.full_name,
+      saint_name: arraytoObjectStudent[voucher.student_id]?.user?.saint_name,
       enrollment_id: voucher?.enrollment_id,
       actual_discount: voucher?.actual_discount,
       is_used: voucher?.is_used,

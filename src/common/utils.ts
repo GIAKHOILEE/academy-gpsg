@@ -135,3 +135,10 @@ export async function renderPdfFromTemplate(templateName: string, data: any): Pr
 
   return Buffer.from(pdfBuffer)
 }
+
+export function arrayToObject(array: any[], key: string): any {
+  return array.reduce((acc, item) => {
+    acc[item[key]] = item
+    return acc
+  }, {})
+}
