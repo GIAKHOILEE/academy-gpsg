@@ -7,8 +7,9 @@ import * as fs from 'fs'
 import * as handlebars from 'handlebars'
 import { ClsServiceManager } from 'nestjs-cls'
 import * as path from 'path'
-import puppeteer from 'puppeteer'
+// import puppeteer from 'puppeteer'
 import { AppException } from './exeption'
+import { generatePdf } from 'html-pdf-node'
 
 export function generateHash(password: string): string {
   return bcrypt.hashSync(password, 10)
@@ -95,45 +96,65 @@ export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
   return schedule.map(day => dayMap[day])
 }
 
-export async function renderPdfFromTemplate(templateName: string, data: any): Promise<Buffer> {
+// gen pdf with library puppeteer
+// export async function renderPdfFromTemplate(templateName: string, data: any): Promise<Buffer> {
+//   const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
+
+//   // Kiểm tra file tồn tại
+//   if (!fs.existsSync(templatePath)) {
+//     throw new Error(`Template file not found: ${templatePath}`)
+//   }
+
+//   // Đọc và biên dịch template
+//   const source = fs.readFileSync(templatePath, 'utf-8')
+//   const template = handlebars.compile(source)
+//   const html = template(data)
+//   // Dùng puppeteer để render HTML thành PDF
+//   const browser = await puppeteer.launch({
+//     headless: true, // dùng 'new' để tránh warning trên phiên bản mới
+//     // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
+//   })
+
+//   const page = await browser.newPage()
+//   await page.setContent(html, { waitUntil: 'networkidle0' })
+
+//   const boundingBox = await page.evaluate(() => {
+//     const body = document.body
+//     const html = document.documentElement
+
+//     return {
+//       width: Math.max(body.scrollWidth, html.scrollWidth),
+//       height: Math.max(body.scrollHeight, html.scrollHeight),
+//     }
+//   })
+//   const pdfBuffer = await page.pdf({
+//     printBackground: true,
+//     preferCSSPageSize: true,
+//     width: `${boundingBox.width}px`,
+//     height: `${boundingBox.height}px`,
+//   })
+//   await browser.close()
+
+//   return Buffer.from(pdfBuffer)
+// }
+
+// gen pdf with library html-pdf-node
+export async function renderPdfFromTemplateV2(templateName: string, data: any): Promise<Buffer> {
   const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
 
-  // Kiểm tra file tồn tại
   if (!fs.existsSync(templatePath)) {
     throw new Error(`Template file not found: ${templatePath}`)
   }
 
-  // Đọc và biên dịch template
   const source = fs.readFileSync(templatePath, 'utf-8')
   const template = handlebars.compile(source)
   const html = template(data)
-  // Dùng puppeteer để render HTML thành PDF
-  const browser = await puppeteer.launch({
-    headless: true, // dùng 'new' để tránh warning trên phiên bản mới
-    // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
-  })
 
-  const page = await browser.newPage()
-  await page.setContent(html, { waitUntil: 'networkidle0' })
+  const file = { content: html }
 
-  const boundingBox = await page.evaluate(() => {
-    const body = document.body
-    const html = document.documentElement
+  const pdfBuffer = await generatePdf(file, { format: 'A4', printBackground: true })
 
-    return {
-      width: Math.max(body.scrollWidth, html.scrollWidth),
-      height: Math.max(body.scrollHeight, html.scrollHeight),
-    }
-  })
-  const pdfBuffer = await page.pdf({
-    printBackground: true,
-    preferCSSPageSize: true,
-    width: `${boundingBox.width}px`,
-    height: `${boundingBox.height}px`,
-  })
-  await browser.close()
-
-  return Buffer.from(pdfBuffer)
+  return pdfBuffer
 }
 
 export function arrayToObject(array: any[], key: string): any {

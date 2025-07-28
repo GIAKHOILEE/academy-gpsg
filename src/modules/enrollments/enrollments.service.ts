@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplate, throwAppException } from '@common/utils'
+import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplateV2, throwAppException } from '@common/utils'
 import { ClassStatus, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
@@ -670,6 +670,7 @@ export class EnrollmentsService {
 
       // Send email khi đơn update
       if (enrollment.email) {
+        console.log('vào đây')
         const listClass = await classRepo
           .createQueryBuilder('class')
           .select([
@@ -697,9 +698,11 @@ export class EnrollmentsService {
           end_date: classEntity.closing_day,
         }))
 
+        console.log('status', status)
+
         if (status === StatusEnrollment.DEBT || status === StatusEnrollment.PAY_LATE) {
           console.log('day', day, 'month', month, 'year', year)
-          const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-register-success', {
+          const pdfBuffer = await renderPdfFromTemplateV2('pdf-enrollment-register-success', {
             logo,
             background,
             code: enrollment?.code,
@@ -739,7 +742,7 @@ export class EnrollmentsService {
             },
           )
         } else if (status === StatusEnrollment.DONE) {
-          const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-payment-success', {
+          const pdfBuffer = await renderPdfFromTemplateV2('pdf-enrollment-payment-success', {
             logo,
             background,
             stamp,

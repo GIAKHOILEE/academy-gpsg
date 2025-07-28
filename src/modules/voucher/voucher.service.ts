@@ -142,14 +142,16 @@ export class VoucherService {
     const query = this.voucherRepository.createQueryBuilder('voucher')
 
     const { data, meta } = await paginate(query, paginateVoucherDto)
-
     const studentIds = data.map(voucher => voucher.student_id)
-    const students = await this.studentRepository
-      .createQueryBuilder('student')
-      .select(['student.id', 'user.full_name', 'user.saint_name'])
-      .leftJoin('student.user', 'user')
-      .where('student.id IN (:...studentIds)', { studentIds })
-      .getMany()
+    let students: IStudent[] = []
+    if (studentIds.length > 0) {
+      students = await this.studentRepository
+        .createQueryBuilder('student')
+        .select(['student.id', 'user.full_name', 'user.saint_name'])
+        .leftJoin('student.user', 'user')
+        .where('student.id IN (:...studentIds)', { studentIds })
+        .getMany()
+    }
 
     const arraytoObjectStudent = arrayToObject(students, 'id')
 
