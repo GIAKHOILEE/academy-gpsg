@@ -7,6 +7,12 @@ export class Department {
   @PrimaryGeneratedColumn()
   id: number
 
+  @Column({ type: 'float', default: 1.001 })
+  index: number
+
+  @Column({ type: 'boolean', default: true })
+  is_active: boolean
+
   @Column({ unique: true })
   code: string
 

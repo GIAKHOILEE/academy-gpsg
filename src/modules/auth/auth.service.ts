@@ -39,6 +39,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       status: user.status,
+      full_name: user?.full_name ?? '',
     }
     return formattedUser
   }
@@ -70,6 +71,7 @@ export class AuthService {
       role: user.role,
       status: user.status,
       saint_name: user?.saint_name ?? '',
+      full_name: user?.full_name ?? '',
     }
     return formattedUser
   }
@@ -81,6 +83,7 @@ export class AuthService {
     email: string
     code: string
     saint_name: string
+    full_name: string
   }): Promise<TokenPayloadDto> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
@@ -92,6 +95,7 @@ export class AuthService {
           code: data.code ?? '',
           type: 'ACCESS_TOKEN',
           role: data.role,
+          full_name: data.full_name,
         },
         {
           secret: jwtConfig.accessToken.secret,
@@ -104,6 +108,7 @@ export class AuthService {
           type: 'REFRESH_TOKEN',
           role: data.role,
           code: data.code ?? '',
+          full_name: data.full_name,
         },
         {
           secret: jwtConfig.refreshToken.secret,
@@ -144,6 +149,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         code: user.code,
+        full_name: user.full_name,
       })
     } catch (error) {
       throwAppException('INVALID_REFRESH_TOKEN', ErrorCode.INVALID_REFRESH_TOKEN, HttpStatus.UNAUTHORIZED)

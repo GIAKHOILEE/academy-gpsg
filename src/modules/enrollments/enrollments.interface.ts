@@ -8,6 +8,8 @@ export interface IEnrollments {
   payment_method?: PaymentMethod
   payment_status?: PaymentStatus
   status?: StatusEnrollment
+  voucher_code?: string
+  discount?: number
   total_fee?: number
   prepaid?: number
   debt?: number

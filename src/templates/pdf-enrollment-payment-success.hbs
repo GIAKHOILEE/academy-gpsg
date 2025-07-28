@@ -1,0 +1,496 @@
+<html lang='vi'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Phiếu Thu - Receipt Generator</title>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'></script>
+    <style
+    >
+    @media print {
+      button {
+        display: none;
+      }
+
+      @page {
+        size: auto; /* Tự động theo kích thước nội dung */
+        margin: 10mm;
+      }
+    }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .export-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+
+      .export-button:hover {
+        background-color: #0056b3;
+      }
+
+      .receipt-container {
+        position: relative;
+        max-width: 210mm;
+        min-height: 297mm;
+        width: 210mm;
+        box-sizing: border-box;
+        font-family: sans-serif;
+        font-size: 12px;
+        margin: 0 auto;
+        padding: 24px;
+        border: 1px solid #ccc;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: white center no-repeat;
+        background-size: 400px 400px;
+        background-image: url('{{background}}');
+      }
+
+      .rounded-bars {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 200px;
+        background: transparent;
+      }
+
+      .bars-container {
+        position: relative;
+        width: 100%;
+        height: 40px;
+        background: white;
+        overflow: hidden;
+        background: transparent;
+      }
+
+      .bar-1 {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 55%;
+        width: 100%;
+        background-color: #ac7229;
+        opacity: 0.5;
+        border-bottom-left-radius: 50px;
+        z-index: 10;
+      }
+
+      .bar-2 {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 60%;
+        background-color: #b28566;
+        opacity: 0.5;
+        border-bottom-left-radius: 50px;
+        z-index: 30;
+      }
+
+      .header {
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        display: flex;
+        border-bottom: 2px solid black;
+      }
+
+      .header img {
+        width: 70px;
+        height: 70px;
+        margin-bottom: 8px;
+        margin-right: 16px;
+      }
+
+      .header h2 {
+        font-size: 14px;
+        font-weight: bold;
+        margin: 0 0 4px 0;
+      }
+
+      .header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 4px 0;
+      }
+
+      .header p {
+        margin: 0 0 4px 0;
+        font-size: 11px;
+      }
+
+      .title {
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 8px;
+      }
+
+      .receipt-info {
+        width: 100%;
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px;
+      }
+
+      .student-info {
+        margin-bottom: 20px;
+      }
+
+      .student-info h3 {
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .info-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+
+      .info-table td {
+        padding: 0 0 8px 4px;
+        border: 1px solid #ccc;
+      }
+
+      .info-table .label {
+        font-weight: bold;
+        width: 20%;
+      }
+
+      .info-table .value {
+        width: 20%;
+      }
+
+      .info-table .label-wide {
+        font-weight: bold;
+        width: 20%;
+      }
+
+      .info-table .value-wide {
+        width: 40%;
+      }
+
+      .course-info {
+        margin-bottom: 20px;
+      }
+
+      .course-info h3 {
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .course-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 16px;
+        font-size: 11px;
+      }
+
+      .course-table th,
+      .course-table td {
+        padding: 8px;
+        border: 1px solid #ccc;
+      }
+
+      .course-table th {
+        background-color: #f0f0f0;
+        text-align: center;
+        font-weight: bold;
+      }
+
+      .course-table .col-stt {
+        width: 8%;
+        text-align: center;
+      }
+
+      .course-table .col-subject {
+        width: 35%;
+      }
+
+      .course-table .col-schedule {
+        width: 20%;
+        font-size: 10px;
+      }
+
+      .course-table .col-start {
+        width: 17%;
+        text-align: center;
+        font-size: 10px;
+      }
+
+      .course-table .col-fee {
+        width: 20%;
+        text-align: right;
+      }
+
+      .summary-table {
+        margin-left: auto;
+        width: 50%;
+      }
+
+      .summary-table table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+
+      .summary-table td {
+        padding: 4px;
+      }
+
+      .summary-table .label {
+        text-align: right;
+        font-weight: bold;
+      }
+
+      .summary-table .value {
+        text-align: right;
+        width: 128px;
+      }
+
+      .summary-table .total-row {
+        border-top: 1px solid #ccc;
+      }
+
+      .summary-table .total-row .label,
+      .summary-table .total-row .value {
+        font-weight: bold;
+      }
+
+      .payment-section {
+        margin-bottom: 16px;
+      }
+
+      .payment-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 16px;
+        font-size: 13px;
+      }
+
+      .payment-header h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 16px;
+      }
+
+      .signature-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+
+      .signature-table td {
+        padding: 8px 8px 8px 8px;
+        border: 1px solid #ccc;
+        text-align: center;
+        width: 33.33%;
+        height: 80px;
+        vertical-align: top;
+      }
+
+      .signature-table .role {
+        margin-bottom: 4px;
+        font-weight: 600;
+      }
+
+      .signature-table .instruction {
+        font-size: 10px;
+        font-style: italic;
+        margin-bottom: 100px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 8px;
+      }
+
+      .notes {
+        font-size: 10px;
+        font-style: italic;
+        margin-top: 16px;
+      }
+
+      .notes .title {
+        text-align: left;
+        text-decoration: underline;
+        font-weight: bold;
+        margin-bottom: 4px;
+      }
+
+      .footer-bars {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+      }
+
+      .footer-bar-2 {
+        width: 100%;
+        height: 10px;
+        background-color: #ac7229;
+      }
+
+      .stamp-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div id='receipt' class='receipt-container'>
+        <div class='rounded-bars'>
+          <div class='bars-container'>
+            <div class='bar-1'></div>
+            <div class='bar-2'></div>
+          </div>
+        </div>
+
+        <div class='header'>
+          <img src='{{logo}}' alt='icon' />
+          <div>
+            <h2>TỔNG GIÁO PHẬN THÀNH PHỐ HỒ CHÍ MINH</h2>
+            <h3>HỌC VIỆN MỤC VỤ</h3>
+            <p>6bis Tôn Đức Thắng, Phường Sài Gòn, Tp. Hồ Chí Minh</p>
+            <p>Điện thoại: (028) 6291 0366 - 0706 757 366 (Zalo) | Email: hvmvsalgon@gmail.com | Website: hvmvsalgon.edu.vn</p>
+          </div>
+        </div>
+
+        <h2 class='title'>Phiếu thu</h2>
+
+        <div class='receipt-info'>
+          <span id='receiptNo'>No. {{code}}</span>
+          <span id='receiptDate'>Ngày: {{day}}/{{month}}/{{year}}</span>
+        </div>
+
+        <div class='student-info'>
+          <h3>THÔNG TIN HỌC VIÊN:</h3>
+          <table class='info-table'>
+            <tr>
+              <td class='label'>Tên Thánh:</td>
+              <td class='value' id='tenThanh'>{{saint_name}}</td>
+              <td class='label'>Họ và Tên:</td>
+              <td class='value-wide' id='hoTen'>{{full_name}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Ngày sinh:</td>
+              <td class='value' id='ngaySinh'>{{birth_date}}</td>
+              <td class='label'>Nơi sinh:</td>
+              <td class='value-wide' id='noiSinh'>{{birth_place}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Điện thoại:</td>
+              <td class='value' id='dienThoai'>{{phone}}</td>
+              <td class='label'>Email:</td>
+              <td class='value-wide' id='email'>{{email}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Địa chỉ:</td>
+              <td class='value-wide' colspan='3' id='diaChi'>{{address}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Giáo xứ:</td>
+              <td class='value' id='giaoXu'>{{parish}}</td>
+              <td class='label'>Giáo hạt:</td>
+              <td class='value-wide' id='giaoHo'>{{parish_name}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Giáo phận:</td>
+              <td class='value' id='giaoPhan'>{{parish_name}}</td>
+              <td class='label'>Dòng tu:</td>
+              <td class='value-wide' id='dongTu'>{{parish_name}}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class='course-info'>
+          <h3>THÔNG TIN ĐĂNG KÝ KHÓA HỌC:</h3>
+          <table class='course-table'>
+            <thead>
+              <tr>
+                <th class='col-stt'>STT</th>
+                <th class='col-subject'>Môn học</th>
+                <th class='col-schedule'>Lịch học</th>
+                <th class='col-fee'>Học phí</th>
+              </tr>
+            </thead>
+            <tbody id='courseTableBody'>
+              {{#each classes}}
+                <tr>
+                  <td>{{this.index}}</td>
+                  <td>{{this.name}}</td>
+                  <td>Thứ
+                    {{this.schedule}}
+                    |
+                    {{this.start_time}}
+                    -
+                    {{this.end_time}}
+                    | Khai giảng:
+                    {{this.start_date}}
+                    - Kết thúc:
+                    {{this.end_date}}</td>
+                  <td>{{this.price}} đ</td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+
+          <div class='summary-table'>
+            <table>
+              <tr>
+                <td class='label'>Tổng:</td>
+                <td class='value' id='tongHocPhi'>{{total_fee}} đ</td>
+              </tr>
+              <tr>
+                <td class='label'>Giảm học phí:</td>
+                <td class='value' id='giamHocPhiDisplay'>{{discount}} đ</td>
+              </tr>
+              <tr class='total-row'>
+                <td class='label'>Thành tiền:</td>
+                <td class='value' id='thanhTien'>{{total_fee}} đ</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class='payment-section'>
+          <p><strong>Hình thức thanh toán</strong> Đóng lệ phí tại phòng học vụ (A004)</p>
+
+          <div class='stamp-container'>
+            <img src='{{stamp}}' alt='stamp' />
+          </div>
+        </div>
+
+        <div class='notes'>
+          <p class='title'>Lưu ý:</p>
+          <p>
+            Việc chuyển đổi môn học có thể được thực hiện trước ngày khai giảng hoặc trong tuần học đầu tiên.
+            <br />
+            Sau khi khai giảng 14 ngày, học phí không được bảo lưu hoặc hoàn lại.
+          </p>
+        </div>
+
+        <div class='footer-bars'>
+          <div class='footer-bar-1'></div>
+          <div class='footer-bar-2'></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

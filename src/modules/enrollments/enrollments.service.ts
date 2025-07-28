@@ -1,12 +1,6 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { generateRandomString, hashPassword, mapScheduleToVietnamese, throwAppException } from '@common/utils'
-import {
-  ClassStatus,
-  PaymentMethod,
-  PaymentStatus,
-  // Schedule,
-  StatusEnrollment,
-} from '@enums/class.enum'
+import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplate, throwAppException } from '@common/utils'
+import { ClassStatus, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -17,14 +11,29 @@ import { User } from '@modules/users/user.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectRepository } from '@nestjs/typeorm'
+import { BrevoMailerService } from '@services/brevo-mailer/email.service'
+import * as fs from 'fs'
+import * as path from 'path'
 import { DataSource, Repository } from 'typeorm'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
 import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
-import { BrevoMailerService } from '@services/brevo-mailer/email.service'
+import { Voucher } from '@modules/voucher/voucher.entity'
+import { VoucherType } from '@enums/voucher.enum'
 
+const logoBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'logo.jpg'))
+const backgroundBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'background.png'))
+const stampBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'stamp.png'))
+const logo = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`
+const background = `data:image/png;base64,${backgroundBuffer.toString('base64')}`
+const stamp = `data:image/png;base64,${stampBuffer.toString('base64')}`
+
+const now = new Date()
+const day = now.getDate()
+const month = now.getMonth() + 1 // Vì getMonth() trả từ 0–11
+const year = now.getFullYear()
 @Injectable()
 export class EnrollmentsService {
   constructor(
@@ -35,6 +44,8 @@ export class EnrollmentsService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Classes)
     private readonly classRepository: Repository<Classes>,
+    @InjectRepository(Voucher)
+    private readonly voucherRepository: Repository<Voucher>,
     private readonly emailService: BrevoMailerService,
   ) {}
 
@@ -428,6 +439,19 @@ export class EnrollmentsService {
       const prepaid = 0 // trả trước
       const debt = totalFee - prepaid // nợ học phí
 
+      // check voucher
+      if (createEnrollmentDto.voucher_code) {
+        const voucher = await this.voucherRepository.findOne({ where: { code: createEnrollmentDto.voucher_code } })
+        if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (voucher.is_used) throwAppException('VOUCHER_ALREADY_USED', ErrorCode.VOUCHER_ALREADY_USED, HttpStatus.BAD_REQUEST)
+        if (voucher.type === VoucherType.PERCENTAGE) {
+          createEnrollmentDto.discount = (totalFee * voucher.discount) / 100
+        } else if (voucher.type === VoucherType.FIXED) {
+          createEnrollmentDto.discount = voucher.discount
+        }
+        createEnrollmentDto.voucher_code = voucher.code
+      }
+
       const enrollment = this.enrollmentsRepository.create({
         ...createEnrollmentDto,
         is_logged: isLogged,
@@ -487,6 +511,7 @@ export class EnrollmentsService {
         .leftJoinAndSelect('enrollment.student', 'student')
         .leftJoinAndSelect('student.user', 'user')
         .where('enrollment.id = :id', { id })
+        .withDeleted()
         .getOne()
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
@@ -557,6 +582,30 @@ export class EnrollmentsService {
         enrollment.debt = totalFee - prepaid
       }
 
+      if (updateEnrollmentDto.voucher_code) {
+        const voucher = await this.voucherRepository.findOne({ where: { code: updateEnrollmentDto.voucher_code } })
+        if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (voucher.is_used && voucher.enrollment_id !== enrollment.id)
+          throwAppException('VOUCHER_ALREADY_USED', ErrorCode.VOUCHER_ALREADY_USED, HttpStatus.BAD_REQUEST)
+        if (voucher.type === VoucherType.PERCENTAGE) {
+          enrollment.discount = (totalFee * voucher.discount) / 100
+        } else if (voucher.type === VoucherType.FIXED) {
+          enrollment.discount = voucher.discount
+        }
+        enrollment.voucher_code = voucher.code
+
+        // update voucher nếu status đã thanh toán
+        if (status === StatusEnrollment.DONE) {
+          await this.voucherRepository.update(voucher.id, {
+            student_id: enrollment.student_id,
+            is_used: true,
+            enrollment_id: enrollment.id,
+            use_at: new Date().toISOString(),
+            actual_discount: enrollment.discount,
+          })
+        }
+      }
+
       // nếu status khác pending thì cộng current_students của class, còn nếu pending thì trừ current_students của class
       // nếu class mà có current_students = max_students thì không được thêm vào
       if (status && status !== StatusEnrollment.PENDING) {
@@ -623,22 +672,37 @@ export class EnrollmentsService {
       if (enrollment.email) {
         const listClass = await classRepo
           .createQueryBuilder('class')
-          .select(['class.id', 'class.name', 'class.price', 'class.schedule'])
+          .select([
+            'class.id',
+            'class.name',
+            'class.start_time',
+            'class.end_time',
+            'class.price',
+            'class.schedule',
+            'class.closing_day',
+            'class.opening_day',
+          ])
           .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
           .getMany()
 
         const formatClass = listClass.map((classEntity: Classes, index: number) => ({
           id: classEntity.id,
+          index: index + 1,
           name: classEntity.name,
           price: classEntity.price,
-          schedule: mapScheduleToVietnamese(classEntity.schedule),
-          index: index + 1,
+          schedule: mapScheduleToVietnamese(classEntity.schedule).join(', '),
+          start_time: classEntity.start_time,
+          end_time: classEntity.end_time,
+          start_date: classEntity.opening_day,
+          end_date: classEntity.closing_day,
         }))
-        await this.emailService.sendMail(
-          [{ email: enrollment.email, name: enrollment.full_name }],
-          'Xác nhận đơn đăng ký thành công',
-          'update-enrollment',
-          {
+
+        if (status === StatusEnrollment.DEBT || status === StatusEnrollment.PAY_LATE) {
+          console.log('day', day, 'month', month, 'year', year)
+          const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-register-success', {
+            logo,
+            background,
+            code: enrollment?.code,
             saint_name: enrollment?.saint_name,
             full_name: enrollment?.full_name,
             birth_date: enrollment?.birth_date,
@@ -650,10 +714,71 @@ export class EnrollmentsService {
             total_fee: enrollment?.total_fee,
             prepaid: enrollment?.prepaid,
             debt: enrollment?.debt,
+            discount: enrollment?.discount,
             payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
             classes: formatClass,
-          },
-        )
+            day,
+            month,
+            year,
+          })
+
+          await this.emailService.sendMail(
+            [{ email: enrollment.email, name: enrollment.full_name }],
+            'Xác nhận đăng ký khóa học thành công',
+            'enrollment-register-succsess',
+            {
+              saint_name: enrollment?.saint_name,
+              full_name: enrollment?.full_name,
+              day,
+              month,
+              year,
+            },
+            {
+              filename: 'register-success.pdf',
+              content: pdfBuffer,
+            },
+          )
+        } else if (status === StatusEnrollment.DONE) {
+          const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-payment-success', {
+            logo,
+            background,
+            stamp,
+            code: enrollment?.code,
+            saint_name: enrollment?.saint_name,
+            full_name: enrollment?.full_name,
+            birth_date: enrollment?.birth_date,
+            birth_place: enrollment?.birth_place,
+            phone: enrollment?.phone_number,
+            email: enrollment?.email,
+            parish: enrollment?.parish,
+            address: enrollment?.address,
+            total_fee: enrollment?.total_fee,
+            prepaid: enrollment?.prepaid,
+            debt: enrollment?.debt,
+            discount: enrollment?.discount,
+            payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
+            classes: formatClass,
+            day,
+            month,
+            year,
+          })
+          await this.emailService.sendMail(
+            [{ email: enrollment.email, name: enrollment.full_name }],
+            'Xác nhận thanh toán thành công',
+            'enrollment-payment-success',
+            {
+              saint_name: enrollment?.saint_name,
+              full_name: enrollment?.full_name,
+              day,
+              month,
+              year,
+            },
+            {
+              filename: 'payment-success.pdf',
+              content: pdfBuffer,
+            },
+          )
+        }
       }
 
       await queryRunner.commitTransaction()
@@ -703,7 +828,17 @@ export class EnrollmentsService {
     if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     const listClass = await this.classRepository
       .createQueryBuilder('class')
-      .select(['class.id', 'class.name', 'class.price', 'class.code'])
+      .select([
+        'class.id',
+        'class.name',
+        'class.price',
+        'class.code',
+        'class.schedule',
+        'class.start_time',
+        'class.end_time',
+        'class.opening_day',
+        'class.closing_day',
+      ])
       .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
       .getMany()
     if (listClass.length !== enrollment.class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -725,6 +860,11 @@ export class EnrollmentsService {
         name: classEntity.name,
         code: classEntity.code,
         price: classEntity.price,
+        schedule: classEntity.schedule,
+        start_time: classEntity.start_time,
+        end_time: classEntity.end_time,
+        start_date: classEntity.opening_day,
+        end_date: classEntity.closing_day,
       })),
       student_id: enrollment?.student?.id ? enrollment?.student?.id : null,
       student_code: enrollment?.student?.user?.code ? enrollment?.student?.user?.code : null,

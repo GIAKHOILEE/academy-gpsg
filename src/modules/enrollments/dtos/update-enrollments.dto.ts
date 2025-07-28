@@ -13,6 +13,12 @@ export class UpdateEnrollmentsDto {
   @IsOptional()
   class_ids: number[]
 
+  @ApiPropertyOptional({ description: 'Mã Voucher', example: 'VC_001' })
+  @IsString()
+  @IsOptional()
+  voucher_code: string
+  discount: number
+
   @ApiPropertyOptional({ description: 'Phương thức thanh toán', enum: PaymentMethod, example: PaymentMethod.CASH })
   @IsEnum(PaymentMethod)
   @IsOptional()

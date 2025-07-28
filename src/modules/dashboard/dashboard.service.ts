@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { RevenueStatisticsDto } from './dtos/dashboard.dto'
+import { PaymentStatus } from '@enums/class.enum'
+import { StatusEnrollment } from '@enums/class.enum'
 @Injectable()
 export class DashboardService {
   constructor(
@@ -11,20 +13,53 @@ export class DashboardService {
   ) {}
 
   async revenueStatistics(revenueStatisticsDto: RevenueStatisticsDto): Promise<{
-    total_revenue: number
-    total_prepaid: number
-    total_debt: number
-    total_fee: number
-    total_enrollment: number
+    totalRevenue: number // Tổng doanh thu
+    paidRevenue: number // Đã thanh toán
+    unpaidRevenue: number // Chưa thanh toán
+    totalEnrollment: number // Tổng số đơn
   }> {
     const { start_date, end_date } = revenueStatisticsDto
-    // Tính tổng tiền đã trả & chưa trả
+
     const queryBuilder = this.enrollmentsRepository
       .createQueryBuilder('enrollment')
-      .select('SUM(enrollment.prepaid)', 'total_prepaid')
-      .addSelect('SUM(enrollment.debt)', 'total_debt')
-      .addSelect('SUM(enrollment.total_fee)', 'total_fee')
+      // Tổng doanh thu (sau giảm giá)
+      .select('SUM(enrollment.total_fee - enrollment.discount)', 'total_revenue')
+
+      // Đã thanh toán (prepaid)
+      .addSelect(
+        `
+        SUM(
+          CASE
+            WHEN enrollment.payment_status = :paid THEN enrollment.prepaid
+            WHEN enrollment.status = :debt AND enrollment.prepaid > 0 THEN enrollment.prepaid
+            ELSE 0
+          END
+        )
+      `,
+        'paid_revenue',
+      )
+
+      // Chưa thanh toán
+      .addSelect(
+        `
+        SUM(
+          CASE
+            WHEN enrollment.payment_status = :unpaid AND enrollment.status = :debt THEN enrollment.debt
+            WHEN enrollment.payment_status = :unpaid AND enrollment.status <> :debt THEN (enrollment.total_fee - enrollment.discount)
+            ELSE 0
+          END
+        )
+      `,
+        'unpaid_revenue',
+      )
+
+      // Tổng số đơn
       .addSelect('COUNT(enrollment.id)', 'total_enrollment')
+      .setParameters({
+        paid: PaymentStatus.PAID,
+        unpaid: PaymentStatus.UNPAID,
+        debt: StatusEnrollment.DEBT,
+      })
 
     if (start_date) {
       queryBuilder.andWhere('enrollment.registration_date >= :start_date', { start_date })
@@ -34,14 +69,13 @@ export class DashboardService {
       queryBuilder.andWhere('enrollment.registration_date <= :end_date', { end_date })
     }
 
-    const totalResult = await queryBuilder.getRawOne()
+    const result = await queryBuilder.getRawOne()
 
     return {
-      total_revenue: totalResult.total_prepaid + totalResult.total_debt + totalResult.total_fee,
-      total_prepaid: totalResult.total_prepaid || 0,
-      total_debt: totalResult.total_debt || 0,
-      total_fee: totalResult.total_fee || 0,
-      total_enrollment: totalResult.total_enrollment || 0,
+      totalRevenue: Number(result.total_revenue) || 0,
+      paidRevenue: Number(result.paid_revenue) || 0,
+      unpaidRevenue: Number(result.unpaid_revenue) || 0,
+      totalEnrollment: Number(result.total_enrollment) || 0,
     }
   }
 }

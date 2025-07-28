@@ -1,10 +1,14 @@
+import { Schedule } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { messages } from '@i18n/messages'
 import { HttpStatus } from '@nestjs/common'
 import * as bcrypt from 'bcryptjs'
+import * as fs from 'fs'
+import * as handlebars from 'handlebars'
 import { ClsServiceManager } from 'nestjs-cls'
+import * as path from 'path'
+import puppeteer from 'puppeteer'
 import { AppException } from './exeption'
-import { Schedule } from '@enums/class.enum'
 
 export function generateHash(password: string): string {
   return bcrypt.hashSync(password, 10)
@@ -80,13 +84,54 @@ export function throwAppException(message: string, code: ErrorCode, status = Htt
 export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
   const dayMap: { [key in Schedule]: string } = {
     [Schedule.SUNDAY]: 'Chủ nhật',
-    [Schedule.MONDAY]: 'Thứ 2',
-    [Schedule.TUESDAY]: 'Thứ 3',
-    [Schedule.WEDNESDAY]: 'Thứ 4',
-    [Schedule.THURSDAY]: 'Thứ 5',
-    [Schedule.FRIDAY]: 'Thứ 6',
-    [Schedule.SATURDAY]: 'Thứ 7',
+    [Schedule.MONDAY]: 'Hai',
+    [Schedule.TUESDAY]: 'Ba',
+    [Schedule.WEDNESDAY]: 'Tư',
+    [Schedule.THURSDAY]: 'Năm',
+    [Schedule.FRIDAY]: 'Sáu',
+    [Schedule.SATURDAY]: 'Bảy',
   }
 
   return schedule.map(day => dayMap[day])
+}
+
+export async function renderPdfFromTemplate(templateName: string, data: any): Promise<Buffer> {
+  const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
+
+  // Kiểm tra file tồn tại
+  if (!fs.existsSync(templatePath)) {
+    throw new Error(`Template file not found: ${templatePath}`)
+  }
+
+  // Đọc và biên dịch template
+  const source = fs.readFileSync(templatePath, 'utf-8')
+  const template = handlebars.compile(source)
+  const html = template(data)
+  // Dùng puppeteer để render HTML thành PDF
+  const browser = await puppeteer.launch({
+    headless: true, // dùng 'new' để tránh warning trên phiên bản mới
+    // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
+  })
+
+  const page = await browser.newPage()
+  await page.setContent(html, { waitUntil: 'networkidle0' })
+
+  const boundingBox = await page.evaluate(() => {
+    const body = document.body
+    const html = document.documentElement
+
+    return {
+      width: Math.max(body.scrollWidth, html.scrollWidth),
+      height: Math.max(body.scrollHeight, html.scrollHeight),
+    }
+  })
+  const pdfBuffer = await page.pdf({
+    printBackground: true,
+    preferCSSPageSize: true,
+    width: `${boundingBox.width}px`,
+    height: `${boundingBox.height}px`,
+  })
+  await browser.close()
+
+  return Buffer.from(pdfBuffer)
 }

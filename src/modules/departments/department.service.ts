@@ -36,17 +36,36 @@ export class DepartmentService {
       throwAppException('NAME_ALREADY_EXISTS', ErrorCode.NAME_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
-    const department = this.departmentRepository.create({ code, name, description })
+    const departmentMaxIndex = await this.departmentRepository
+      .createQueryBuilder('department')
+      .select('MAX(department.index) as maxIndex')
+      .getRawOne()
+    let maxIndex = 1.0001
+    if (departmentMaxIndex?.maxIndex) {
+      maxIndex = departmentMaxIndex.maxIndex + 100
+    }
+
+    const department = this.departmentRepository.create({
+      code,
+      name,
+      description,
+      index: maxIndex,
+    })
     return this.departmentRepository.save(department)
   }
 
-  async getAll(pagination: PaginateDepartmentDto): Promise<{ data: IDepartment[]; meta: PaginationMeta }> {
+  async getAll(pagination: PaginateDepartmentDto, isAdmin: boolean): Promise<{ data: IDepartment[]; meta: PaginationMeta }> {
     const query = this.departmentRepository.createQueryBuilder('department')
+    if (!isAdmin) {
+      query.where('department.is_active = :isActive', { isActive: true })
+    }
 
     const { data, meta } = await paginate(query, pagination)
 
     const formattedData: IDepartment[] = data.map((department: Department) => ({
       id: department.id,
+      index: department.index,
+      is_active: department.is_active,
       code: department.code,
       name: department.name,
       description: department.description,
@@ -63,6 +82,8 @@ export class DepartmentService {
 
     const formattedData: IDepartment = {
       id: department.id,
+      index: department.index,
+      is_active: department.is_active,
       code: department.code,
       name: department.name,
       description: department.description,
@@ -103,6 +124,22 @@ export class DepartmentService {
 
     const updatedDepartment = this.departmentRepository.merge(department, updateDepartmentDto)
     return this.departmentRepository.save(updatedDepartment)
+  }
+
+  async updateIsActive(id: number): Promise<void> {
+    const department = await this.departmentRepository.findOne({ where: { id } })
+    if (!department) {
+      throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    await this.departmentRepository.update(id, { is_active: !department.is_active })
+  }
+
+  async updateIndex(id: number, index: number): Promise<void> {
+    const department = await this.departmentRepository.findOne({ where: { id } })
+    if (!department) {
+      throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    await this.departmentRepository.update(id, { index })
   }
 
   async delete(id: number): Promise<void> {

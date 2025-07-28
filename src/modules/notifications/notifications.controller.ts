@@ -31,7 +31,7 @@ export class AdminNotificationsController {
   @Get()
   @ApiOperation({ summary: 'Get all notifications' })
   async getNotifications(@Query() paginateNotificationDto: PaginateNotificationDto): Promise<ResponseDto> {
-    const notifications = await this.notificationsService.getNotifications(paginateNotificationDto)
+    const notifications = await this.notificationsService.getNotifications(paginateNotificationDto, true)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'NOTIFICATIONS_FETCHED',
@@ -49,6 +49,39 @@ export class AdminNotificationsController {
       statusCode: HttpStatus.OK,
       messageCode: 'NOTIFICATION_FETCHED',
       data: notification,
+    })
+  }
+
+  @Put('is-active/:id')
+  @ApiOperation({ summary: 'Update is active a notification by id' })
+  @ApiParam({ name: 'id', type: Number })
+  async updateIsActive(@Param('id') id: number): Promise<ResponseDto> {
+    await this.notificationsService.updateIsActive(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'NOTIFICATION_UPDATED',
+    })
+  }
+
+  @Put('index/:id')
+  @ApiOperation({ summary: 'Update index a notification by id' })
+  @ApiParam({ name: 'id', type: Number })
+  async updateIndex(@Param('id') id: number, @Query('index') index: number): Promise<ResponseDto> {
+    await this.notificationsService.updateIndex(id, index)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'NOTIFICATION_UPDATED',
+    })
+  }
+
+  @Put('is-banner/:id')
+  @ApiOperation({ summary: 'Update is banner a notification by id' })
+  @ApiParam({ name: 'id', type: Number })
+  async updateIsBanner(@Param('id') id: number): Promise<ResponseDto> {
+    await this.notificationsService.updateIsBanner(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'NOTIFICATION_UPDATED',
     })
   }
 
@@ -83,7 +116,7 @@ export class UserNotificationsController {
   @Get()
   @ApiOperation({ summary: 'Get all notifications' })
   async getNotifications(@Query() paginateNotificationDto: PaginateNotificationDto): Promise<ResponseDto> {
-    const notifications = await this.notificationsService.getNotifications(paginateNotificationDto)
+    const notifications = await this.notificationsService.getNotifications(paginateNotificationDto, false)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'NOTIFICATIONS_FETCHED',

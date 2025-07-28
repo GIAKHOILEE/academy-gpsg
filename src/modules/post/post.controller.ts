@@ -54,6 +54,18 @@ export class PostControllerAdmin {
     })
   }
 
+  @Get('private')
+  @ApiOperation({ summary: 'Get all posts private' })
+  async getAllPostsPrivate(@Query() query: PaginatePostDto): Promise<ResponseDto> {
+    const posts = await this.postService.getManyPost(query, true, null)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'GET_ALL_POSTS_PRIVATE_SUCCESS',
+      data: posts.data,
+      meta: posts.meta,
+    })
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a post by id' })
   async getPostById(@Param('id') id: string): Promise<ResponseDto> {
@@ -132,6 +144,18 @@ export class PostControllerUser {
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_TOP_SUCCESS',
+      data: posts.data,
+      meta: posts.meta,
+    })
+  }
+
+  @Get('slice')
+  @ApiOperation({ summary: 'Get all posts slice' })
+  async getAllPostsSlice(@Query() query: PaginatePostDto): Promise<ResponseDto> {
+    const posts = await this.postService.getPostSlice(query)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'GET_ALL_POSTS_SLICE_SUCCESS',
       data: posts.data,
       meta: posts.meta,
     })

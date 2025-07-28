@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { paginate } from 'src/common/pagination'
+import { paginate, PaginationDto } from 'src/common/pagination'
 import { convertToSlug, throwAppException } from 'src/common/utils'
 import { Repository } from 'typeorm'
 import { CreatePostDto } from './dtos/create-post.dto'
@@ -11,6 +11,7 @@ import { IPost } from './post.interface'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { PostCatalogType } from '@enums/post.enum'
+import { DataSource } from 'typeorm'
 
 @Injectable()
 export class PostService {
@@ -19,6 +20,7 @@ export class PostService {
     private readonly postRepository: Repository<Post>,
     @InjectRepository(PostCatalog)
     private readonly postCatalogRepository: Repository<PostCatalog>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(createPostDto: CreatePostDto): Promise<IPost> {
@@ -83,6 +85,12 @@ export class PostService {
         'post_catalog.slug',
       ])
       .where('post_catalog.type = :type', { type: type })
+
+    if (type) {
+      queryBuilder.andWhere('post_catalog.type = :type', { type: type })
+    } else {
+      queryBuilder.andWhere('post.post_catalog IS NULL')
+    }
 
     if (!isAdmin) {
       queryBuilder.andWhere('post.is_active = :is_active', { is_active: true })
@@ -211,5 +219,64 @@ export class PostService {
     }
     await this.postRepository.createQueryBuilder('post').softDelete().where('id = :id', { id }).execute()
     return
+  }
+
+  async getPostSlice(pagination: PaginationDto): Promise<any> {
+    const { page = 1, limit = 10, orderBy = 'created_at', orderDirection = 'DESC' } = pagination
+
+    const offset = (page - 1) * limit
+
+    const baseSql = `
+      SELECT is_active, is_banner, title, thumbnail AS image, description, created_at, 'notification' as source
+      FROM notifications
+      WHERE is_banner = true
+  
+      UNION ALL
+  
+      SELECT is_active, is_banner, title, thumbnail AS image, description, created_at, 'event' as source
+      FROM events
+      WHERE is_banner = true
+  
+      UNION ALL
+  
+      SELECT is_active, is_banner, title, image, description, created_at, 'post' as source
+      FROM posts
+      WHERE is_banner = true
+    `
+
+    // Đếm tổng số
+    const countSql = `SELECT COUNT(*) as total FROM (${baseSql}) as combined`
+
+    const totalResult = await this.dataSource.query(countSql)
+    const total = parseInt(totalResult[0]?.total || 0)
+
+    // Lấy dữ liệu phân trang
+    const dataSql = `
+      SELECT * FROM (${baseSql}) as combined
+      ORDER BY ${orderBy} ${orderDirection}
+      LIMIT ${limit}
+      OFFSET ${offset}
+    `
+
+    const data = await this.dataSource.query(dataSql)
+
+    const formatData = data.map(item => {
+      return {
+        title: item.title,
+        image: item.image,
+        description: item.description,
+        created_at: item.created_at,
+        source: item.source,
+      }
+    })
+    return {
+      data: formatData,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    }
   }
 }

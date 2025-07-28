@@ -22,20 +22,26 @@ export class Enrollments {
   @Column({ type: 'enum', enum: StatusEnrollment, default: StatusEnrollment.PENDING })
   status: StatusEnrollment
 
+  @Column({ nullable: true })
+  voucher_code: string
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  discount: number
+
   // List mã lớp đăng ký
   @Column({ type: 'json', nullable: true })
   class_ids: number[]
 
   // Tổng học phí
-  @Column({ type: 'float', nullable: true })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   total_fee: number
 
   // Tiền đặt cọc
-  @Column({ type: 'float', nullable: true })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   prepaid: number
 
   // Nợ học phí
-  @Column({ type: 'float', nullable: true })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   debt: number
 
   // Ghi chú

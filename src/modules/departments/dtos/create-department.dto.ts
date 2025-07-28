@@ -2,6 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsString, IsOptional, IsNotEmpty } from 'class-validator'
 
 export class CreateDepartmentDto {
+  index?: number
+
+  isActive?: boolean
+
   @ApiProperty({
     description: 'Mã khoa',
     example: 'PH001',

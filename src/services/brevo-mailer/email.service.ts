@@ -2,17 +2,23 @@ import { HttpService } from '@nestjs/axios'
 import { Injectable } from '@nestjs/common'
 import * as fs from 'fs'
 import * as Handlebars from 'handlebars'
-import { IReceiver } from './receiver.interface'
 import * as path from 'path'
 import { firstValueFrom } from 'rxjs'
+import { IReceiver } from './receiver.interface'
+
+export type Attachment = {
+  filename: string
+  content: Buffer
+}
 
 @Injectable()
 export class BrevoMailerService {
   private readonly apiUrl = process.env.BREVO_API_URL
   constructor(private readonly httpService: HttpService) {}
 
-  async sendMail(receivers: IReceiver[], subject: string, filePath: string, data: any) {
+  async sendMail(receivers: IReceiver[], subject: string, filePath: string, data: any, attachment?: Attachment) {
     console.log('sendMail', receivers, subject, filePath, data)
+
     try {
       const headers = {
         accept: 'application/json',
@@ -20,7 +26,7 @@ export class BrevoMailerService {
         'content-type': 'application/json',
       }
 
-      const emailData = {
+      const emailData: any = {
         sender: {
           name: process.env.SENDER_NAME,
           email: process.env.SENDER_EMAIL,
@@ -28,6 +34,14 @@ export class BrevoMailerService {
         to: receivers,
         subject: subject,
         htmlContent: this.readAndSendHbs(filePath, data),
+      }
+      if (attachment) {
+        emailData.attachment = [
+          {
+            name: attachment.filename,
+            content: attachment.content.toString('base64'),
+          },
+        ]
       }
 
       const response = await firstValueFrom(this.httpService.post(this.apiUrl, emailData, { headers }))
