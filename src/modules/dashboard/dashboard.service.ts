@@ -61,6 +61,7 @@ export class DashboardService {
         debt: StatusEnrollment.DEBT,
       })
 
+
     if (start_date) {
       queryBuilder.andWhere('enrollment.registration_date >= :start_date', { start_date })
     }

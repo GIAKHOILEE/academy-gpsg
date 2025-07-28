@@ -72,6 +72,7 @@ export class AuthService {
       status: user.status,
       saint_name: user?.saint_name ?? '',
       full_name: user?.full_name ?? '',
+
     }
     return formattedUser
   }
@@ -84,6 +85,7 @@ export class AuthService {
     code: string
     saint_name: string
     full_name: string
+
   }): Promise<TokenPayloadDto> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
