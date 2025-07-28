@@ -45,11 +45,11 @@ export class PaginateClassDto extends PaginationDto {
   @Type(() => Number)
   semester_id: number
 
-  // @IsOptional()
-  // @ApiPropertyOptional({ description: 'filter theo id khoa' })
-  // @IsNumber()
-  // @Type(() => Number)
-  // department_id: number
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo id khoa' })
+  @IsNumber()
+  @Type(() => Number)
+  department_id: number
 }
 
 export class GetStudentsOfClassDto extends PaginationDto {

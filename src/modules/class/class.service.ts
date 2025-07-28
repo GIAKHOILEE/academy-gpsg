@@ -222,7 +222,7 @@ export class ClassService {
   }
 
   async getAllClasses(paginateClassDto: PaginateClassDto, is_admin: boolean): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
-    const { subject_id, teacher_id, scholastic_id, semester_id, ...rest } = paginateClassDto
+    const { subject_id, teacher_id, department_id, scholastic_id, semester_id, ...rest } = paginateClassDto
 
     const query = this.classRepository
       .createQueryBuilder('classes')
@@ -248,6 +248,9 @@ export class ClassService {
     }
     if (semester_id) {
       query.andWhere('semester.id = :semester_id', { semester_id })
+    }
+    if (department_id) {
+      query.andWhere('subject.department_id = :department_id', { department_id })
     }
 
     if (!is_admin) {
