@@ -65,7 +65,7 @@ export class PostControllerAdmin {
       meta: posts.meta,
     })
   }
-  
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a post by id' })
   async getPostById(@Param('id') id: string): Promise<ResponseDto> {

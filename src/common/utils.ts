@@ -9,7 +9,6 @@ import { ClsServiceManager } from 'nestjs-cls'
 import * as path from 'path'
 import puppeteer from 'puppeteer'
 import { AppException } from './exeption'
-import { Schedule } from '@enums/class.enum'
 
 export function generateHash(password: string): string {
   return bcrypt.hashSync(password, 10)
@@ -91,7 +90,6 @@ export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
     [Schedule.THURSDAY]: 'Năm',
     [Schedule.FRIDAY]: 'Sáu',
     [Schedule.SATURDAY]: 'Bảy',
-
   }
 
   return schedule.map(day => dayMap[day])
@@ -137,4 +135,3 @@ export async function renderPdfFromTemplate(templateName: string, data: any): Pr
 
   return Buffer.from(pdfBuffer)
 }
-
