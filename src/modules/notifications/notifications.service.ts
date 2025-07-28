@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Post } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'

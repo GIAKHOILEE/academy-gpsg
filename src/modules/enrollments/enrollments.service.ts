@@ -435,7 +435,7 @@ export class EnrollmentsService {
       if (classEntities.length !== class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
       // Tổng tiền học
-      let totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
+      const totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
       const prepaid = 0 // trả trước
       const debt = totalFee - prepaid // nợ học phí
 
