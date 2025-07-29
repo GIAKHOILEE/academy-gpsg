@@ -8,8 +8,9 @@ import * as handlebars from 'handlebars'
 import { ClsServiceManager } from 'nestjs-cls'
 import * as path from 'path'
 // import puppeteer from 'puppeteer'
+// import { generatePdf } from 'html-pdf-node'
+import * as PDFDocument from 'pdfkit'
 import { AppException } from './exeption'
-import { generatePdf } from 'html-pdf-node'
 
 export function generateHash(password: string): string {
   return bcrypt.hashSync(password, 10)
@@ -139,22 +140,55 @@ export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
 // }
 
 // gen pdf with library html-pdf-node
-export async function renderPdfFromTemplateV2(templateName: string, data: any): Promise<Buffer> {
-  const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
+// export async function renderPdfFromTemplateV2(templateName: string, data: any): Promise<Buffer> {
+//   const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
+
+//   if (!fs.existsSync(templatePath)) {
+//     throw new Error(`Template file not found: ${templatePath}`)
+//   }
+
+//   const source = fs.readFileSync(templatePath, 'utf-8')
+//   const template = handlebars.compile(source)
+//   const html = template(data)
+
+//   const file = { content: html }
+
+//   const pdfBuffer = await generatePdf(file, { format: 'A4', printBackground: true })
+
+//   return pdfBuffer
+// }
+
+// gen pdf with library js-layout
+export async function renderPdfFromTemplateV3(templateName: string, data: any): Promise<Buffer> {
+  const templatePath = path.join(__dirname, '..', 'templates', 'js-layout', `${templateName}.js`)
 
   if (!fs.existsSync(templatePath)) {
-    throw new Error(`Template file not found: ${templatePath}`)
+    throw new Error(`PDF template not found: ${templatePath}`)
   }
 
-  const source = fs.readFileSync(templatePath, 'utf-8')
-  const template = handlebars.compile(source)
-  const html = template(data)
+  const module = await import(templatePath)
+  const render = module.render || module.default
 
-  const file = { content: html }
+  if (typeof render !== 'function') {
+    throw new Error(`render is not a function in ${templatePath}`)
+  }
 
-  const pdfBuffer = await generatePdf(file, { format: 'A4', printBackground: true })
+  const doc = new PDFDocument({ size: 'A4', margin: 50 })
+  const fontPath = path.resolve(__dirname, '..', 'fonts', 'Roboto-Regular.ttf')
+  doc.registerFont('Roboto', fontPath)
+  doc.font('Roboto')
 
-  return pdfBuffer
+  const buffers: Buffer[] = []
+  doc.on('data', buffers.push.bind(buffers))
+
+  render(doc, data)
+
+  return new Promise(resolve => {
+    doc.end()
+    doc.on('end', () => {
+      resolve(Buffer.concat(buffers))
+    })
+  })
 }
 
 export function arrayToObject(array: any[], key: string): any {

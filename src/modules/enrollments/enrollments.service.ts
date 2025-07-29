@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplateV2, throwAppException } from '@common/utils'
+import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplateV3, throwAppException } from '@common/utils'
 import { ClassStatus, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
@@ -707,9 +707,9 @@ export class EnrollmentsService {
         }))
 
         if (status === StatusEnrollment.DEBT || status === StatusEnrollment.PAY_LATE) {
-          const pdfBuffer = await renderPdfFromTemplateV2('pdf-enrollment-register-success', {
-            logo,
-            background,
+          const pdfBuffer = await renderPdfFromTemplateV3('pdf-enrollment-register-success', {
+            logoPath: path.join(__dirname, '..', '..', 'assets', 'logo.jpg'),
+            backgroundPath: path.join(__dirname, '..', '..', 'assets', 'background.png'),
             code: enrollment?.code,
             saint_name: enrollment?.saint_name,
             full_name: enrollment?.full_name,
@@ -747,10 +747,10 @@ export class EnrollmentsService {
             },
           )
         } else if (status === StatusEnrollment.DONE) {
-          const pdfBuffer = await renderPdfFromTemplateV2('pdf-enrollment-payment-success', {
-            logo,
-            background,
-            stamp,
+          const pdfBuffer = await renderPdfFromTemplateV3('pdf-enrollment-payment-success', {
+            logoPath: path.join(__dirname, '..', '..', 'assets', 'logo.jpg'),
+            backgroundPath: path.join(__dirname, '..', '..', 'assets', 'background.png'),
+            stampPath: path.join(__dirname, '..', '..', 'assets', 'stamp.png'),
             code: enrollment?.code,
             saint_name: enrollment?.saint_name,
             full_name: enrollment?.full_name,
