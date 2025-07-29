@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplate, throwAppException } from '@common/utils'
+import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplateV3, throwAppException } from '@common/utils'
 import { ClassStatus, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
@@ -14,7 +14,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import * as fs from 'fs'
 import * as path from 'path'
-import { DataSource, Repository } from 'typeorm'
+import { DataSource, In, Repository } from 'typeorm'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
@@ -47,6 +47,8 @@ export class EnrollmentsService {
     @InjectRepository(Voucher)
     private readonly voucherRepository: Repository<Voucher>,
     private readonly emailService: BrevoMailerService,
+    @InjectRepository(ClassStudents)
+    private readonly classStudentsRepository: Repository<ClassStudents>,
   ) {}
 
   // async createEnrollment(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, userId?: number): Promise<IEnrollments> {
@@ -561,14 +563,21 @@ export class EnrollmentsService {
 
       // check class
       let totalFee = enrollment.total_fee
-      if (class_ids) {
+
+      if (Array.isArray(class_ids) && class_ids.length > 0) {
+        console.log('class_ids', class_ids)
         const classEntities = await classRepo
           .createQueryBuilder('class')
           .select(['class.id', 'class.name', 'class.price', 'class.status'])
           .where('class.id IN (:...class_ids)', { class_ids })
           .andWhere('class.status = :status', { status: ClassStatus.ENROLLING })
           .getMany()
-        if (classEntities.length !== class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+        console.log('classEntities', classEntities)
+        if (classEntities.length !== class_ids.length) {
+          throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+        }
+
         totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
         enrollment.class_ids = class_ids
         enrollment.total_fee = totalFee
@@ -698,10 +707,9 @@ export class EnrollmentsService {
         }))
 
         if (status === StatusEnrollment.DEBT || status === StatusEnrollment.PAY_LATE) {
-          console.log('day', day, 'month', month, 'year', year)
-          const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-register-success', {
-            logo,
-            background,
+          const pdfBuffer = await renderPdfFromTemplateV3('pdf-enrollment-register-success', {
+            logoPath: path.join(__dirname, '..', '..', 'assets', 'logo.jpg'),
+            backgroundPath: path.join(__dirname, '..', '..', 'assets', 'background.png'),
             code: enrollment?.code,
             saint_name: enrollment?.saint_name,
             full_name: enrollment?.full_name,
@@ -739,10 +747,10 @@ export class EnrollmentsService {
             },
           )
         } else if (status === StatusEnrollment.DONE) {
-          const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-payment-success', {
-            logo,
-            background,
-            stamp,
+          const pdfBuffer = await renderPdfFromTemplateV3('pdf-enrollment-payment-success', {
+            logoPath: path.join(__dirname, '..', '..', 'assets', 'logo.jpg'),
+            backgroundPath: path.join(__dirname, '..', '..', 'assets', 'background.png'),
+            stampPath: path.join(__dirname, '..', '..', 'assets', 'stamp.png'),
             code: enrollment?.code,
             saint_name: enrollment?.saint_name,
             full_name: enrollment?.full_name,
@@ -840,6 +848,7 @@ export class EnrollmentsService {
         'class.closing_day',
       ])
       .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
+      .withDeleted()
       .getMany()
     if (listClass.length !== enrollment.class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
     const formatEnrollment: IEnrollments = {
@@ -945,15 +954,49 @@ export class EnrollmentsService {
 
   // delete
   async deleteEnrollment(id: number): Promise<void> {
-    const enrollment = await this.enrollmentsRepository
-      .createQueryBuilder('enrollment')
-      .select(['enrollment.id'])
-      .where('enrollment.id = :id', { id })
-      .withDeleted()
-      .getOne()
-    if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    const queryRunner = this.dataSource.createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+    try {
+      const enrollmentsRepo = queryRunner.manager.getRepository(Enrollments)
+      const classStudentsRepo = queryRunner.manager.getRepository(ClassStudents)
+      const classRepo = queryRunner.manager.getRepository(Classes)
 
-    await this.enrollmentsRepository.delete(id)
+      const enrollment = await enrollmentsRepo
+        .createQueryBuilder('enrollment')
+        .select(['enrollment.id', 'enrollment.status', 'enrollment.class_ids', 'enrollment.student_id'])
+        .where('enrollment.id = :id', { id })
+        .withDeleted()
+        .getOne()
+      if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      // nếu đơn nằm trong 3 status kia chứng tỏ đã vào lớp, xóa thì xóa trong lớp đi
+      if (enrollment.status != StatusEnrollment.PENDING) {
+        // xóa tất cả class_students
+        const classIds = enrollment.class_ids
+        await classStudentsRepo.delete({
+          class_id: In(classIds),
+          student_id: enrollment.student_id,
+        })
+
+        // giảm số lượng student trong class
+        const classEntities = await classRepo.find({
+          where: { id: In(classIds) },
+        })
+        for (const classEntity of classEntities) {
+          classEntity.current_students = classEntity.current_students - 1
+        }
+        await classRepo.save(classEntities)
+      }
+
+      await enrollmentsRepo.delete(id)
+      await queryRunner.commitTransaction()
+    } catch (error) {
+      await queryRunner.rollbackTransaction()
+      throw error
+    } finally {
+      await queryRunner.release()
+    }
   }
 
   // 10 ngày không thanh toán thì tự động soft delete

@@ -1,6 +1,16 @@
 import { Classes } from '@modules/class/class.entity'
 import { Department } from '@modules/departments/departments.entity'
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm'
 
 @Entity('subjects')
 export class Subject {
@@ -32,6 +42,7 @@ export class Subject {
   department_id: number
 
   @ManyToOne(() => Department, department => department.subjects, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'department_id' })
   department: Department
 
   @OneToMany(() => Classes, classes => classes.subject, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

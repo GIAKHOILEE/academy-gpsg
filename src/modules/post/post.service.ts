@@ -84,7 +84,6 @@ export class PostService {
         'post_catalog.name',
         'post_catalog.slug',
       ])
-      .where('post_catalog.type = :type', { type: type })
 
     if (type) {
       queryBuilder.andWhere('post_catalog.type = :type', { type: type })

@@ -48,6 +48,18 @@ export class AminVoucherController {
     }
   }
 
+  @Get('code/:code')
+  @ApiOperation({ summary: 'Lấy voucher theo code' })
+  @ApiParam({ name: 'code', type: String })
+  async getVoucherByCode(@Param('code') code: string): Promise<ResponseDto> {
+    const voucher = await this.voucherService.getVoucherByCode(code)
+    return {
+      statusCode: 200,
+      messageCode: 'VOUCHER_GET_SUCCESS',
+      data: voucher,
+    }
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Lấy voucher theo id' })
   @ApiParam({ name: 'id', type: Number })
@@ -77,6 +89,18 @@ export class AminVoucherController {
 @ApiTags('Vouchers')
 export class VoucherController {
   constructor(private readonly voucherService: VoucherService) {}
+
+  @Get('code/:code')
+  @ApiOperation({ summary: 'Lấy voucher theo code' })
+  @ApiParam({ name: 'code', type: String })
+  async getVoucherByCode(@Param('code') code: string): Promise<ResponseDto> {
+    const voucher = await this.voucherService.getVoucherByCode(code)
+    return {
+      statusCode: 200,
+      messageCode: 'VOUCHER_GET_SUCCESS',
+      data: voucher,
+    }
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Lấy voucher theo id' })

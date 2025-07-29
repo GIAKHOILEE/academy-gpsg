@@ -1,7 +1,6 @@
 import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { Department } from '@modules/departments/departments.entity'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
@@ -28,8 +27,6 @@ export class ClassService {
     private subjectRepository: Repository<Subject>,
     @InjectRepository(Teacher)
     private teacherRepository: Repository<Teacher>,
-    @InjectRepository(Department)
-    private departmentRepository: Repository<Department>,
     @InjectRepository(Scholastic)
     private scholasticRepository: Repository<Scholastic>,
     @InjectRepository(Semester)
@@ -39,7 +36,7 @@ export class ClassService {
   ) {}
 
   async createClass(createClassDto: CreateClassDto): Promise<IClasses> {
-    const { code, subject_id, teacher_id, department_id, scholastic_id, semester_id, ...rest } = createClassDto
+    const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = createClassDto
 
     const existingClass = await this.classRepository.findOne({ where: { code } })
     if (existingClass) throwAppException('CLASS_CODE_ALREADY_EXISTS', ErrorCode.CLASS_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
@@ -57,12 +54,6 @@ export class ClassService {
       .where('teachers.id = :id', { id: teacher_id })
       .getOne()
     if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
-    const department = await this.departmentRepository
-      .createQueryBuilder('departments')
-      .select(['departments.id', 'departments.code', 'departments.name'])
-      .where('departments.id = :id', { id: department_id })
-      .getOne()
-    if (!department) throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     const scholastic = await this.scholasticRepository
       .createQueryBuilder('scholastics')
       .select(['scholastics.id', 'scholastics.name'])
@@ -76,7 +67,7 @@ export class ClassService {
       .getOne()
     if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, department, scholastic, semester, name: subject.name })
+    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name })
     const savedClass = await this.classRepository.save(classEntity)
 
     const formattedClass: IClasses = {
@@ -114,17 +105,12 @@ export class ClassService {
         id: semester.id,
         name: semester.name,
       },
-      department: {
-        id: department.id,
-        code: department.code,
-        name: department.name,
-      },
     }
     return formattedClass
   }
 
   async updateClass(id: number, updateClassDto: UpdateClassDto): Promise<void> {
-    const { code, subject_id, teacher_id, department_id, scholastic_id, semester_id, ...rest } = updateClassDto
+    const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = updateClassDto
 
     const existingClass = await this.classRepository.findOne({ where: { id } })
     if (!existingClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -137,10 +123,6 @@ export class ClassService {
       const teacher = await this.teacherRepository.exists({ where: { id: teacher_id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
-    if (department_id) {
-      const department = await this.departmentRepository.exists({ where: { id: department_id } })
-      if (!department) throwAppException('DEPARTMENT_NOT_FOUND', ErrorCode.DEPARTMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
-    }
     if (scholastic_id) {
       const scholastic = await this.scholasticRepository.exists({ where: { id: scholastic_id } })
       if (!scholastic) throwAppException('SCHOLASTIC_NOT_FOUND', ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -150,7 +132,7 @@ export class ClassService {
       if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
-    await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, department_id, scholastic_id, semester_id })
+    await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id })
   }
 
   async updateIsActive(id: number): Promise<void> {
@@ -171,9 +153,9 @@ export class ClassService {
     const classEntity = await this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
+      .leftJoinAndSelect('subject.department', 'department')
       .leftJoinAndSelect('classes.teacher', 'teacher')
       .leftJoinAndSelect('teacher.user', 'user')
-      .leftJoinAndSelect('classes.department', 'department')
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
       .where('classes.id = :id', { id })
@@ -182,7 +164,7 @@ export class ClassService {
 
     const formattedClass: IClasses = {
       id: classEntity.id,
-      name: classEntity.name,
+      name: classEntity?.subject?.name,
       code: classEntity.code,
       image: classEntity.subject.image,
       status: classEntity.status,
@@ -228,11 +210,11 @@ export class ClassService {
             name: classEntity.semester.name,
           }
         : null,
-      department: classEntity?.department
+      department: classEntity?.subject?.department
         ? {
-            id: classEntity.department.id,
-            code: classEntity.department.code,
-            name: classEntity.department.name,
+            id: classEntity.subject.department.id,
+            code: classEntity.subject.department.code,
+            name: classEntity.subject.department.name,
           }
         : null,
     }
@@ -245,10 +227,9 @@ export class ClassService {
     const query = this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
-      .leftJoinAndSelect('subject.department', 'department') // chỉ JOIN để lọc
+      .leftJoinAndSelect('subject.department', 'department')
       .leftJoinAndSelect('classes.teacher', 'teacher')
       .leftJoinAndSelect('teacher.user', 'user')
-      .leftJoinAndSelect('classes.department', 'departmentClass') // chỉ JOIN để lọc
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
 
@@ -262,21 +243,14 @@ export class ClassService {
     if (teacher_id) {
       query.andWhere('teacher.id = :teacher_id', { teacher_id })
     }
-
-    // nếu class không có department thì lấy department của subject
-    if (department_id) {
-      query.andWhere(
-        `
-        COALESCE(departmentClass.id, subject.department_id) = :department_id
-      `,
-        { department_id },
-      )
-    }
     if (scholastic_id) {
       query.andWhere('scholastic.id = :scholastic_id', { scholastic_id })
     }
     if (semester_id) {
       query.andWhere('semester.id = :semester_id', { semester_id })
+    }
+    if (department_id) {
+      query.andWhere('subject.department_id = :department_id', { department_id })
     }
 
     if (!is_admin) {
@@ -286,7 +260,7 @@ export class ClassService {
     const { data, meta } = await paginate(query, rest)
     const formattedClasses: IClasses[] = data.map(classEntity => ({
       id: classEntity.id,
-      name: classEntity.name,
+      name: classEntity?.subject?.name,
       code: classEntity.code,
       image: classEntity.subject.image,
       status: classEntity.status,
@@ -332,19 +306,13 @@ export class ClassService {
             name: classEntity.semester.name,
           }
         : null,
-      department: classEntity.department
+      department: classEntity.subject?.department
         ? {
-            id: classEntity.department.id,
-            code: classEntity.department.code,
-            name: classEntity.department.name,
+            id: classEntity.subject.department.id,
+            code: classEntity.subject.department.code,
+            name: classEntity.subject.department.name,
           }
-        : classEntity.subject?.department
-          ? {
-              id: classEntity.subject.department.id,
-              code: classEntity.subject.department.code,
-              name: classEntity.subject.department.name,
-            }
-          : null,
+        : null,
     }))
     return { data: formattedClasses, meta }
   }
