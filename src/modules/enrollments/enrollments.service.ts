@@ -917,7 +917,7 @@ export class EnrollmentsService {
     isSoftDelete: boolean = false,
   ): Promise<{
     data: IEnrollments[]
-    meta: PaginationMeta
+    meta: PaginateEnrollmentsDto
   }> {
     const queryBuilder = this.enrollmentsRepository.createQueryBuilder('enrollment')
     queryBuilder
