@@ -525,8 +525,12 @@ export class EnrollmentsService {
       // Nếu chưa có student_id và admin cung cấp student_code → gán student vào enrollment
       if (student_code && !enrollment.student_id) {
         let user = await userRepo.findOne({ where: { code: student_code } })
+        let isNewUser = false
+
+        // Trường hợp : tạo mới user nếu chưa tồn tại
         if (!user) {
-          // Nếu không tìm thấy user theo code → tạo user mới từ field truyền lên
+          console.log('tạo mới user')
+          isNewUser = true
           user = userRepo.create({
             code: student_code,
             password: await hashPassword(student_code),
@@ -536,9 +540,11 @@ export class EnrollmentsService {
           })
           user = await userRepo.save(user)
         }
-        // Kiểm tra hoặc tạo Student theo user vừa tìm được / tạo mới
+
+        // Tìm student theo user_id
         let student = await studentRepo.findOne({ where: { user_id: user.id } })
         if (!student) {
+          console.log('tạo mới student')
           student = studentRepo.create({
             user_id: user.id,
             graduate: false,
@@ -547,9 +553,10 @@ export class EnrollmentsService {
           student = await studentRepo.save(student)
         }
 
-        // Send email đăng ký tài khoản thành công
-        if (user.email) {
-          await this.emailService.sendMail([{ email: user.email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'done-enrollment', {
+        // Chỉ gửi email nếu là user mới tạo
+        if (isNewUser && user.email) {
+          console.log('gửi email')
+          await this.emailService.sendMail([{ email: user.email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
             name: user.full_name,
             username: user.code,
             password: user.password,
@@ -565,7 +572,6 @@ export class EnrollmentsService {
       let totalFee = enrollment.total_fee
 
       if (Array.isArray(class_ids) && class_ids.length > 0) {
-        console.log('class_ids', class_ids)
         const classEntities = await classRepo
           .createQueryBuilder('class')
           .select(['class.id', 'class.name', 'class.price', 'class.status'])
@@ -705,11 +711,11 @@ export class EnrollmentsService {
           start_date: classEntity.opening_day,
           end_date: classEntity.closing_day,
         }))
-
         if (status === StatusEnrollment.DEBT || status === StatusEnrollment.PAY_LATE) {
           const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-register-success', {
             logo: logo,
             background: background,
+            stamp: stamp,
             code: enrollment?.code,
             saint_name: enrollment?.saint_name,
             full_name: enrollment?.full_name,
@@ -719,10 +725,11 @@ export class EnrollmentsService {
             email: enrollment?.email,
             parish: enrollment?.parish,
             address: enrollment?.address,
-            total_fee: enrollment?.total_fee,
-            prepaid: enrollment?.prepaid,
-            debt: enrollment?.debt,
-            discount: enrollment?.discount,
+            total_fee: Number(enrollment?.total_fee),
+            prepaid: Number(enrollment?.prepaid),
+            debt: Number(enrollment?.debt),
+            discount: Number(enrollment?.discount) || 0,
+            final_amount: Number(enrollment?.total_fee) - Number(enrollment?.discount),
             payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
             classes: formatClass,
             day,
@@ -747,6 +754,7 @@ export class EnrollmentsService {
             },
           )
         } else if (status === StatusEnrollment.DONE) {
+          console.log('total_fee , discount', Number(enrollment?.total_fee), Number(enrollment?.discount))
           const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-payment-success', {
             logo: logo,
             background: background,
@@ -760,10 +768,11 @@ export class EnrollmentsService {
             email: enrollment?.email,
             parish: enrollment?.parish,
             address: enrollment?.address,
-            total_fee: enrollment?.total_fee,
-            prepaid: enrollment?.prepaid,
-            debt: enrollment?.debt,
-            discount: enrollment?.discount,
+            total_fee: Number(enrollment?.total_fee),
+            prepaid: Number(enrollment?.prepaid),
+            debt: Number(enrollment?.debt),
+            discount: Number(enrollment?.discount) || 0,
+            final_amount: Number(enrollment?.total_fee) - Number(enrollment?.discount),
             payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
             classes: formatClass,
             day,
