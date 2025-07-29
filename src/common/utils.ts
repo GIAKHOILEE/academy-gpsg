@@ -11,6 +11,7 @@ import puppeteer from 'puppeteer'
 // import { generatePdf } from 'html-pdf-node'
 // import * as PDFDocument from 'pdfkit'
 import { AppException } from './exeption'
+import * as os from 'os'
 
 export function generateHash(password: string): string {
   return bcrypt.hashSync(password, 10)
@@ -98,7 +99,7 @@ export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
 }
 
 // gen pdf with library puppeteer
-export async function renderPdfFromTemplateV3(templateName: string, data: any): Promise<Buffer> {
+export async function renderPdfFromTemplate(templateName: string, data: any): Promise<Buffer> {
   const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
 
   // Kiểm tra file tồn tại
@@ -111,31 +112,33 @@ export async function renderPdfFromTemplateV3(templateName: string, data: any): 
   const template = handlebars.compile(source)
   const html = template(data)
   // Dùng puppeteer để render HTML thành PDF
+
+  const isLinux = os.platform() === 'linux'
   const browser = await puppeteer.launch({
     // headless: true, // dùng 'new' để tránh warning trên phiên bản mới
     // // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
-    executablePath: '/usr/bin/chromium-browser',
-  headless: true,
-  args: [
-    '--no-sandbox',
-    '--disable-setuid-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-accelerated-2d-canvas',
-    '--no-first-run',
-    '--no-zygote',
-    '--disable-gpu',
-    '--disable-background-timer-throttling',
-    '--disable-backgrounding-occluded-windows',
-    '--disable-renderer-backgrounding',
-    '--disable-features=TranslateUI',
-    '--disable-ipc-flooding-protection',
-    // Thêm các args cho Alpine
-    '--disable-extensions',
-    '--disable-default-apps',
-    '--disable-sync',
-    '--no-default-browser-check',
-    '--disable-web-security'
-  ]
+    executablePath: isLinux ? '/usr/bin/chromium-browser' : undefined,
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-features=TranslateUI',
+      '--disable-ipc-flooding-protection',
+      // Thêm các args cho Alpine
+      '--disable-extensions',
+      '--disable-default-apps',
+      '--disable-sync',
+      '--no-default-browser-check',
+      '--disable-web-security',
+    ],
   })
 
   const page = await browser.newPage()

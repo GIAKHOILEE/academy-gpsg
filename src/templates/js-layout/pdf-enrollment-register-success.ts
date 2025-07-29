@@ -1,6 +1,4 @@
-import PDFDocument from 'pdfkit'
-
-export default function renderRegisterSuccess(doc: PDFKit.PDFDocument, data: any) {
+export default function renderRegisterSuccess(doc: any, data: any) {
   doc.font('Roboto')
   // Header
   doc.image(data.logoPath, 50, 50, { width: 60 })
