@@ -7,9 +7,9 @@ import * as fs from 'fs'
 import * as handlebars from 'handlebars'
 import { ClsServiceManager } from 'nestjs-cls'
 import * as path from 'path'
-// import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer'
 // import { generatePdf } from 'html-pdf-node'
-import * as PDFDocument from 'pdfkit'
+// import * as PDFDocument from 'pdfkit'
 import { AppException } from './exeption'
 
 export function generateHash(password: string): string {
@@ -98,46 +98,68 @@ export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
 }
 
 // gen pdf with library puppeteer
-// export async function renderPdfFromTemplate(templateName: string, data: any): Promise<Buffer> {
-//   const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
+export async function renderPdfFromTemplateV3(templateName: string, data: any): Promise<Buffer> {
+  const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
 
-//   // Kiểm tra file tồn tại
-//   if (!fs.existsSync(templatePath)) {
-//     throw new Error(`Template file not found: ${templatePath}`)
-//   }
+  // Kiểm tra file tồn tại
+  if (!fs.existsSync(templatePath)) {
+    throw new Error(`Template file not found: ${templatePath}`)
+  }
 
-//   // Đọc và biên dịch template
-//   const source = fs.readFileSync(templatePath, 'utf-8')
-//   const template = handlebars.compile(source)
-//   const html = template(data)
-//   // Dùng puppeteer để render HTML thành PDF
-//   const browser = await puppeteer.launch({
-//     headless: true, // dùng 'new' để tránh warning trên phiên bản mới
-//     // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
-//   })
+  // Đọc và biên dịch template
+  const source = fs.readFileSync(templatePath, 'utf-8')
+  const template = handlebars.compile(source)
+  const html = template(data)
+  // Dùng puppeteer để render HTML thành PDF
+  const browser = await puppeteer.launch({
+    // headless: true, // dùng 'new' để tránh warning trên phiên bản mới
+    // // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
+    executablePath: '/usr/bin/chromium-browser',
+  headless: true,
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--no-first-run',
+    '--no-zygote',
+    '--disable-gpu',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=TranslateUI',
+    '--disable-ipc-flooding-protection',
+    // Thêm các args cho Alpine
+    '--disable-extensions',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--no-default-browser-check',
+    '--disable-web-security'
+  ]
+  })
 
-//   const page = await browser.newPage()
-//   await page.setContent(html, { waitUntil: 'networkidle0' })
+  const page = await browser.newPage()
+  await page.setContent(html, { waitUntil: 'networkidle0' })
 
-//   const boundingBox = await page.evaluate(() => {
-//     const body = document.body
-//     const html = document.documentElement
+  const boundingBox = await page.evaluate(() => {
+    const body = document.body
+    const html = document.documentElement
 
-//     return {
-//       width: Math.max(body.scrollWidth, html.scrollWidth),
-//       height: Math.max(body.scrollHeight, html.scrollHeight),
-//     }
-//   })
-//   const pdfBuffer = await page.pdf({
-//     printBackground: true,
-//     preferCSSPageSize: true,
-//     width: `${boundingBox.width}px`,
-//     height: `${boundingBox.height}px`,
-//   })
-//   await browser.close()
+    return {
+      width: Math.max(body.scrollWidth, html.scrollWidth),
+      height: Math.max(body.scrollHeight, html.scrollHeight),
+    }
+  })
+  const pdfBuffer = await page.pdf({
+    printBackground: true,
+    preferCSSPageSize: true,
+    width: `${boundingBox.width}px`,
+    height: `${boundingBox.height}px`,
+  })
+  await browser.close()
 
-//   return Buffer.from(pdfBuffer)
-// }
+  return Buffer.from(pdfBuffer)
+}
 
 // gen pdf with library html-pdf-node
 // export async function renderPdfFromTemplateV2(templateName: string, data: any): Promise<Buffer> {
@@ -159,37 +181,37 @@ export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
 // }
 
 // gen pdf with library js-layout
-export async function renderPdfFromTemplateV3(templateName: string, data: any): Promise<Buffer> {
-  const templatePath = path.join(__dirname, '..', 'templates', 'js-layout', `${templateName}.js`)
+// export async function renderPdfFromTemplateV3(templateName: string, data: any): Promise<Buffer> {
+//   const templatePath = path.join(__dirname, '..', 'templates', 'js-layout', `${templateName}.js`)
 
-  if (!fs.existsSync(templatePath)) {
-    throw new Error(`PDF template not found: ${templatePath}`)
-  }
+//   if (!fs.existsSync(templatePath)) {
+//     throw new Error(`PDF template not found: ${templatePath}`)
+//   }
 
-  const module = await import(templatePath)
-  const render = module.render || module.default
+//   const module = await import(templatePath)
+//   const render = module.render || module.default
 
-  if (typeof render !== 'function') {
-    throw new Error(`render is not a function in ${templatePath}`)
-  }
+//   if (typeof render !== 'function') {
+//     throw new Error(`render is not a function in ${templatePath}`)
+//   }
 
-  const doc = new PDFDocument({ size: 'A4', margin: 50 })
-  const fontPath = path.resolve(__dirname, '..', 'fonts', 'Roboto-Regular.ttf')
-  doc.registerFont('Roboto', fontPath)
-  doc.font('Roboto')
+//   const doc = new PDFDocument({ size: 'A4', margin: 50 })
+//   const fontPath = path.resolve(__dirname, '..', 'fonts', 'Roboto-Regular.ttf')
+//   doc.registerFont('Roboto', fontPath)
+//   doc.font('Roboto')
 
-  const buffers: Buffer[] = []
-  doc.on('data', buffers.push.bind(buffers))
+//   const buffers: Buffer[] = []
+//   doc.on('data', buffers.push.bind(buffers))
 
-  render(doc, data)
+//   render(doc, data)
 
-  return new Promise(resolve => {
-    doc.end()
-    doc.on('end', () => {
-      resolve(Buffer.concat(buffers))
-    })
-  })
-}
+//   return new Promise(resolve => {
+//     doc.end()
+//     doc.on('end', () => {
+//       resolve(Buffer.concat(buffers))
+//     })
+//   })
+// }
 
 export function arrayToObject(array: any[], key: string): any {
   return array.reduce((acc, item) => {
