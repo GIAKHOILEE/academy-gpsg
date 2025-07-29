@@ -226,19 +226,19 @@ export class PostService {
     const offset = (page - 1) * limit
 
     const baseSql = `
-      SELECT is_active, is_banner, title, thumbnail AS image, description, created_at, 'notification' as source
+      SELECT id, is_active, is_banner, title, thumbnail AS image, description, created_at, 'notifications' as source
       FROM notifications
       WHERE is_banner = true
   
       UNION ALL
   
-      SELECT is_active, is_banner, title, thumbnail AS image, description, created_at, 'event' as source
+      SELECT id, is_active, is_banner, title, thumbnail AS image, description, created_at, 'events' as source
       FROM events
       WHERE is_banner = true
   
       UNION ALL
   
-      SELECT is_active, is_banner, title, image, description, created_at, 'post' as source
+      SELECT id, is_active, is_banner, title, image, description, created_at, 'post' as source
       FROM posts
       WHERE is_banner = true
     `
@@ -261,6 +261,7 @@ export class PostService {
 
     const formatData = data.map(item => {
       return {
+        id: item.id,
         title: item.title,
         image: item.image,
         description: item.description,
