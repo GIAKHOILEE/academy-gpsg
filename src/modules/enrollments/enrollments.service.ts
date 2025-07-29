@@ -441,19 +441,6 @@ export class EnrollmentsService {
       const prepaid = 0 // trả trước
       const debt = totalFee - prepaid // nợ học phí
 
-      // check voucher
-      if (createEnrollmentDto.voucher_code) {
-        const voucher = await this.voucherRepository.findOne({ where: { code: createEnrollmentDto.voucher_code } })
-        if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
-        if (voucher.is_used) throwAppException('VOUCHER_ALREADY_USED', ErrorCode.VOUCHER_ALREADY_USED, HttpStatus.BAD_REQUEST)
-        if (voucher.type === VoucherType.PERCENTAGE) {
-          createEnrollmentDto.discount = (totalFee * voucher.discount) / 100
-        } else if (voucher.type === VoucherType.FIXED) {
-          createEnrollmentDto.discount = voucher.discount
-        }
-        createEnrollmentDto.voucher_code = voucher.code
-      }
-
       const enrollment = this.enrollmentsRepository.create({
         ...createEnrollmentDto,
         is_logged: isLogged,
@@ -466,6 +453,28 @@ export class EnrollmentsService {
       })
 
       const savedEnrollment = await queryRunner.manager.save(Enrollments, enrollment)
+
+      // check voucher
+      if (createEnrollmentDto.voucher_code) {
+        const voucher = await this.voucherRepository.findOne({ where: { code: createEnrollmentDto.voucher_code } })
+        if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (voucher.is_used) throwAppException('VOUCHER_ALREADY_USED', ErrorCode.VOUCHER_ALREADY_USED, HttpStatus.BAD_REQUEST)
+        if (voucher.type === VoucherType.PERCENTAGE) {
+          createEnrollmentDto.discount = (totalFee * voucher.discount) / 100
+        } else if (voucher.type === VoucherType.FIXED) {
+          createEnrollmentDto.discount = voucher.discount
+        }
+        createEnrollmentDto.voucher_code = voucher.code
+
+        // update voucher
+        await this.voucherRepository.update(voucher.id, {
+          student_id: studentId,
+          is_used: true,
+          use_at: new Date().toISOString(),
+          actual_discount: createEnrollmentDto.discount,
+          enrollment_id: savedEnrollment.id,
+        })
+      }
 
       const formatEnrollment: IEnrollments = {
         ...savedEnrollment,
@@ -609,16 +618,13 @@ export class EnrollmentsService {
         }
         enrollment.voucher_code = voucher.code
 
-        // update voucher nếu status đã thanh toán
-        if (status === StatusEnrollment.DONE) {
-          await this.voucherRepository.update(voucher.id, {
-            student_id: enrollment.student_id,
-            is_used: true,
-            enrollment_id: enrollment.id,
-            use_at: new Date().toISOString(),
-            actual_discount: enrollment.discount,
-          })
-        }
+        await this.voucherRepository.update(voucher.id, {
+          student_id: enrollment.student_id,
+          is_used: true,
+          enrollment_id: enrollment.id,
+          use_at: new Date().toISOString(),
+          actual_discount: enrollment.discount,
+        })
       }
 
       // nếu status khác pending thì cộng current_students của class, còn nếu pending thì trừ current_students của class
@@ -629,7 +635,7 @@ export class EnrollmentsService {
           const existClassStudents = await classStudentsRepo.exists({ where: { class_id, student_id: enrollment.student_id } })
           if (existClassStudents) continue
           const classEntity = await classRepo.findOne({ where: { id: class_id } })
-          if (classEntity.current_students < classEntity.max_students) {
+          if (classEntity.current_students < classEntity.max_students || classEntity.max_students == 0) {
             classEntity.current_students++
             await classRepo.save(classEntity)
           } else {
@@ -659,7 +665,9 @@ export class EnrollmentsService {
         if (isFromPending && !isToPending) {
           // Từ pending sang trạng thái khác → thêm vào class_students
           // nếu student đã có trong class_students thì không thêm vào
-          const existClassStudents = await classStudentsRepo.find({ where: { student_id: enrollment.student_id } })
+          const existClassStudents = await classStudentsRepo.find({
+            where: { student_id: enrollment.student_id, class_id: In(enrollment.class_ids) },
+          })
           if (existClassStudents.length > 0) throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
           const classStudents = enrollment.class_ids.map(class_id => ({
             class_id,
@@ -833,6 +841,7 @@ export class EnrollmentsService {
         'enrollment.diocese',
         'enrollment.congregation',
         'enrollment.note',
+        'enrollment.discount',
         'enrollment.user_note',
         'enrollment.class_ids',
         'student.id',
@@ -870,6 +879,7 @@ export class EnrollmentsService {
       total_fee: enrollment.total_fee,
       prepaid: enrollment.prepaid,
       debt: enrollment.debt,
+      discount: enrollment.discount,
       note: enrollment.note,
       user_note: enrollment.user_note,
       is_logged: enrollment.is_logged,
@@ -921,6 +931,7 @@ export class EnrollmentsService {
         'enrollment.total_fee',
         'enrollment.prepaid',
         'enrollment.debt',
+        'enrollment.discount',
         'enrollment.note',
         'enrollment.user_note',
         'enrollment.is_logged',
@@ -952,6 +963,7 @@ export class EnrollmentsService {
         email: enrollment.email,
         phone_number: enrollment.phone_number,
         address: enrollment.address,
+        discount: enrollment.discount,
       }
     })
 

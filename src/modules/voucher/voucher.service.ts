@@ -155,7 +155,6 @@ export class VoucherService {
 
     const arraytoObjectStudent = arrayToObject(students, 'id')
 
-    console.log(arraytoObjectStudent)
     const formattedData: IVoucher[] = data.map((voucher: Voucher) => ({
       id: voucher.id,
       code: voucher.code,
