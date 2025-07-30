@@ -46,9 +46,25 @@ RUN apk add --no-cache \
 # Copy package files từ builder
 COPY --from=builder --chown=nextjs:nodejs /usr/app/package*.json ./
 
-RUN yarn install --only=production
+# Install chỉ production dependencies
+RUN yarn install --production --frozen-lockfile \
+    && yarn cache clean \
+    && rm -rf /tmp/* \
+    && rm -rf /root/.npm \
+    && rm -rf /usr/local/share/.cache
 
-COPY --from=development /usr/app/dist ./dist
+# Copy built application từ builder
+COPY --from=builder --chown=nextjs:nodejs /usr/app/dist ./dist
+
+# Puppeteer config
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Disable Chromium sandbox cho Alpine container
+ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/bin/chromium-browser
+
+USER nextjs
 
 EXPOSE $PORT
 
