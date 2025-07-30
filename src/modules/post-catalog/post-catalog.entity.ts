@@ -27,6 +27,9 @@ export class PostCatalog {
   slug: string
 
   @Column({ nullable: true })
+  image: string
+
+  @Column({ nullable: true })
   icon: string
 
   @Column({ default: PostCatalogType.BOTTOM })

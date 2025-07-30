@@ -3,6 +3,7 @@ export interface IPostCatalog {
   index?: number
   name: string
   slug: string
+  image?: string
   icon?: string
   parent?: IPostCatalog | null
   children?: IPostCatalog[]

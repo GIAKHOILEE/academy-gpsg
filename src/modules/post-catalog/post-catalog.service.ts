@@ -68,6 +68,7 @@ export class PostCatalogService {
         'post_catalog.is_active',
         'post_catalog.parent_id',
         'post_catalog.icon',
+        'post_catalog.image',
       ])
     if (!id && !parent_id) {
       queryBuilder.andWhere('post_catalog.parent_id IS NULL')
@@ -98,6 +99,7 @@ export class PostCatalogService {
           index: catalog.index,
           is_active: catalog.is_active,
           icon: catalog.icon,
+          image: catalog.image,
           parent: null,
           children,
         }
@@ -114,7 +116,15 @@ export class PostCatalogService {
   private async fetchChildren(parentId: number, isAdmin: boolean): Promise<any[]> {
     const children = await this.postCatalogRepository
       .createQueryBuilder('post_catalog')
-      .select(['post_catalog.id', 'post_catalog.name', 'post_catalog.slug', 'post_catalog.index', 'post_catalog.is_active', 'post_catalog.icon'])
+      .select([
+        'post_catalog.id',
+        'post_catalog.name',
+        'post_catalog.slug',
+        'post_catalog.index',
+        'post_catalog.is_active',
+        'post_catalog.icon',
+        'post_catalog.image',
+      ])
       .where('post_catalog.parent_id = :parentId', { parentId })
       .andWhere(isAdmin ? '1=1' : 'post_catalog.is_active = :is_active', { is_active: true })
       .orderBy('post_catalog.index', 'ASC')
@@ -131,6 +141,7 @@ export class PostCatalogService {
           index: child.index,
           is_active: child.is_active,
           icon: child.icon,
+          image: child.image,
           children: grandChildren,
         }
       }),
@@ -149,6 +160,7 @@ export class PostCatalogService {
         'post_catalog.is_active',
         'post_catalog.parent_id',
         'post_catalog.icon',
+        'post_catalog.image',
       ])
     queryBuilder.andWhere('post_catalog.is_active = :is_active', { is_active: true })
     if (!id && !parent_id) {
@@ -178,6 +190,7 @@ export class PostCatalogService {
           index: catalog.index,
           is_active: catalog.is_active,
           icon: catalog.icon,
+          image: catalog.image,
           parent: null,
           children,
         }
@@ -211,7 +224,7 @@ export class PostCatalogService {
   }
 
   async update(id: number, updatePostCatalogDto: CreatePostCatalogDto): Promise<void> {
-    const { parent_id, name, icon } = updatePostCatalogDto
+    const { parent_id, name, icon, image } = updatePostCatalogDto
     const postCatalog = await this.postCatalogRepository
       .createQueryBuilder('post_catalogs')
       .leftJoin('post_catalogs.parent', 'parent')
@@ -227,6 +240,7 @@ export class PostCatalogService {
       slug: name ? convertToSlug(name) : postCatalog.slug,
       parent: postCatalog.parent,
       icon: icon ? icon : postCatalog.icon,
+      image: image ? image : postCatalog.image,
     }
 
     // if (name) {

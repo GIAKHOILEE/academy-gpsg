@@ -63,6 +63,7 @@ export const messages = {
     VOUCHER_CODE_ALREADY_EXISTS: 'Voucher code already exists',
     VOUCHER_NOT_FOUND: 'Voucher not found',
     VOUCHER_ALREADY_USED: 'Voucher already used',
+    CLASS_END_ENROLLING: 'Class end enrolling',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -131,5 +132,6 @@ export const messages = {
     VOUCHER_CODE_ALREADY_EXISTS: 'Mã voucher đã tồn tại',
     VOUCHER_NOT_FOUND: 'Voucher không tồn tại',
     VOUCHER_ALREADY_USED: 'Voucher đã được sử dụng',
+    CLASS_END_ENROLLING: 'Lớp học đang kết thúc đăng ký',
   },
 }

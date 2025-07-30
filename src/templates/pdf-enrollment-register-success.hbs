@@ -164,7 +164,7 @@
       }
 
       .info-table td {
-        padding: 0 0 8px 4px;
+        padding: 4px 0 4px 4px;
         border: 1px solid #ccc;
       }
 
@@ -210,7 +210,6 @@
       }
 
       .course-table th {
-        background-color: #f0f0f0;
         text-align: center;
         font-weight: bold;
       }
@@ -237,7 +236,6 @@
 
       .course-table .col-fee {
         width: 20%;
-        text-align: right;
       }
 
       .summary-table {
@@ -365,7 +363,7 @@
           </div>
         </div>
 
-        <h2 class='title'>Phiếu thu</h2>
+        <h2 class='title'>THÔNG TIN ĐĂNG KÝ KHÓA HỌC</h2>
 
         <div class='receipt-info'>
           <span id='receiptNo'>No. {{code}}</span>
@@ -401,13 +399,13 @@
               <td class='label'>Giáo xứ:</td>
               <td class='value' id='giaoXu'>{{parish}}</td>
               <td class='label'>Giáo hạt:</td>
-              <td class='value-wide' id='giaoHo'>{{parish_name}}</td>
+              <td class='value-wide' id='giaoHo'>{{deanery}}</td>
             </tr>
             <tr>
               <td class='label'>Giáo phận:</td>
-              <td class='value' id='giaoPhan'>{{parish_name}}</td>
+              <td class='value' id='giaoPhan'>{{diocese}}</td>
               <td class='label'>Dòng tu:</td>
-              <td class='value-wide' id='dongTu'>{{parish_name}}</td>
+              <td class='value-wide' id='dongTu'>{{congregation}}</td>
             </tr>
           </table>
         </div>
@@ -420,13 +418,13 @@
                 <th class='col-stt'>STT</th>
                 <th class='col-subject'>Môn học</th>
                 <th class='col-schedule'>Lịch học</th>
-                <th class='col-fee'>Học phí</th>
+                <th class='col-fee'>Lệ phí</th>
               </tr>
             </thead>
             <tbody id='courseTableBody'>
               {{#each classes}}
                 <tr>
-                  <td>{{this.index}}</td>
+                  <td style='text-align: center'>{{this.index}}</td>
                   <td>{{this.name}}</td>
                   <td>Thứ
                     {{this.schedule}}
@@ -438,7 +436,7 @@
                     {{this.start_date}}
                     - Kết thúc:
                     {{this.end_date}}</td>
-                  <td>{{this.price}} đ</td>
+                  <td style='text-align: right'>{{this.price}} đ</td>
                 </tr>
               {{/each}}
             </tbody>
@@ -472,8 +470,8 @@
 
           <p><strong>Giờ làm việc:</strong></p>
           <ul style='margin: 0 0 8px 16px; padding: 0; font-size: 12px;'>
-            <li>Sáng: 8:30 - 11:30</li>
-            <li>Chiều: 14:30 - 19:00</li>
+            <li> <span style='color: #ff3131;'>Sáng: </span> 8:30 - 11:30</li>
+            <li> <span style='color: #ffde59;'>Chiều: </span> 14:30 - 19:00</li>
             <li><em>** Làm việc từ Thứ Hai đến Thứ Sáu</em></li>
           </ul>
 
