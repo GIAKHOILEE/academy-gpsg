@@ -1,15 +1,23 @@
-FROM node:21-alpine AS development
+# Multi-stage build tối ưu
+FROM node:21-alpine AS dependencies
 
 WORKDIR /usr/app
+COPY package*.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production=false
 
-COPY package*.json ./
+# Build stage
+FROM node:21-alpine AS builder
 
-RUN yarn install
-
+WORKDIR /usr/app
+# Copy dependencies từ stage trước
+COPY --from=dependencies /usr/app/node_modules ./node_modules
+COPY package*.json yarn.lock ./
 COPY . .
 
+# Build application
 RUN yarn build
 
+# Production stage - Alpine với Chromium
 FROM node:21-alpine AS production
 
 ENV NODE_ENV=production
@@ -18,30 +26,46 @@ ENV PORT=$PORT
 
 WORKDIR /usr/app
 
+# Tạo user trước khi install packages
+RUN addgroup -g 1001 -S nodejs \
+    && adduser -S nextjs -u 1001
+
+# Install Chromium và dependencies tối thiểu
 RUN apk add --no-cache \
     chromium \
     nss \
     freetype \
-    freetype-dev \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
-    && rm -rf /var/cache/apk/*
+    ttf-dejavu \
+    font-noto-emoji \
+    && rm -rf /var/cache/apk/* \
+    && rm -rf /tmp/*
 
-RUN addgroup -g 1001 -S nodejs \
-    && adduser -S nextjs -u 1001
+# Copy package files từ builder
+COPY --from=builder --chown=nextjs:nodejs /usr/app/package*.json ./
 
-COPY --from=development --chown=nextjs:nodejs /usr/app/package*.json ./
+# Install chỉ production dependencies
+RUN yarn install --production --frozen-lockfile \
+    && yarn cache clean \
+    && rm -rf /tmp/* \
+    && rm -rf /root/.npm \
+    && rm -rf /usr/local/share/.cache
 
-RUN yarn install --only=production && yarn cache clean
+# Copy built application từ builder
+COPY --from=builder --chown=nextjs:nodejs /usr/app/dist ./dist
 
-COPY --from=development --chown=nextjs:nodejs /usr/app/dist ./dist
-
+# Puppeteer config
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Disable Chromium sandbox cho Alpine container
+ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/bin/chromium-browser
 
 USER nextjs
 
 EXPOSE $PORT
 
-CMD [ "node", "dist/main" ]
+CMD ["node", "dist/main"]
