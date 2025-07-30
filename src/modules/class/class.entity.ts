@@ -32,7 +32,7 @@ export class Classes {
   @Column({ default: 0 })
   current_students: number
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   condition: string
 
   //lịch học

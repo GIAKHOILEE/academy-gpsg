@@ -18,4 +18,9 @@ export class CreatePostCatalogDto {
   @IsString()
   @ApiPropertyOptional({ example: 'string', description: 'Icon' })
   icon: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ example: 'string', description: 'image' })
+  image: string
 }
