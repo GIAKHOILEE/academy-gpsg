@@ -1,15 +1,28 @@
-FROM node:21-alpine AS development
+# Multi-stage build
+FROM node:21-alpine AS dependencies
 
 WORKDIR /usr/app
 
-COPY package*.json ./
+# Copy package files including yarn.lock
+COPY package*.json yarn.lock ./
 
-RUN yarn install
+RUN yarn install --frozen-lockfile
+
+# Build stage  
+FROM node:21-alpine AS builder
+
+WORKDIR /usr/app
+
+# Copy dependencies từ stage trước
+COPY --from=dependencies /usr/app/node_modules ./node_modules
+COPY package*.json yarn.lock ./
 
 COPY . .
 
+# Build application
 RUN yarn build
 
+# Production stage
 FROM node:21-alpine AS production
 
 ENV NODE_ENV=production
@@ -18,7 +31,7 @@ ENV PORT=$PORT
 
 WORKDIR /usr/app
 
-# Tạo user trước khi install packages
+# Tạo user CHỈ 1 LẦN
 RUN addgroup -g 1001 -S nodejs \
     && adduser -S nextjs -u 1001
 
@@ -26,7 +39,6 @@ RUN addgroup -g 1001 -S nodejs \
 RUN apk add --no-cache \
     nss \
     freetype \
-    freetype-dev \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
@@ -35,14 +47,17 @@ RUN apk add --no-cache \
     && rm -rf /var/cache/apk/* \
     && rm -rf /tmp/*
 
-RUN addgroup -g 1001 -S nodejs \
-    && adduser -S nextjs -u 1001
+# Copy package files từ builder stage
+COPY --from=builder --chown=nextjs:nodejs /usr/app/package*.json ./
 
-COPY --from=development --chown=nextjs:nodejs /usr/app/package*.json ./
+# Install chỉ production dependencies
+RUN yarn install --production --frozen-lockfile \
+    && yarn cache clean \
+    && rm -rf /tmp/* \
+    && rm -rf ~/.npm
 
-RUN yarn install --only=production && yarn cache clean
-
-COPY --from=development --chown=nextjs:nodejs /usr/app/dist ./dist
+# Copy built application từ builder stage
+COPY --from=builder --chown=nextjs:nodejs /usr/app/dist ./dist
 
 # Puppeteer config - sẽ dùng Chrome từ host
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
@@ -52,4 +67,4 @@ USER nextjs
 
 EXPOSE $PORT
 
-CMD [ "node", "dist/main" ]
+CMD ["node", "dist/main"]
