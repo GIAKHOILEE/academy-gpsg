@@ -91,6 +91,12 @@ export class PostService {
       queryBuilder.andWhere('post.post_catalog IS NULL')
     }
 
+    if (type) {
+      queryBuilder.andWhere('post_catalog.type = :type', { type: type })
+    } else {
+      queryBuilder.andWhere('post.post_catalog IS NULL')
+    }
+
     if (!isAdmin) {
       queryBuilder.andWhere('post.is_active = :is_active', { is_active: true })
     }
