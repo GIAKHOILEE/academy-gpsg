@@ -8,7 +8,10 @@ import * as handlebars from 'handlebars'
 import { ClsServiceManager } from 'nestjs-cls'
 import * as path from 'path'
 import puppeteer from 'puppeteer'
+// import { generatePdf } from 'html-pdf-node'
+// import * as PDFDocument from 'pdfkit'
 import { AppException } from './exeption'
+import * as os from 'os'
 
 export function generateHash(password: string): string {
   return bcrypt.hashSync(password, 10)
@@ -95,6 +98,7 @@ export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
   return schedule.map(day => dayMap[day])
 }
 
+// gen pdf with library puppeteer
 export async function renderPdfFromTemplate(templateName: string, data: any): Promise<Buffer> {
   const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
 
@@ -108,9 +112,33 @@ export async function renderPdfFromTemplate(templateName: string, data: any): Pr
   const template = handlebars.compile(source)
   const html = template(data)
   // Dùng puppeteer để render HTML thành PDF
+
+  const isLinux = os.platform() === 'linux'
   const browser = await puppeteer.launch({
-    headless: true, // dùng 'new' để tránh warning trên phiên bản mới
-    // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
+    // headless: true, // dùng 'new' để tránh warning trên phiên bản mới
+    // // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
+    executablePath: isLinux ? '/usr/bin/chromium-browser' : undefined,
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-features=TranslateUI',
+      '--disable-ipc-flooding-protection',
+      // Thêm các args cho Alpine
+      '--disable-extensions',
+      '--disable-default-apps',
+      '--disable-sync',
+      '--no-default-browser-check',
+      '--disable-web-security',
+    ],
   })
 
   const page = await browser.newPage()
@@ -134,4 +162,63 @@ export async function renderPdfFromTemplate(templateName: string, data: any): Pr
   await browser.close()
 
   return Buffer.from(pdfBuffer)
+}
+
+// gen pdf with library html-pdf-node
+// export async function renderPdfFromTemplateV2(templateName: string, data: any): Promise<Buffer> {
+//   const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.hbs`)
+
+//   if (!fs.existsSync(templatePath)) {
+//     throw new Error(`Template file not found: ${templatePath}`)
+//   }
+
+//   const source = fs.readFileSync(templatePath, 'utf-8')
+//   const template = handlebars.compile(source)
+//   const html = template(data)
+
+//   const file = { content: html }
+
+//   const pdfBuffer = await generatePdf(file, { format: 'A4', printBackground: true })
+
+//   return pdfBuffer
+// }
+
+// gen pdf with library js-layout
+// export async function renderPdfFromTemplateV3(templateName: string, data: any): Promise<Buffer> {
+//   const templatePath = path.join(__dirname, '..', 'templates', 'js-layout', `${templateName}.js`)
+
+//   if (!fs.existsSync(templatePath)) {
+//     throw new Error(`PDF template not found: ${templatePath}`)
+//   }
+
+//   const module = await import(templatePath)
+//   const render = module.render || module.default
+
+//   if (typeof render !== 'function') {
+//     throw new Error(`render is not a function in ${templatePath}`)
+//   }
+
+//   const doc = new PDFDocument({ size: 'A4', margin: 50 })
+//   const fontPath = path.resolve(__dirname, '..', 'fonts', 'Roboto-Regular.ttf')
+//   doc.registerFont('Roboto', fontPath)
+//   doc.font('Roboto')
+
+//   const buffers: Buffer[] = []
+//   doc.on('data', buffers.push.bind(buffers))
+
+//   render(doc, data)
+
+//   return new Promise(resolve => {
+//     doc.end()
+//     doc.on('end', () => {
+//       resolve(Buffer.concat(buffers))
+//     })
+//   })
+// }
+
+export function arrayToObject(array: any[], key: string): any {
+  return array.reduce((acc, item) => {
+    acc[item[key]] = item
+    return acc
+  }, {})
 }

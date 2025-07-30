@@ -84,7 +84,12 @@ export class PostService {
         'post_catalog.name',
         'post_catalog.slug',
       ])
-      .where('post_catalog.type = :type', { type: type })
+
+    if (type) {
+      queryBuilder.andWhere('post_catalog.type = :type', { type: type })
+    } else {
+      queryBuilder.andWhere('post.post_catalog IS NULL')
+    }
 
     if (type) {
       queryBuilder.andWhere('post_catalog.type = :type', { type: type })
@@ -227,19 +232,19 @@ export class PostService {
     const offset = (page - 1) * limit
 
     const baseSql = `
-      SELECT is_active, is_banner, title, thumbnail AS image, description, created_at, 'notification' as source
+      SELECT id, is_active, is_banner, title, thumbnail AS image, description, created_at, 'notifications' as source
       FROM notifications
       WHERE is_banner = true
   
       UNION ALL
   
-      SELECT is_active, is_banner, title, thumbnail AS image, description, created_at, 'event' as source
+      SELECT id, is_active, is_banner, title, thumbnail AS image, description, created_at, 'events' as source
       FROM events
       WHERE is_banner = true
   
       UNION ALL
   
-      SELECT is_active, is_banner, title, image, description, created_at, 'post' as source
+      SELECT id, is_active, is_banner, title, image, description, created_at, 'post' as source
       FROM posts
       WHERE is_banner = true
     `
@@ -262,6 +267,7 @@ export class PostService {
 
     const formatData = data.map(item => {
       return {
+        id: item.id,
         title: item.title,
         image: item.image,
         description: item.description,

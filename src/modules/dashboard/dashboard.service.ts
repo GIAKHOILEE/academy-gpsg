@@ -5,11 +5,14 @@ import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { RevenueStatisticsDto } from './dtos/dashboard.dto'
 import { PaymentStatus } from '@enums/class.enum'
 import { StatusEnrollment } from '@enums/class.enum'
+import { Voucher } from '@modules/voucher/voucher.entity'
 @Injectable()
 export class DashboardService {
   constructor(
     @InjectRepository(Enrollments)
     private readonly enrollmentsRepository: Repository<Enrollments>,
+    @InjectRepository(Voucher)
+    private readonly voucherRepository: Repository<Voucher>,
   ) {}
 
   async revenueStatistics(revenueStatisticsDto: RevenueStatisticsDto): Promise<{
@@ -76,6 +79,30 @@ export class DashboardService {
       paidRevenue: Number(result.paid_revenue) || 0,
       unpaidRevenue: Number(result.unpaid_revenue) || 0,
       totalEnrollment: Number(result.total_enrollment) || 0,
+    }
+  }
+
+  async voucherStatistics(): Promise<{
+    totalVoucher: number
+    totalUsedVoucher: number
+    totalActualDiscount: number
+  }> {
+    const query = this.voucherRepository.createQueryBuilder('voucher')
+
+    const totalVoucher = await query.getCount()
+
+    const usedQuery = query.clone().andWhere('voucher.is_used = :used', { used: true })
+
+    const totalUsedVoucher = await usedQuery.getCount()
+
+    const discountQuery = query.clone().andWhere('voucher.is_used = :used', { used: true })
+
+    const { totalActualDiscount } = await discountQuery.select('COALESCE(SUM(voucher.actual_discount), 0)', 'totalActualDiscount').getRawOne()
+
+    return {
+      totalVoucher: Number(totalVoucher),
+      totalUsedVoucher: Number(totalUsedVoucher),
+      totalActualDiscount: Number(totalActualDiscount),
     }
   }
 }

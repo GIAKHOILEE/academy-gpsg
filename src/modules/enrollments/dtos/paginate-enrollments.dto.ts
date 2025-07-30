@@ -12,6 +12,21 @@ export class PaginateEnrollmentsDto extends PaginationDto {
   code?: string
 
   @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Tên sinh viên' })
+  full_name?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Email' })
+  email?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Số điện thoại' })
+  phone_number?: string
+
+  @IsOptional()
   @IsEnum(PaymentStatus)
   @ApiPropertyOptional({ description: 'Trạng thái thanh toán', enum: PaymentStatus })
   @Type(() => Number)

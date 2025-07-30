@@ -13,4 +13,6 @@ export interface IVoucher {
   is_used?: boolean
   use_at?: string
   student?: IStudent
+  full_name?: string
+  saint_name?: string
 }
