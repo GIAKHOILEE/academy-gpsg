@@ -2,28 +2,20 @@
 FROM node:21-alpine AS dependencies
 
 WORKDIR /usr/app
-
-# Copy package files including yarn.lock
 COPY package*.json yarn.lock ./
-
 RUN yarn install --frozen-lockfile
 
 # Build stage  
 FROM node:21-alpine AS builder
 
 WORKDIR /usr/app
-
-# Copy dependencies từ stage trước
 COPY --from=dependencies /usr/app/node_modules ./node_modules
 COPY package*.json yarn.lock ./
-
 COPY . .
-
-# Build application
 RUN yarn build
 
-# Production stage
-FROM node:21-alpine AS production
+# Production stage - Ubuntu thay vì Alpine
+FROM node:21-slim AS production
 
 ENV NODE_ENV=production
 ARG PORT
@@ -31,40 +23,50 @@ ENV PORT=$PORT
 
 WORKDIR /usr/app
 
-# Tạo user CHỈ 1 LẦN
-RUN addgroup -g 1001 -S nodejs \
-    && adduser -S nextjs -u 1001
+RUN groupadd -r nodejs && useradd -r -g nodejs nextjs
 
-# Cài dependencies cần thiết cho Alpine + Chrome mount
-RUN apk add --no-cache \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    libstdc++ \
-    gcompat \
-    && rm -rf /var/cache/apk/* \
-    && rm -rf /tmp/*
+# Install minimal dependencies cho Chrome
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        fonts-liberation \
+        libappindicator3-1 \
+        libasound2 \
+        libatk-bridge2.0-0 \
+        libdrm2 \
+        libgtk-3-0 \
+        libnspr4 \
+        libnss3 \
+        libxss1 \
+        libxtst6 \
+        xdg-utils \
+        libxrandr2 \
+        libgbm1 \
+        libpangocairo-1.0-0 \
+        libatk1.0-0 \
+        libcairo2 \
+        libgdk-pixbuf2.0-0 \
+        libxcomposite1 \
+        libxcursor1 \
+        libxdamage1 \
+        libxi6 \
+        libxfixes3 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy package files từ builder stage
+# Copy package files
 COPY --from=builder --chown=nextjs:nodejs /usr/app/package*.json ./
 
-# Install chỉ production dependencies
 RUN yarn install --production --frozen-lockfile \
     && yarn cache clean \
-    && rm -rf /tmp/* \
-    && rm -rf ~/.npm
+    && rm -rf /tmp/*
 
-# Copy built application từ builder stage
+# Copy built application
 COPY --from=builder --chown=nextjs:nodejs /usr/app/dist ./dist
 
-# Puppeteer config - sẽ dùng Chrome từ host
+# Puppeteer config
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
 USER nextjs
-
 EXPOSE $PORT
-
 CMD ["node", "dist/main"]
