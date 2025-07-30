@@ -1,4 +1,4 @@
-import { paginate, PaginationMeta } from '@common/pagination'
+import { paginate } from '@common/pagination'
 import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplate, throwAppException } from '@common/utils'
 import { ClassStatus, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
