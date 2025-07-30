@@ -18,6 +18,8 @@ export interface IClasses {
   price?: number
   current_students?: number
   schedule?: Schedule[]
+  condition?: string
+  end_enrollment_day: string
   start_time?: string
   end_time?: string
   opening_day?: string

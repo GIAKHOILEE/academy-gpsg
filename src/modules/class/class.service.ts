@@ -81,6 +81,7 @@ export class ClassService {
       price: savedClass.price,
       current_students: savedClass.current_students,
       schedule: savedClass.schedule,
+      end_enrollment_day: savedClass.end_enrollment_day,
       start_time: savedClass.start_time,
       end_time: savedClass.end_time,
       opening_day: savedClass.opening_day,
@@ -173,6 +174,8 @@ export class ClassService {
       max_students: classEntity.max_students,
       price: classEntity.price,
       current_students: classEntity.current_students,
+      condition: classEntity.condition,
+      end_enrollment_day: classEntity.end_enrollment_day,
       schedule: classEntity.schedule,
       start_time: classEntity.start_time,
       end_time: classEntity.end_time,
@@ -270,6 +273,8 @@ export class ClassService {
       price: classEntity.price,
       current_students: classEntity.current_students,
       schedule: classEntity.schedule,
+      condition: classEntity.condition,
+      end_enrollment_day: classEntity.end_enrollment_day,
       start_time: classEntity.start_time,
       end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
@@ -390,6 +395,7 @@ export class ClassService {
         'class.status',
         'class.classroom',
         'class.max_students',
+        'class.end_enrollment_day',
         'class.price',
         'class.current_students',
         'class.schedule',
@@ -427,6 +433,7 @@ export class ClassService {
       max_students: classStudent.class.max_students,
       price: classStudent.class.price,
       current_students: classStudent.class.current_students,
+      end_enrollment_day: classStudent.class.end_enrollment_day,
       schedule: classStudent.class.schedule,
       start_time: classStudent.class.start_time,
       end_time: classStudent.class.end_time,
@@ -492,6 +499,20 @@ export class ClassService {
     for (const classEntity of classes) {
       if (classEntity.closing_day < new Date().toISOString()) {
         await this.classRepository.update(classEntity.id, { status: ClassStatus.END_CLASS })
+      }
+    }
+  }
+
+  // cronjob cuối ngày end_enrollment_day chuyển status qua END_CLASS
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async cronjobUpdateEndEnrollmentClass(): Promise<void> {
+    const classes = await this.classRepository
+      .createQueryBuilder('classes')
+      .select(['classes.id', 'classes.closing_day', 'classes.end_enrollment_day'])
+      .getMany()
+    for (const classEntity of classes) {
+      if (classEntity.end_enrollment_day < new Date().toISOString()) {
+        await this.classRepository.update(classEntity.id, { status: ClassStatus.END_ENROLLING })
       }
     }
   }

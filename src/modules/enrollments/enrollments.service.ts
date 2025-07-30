@@ -683,9 +683,13 @@ export class EnrollmentsService {
           .andWhere('class.status = :status', { status: ClassStatus.ENROLLING })
           .getMany()
 
-        console.log('classEntities', classEntities)
         if (classEntities.length !== class_ids.length) {
           throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+        }
+
+        // nếu status ClassStatus.END_ENROLLING thi khong cho update
+        if (classEntities.some(classEntity => classEntity.status === ClassStatus.END_ENROLLING)) {
+          throwAppException('CLASS_END_ENROLLING', ErrorCode.CLASS_END_ENROLLING, HttpStatus.BAD_REQUEST)
         }
 
         totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
@@ -918,6 +922,7 @@ export class EnrollmentsService {
         'class.code',
         'class.schedule',
         'class.start_time',
+        'class.end_enrollment_day',
         'class.end_time',
         'class.opening_day',
         'class.closing_day',
@@ -945,6 +950,7 @@ export class EnrollmentsService {
         name: classEntity.name,
         code: classEntity.code,
         price: classEntity.price,
+        end_enrollment_day: classEntity.end_enrollment_day,
         schedule: classEntity.schedule,
         start_time: classEntity.start_time,
         end_time: classEntity.end_time,
@@ -1085,8 +1091,8 @@ export class EnrollmentsService {
       .select(['enrollment.id', 'enrollment.status', 'enrollment.created_at', 'enrollment.payment_status'])
       .where('enrollment.payment_status = :payment_status', { payment_status: PaymentStatus.UNPAID })
       .andWhere('enrollment.status = :status', { status: StatusEnrollment.PENDING })
-      // .andWhere('enrollment.created_at < :date', { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) })
-      .andWhere('enrollment.created_at < :date', { date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) })
+      .andWhere('enrollment.created_at < :date', { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) })
+      // .andWhere('enrollment.created_at < :date', { date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) })
       .getMany()
 
     for (const enrollment of enrollments) {

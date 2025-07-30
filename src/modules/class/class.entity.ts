@@ -32,12 +32,18 @@ export class Classes {
   @Column({ default: 0 })
   current_students: number
 
+  @Column({ nullable: true })
+  condition: string
+
   //lịch học
   @Column({
     type: 'json',
     nullable: true,
   })
   schedule: Schedule[]
+
+  @Column({ nullable: true })
+  end_enrollment_day: string
 
   // giờ bắt đầu vào học
   @Column({ nullable: true })

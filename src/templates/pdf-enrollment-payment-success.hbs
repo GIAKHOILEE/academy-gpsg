@@ -210,7 +210,6 @@
       }
 
       .course-table th {
-        background-color: #f0f0f0;
         text-align: center;
         font-weight: bold;
       }
@@ -427,13 +426,13 @@
                 <th class='col-stt'>STT</th>
                 <th class='col-subject'>Môn học</th>
                 <th class='col-schedule'>Lịch học</th>
-                <th class='col-fee'>Học phí</th>
+                <th class='col-fee'>Lệ phí</th>
               </tr>
             </thead>
             <tbody id='courseTableBody'>
               {{#each classes}}
                 <tr>
-                  <td>{{this.index}}</td>
+                  <td style='text-align: center'>{{this.index}}</td>
                   <td>{{this.name}}</td>
                   <td>Thứ
                     {{this.schedule}}
@@ -445,7 +444,7 @@
                     {{this.start_date}}
                     - Kết thúc:
                     {{this.end_date}}</td>
-                  <td>{{this.price}} đ</td>
+                  <td style='text-align: right'>{{this.price}} đ</td>
                 </tr>
               {{/each}}
             </tbody>
