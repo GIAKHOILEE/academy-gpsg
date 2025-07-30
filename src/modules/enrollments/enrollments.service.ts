@@ -1,5 +1,13 @@
 import { paginate } from '@common/pagination'
-import { generateRandomString, hashPassword, mapScheduleToVietnamese, renderPdfFromTemplate, throwAppException } from '@common/utils'
+import {
+  formatCurrency,
+  formatStringDate,
+  generateRandomString,
+  hashPassword,
+  mapScheduleToVietnamese,
+  renderPdfFromTemplate,
+  throwAppException,
+} from '@common/utils'
 import { ClassStatus, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
@@ -378,6 +386,7 @@ export class EnrollmentsService {
     await queryRunner.connect()
     await queryRunner.startTransaction()
     try {
+      const classRepo = queryRunner.manager.getRepository(Classes)
       const { class_ids } = createEnrollmentDto
       // check student
       // có studentId là có đăng nhập, không có studentId là không đăng nhập
@@ -467,6 +476,76 @@ export class EnrollmentsService {
 
       const savedEnrollment = await queryRunner.manager.save(Enrollments, enrollment)
 
+      // send mail
+      if (savedEnrollment.email) {
+        const listClass = await classRepo
+          .createQueryBuilder('class')
+          .select([
+            'class.id',
+            'class.name',
+            'class.start_time',
+            'class.end_time',
+            'class.price',
+            'class.schedule',
+            'class.closing_day',
+            'class.opening_day',
+          ])
+          .where('class.id IN (:...class_ids)', { class_ids: savedEnrollment.class_ids })
+          .getMany()
+
+        const formatClass = listClass.map((classEntity: Classes, index: number) => ({
+          id: classEntity.id,
+          index: index + 1,
+          name: classEntity.name,
+          price: formatCurrency(classEntity.price),
+          schedule: mapScheduleToVietnamese(classEntity.schedule).join(', '),
+          start_time: classEntity.start_time,
+          end_time: classEntity.end_time,
+          start_date: formatStringDate(classEntity.opening_day, true),
+          end_date: formatStringDate(classEntity.closing_day, true),
+        }))
+
+        const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-register-success', {
+          logo: logo,
+          background: background,
+          stamp: stamp,
+          code: enrollment?.code,
+          saint_name: enrollment?.saint_name,
+          full_name: enrollment?.full_name,
+          birth_date: enrollment?.birth_date,
+          birth_place: enrollment?.birth_place,
+          phone: enrollment?.phone_number,
+          email: enrollment?.email,
+          parish: enrollment?.parish,
+          address: enrollment?.address,
+          total_fee: formatCurrency(Number(enrollment?.total_fee)),
+          prepaid: formatCurrency(Number(enrollment?.prepaid)),
+          debt: formatCurrency(Number(enrollment?.debt)),
+          discount: formatCurrency(Number(enrollment?.discount) || 0),
+          final_amount: formatCurrency(Number(enrollment?.total_fee) - Number(enrollment?.discount)),
+          payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
+          classes: formatClass,
+          day,
+          month,
+          year,
+        })
+        await this.emailService.sendMail(
+          [{ email: enrollment.email, name: enrollment.full_name }],
+          'Xác nhận đăng ký khóa học thành công',
+          'enrollment-register-succsess',
+          {
+            saint_name: enrollment?.saint_name,
+            full_name: enrollment?.full_name,
+            day,
+            month,
+            year,
+          },
+          {
+            filename: 'register-success.pdf',
+            content: pdfBuffer,
+          },
+        )
+      }
       // check voucher
       if (createEnrollmentDto.voucher_code) {
         const voucher = await this.voucherRepository.findOne({ where: { code: createEnrollmentDto.voucher_code } })
@@ -725,56 +804,15 @@ export class EnrollmentsService {
           id: classEntity.id,
           index: index + 1,
           name: classEntity.name,
-          price: classEntity.price,
+          price: formatCurrency(classEntity.price),
           schedule: mapScheduleToVietnamese(classEntity.schedule).join(', '),
           start_time: classEntity.start_time,
           end_time: classEntity.end_time,
-          start_date: classEntity.opening_day,
-          end_date: classEntity.closing_day,
+          start_date: formatStringDate(classEntity.opening_day, true),
+          end_date: formatStringDate(classEntity.closing_day, true),
         }))
-        if (status === StatusEnrollment.DEBT || status === StatusEnrollment.PAY_LATE) {
-          const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-register-success', {
-            logo: logo,
-            background: background,
-            stamp: stamp,
-            code: enrollment?.code,
-            saint_name: enrollment?.saint_name,
-            full_name: enrollment?.full_name,
-            birth_date: enrollment?.birth_date,
-            birth_place: enrollment?.birth_place,
-            phone: enrollment?.phone_number,
-            email: enrollment?.email,
-            parish: enrollment?.parish,
-            address: enrollment?.address,
-            total_fee: Number(enrollment?.total_fee),
-            prepaid: Number(enrollment?.prepaid),
-            debt: Number(enrollment?.debt),
-            discount: Number(enrollment?.discount) || 0,
-            final_amount: Number(enrollment?.total_fee) - Number(enrollment?.discount),
-            payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
-            classes: formatClass,
-            day,
-            month,
-            year,
-          })
 
-          await this.emailService.sendMail(
-            [{ email: enrollment.email, name: enrollment.full_name }],
-            'Xác nhận đăng ký khóa học thành công',
-            'enrollment-register-succsess',
-            {
-              saint_name: enrollment?.saint_name,
-              full_name: enrollment?.full_name,
-              day,
-              month,
-              year,
-            },
-            {
-              filename: 'register-success.pdf',
-              content: pdfBuffer,
-            },
-          )
-        } else if (status === StatusEnrollment.DONE) {
+        if (status === StatusEnrollment.DONE) {
           console.log('total_fee , discount', Number(enrollment?.total_fee), Number(enrollment?.discount))
           const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-payment-success', {
             logo: logo,
@@ -789,11 +827,11 @@ export class EnrollmentsService {
             email: enrollment?.email,
             parish: enrollment?.parish,
             address: enrollment?.address,
-            total_fee: Number(enrollment?.total_fee),
-            prepaid: Number(enrollment?.prepaid),
-            debt: Number(enrollment?.debt),
-            discount: Number(enrollment?.discount) || 0,
-            final_amount: Number(enrollment?.total_fee) - Number(enrollment?.discount),
+            total_fee: formatCurrency(Number(enrollment?.total_fee)),
+            prepaid: formatCurrency(Number(enrollment?.prepaid)),
+            debt: formatCurrency(Number(enrollment?.debt)),
+            discount: formatCurrency(Number(enrollment?.discount) || 0),
+            final_amount: formatCurrency(Number(enrollment?.total_fee) - Number(enrollment?.discount)),
             payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
             classes: formatClass,
             day,

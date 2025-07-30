@@ -53,4 +53,3 @@ COPY --from=development /usr/app/dist ./dist
 EXPOSE $PORT
 
 CMD ["node", "dist/main"]
-CMD ["node", "dist/main"]
