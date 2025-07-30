@@ -1,21 +1,24 @@
-# Multi-stage build
+# Multi-stage build tối ưu
 FROM node:21-alpine AS dependencies
 
 WORKDIR /usr/app
 COPY package*.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --production=false
 
-# Build stage  
+# Build stage
 FROM node:21-alpine AS builder
 
 WORKDIR /usr/app
+# Copy dependencies từ stage trước
 COPY --from=dependencies /usr/app/node_modules ./node_modules
 COPY package*.json yarn.lock ./
 COPY . .
+
+# Build application
 RUN yarn build
 
-# Production stage - Ubuntu thay vì Alpine
-FROM node:21-slim AS production
+# Production stage - Alpine với Chromium
+FROM node:21-alpine AS production
 
 ENV NODE_ENV=production
 ARG PORT
@@ -23,54 +26,46 @@ ENV PORT=$PORT
 
 WORKDIR /usr/app
 
-RUN groupadd -r nodejs && useradd -r -g nodejs -m -d /home/nextjs nextjs
+# Tạo user trước khi install packages
+RUN addgroup -g 1001 -S nodejs \
+    && adduser -S nextjs -u 1001
 
-RUN mkdir -p /home/nextjs/.local/share/applications \
-    && touch /home/nextjs/.local/share/applications/mimeapps.list \
-    && chown -R nextjs:nodejs /home/nextjs
-
-# Install minimal dependencies cho Chrome
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        ca-certificates \
-        fonts-liberation \
-        libappindicator3-1 \
-        libasound2 \
-        libatk-bridge2.0-0 \
-        libdrm2 \
-        libgtk-3-0 \
-        libnspr4 \
-        libnss3 \
-        libxss1 \
-        libxtst6 \
-        xdg-utils \
-        libxrandr2 \
-        libgbm1 \
-        libpangocairo-1.0-0 \
-        libatk1.0-0 \
-        libcairo2 \
-        libgdk-pixbuf2.0-0 \
-        libxcomposite1 \
-        libxcursor1 \
-        libxdamage1 \
-        libxi6 \
-        libxfixes3 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy package files
-COPY --from=builder --chown=nextjs:nodejs /usr/app/package*.json ./
-
-RUN yarn install --production --frozen-lockfile \
-    && yarn cache clean \
+# Install Chromium và dependencies tối thiểu
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    ttf-dejavu \
+    font-noto-emoji \
+    && rm -rf /var/cache/apk/* \
     && rm -rf /tmp/*
 
-# Copy built application
+# Copy package files từ builder
+COPY --from=builder --chown=nextjs:nodejs /usr/app/package*.json ./
+
+# Install chỉ production dependencies
+RUN yarn install --production --frozen-lockfile \
+    && yarn cache clean \
+    && rm -rf /tmp/* \
+    && rm -rf /root/.npm \
+    && rm -rf /usr/local/share/.cache
+
+# Copy built application từ builder
 COPY --from=builder --chown=nextjs:nodejs /usr/app/dist ./dist
 
 # Puppeteer config
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-#USER nextjs
+# Disable Chromium sandbox cho Alpine container
+ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/bin/chromium-browser
+
+USER nextjs
+
 EXPOSE $PORT
+
 CMD ["node", "dist/main"]

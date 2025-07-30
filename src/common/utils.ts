@@ -117,7 +117,7 @@ export async function renderPdfFromTemplate(templateName: string, data: any): Pr
   const browser = await puppeteer.launch({
     // headless: true, // dùng 'new' để tránh warning trên phiên bản mới
     // // args: ['--no-sandbox', '--disable-setuid-sandbox'], // để dùng được trên môi trường server
-    executablePath: isLinux ? '/usr/bin/google-chrome' : undefined,
+    executablePath: isLinux ? '/usr/bin/chromium-browser' : undefined,
     headless: true,
     args: [
       '--no-sandbox',
