@@ -228,19 +228,19 @@ export class PostService {
     const baseSql = `
       SELECT id, is_active, is_banner, title, thumbnail AS image, description, created_at, 'notifications' as source
       FROM notifications
-      WHERE is_banner = true
+      WHERE is_banner = true AND is_active = true AND deleted_at IS NULL
   
       UNION ALL
   
       SELECT id, is_active, is_banner, title, thumbnail AS image, description, created_at, 'events' as source
       FROM events
-      WHERE is_banner = true
+      WHERE is_banner = true AND is_active = true AND deleted_at IS NULL
   
       UNION ALL
   
       SELECT id, is_active, is_banner, title, image, description, created_at, 'post' as source
       FROM posts
-      WHERE is_banner = true
+      WHERE is_banner = true AND is_active = true AND deleted_at IS NULL
     `
 
     // Đếm tổng số
