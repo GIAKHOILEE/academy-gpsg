@@ -23,7 +23,11 @@ ENV PORT=$PORT
 
 WORKDIR /usr/app
 
-RUN groupadd -r nodejs && useradd -r -g nodejs nextjs
+RUN groupadd -r nodejs && useradd -r -g nodejs -m -d /home/nextjs nextjs
+
+RUN mkdir -p /home/nextjs/.local/share/applications \
+    && touch /home/nextjs/.local/share/applications/mimeapps.list \
+    && chown -R nextjs:nodejs /home/nextjs
 
 # Install minimal dependencies cho Chrome
 RUN apt-get update \
@@ -67,6 +71,6 @@ COPY --from=builder --chown=nextjs:nodejs /usr/app/dist ./dist
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
-USER nextjs
+#USER nextjs
 EXPOSE $PORT
 CMD ["node", "dist/main"]
