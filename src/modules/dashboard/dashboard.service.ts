@@ -33,7 +33,7 @@ export class DashboardService {
         `
         SUM(
           CASE
-            WHEN enrollment.payment_status = :paid THEN enrollment.prepaid
+            WHEN enrollment.payment_status = :paid THEN enrollment.total_fee - enrollment.discount
             WHEN enrollment.status = :debt AND enrollment.prepaid > 0 THEN enrollment.prepaid
             ELSE 0
           END

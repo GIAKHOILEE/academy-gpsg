@@ -50,7 +50,7 @@ export class CreateEnrollmentsDto {
   @IsOptional()
   phone_number: string
 
-  @ApiPropertyOptional({ description: 'Ngày sinh', example: 'Ngày sinh' })
+  @ApiPropertyOptional({ description: 'Ngày sinh', example: '2025-11-11T00:00:00.000Z' })
   @IsString()
   @IsOptional()
   birth_date: string

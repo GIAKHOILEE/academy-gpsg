@@ -1,74 +1,116 @@
 <html lang='vi'>
-
   <head>
-    <meta content='text/html; charset=utf-8' http-equiv='Content-Type' />
+    <meta charset='UTF-8' />
     <meta name='description' content='Thông tin tài khoản thư viện.' />
-    <style type='text/css'>
+    <style>
       body {
         margin: 0;
-        background-color: #f2f3f8;
-        font-family: 'Open Sans', sans-serif;
+        padding: 0;
+        background-color: #f4f6f9;
+        font-family: 'Open Sans', Arial, sans-serif;
       }
-      .container {
-        max-width: 670px;
+      .email-wrapper {
+        width: 100%;
+        padding: 30px 0;
+      }
+      .email-container {
+        max-width: 640px;
         margin: 0 auto;
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+      .header {
+        background: #8b4513;
+        color: #ffffff;
+        padding: 25px 20px;
         text-align: center;
-        padding: 24px;
       }
-      h1 {
-        color: #8b4513;
-        font-size: 24px;
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
       }
-      p {
-        color: #555;
+      .content {
+        padding: 30px 25px;
+        text-align: center;
+      }
+      .content p {
         font-size: 16px;
+        color: #555555;
         line-height: 1.6;
+        margin: 8px 0;
       }
-      .info {
-        background: #f4f4f4;
-        padding: 15px;
-        border-radius: 8px;
+      .info-box {
+        background: #f8f8f8;
+        padding: 18px;
         margin: 20px 0;
-        font-size: 18px;
+        border-radius: 8px;
+        text-align: left;
+        font-size: 16px;
+        color: #333;
+      }
+      .info-box p {
+        margin: 5px 0;
       }
       .btn {
         display: inline-block;
         background: #8b4513;
-        color: #fff;
-        padding: 12px 20px;
-        text-decoration: none;
-        border-radius: 5px;
-        font-size: 16px;
+        color: #fff !important;
+        padding: 12px 24px;
+        border-radius: 6px;
         font-weight: bold;
+        text-decoration: none;
+        margin: 15px 0;
+        transition: background 0.3s;
       }
       .btn:hover {
         background: #6b3310;
       }
+      .footer {
+        background: #f2f3f8;
+        text-align: center;
+        font-size: 14px;
+        color: #777;
+        padding: 18px 15px;
+        line-height: 1.5;
+      }
+      .footer strong {
+        color: #555;
+      }
     </style>
   </head>
-
   <body>
-    <table width='100%' bgcolor='#f2f3f8'>
-      <tr>
-        <td>
-          <div class='container'>
-            <h1>Chào mừng {{name}}!</h1>
-            <p>Bạn đã được tạo tài khoản trong hệ thống Học Viện Mục Vụ. Dưới đây là thông tin đăng nhập của bạn:</p>
-            <div class='info'>
-              <p><strong>Tên đăng nhập:</strong> {{username}}</p>
-              <p><strong>Mật khẩu:</strong> {{password}}</p>
-            </div>
-            <p>Hãy nhấn vào nút bên dưới để đăng nhập:</p>
-            <a href='{{loginLink}}' class='btn' style='color: #fff;'>Đăng nhập ngay</a>
-            <p>Nếu có bất kỳ vấn đề nào, vui lòng liên hệ với chúng tôi qua email hoặc số điện thoại hỗ trợ.</p>
+    <div class='email-wrapper'>
+      <div class='email-container'>
+        <!-- Header -->
+        <div class='header'>
+          <h1>Chào mừng {{name}} đến với Học Viện Mục Vụ</h1>
+        </div>
+
+        <!-- Nội dung chính -->
+        <div class='content'>
+          <p>Bạn đã được tạo tài khoản trong hệ thống của chúng tôi. Dưới đây là thông tin đăng nhập:</p>
+
+          <div class='info-box'>
+            <p><strong>Tên đăng nhập (Mã học viên):</strong> {{username}}</p>
+            <p><strong>Mật khẩu:</strong> {{password}}</p>
           </div>
-        </td>
-      </tr>
-    </table>
+
+          <p>Hãy nhấn vào nút bên dưới để đăng nhập:</p>
+          <a href='{{loginLink}}' class='btn'>Đăng nhập ngay</a>
+
+          <p>Nếu có bất kỳ vấn đề nào, vui lòng liên hệ với chúng tôi qua các kênh hỗ trợ.</p>
+        </div>
+
+        <!-- Footer -->
+        <div class='footer'>
+          <p><strong>Email:</strong> hvmvsaigon@gmail.com</p>
+          <p><strong>Điện thoại:</strong> (028) 6291 0366</p>
+          <p><strong>Zalo:</strong> 0706 757 366</p>
+          <p><strong>Khung giờ hỗ trợ:</strong> 8:30 - 11:30 & 14:30 - 20:30 (Thứ Hai - Thứ Sáu)</p>
+        </div>
+      </div>
+    </div>
   </body>
-
 </html>
-
