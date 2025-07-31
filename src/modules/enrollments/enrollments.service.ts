@@ -633,7 +633,6 @@ export class EnrollmentsService {
 
         // Trường hợp : tạo mới user nếu chưa tồn tại
         if (!user) {
-          console.log('tạo mới user')
           isNewUser = true
           user = userRepo.create({
             code: student_code,
@@ -648,7 +647,6 @@ export class EnrollmentsService {
         // Tìm student theo user_id
         let student = await studentRepo.findOne({ where: { user_id: user.id } })
         if (!student) {
-          console.log('tạo mới student')
           student = studentRepo.create({
             user_id: user.id,
             graduate: false,
@@ -663,7 +661,7 @@ export class EnrollmentsService {
           await this.emailService.sendMail([{ email: user.email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
             name: user.full_name,
             username: user.code,
-            password: user.password,
+            password: user.code,
             loginLink: `${process.env.FRONTEND_URL}`,
           })
         }
