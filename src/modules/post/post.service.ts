@@ -246,7 +246,7 @@ export class PostService {
   
       SELECT id, is_active, is_banner, title, image, description, created_at, 'post' as source
       FROM posts
-      WHERE is_banner = true AND is_active = true AND deleted_at IS NULL
+      WHERE is_banner = true AND is_active = true AND post_catalog_id IS NULL AND deleted_at IS NULL
     `
 
     // Đếm tổng số

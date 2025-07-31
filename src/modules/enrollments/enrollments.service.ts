@@ -663,7 +663,7 @@ export class EnrollmentsService {
           await this.emailService.sendMail([{ email: user.email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
             name: user.full_name,
             username: user.code,
-            password: user.password,
+            password: user.code,
             loginLink: `${process.env.FRONTEND_URL}`,
           })
         }
