@@ -3,7 +3,7 @@ import { arrayToObject, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Not, Repository } from 'typeorm'
 import { CreateVoucherDto } from './dtos/create-voucher.dto'
 import { PaginateVoucherDto } from './dtos/paginate-voucher.dto'
 import { UpdateVoucherDto } from './dtos/update-voucher.dto'
@@ -45,7 +45,9 @@ export class VoucherService {
       throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     if (updateVoucherDto.code) {
-      const codeExists = await this.voucherRepository.findOne({ where: { code: updateVoucherDto.code } })
+      const codeExists = await this.voucherRepository.findOne({
+        where: { code: updateVoucherDto.code, id: Not(id) },
+      })
       if (codeExists) {
         throwAppException('VOUCHER_CODE_ALREADY_EXISTS', ErrorCode.VOUCHER_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
