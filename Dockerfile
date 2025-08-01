@@ -25,6 +25,9 @@ RUN yarn build
 FROM node:21-alpine AS production
 
 ENV NODE_ENV=production
+# SET TIMEZONE
+ENV TZ=Asia/Ho_Chi_Minh
+
 ARG PORT
 ENV PORT=$PORT
 
@@ -41,6 +44,9 @@ RUN apk add --no-cache \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
+    tzdata \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
     && rm -rf /var/cache/apk/* \
     && rm -rf /tmp/*
 
