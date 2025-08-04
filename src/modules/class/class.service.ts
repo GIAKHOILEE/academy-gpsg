@@ -17,6 +17,7 @@ import { IStudent } from '@modules/students/students.interface'
 import { ClassStudents } from './class-students/class-student.entity'
 import { ClassStatus } from '@enums/class.enum'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { Student } from '@modules/students/students.entity'
 
 @Injectable()
 export class ClassService {
@@ -33,6 +34,8 @@ export class ClassService {
     private semesterRepository: Repository<Semester>,
     @InjectRepository(ClassStudents)
     private classStudentsRepository: Repository<ClassStudents>,
+    @InjectRepository(Student)
+    private studentRepository: Repository<Student>,
   ) {}
 
   async createClass(createClassDto: CreateClassDto): Promise<IClasses> {
@@ -382,8 +385,12 @@ export class ClassService {
   }
 
   // lấy list class của 1 học sinh
-  async getClassesOfStudent(student_id: number, paginateClassDto: PaginationDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
-    const classEntities = await this.classStudentsRepository
+  async getClassesOfStudent(userId: number, paginateClassDto: PaginationDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
+    const student = await this.studentRepository.findOne({ where: { user_id: userId }, select: ['id'] })
+    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    const student_id = student.id
+
+    const classEntities = this.classStudentsRepository
       .createQueryBuilder('class_students')
       .select([
         'class_students.id',
