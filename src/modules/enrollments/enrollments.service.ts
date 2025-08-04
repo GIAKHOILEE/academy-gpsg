@@ -626,6 +626,20 @@ export class EnrollmentsService {
         throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
       }
 
+      // nếu có enrollment.student_id chứng tỏ đã định danh. đổi thông tin student/user
+      if (enrollment.student_id) {
+        const student = await studentRepo
+          .createQueryBuilder('student')
+          .select(['student.id', 'student.user_id'])
+          .where('student.id = :id', { id: enrollment.student_id })
+          .getOne()
+        if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+        await userRepo.update(student?.user_id, {
+          ...rest,
+        })
+      }
+
       // Nếu chưa có student_id và admin cung cấp student_code → gán student vào enrollment
       if (student_code && !enrollment.student_id) {
         let user = await userRepo.findOne({ where: { code: student_code } })
