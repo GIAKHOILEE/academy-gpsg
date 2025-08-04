@@ -626,7 +626,7 @@ export class EnrollmentsService {
         throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
       }
 
-      // nếu có enrollment.student_id chứng tỏ đã định danh. đổi thông tin student/user
+      // nếu có enrollment.student_id chứng tỏ đã định danh. không cho sửa thông tin student/user
       if (enrollment.student_id) {
         const student = await studentRepo
           .createQueryBuilder('student')
@@ -635,9 +635,23 @@ export class EnrollmentsService {
           .getOne()
         if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-        await userRepo.update(student?.user_id, {
-          ...rest,
-        })
+        const { full_name, saint_name, email, phone_number, address, birth_date, birth_place, parish, deanery, diocese, congregation } = rest // thông tin user
+        // check thông tin có trùng với thông tin trong enrollment không
+        if (
+          full_name !== enrollment.full_name ||
+          saint_name !== enrollment.saint_name ||
+          email !== enrollment.email ||
+          phone_number !== enrollment.phone_number ||
+          address !== enrollment.address ||
+          birth_date !== enrollment.birth_date ||
+          birth_place !== enrollment.birth_place ||
+          parish !== enrollment.parish ||
+          deanery !== enrollment.deanery ||
+          diocese !== enrollment.diocese ||
+          congregation !== enrollment.congregation
+        ) {
+          throwAppException('ENROLLMENT_NOT_CHANGE_STUDENT_INFO', ErrorCode.ENROLLMENT_NOT_CHANGE_STUDENT_INFO, HttpStatus.BAD_REQUEST)
+        }
       }
 
       // Nếu chưa có student_id và admin cung cấp student_code → gán student vào enrollment
