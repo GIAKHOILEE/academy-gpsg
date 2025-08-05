@@ -35,15 +35,15 @@ export class StudentsService {
       const { password, email, code, ...rest } = userData
 
       // Kiểm tra email đã tồn tại
-      if (email) {
-        const existingUser = await queryRunner.manager
-          .getRepository(User)
-          .createQueryBuilder('users')
-          .where('users.email = :email', { email })
-          .getOne()
+      // if (email) {
+      //   const existingUser = await queryRunner.manager
+      //     .getRepository(User)
+      //     .createQueryBuilder('users')
+      //     .where('users.email = :email', { email })
+      //     .getOne()
 
-        if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
-      }
+      //   if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
+      // }
 
       // Kiểm tra code đã tồn tại
       if (!code) throwAppException('CODE_IS_REQUIRED', ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
@@ -127,15 +127,15 @@ export class StudentsService {
       const user = await userRepo.findOne({ where: { id: student.user_id } })
       if (!user) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-      // Check duplicate email
-      if (email) {
-        const existingUser = await userRepo
-          .createQueryBuilder('users')
-          .where('users.email = :email', { email })
-          .andWhere('users.id != :id', { id: user.id })
-          .getOne()
-        if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
-      }
+      // // Check duplicate email
+      // if (email) {
+      //   const existingUser = await userRepo
+      //     .createQueryBuilder('users')
+      //     .where('users.email = :email', { email })
+      //     .andWhere('users.id != :id', { id: user.id })
+      //     .getOne()
+      //   if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
+      // }
 
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
       const updatedUser = userRepo.merge(user, {
@@ -146,11 +146,22 @@ export class StudentsService {
 
       // cập nhật thông tin các enrollments
       const enrollments = await enrollmentsRepo.find({ where: { student_id: student.id } })
-      for (const enrollment of enrollments) {
-        await enrollmentsRepo.update(enrollment.id, {
-          email: email ?? enrollment.email,
-          ...rest,
-        })
+      if (enrollments.length > 0) {
+        for (const enrollment of enrollments) {
+          await enrollmentsRepo.update(enrollment.id, {
+            email: email ?? enrollment.email,
+            full_name: user.full_name ?? enrollment.full_name,
+            saint_name: user.saint_name ?? enrollment.saint_name,
+            phone_number: user.phone_number ?? enrollment.phone_number,
+            birth_date: user.birth_date ?? enrollment.birth_date,
+            address: user.address ?? enrollment.address,
+            birth_place: user.birth_place ?? enrollment.birth_place,
+            parish: user.parish ?? enrollment.parish,
+            deanery: user.deanery ?? enrollment.deanery,
+            diocese: user.diocese ?? enrollment.diocese,
+            congregation: user.congregation ?? enrollment.congregation,
+          })
+        }
       }
 
       // Cập nhật student: merge tương tự
