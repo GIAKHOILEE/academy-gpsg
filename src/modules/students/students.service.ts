@@ -119,6 +119,7 @@ export class StudentsService {
     try {
       const studentRepo = queryRunner.manager.getRepository(Student)
       const userRepo = queryRunner.manager.getRepository(User)
+      const enrollmentsRepo = queryRunner.manager.getRepository(Enrollments)
 
       const student = await studentRepo.findOne({ where: { id } })
       if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -142,6 +143,15 @@ export class StudentsService {
         ...rest,
       })
       await userRepo.save(updatedUser)
+
+      // cập nhật thông tin các enrollments
+      const enrollments = await enrollmentsRepo.find({ where: { student_id: student.id } })
+      for (const enrollment of enrollments) {
+        await enrollmentsRepo.update(enrollment.id, {
+          email: email ?? enrollment.email,
+          ...rest,
+        })
+      }
 
       // Cập nhật student: merge tương tự
       const updatedStudent = studentRepo.merge(student, {

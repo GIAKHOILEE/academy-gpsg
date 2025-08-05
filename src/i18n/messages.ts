@@ -64,6 +64,7 @@ export const messages = {
     VOUCHER_NOT_FOUND: 'Voucher not found',
     VOUCHER_ALREADY_USED: 'Voucher already used',
     CLASS_END_ENROLLING: 'Class end enrolling',
+    ENROLLMENT_NOT_CHANGE_STUDENT_INFO: 'Enrollment already identified cannot change student information',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -133,5 +134,6 @@ export const messages = {
     VOUCHER_NOT_FOUND: 'Voucher không tồn tại',
     VOUCHER_ALREADY_USED: 'Voucher đã được sử dụng',
     CLASS_END_ENROLLING: 'Lớp học đang kết thúc đăng ký',
+    ENROLLMENT_NOT_CHANGE_STUDENT_INFO: 'Đơn đã định danh không được sửa thông tin học sinh',
   },
 }
