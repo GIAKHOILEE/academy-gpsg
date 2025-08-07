@@ -6,7 +6,7 @@ export class Footer {
   @PrimaryGeneratedColumn()
   id: number
 
-  @Column({ type: 'text', length: 255, nullable: false })
+  @Column({ type: 'text', nullable: false })
   title: string
 
   @Column({ type: 'text', nullable: false })
