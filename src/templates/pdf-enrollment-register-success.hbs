@@ -461,8 +461,43 @@
         </div>
 
         <div class='payment-section'>
-          <p><strong>Hình thức thanh toán</strong> Đóng lệ phí tại phòng học vụ (A004)</p>
+          <p><strong>Hình thức thanh toán:</strong>
+            {{#if payment_method}}
+              Đóng lệ phí tại phòng học vụ (A004)
+            {{else}}
+              Chuyển khoản
+            {{/if}}
+          </p>
+          {{#unless payment_method}}
+            <p style='margin-top: 10px;'>Sau khi chuyển khoản xong, học viên vui lòng đợi khoảng 1 đến 2 ngày làm việc (trừ thứ Bảy và Chủ Nhật),
+              thông báo xác nhận học phí sẽ được gửi đến email của học viên.</p>
 
+            <p>Nếu sau 2 ngày mà chưa nhận được thông báo xác nhận, học viên vui lòng liên hệ học vụ để được giải quyết sớm nhất.</p>
+
+            <p>Học viên vui lòng chuyển khoản học phí trong vòng
+              <strong>5 ngày</strong>
+              kể từ khi đăng ký. Sau
+              <strong>5 ngày</strong>
+              nếu chưa đóng học phí, hệ thống sẽ tự động xóa đơn đăng ký này và học viên buộc phải đăng ký lại từ đầu.</p>
+
+            <p><strong>Thông tin chuyển khoản:</strong></p>
+            <ul style='list-style: none; padding: 0;'>
+              <li><strong>Số tài khoản:</strong> 1031960100</li>
+              <li><strong>Tên chủ tài khoản:</strong> NGUYEN THI THAO LY</li>
+              <li><strong>Ngân hàng:</strong> <span style='color: green;'>Vietcombank</span></li>
+            </ul>
+
+            <p>(Để tiết kiệm thời gian. Học viên có thể quét mã bên dưới)</p>
+            <img src='{{qrCode}}' alt='QR Code' style='width: 150px;' />
+
+            <p><strong>Nội dung chuyển khoản:</strong> Họ và tên học viên (có dấu)/ngày/tháng/năm sinh/số điện thoại</p>
+            <p><em>Ví dụ:</em>
+              Hoàng Quốc Việt, sinh ngày 23 tháng 2 năm 1995, số điện thoại: 0912345678. Nội dung chuyển khoản sẽ là:
+              <span style='color: red;'>hoangquocviet-23/02/1995-0912345678</span></p>
+
+            <p style='color: red;'><strong>Lưu ý:</strong>
+              Nếu học viên chuyển khoản với nội dung sai hoặc nhầm số tài khoản, chúng tôi sẽ không chịu trách nhiệm khi có sự cố xảy ra.</p>
+          {{/unless}}
           <p style='margin-top: 10px;'>
             Khi chọn hình thức này, học viên vui lòng đến trực tiếp Phòng Học Vụ (A004) để hoàn thành lệ phí trong vòng 5 ngày kể từ khi đăng ký. Sau
             5 ngày nếu chưa đóng lệ phí, hệ thống sẽ tự động xóa đơn đăng ký này và học viên buộc phải đăng ký lại từ đầu.

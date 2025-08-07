@@ -34,9 +34,11 @@ import { VoucherType } from '@enums/voucher.enum'
 const logoBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'logo.jpg'))
 const backgroundBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'background.png'))
 const stampBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'stamp.png'))
+const qrCodeBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'QR_code.png'))
 const logo = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`
 const background = `data:image/png;base64,${backgroundBuffer.toString('base64')}`
 const stamp = `data:image/png;base64,${stampBuffer.toString('base64')}`
+const qrCode = `data:image/png;base64,${qrCodeBuffer.toString('base64')}`
 
 const now = new Date()
 const day = now.getDate()
@@ -509,6 +511,7 @@ export class EnrollmentsService {
           logo: logo,
           background: background,
           stamp: stamp,
+          qrCode: qrCode,
           code: enrollment?.code,
           saint_name: enrollment?.saint_name,
           full_name: enrollment?.full_name,
@@ -526,7 +529,8 @@ export class EnrollmentsService {
           debt: formatCurrency(Number(enrollment?.debt)),
           discount: formatCurrency(Number(enrollment?.discount) || 0),
           final_amount: formatCurrency(Number(enrollment?.total_fee) - Number(enrollment?.discount)),
-          payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
+          payment_method: enrollment?.payment_method == PaymentMethod.CASH ? true : false,
+          // payment_method: enrollment?.payment_method,
           classes: formatClass,
           day,
           month,
@@ -846,7 +850,6 @@ export class EnrollmentsService {
         }))
 
         if (status === StatusEnrollment.DONE) {
-          console.log('total_fee , discount', Number(enrollment?.total_fee), Number(enrollment?.discount))
           const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-payment-success', {
             logo: logo,
             background: background,
@@ -868,7 +871,7 @@ export class EnrollmentsService {
             debt: formatCurrency(Number(enrollment?.debt)),
             discount: formatCurrency(Number(enrollment?.discount) || 0),
             final_amount: formatCurrency(Number(enrollment?.total_fee) - Number(enrollment?.discount)),
-            payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
+            payment_method: enrollment?.payment_method == PaymentMethod.CASH ? true : false,
             classes: formatClass,
             day,
             month,
