@@ -1,5 +1,5 @@
 import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
-import { throwAppException } from '@common/utils'
+import { arrayToObject, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
@@ -82,7 +82,7 @@ export class ClassService {
       credit: subject.credit,
       max_students: savedClass.max_students == 0 ? 999999 : savedClass.max_students,
       price: savedClass.price,
-      current_students: savedClass.current_students,
+      current_students: 0,
       schedule: savedClass.schedule,
       end_enrollment_day: savedClass.end_enrollment_day,
       start_time: savedClass.start_time,
@@ -166,6 +166,7 @@ export class ClassService {
       .getOne()
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
+    const current_students = await this.classStudentsRepository.count({ where: { class_id: id } })
     const formattedClass: IClasses = {
       id: classEntity.id,
       name: classEntity?.subject?.name,
@@ -176,7 +177,7 @@ export class ClassService {
       credit: classEntity.subject.credit,
       max_students: classEntity.max_students,
       price: classEntity.price,
-      current_students: classEntity.current_students,
+      current_students: current_students,
       condition: classEntity.condition,
       end_enrollment_day: classEntity.end_enrollment_day,
       schedule: classEntity.schedule,
@@ -264,6 +265,16 @@ export class ClassService {
     }
 
     const { data, meta } = await paginate(query, rest)
+    const classIds = data.map(classEntity => classEntity.id)
+    const current_students = await this.classStudentsRepository
+      .createQueryBuilder('cs')
+      .select('cs.class_id', 'class_id')
+      .addSelect('COUNT(cs.id)', 'count')
+      .where('cs.class_id IN (:...classIds)', { classIds })
+      .groupBy('cs.class_id')
+      .getRawMany()
+    const current_students_object = arrayToObject(current_students, 'class_id')
+
     const formattedClasses: IClasses[] = data.map(classEntity => ({
       id: classEntity.id,
       name: classEntity?.subject?.name,
@@ -274,7 +285,7 @@ export class ClassService {
       credit: classEntity.subject.credit,
       max_students: classEntity.max_students,
       price: classEntity.price,
-      current_students: classEntity.current_students,
+      current_students: Number(current_students_object[classEntity.id]?.count || 0),
       schedule: classEntity.schedule,
       condition: classEntity.condition,
       end_enrollment_day: classEntity.end_enrollment_day,
@@ -404,7 +415,6 @@ export class ClassService {
         'class.max_students',
         'class.end_enrollment_day',
         'class.price',
-        'class.current_students',
         'class.schedule',
         'class.start_time',
         'class.end_time',
@@ -429,6 +439,17 @@ export class ClassService {
       .where('class_students.student_id = :student_id', { student_id })
 
     const { data, meta } = await paginate(classEntities, paginateClassDto)
+
+    const classIds = data.map(classStudent => classStudent.class.id)
+    const current_students = await this.classStudentsRepository
+      .createQueryBuilder('cs')
+      .select('cs.class_id', 'class_id')
+      .addSelect('COUNT(cs.id)', 'count')
+      .where('cs.class_id IN (:...classIds)', { classIds })
+      .groupBy('cs.class_id')
+      .getRawMany()
+    const current_students_object = arrayToObject(current_students, 'class_id')
+
     const formattedClasses: IClasses[] = data.map(classStudent => ({
       id: classStudent.class.id,
       name: classStudent.class.name,
@@ -439,7 +460,7 @@ export class ClassService {
       credit: classStudent.class.subject.credit,
       max_students: classStudent.class.max_students,
       price: classStudent.class.price,
-      current_students: classStudent.class.current_students,
+      current_students: Number(current_students_object[classStudent.class.id]?.count || 0),
       end_enrollment_day: classStudent.class.end_enrollment_day,
       schedule: classStudent.class.schedule,
       start_time: classStudent.class.start_time,

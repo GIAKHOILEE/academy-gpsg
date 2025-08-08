@@ -1,5 +1,6 @@
 import { paginate } from '@common/pagination'
 import {
+  arrayToObject,
   formatCurrency,
   formatStringDate,
   generateRandomString,
@@ -30,7 +31,6 @@ import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
 import { Voucher } from '@modules/voucher/voucher.entity'
 import { VoucherType } from '@enums/voucher.enum'
-import { IFooter } from '@modules/footer/footer.interface'
 import { Footer } from '@modules/footer/footer.entity'
 import { FooterEnum } from '@enums/footer.enum'
 
@@ -60,8 +60,6 @@ export class EnrollmentsService {
     @InjectRepository(Voucher)
     private readonly voucherRepository: Repository<Voucher>,
     private readonly emailService: BrevoMailerService,
-    @InjectRepository(ClassStudents)
-    private readonly classStudentsRepository: Repository<ClassStudents>,
     @InjectRepository(Footer)
     private readonly footerRepository: Repository<Footer>,
   ) {}
@@ -761,30 +759,36 @@ export class EnrollmentsService {
         })
       }
 
-      // nếu status khác pending thì cộng current_students của class, còn nếu pending thì trừ current_students của class
-      // nếu class mà có current_students = max_students thì không được thêm vào
+      // check lớp có full không
       if (status && status !== StatusEnrollment.PENDING) {
+        const classEntities = await classRepo
+          .createQueryBuilder('class')
+          .select(['class.id', 'class.max_students'])
+          .where('class.id IN (:...class_ids)', { class_ids })
+          .getMany()
+
+        const classEntitiesObject = arrayToObject(classEntities, 'id')
+
+        const current_students = await classStudentsRepo
+          .createQueryBuilder('class_students')
+          .select('class_students.class_id', 'class_id')
+          .addSelect('COUNT(class_students.id)', 'count')
+          .where('class_students.class_id IN (:...class_ids)', { class_ids })
+          .groupBy('class_students.class_id')
+          .getRawMany()
+
+        const current_students_object = arrayToObject(current_students, 'class_id')
+
         for (const class_id of class_ids) {
-          // nếu class đã có student thì không cần cộng current_students
-          const existClassStudents = await classStudentsRepo.exists({ where: { class_id, student_id: enrollment.student_id } })
-          if (existClassStudents) continue
-          const classEntity = await classRepo.findOne({ where: { id: class_id } })
-          if (classEntity.current_students < classEntity.max_students || classEntity.max_students == 0) {
-            classEntity.current_students++
-            await classRepo.save(classEntity)
-          } else {
+          const maxStudents = Number(classEntitiesObject[class_id]?.max_students ?? 0)
+          const studentCount = Number(current_students_object[class_id]?.count || 0)
+
+          if (maxStudents !== 0 && studentCount >= maxStudents) {
             throwAppException('CLASS_FULL', ErrorCode.CLASS_FULL, HttpStatus.BAD_REQUEST)
           }
         }
-      } else {
-        for (const class_id of class_ids) {
-          const classEntity = await classRepo.findOne({ where: { id: class_id } })
-          if (classEntity.current_students > 0) {
-            classEntity.current_students--
-            await classRepo.save(classEntity)
-          }
-        }
       }
+
       // Nếu status là hoàn thành thì trạng thái thanh toán là đã thanh toán, ngược lại là chưa thanh toán
       if (status) {
         if (status === StatusEnrollment.DONE) {
@@ -1092,7 +1096,6 @@ export class EnrollmentsService {
     try {
       const enrollmentsRepo = queryRunner.manager.getRepository(Enrollments)
       const classStudentsRepo = queryRunner.manager.getRepository(ClassStudents)
-      const classRepo = queryRunner.manager.getRepository(Classes)
 
       const enrollment = await enrollmentsRepo
         .createQueryBuilder('enrollment')
@@ -1110,15 +1113,6 @@ export class EnrollmentsService {
           class_id: In(classIds),
           student_id: enrollment.student_id,
         })
-
-        // giảm số lượng student trong class
-        const classEntities = await classRepo.find({
-          where: { id: In(classIds) },
-        })
-        for (const classEntity of classEntities) {
-          classEntity.current_students = classEntity.current_students - 1
-        }
-        await classRepo.save(classEntities)
       }
 
       await enrollmentsRepo.delete(id)
