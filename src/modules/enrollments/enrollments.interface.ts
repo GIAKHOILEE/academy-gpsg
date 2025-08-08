@@ -1,11 +1,13 @@
 import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { IClasses } from '@modules/class/class.interface'
+import { IFooter } from '@modules/footer/footer.interface'
 
 export interface IEnrollments {
   id: number
   code?: string
   registration_date?: Date
   payment_method?: PaymentMethod
+  payment_info?: IFooter
   payment_status?: PaymentStatus
   status?: StatusEnrollment
   voucher_code?: string

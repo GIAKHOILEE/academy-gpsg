@@ -30,6 +30,9 @@ import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
 import { Voucher } from '@modules/voucher/voucher.entity'
 import { VoucherType } from '@enums/voucher.enum'
+import { IFooter } from '@modules/footer/footer.interface'
+import { Footer } from '@modules/footer/footer.entity'
+import { FooterEnum } from '@enums/footer.enum'
 
 const logoBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'logo.jpg'))
 const backgroundBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'background.png'))
@@ -59,6 +62,8 @@ export class EnrollmentsService {
     private readonly emailService: BrevoMailerService,
     @InjectRepository(ClassStudents)
     private readonly classStudentsRepository: Repository<ClassStudents>,
+    @InjectRepository(Footer)
+    private readonly footerRepository: Repository<Footer>,
   ) {}
 
   // async createEnrollment(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, userId?: number): Promise<IEnrollments> {
@@ -911,6 +916,7 @@ export class EnrollmentsService {
       .select([
         'enrollment.id',
         'enrollment.code',
+        'enrollment.voucher_code',
         'enrollment.registration_date',
         'enrollment.payment_method',
         'enrollment.payment_status',
@@ -942,6 +948,14 @@ export class EnrollmentsService {
       .where('enrollment.id = :id', { id })
       .getOne()
     if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    let payment_info = null
+    if (enrollment.payment_method == PaymentMethod.CASH) {
+      payment_info = await this.footerRepository.find({ where: { type: FooterEnum.CASH } })
+    } else {
+      payment_info = await this.footerRepository.find({ where: { type: FooterEnum.TRANSFER } })
+    }
+
     const listClass = await this.classRepository
       .createQueryBuilder('class')
       .select([
@@ -974,6 +988,11 @@ export class EnrollmentsService {
       note: enrollment.note,
       user_note: enrollment.user_note,
       is_logged: enrollment.is_logged,
+      voucher_code: enrollment.voucher_code,
+      payment_info: {
+        title: payment_info[0].title,
+        content: payment_info[0].content,
+      },
       classes: listClass.map(classEntity => ({
         id: classEntity.id,
         name: classEntity.name,
