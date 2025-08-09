@@ -29,9 +29,6 @@ export class Classes {
   @Column()
   price: number
 
-  @Column({ default: 0 })
-  current_students: number
-
   @Column({ type: 'text', nullable: true })
   condition: string
 

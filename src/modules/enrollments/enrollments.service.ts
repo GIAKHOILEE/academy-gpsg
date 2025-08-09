@@ -1,5 +1,6 @@
 import { paginate } from '@common/pagination'
 import {
+  arrayToObject,
   formatCurrency,
   formatStringDate,
   generateRandomString,
@@ -30,13 +31,17 @@ import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
 import { Voucher } from '@modules/voucher/voucher.entity'
 import { VoucherType } from '@enums/voucher.enum'
+import { Footer } from '@modules/footer/footer.entity'
+import { FooterEnum } from '@enums/footer.enum'
 
 const logoBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'logo.jpg'))
 const backgroundBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'background.png'))
 const stampBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'stamp.png'))
+const qrCodeBuffer = fs.readFileSync(path.resolve(__dirname, '..', '..', 'assets', 'QR_code.png'))
 const logo = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`
 const background = `data:image/png;base64,${backgroundBuffer.toString('base64')}`
 const stamp = `data:image/png;base64,${stampBuffer.toString('base64')}`
+const qrCode = `data:image/png;base64,${qrCodeBuffer.toString('base64')}`
 
 const now = new Date()
 const day = now.getDate()
@@ -55,8 +60,8 @@ export class EnrollmentsService {
     @InjectRepository(Voucher)
     private readonly voucherRepository: Repository<Voucher>,
     private readonly emailService: BrevoMailerService,
-    @InjectRepository(ClassStudents)
-    private readonly classStudentsRepository: Repository<ClassStudents>,
+    @InjectRepository(Footer)
+    private readonly footerRepository: Repository<Footer>,
   ) {}
 
   // async createEnrollment(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, userId?: number): Promise<IEnrollments> {
@@ -509,6 +514,7 @@ export class EnrollmentsService {
           logo: logo,
           background: background,
           stamp: stamp,
+          qrCode: qrCode,
           code: enrollment?.code,
           saint_name: enrollment?.saint_name,
           full_name: enrollment?.full_name,
@@ -526,7 +532,8 @@ export class EnrollmentsService {
           debt: formatCurrency(Number(enrollment?.debt)),
           discount: formatCurrency(Number(enrollment?.discount) || 0),
           final_amount: formatCurrency(Number(enrollment?.total_fee) - Number(enrollment?.discount)),
-          payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
+          payment_method: enrollment?.payment_method == PaymentMethod.CASH ? true : false,
+          // payment_method: enrollment?.payment_method,
           classes: formatClass,
           day,
           month,
@@ -752,30 +759,36 @@ export class EnrollmentsService {
         })
       }
 
-      // nếu status khác pending thì cộng current_students của class, còn nếu pending thì trừ current_students của class
-      // nếu class mà có current_students = max_students thì không được thêm vào
+      // check lớp có full không
       if (status && status !== StatusEnrollment.PENDING) {
+        const classEntities = await classRepo
+          .createQueryBuilder('class')
+          .select(['class.id', 'class.max_students'])
+          .where('class.id IN (:...class_ids)', { class_ids })
+          .getMany()
+
+        const classEntitiesObject = arrayToObject(classEntities, 'id')
+
+        const current_students = await classStudentsRepo
+          .createQueryBuilder('class_students')
+          .select('class_students.class_id', 'class_id')
+          .addSelect('COUNT(class_students.id)', 'count')
+          .where('class_students.class_id IN (:...class_ids)', { class_ids })
+          .groupBy('class_students.class_id')
+          .getRawMany()
+
+        const current_students_object = arrayToObject(current_students, 'class_id')
+
         for (const class_id of class_ids) {
-          // nếu class đã có student thì không cần cộng current_students
-          const existClassStudents = await classStudentsRepo.exists({ where: { class_id, student_id: enrollment.student_id } })
-          if (existClassStudents) continue
-          const classEntity = await classRepo.findOne({ where: { id: class_id } })
-          if (classEntity.current_students < classEntity.max_students || classEntity.max_students == 0) {
-            classEntity.current_students++
-            await classRepo.save(classEntity)
-          } else {
+          const maxStudents = Number(classEntitiesObject[class_id]?.max_students ?? 0)
+          const studentCount = Number(current_students_object[class_id]?.count || 0)
+
+          if (maxStudents !== 0 && studentCount >= maxStudents) {
             throwAppException('CLASS_FULL', ErrorCode.CLASS_FULL, HttpStatus.BAD_REQUEST)
           }
         }
-      } else {
-        for (const class_id of class_ids) {
-          const classEntity = await classRepo.findOne({ where: { id: class_id } })
-          if (classEntity.current_students > 0) {
-            classEntity.current_students--
-            await classRepo.save(classEntity)
-          }
-        }
       }
+
       // Nếu status là hoàn thành thì trạng thái thanh toán là đã thanh toán, ngược lại là chưa thanh toán
       if (status) {
         if (status === StatusEnrollment.DONE) {
@@ -846,7 +859,6 @@ export class EnrollmentsService {
         }))
 
         if (status === StatusEnrollment.DONE) {
-          console.log('total_fee , discount', Number(enrollment?.total_fee), Number(enrollment?.discount))
           const pdfBuffer = await renderPdfFromTemplate('pdf-enrollment-payment-success', {
             logo: logo,
             background: background,
@@ -868,7 +880,7 @@ export class EnrollmentsService {
             debt: formatCurrency(Number(enrollment?.debt)),
             discount: formatCurrency(Number(enrollment?.discount) || 0),
             final_amount: formatCurrency(Number(enrollment?.total_fee) - Number(enrollment?.discount)),
-            payment_method: enrollment?.payment_method == PaymentMethod.CASH ? 'Tiền mặt' : 'Chuyển khoản',
+            payment_method: enrollment?.payment_method == PaymentMethod.CASH ? true : false,
             classes: formatClass,
             day,
             month,
@@ -908,6 +920,7 @@ export class EnrollmentsService {
       .select([
         'enrollment.id',
         'enrollment.code',
+        'enrollment.voucher_code',
         'enrollment.registration_date',
         'enrollment.payment_method',
         'enrollment.payment_status',
@@ -939,6 +952,14 @@ export class EnrollmentsService {
       .where('enrollment.id = :id', { id })
       .getOne()
     if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    let payment_info = null
+    if (enrollment.payment_method == PaymentMethod.CASH) {
+      payment_info = await this.footerRepository.find({ where: { type: FooterEnum.CASH } })
+    } else {
+      payment_info = await this.footerRepository.find({ where: { type: FooterEnum.TRANSFER } })
+    }
+
     const listClass = await this.classRepository
       .createQueryBuilder('class')
       .select([
@@ -971,6 +992,11 @@ export class EnrollmentsService {
       note: enrollment.note,
       user_note: enrollment.user_note,
       is_logged: enrollment.is_logged,
+      voucher_code: enrollment.voucher_code,
+      payment_info: {
+        title: payment_info[0].title,
+        content: payment_info[0].content,
+      },
       classes: listClass.map(classEntity => ({
         id: classEntity.id,
         name: classEntity.name,
@@ -1070,7 +1096,6 @@ export class EnrollmentsService {
     try {
       const enrollmentsRepo = queryRunner.manager.getRepository(Enrollments)
       const classStudentsRepo = queryRunner.manager.getRepository(ClassStudents)
-      const classRepo = queryRunner.manager.getRepository(Classes)
 
       const enrollment = await enrollmentsRepo
         .createQueryBuilder('enrollment')
@@ -1088,15 +1113,6 @@ export class EnrollmentsService {
           class_id: In(classIds),
           student_id: enrollment.student_id,
         })
-
-        // giảm số lượng student trong class
-        const classEntities = await classRepo.find({
-          where: { id: In(classIds) },
-        })
-        for (const classEntity of classEntities) {
-          classEntity.current_students = classEntity.current_students - 1
-        }
-        await classRepo.save(classEntities)
       }
 
       await enrollmentsRepo.delete(id)

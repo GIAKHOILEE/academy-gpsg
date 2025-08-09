@@ -162,7 +162,6 @@ export class StudentsService {
             congregation: user.congregation ?? enrollment.congregation,
           })
         }
-
       }
 
       // Cập nhật student: merge tương tự

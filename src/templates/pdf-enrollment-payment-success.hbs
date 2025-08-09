@@ -469,8 +469,13 @@
         </div>
 
         <div class='payment-section'>
-          <p><strong>Hình thức thanh toán</strong> Đóng lệ phí tại phòng học vụ (A004)</p>
-
+          <p><strong>Hình thức thanh toán:</strong>
+            {{#if payment_method}}
+              Đóng lệ phí tại phòng học vụ (A004)
+            {{else}}
+              Chuyển khoản
+            {{/if}}
+          </p>
           <div class='stamp-container'>
             <img src='{{stamp}}' alt='stamp' />
           </div>
