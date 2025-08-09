@@ -266,14 +266,17 @@ export class ClassService {
 
     const { data, meta } = await paginate(query, rest)
     const classIds = data.map(classEntity => classEntity.id)
-    const current_students = await this.classStudentsRepository
-      .createQueryBuilder('cs')
-      .select('cs.class_id', 'class_id')
-      .addSelect('COUNT(cs.id)', 'count')
-      .where('cs.class_id IN (:...classIds)', { classIds })
-      .groupBy('cs.class_id')
-      .getRawMany()
-    const current_students_object = arrayToObject(current_students, 'class_id')
+    let current_students_object = {}
+    if (classIds.length > 0) {
+      const current_students = await this.classStudentsRepository
+        .createQueryBuilder('cs')
+        .select('cs.class_id', 'class_id')
+        .addSelect('COUNT(cs.id)', 'count')
+        .where('cs.class_id IN (:...classIds)', { classIds })
+        .groupBy('cs.class_id')
+        .getRawMany()
+      current_students_object = arrayToObject(current_students, 'class_id')
+    }
 
     const formattedClasses: IClasses[] = data.map(classEntity => ({
       id: classEntity.id,
@@ -441,14 +444,17 @@ export class ClassService {
     const { data, meta } = await paginate(classEntities, paginateClassDto)
 
     const classIds = data.map(classStudent => classStudent.class.id)
-    const current_students = await this.classStudentsRepository
-      .createQueryBuilder('cs')
-      .select('cs.class_id', 'class_id')
-      .addSelect('COUNT(cs.id)', 'count')
-      .where('cs.class_id IN (:...classIds)', { classIds })
-      .groupBy('cs.class_id')
-      .getRawMany()
-    const current_students_object = arrayToObject(current_students, 'class_id')
+    let current_students_object = {}
+    if (classIds.length > 0) {
+      const current_students = await this.classStudentsRepository
+        .createQueryBuilder('cs')
+        .select('cs.class_id', 'class_id')
+        .addSelect('COUNT(cs.id)', 'count')
+        .where('cs.class_id IN (:...classIds)', { classIds })
+        .groupBy('cs.class_id')
+        .getRawMany()
+      current_students_object = arrayToObject(current_students, 'class_id')
+    }
 
     const formattedClasses: IClasses[] = data.map(classStudent => ({
       id: classStudent.class.id,
