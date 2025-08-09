@@ -994,8 +994,8 @@ export class EnrollmentsService {
       is_logged: enrollment.is_logged,
       voucher_code: enrollment.voucher_code,
       payment_info: {
-        title: payment_info[0].title,
-        content: payment_info[0].content,
+        title: payment_info[0]?.title,
+        content: payment_info[0]?.content,
       },
       classes: listClass.map(classEntity => ({
         id: classEntity.id,
