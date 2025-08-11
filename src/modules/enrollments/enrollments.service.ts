@@ -591,6 +591,7 @@ export class EnrollmentsService {
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
       .where('enrollment.id = :id', { id })
+      .withDeleted()
       .getOne()
     if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
