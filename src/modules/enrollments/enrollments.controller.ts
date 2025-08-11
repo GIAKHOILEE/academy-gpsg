@@ -8,6 +8,7 @@ import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
 import { EnrollmentsService } from './enrollments.service'
+import { Throttle } from '@nestjs/throttler'
 
 @Controller('admin/enrollments')
 @ApiBearerAuth()
@@ -82,6 +83,7 @@ export class EnrollmentsController {
   @Post()
   @ApiBearerAuth()
   @UseGuards(OptionalJwtAuthGuard)
+  @Throttle({ default: { limit: 1, ttl: 10000 } })
   async createEnrollment(@Body() createEnrollmentDto: CreateEnrollmentsDto, @Request() req): Promise<ResponseDto> {
     const userId = req.user?.userId || null
     const isLogged = userId ? true : false

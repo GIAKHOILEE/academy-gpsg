@@ -35,6 +35,8 @@ import { PostCatalogModule } from '@modules/post-catalog/post-catalog.module'
 import { BannerModule } from '@modules/banner/banner.module'
 import { NavigationModule } from '@modules/navigation/navigation.module'
 import { VoucherModule } from '@modules/voucher/voucher.module'
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
+import { APP_GUARD } from '@nestjs/core'
 
 @Module({
   imports: [
@@ -46,6 +48,7 @@ import { VoucherModule } from '@modules/voucher/voucher.module'
     }),
     TypeOrmModule.forRoot(databaseConfig),
     TypeOrmModule.forFeature([User, Visitor]),
+    ThrottlerModule.forRoot([{ ttl: 1, limit: 10 }]),
     AuthModule,
     UsersModule,
     StudentsModule,
@@ -73,7 +76,14 @@ import { VoucherModule } from '@modules/voucher/voucher.module'
     NavigationModule,
     VoucherModule,
   ],
-  providers: [AppService, SuperAdminSeeder],
+  providers: [
+    AppService,
+    SuperAdminSeeder,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
