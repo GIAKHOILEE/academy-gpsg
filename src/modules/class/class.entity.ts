@@ -23,6 +23,10 @@ export class Classes {
   @Column({ nullable: true })
   classroom: string
 
+  // số tiết học
+  @Column({ default: 0 })
+  number_lessons: number
+
   @Column({ default: 9999 })
   max_students: number
 

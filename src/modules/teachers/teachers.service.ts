@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 
-import { paginate } from '@common/pagination'
-import { hashPassword, throwAppException } from '@common/utils'
+import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
+import { arrayToObject, hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -14,6 +14,8 @@ import { UpdateTeachersDto } from './dtos/update-teachers.dto'
 import { Teacher } from './teachers.entity'
 import { Classes } from '../class/class.entity'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
+import { IClasses } from '@modules/class/class.interface'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 
 @Injectable()
 export class TeachersService {
@@ -21,6 +23,10 @@ export class TeachersService {
     private readonly dataSource: DataSource,
     @InjectRepository(Teacher)
     private readonly teacherRepository: Repository<Teacher>,
+    @InjectRepository(Classes)
+    private readonly classRepository: Repository<Classes>,
+    @InjectRepository(ClassStudents)
+    private readonly classStudentsRepository: Repository<ClassStudents>,
     private readonly emailService: BrevoMailerService,
   ) {}
 
@@ -290,5 +296,95 @@ export class TeachersService {
       data: formattedTeachers,
       meta,
     }
+  }
+
+  // lấy danh sách lớp của giáo viên
+  async getAllClassesOfTeacher(teacherId: number, paginateClassDto: PaginationDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
+    console.log(teacherId)
+    const query = this.classRepository
+      .createQueryBuilder('classes')
+      .leftJoinAndSelect('classes.subject', 'subject')
+      .leftJoinAndSelect('subject.department', 'department')
+      .leftJoinAndSelect('classes.teacher', 'teacher')
+      .leftJoinAndSelect('teacher.user', 'user')
+      .leftJoinAndSelect('classes.scholastic', 'scholastic')
+      .leftJoinAndSelect('classes.semester', 'semester')
+
+    query.andWhere('teacher.id = :teacher_id', { teacher_id: teacherId })
+
+    const { data, meta } = await paginate(query, paginateClassDto)
+    const classIds = data.map(classEntity => classEntity.id)
+    let current_students_object = {}
+    if (classIds.length > 0) {
+      const current_students = await this.classStudentsRepository
+        .createQueryBuilder('cs')
+        .select('cs.class_id', 'class_id')
+        .addSelect('COUNT(cs.id)', 'count')
+        .where('cs.class_id IN (:...classIds)', { classIds })
+        .groupBy('cs.class_id')
+        .getRawMany()
+      current_students_object = arrayToObject(current_students, 'class_id')
+    }
+
+    const formattedClasses: IClasses[] = data.map(classEntity => ({
+      id: classEntity.id,
+      name: classEntity?.subject?.name,
+      code: classEntity.code,
+      image: classEntity.subject.image,
+      status: classEntity.status,
+      number_lessons: classEntity.number_lessons,
+      classroom: classEntity.classroom,
+      credit: classEntity.subject.credit,
+      max_students: classEntity.max_students,
+      price: classEntity.price,
+      current_students: Number(current_students_object[classEntity.id]?.count || 0),
+      schedule: classEntity.schedule,
+      condition: classEntity.condition,
+      end_enrollment_day: classEntity.end_enrollment_day,
+      start_time: classEntity.start_time,
+      end_time: classEntity.end_time,
+      opening_day: classEntity.opening_day,
+      closing_day: classEntity.closing_day,
+      subject: classEntity?.subject
+        ? {
+            id: classEntity.subject.id,
+            code: classEntity.subject.code,
+            name: classEntity.subject.name,
+            credit: classEntity.subject.credit,
+            image: classEntity.subject.image,
+            post_link: classEntity.subject.post_link,
+          }
+        : null,
+      teacher: classEntity?.teacher
+        ? {
+            id: classEntity.teacher.id,
+            code: classEntity.teacher.user.code,
+            full_name: classEntity.teacher.user.full_name,
+            saint_name: classEntity.teacher.user.saint_name,
+            email: classEntity.teacher.user.email,
+            other_name: classEntity.teacher.other_name,
+          }
+        : null,
+      scholastic: classEntity?.scholastic
+        ? {
+            id: classEntity.scholastic.id,
+            name: classEntity.scholastic.name,
+          }
+        : null,
+      semester: classEntity?.semester
+        ? {
+            id: classEntity.semester.id,
+            name: classEntity.semester.name,
+          }
+        : null,
+      department: classEntity.subject?.department
+        ? {
+            id: classEntity.subject.department.id,
+            code: classEntity.subject.department.code,
+            name: classEntity.subject.department.name,
+          }
+        : null,
+    }))
+    return { data: formattedClasses, meta }
   }
 }

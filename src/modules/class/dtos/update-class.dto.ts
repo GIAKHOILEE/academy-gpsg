@@ -23,6 +23,11 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING })
   status: ClassStatus
 
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Số tiết học', example: 10 })
+  number_lessons: number
+
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Phòng học', example: 'A101' })
