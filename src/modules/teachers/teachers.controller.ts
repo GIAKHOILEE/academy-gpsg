@@ -13,7 +13,7 @@ import { PaginationDto } from '@common/pagination'
 @Auth(Role.ADMIN, Role.STAFF, Role.TEACHER)
 @Controller('admin/teachers')
 @ApiTags('Admin Teachers')
-export class TeachersController {
+export class AdminTeachersController {
   constructor(private readonly teachersService: TeachersService) {}
 
   @Post()
@@ -24,18 +24,6 @@ export class TeachersController {
       statusCode: 201,
       messageCode: 'TEACHER_CREATE_SUCCESS',
       data,
-    }
-  }
-
-  @Get('classes')
-  @ApiOperation({ summary: 'Lấy danh sách lớp của giáo viên' })
-  async getClassesByTeacherId(@Query() paginateClassDto: PaginationDto, @Request() req): Promise<ResponseDto> {
-    const classes = await this.teachersService.getAllClassesOfTeacher(req.user.userId, paginateClassDto)
-    return {
-      statusCode: 200,
-      messageCode: 'TEACHER_GET_CLASSES_SUCCESS',
-      data: classes.data,
-      meta: classes.meta,
     }
   }
 
@@ -81,6 +69,26 @@ export class TeachersController {
       statusCode: 200,
       messageCode: 'TEACHER_DELETE_SUCCESS',
       data,
+    }
+  }
+}
+
+@ApiBearerAuth()
+@Auth(Role.TEACHER)
+@Controller('teachers')
+@ApiTags('Teachers')
+export class TeacherController {
+  constructor(private readonly teachersService: TeachersService) {}
+
+  @Get('classes')
+  @ApiOperation({ summary: 'Lấy danh sách lớp của giáo viên' })
+  async getClassesByTeacherId(@Query() paginateClassDto: PaginationDto, @Request() req): Promise<ResponseDto> {
+    const classes = await this.teachersService.getAllClassesOfTeacher(req.user.userId, paginateClassDto)
+    return {
+      statusCode: 200,
+      messageCode: 'TEACHER_GET_CLASSES_SUCCESS',
+      data: classes.data,
+      meta: classes.meta,
     }
   }
 }

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { TeachersController } from './teachers.controller'
+import { AdminTeachersController, TeacherController } from './teachers.controller'
 import { Teacher } from './teachers.entity'
 import { TeachersService } from './teachers.service'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
@@ -10,7 +10,7 @@ import { ClassStudents } from '@modules/class/class-students/class-student.entit
 
 @Module({
   imports: [TypeOrmModule.forFeature([Teacher, Classes, ClassStudents]), HttpModule],
-  controllers: [TeachersController],
+  controllers: [AdminTeachersController, TeacherController],
   providers: [TeachersService, BrevoMailerService],
   exports: [TeachersService],
 })
