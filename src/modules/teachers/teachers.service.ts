@@ -299,8 +299,8 @@ export class TeachersService {
   }
 
   // lấy danh sách lớp của giáo viên
-  async getAllClassesOfTeacher(teacherId: number, paginateClassDto: PaginationDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
-    console.log(teacherId)
+  async getAllClassesOfTeacher(userId: number, paginateClassDto: PaginationDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
+    console.log(userId)
     const query = this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
@@ -310,9 +310,10 @@ export class TeachersService {
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
 
-    query.andWhere('teacher.id = :teacher_id', { teacher_id: teacherId })
+    query.andWhere('teacher.user_id = :userId', { userId })
 
     const { data, meta } = await paginate(query, paginateClassDto)
+    console.log(data)
     const classIds = data.map(classEntity => classEntity.id)
     let current_students_object = {}
     if (classIds.length > 0) {
