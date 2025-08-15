@@ -13,6 +13,11 @@ export class CreateClassDto {
   @ApiProperty({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
   status: ClassStatus
 
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Số tiết học', example: 10 })
+  number_lessons: number
+
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Phòng học', example: 'A101' })
