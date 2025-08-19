@@ -69,6 +69,10 @@ export const messages = {
     ENROLLMENT_NOT_CHANGE_STUDENT_INFO: 'Enrollment already identified cannot change student information',
     ATTENDANCE_RULE_NOT_FOUND: 'Attendance rule not found',
     ATTENDANCE_RULE_ALREADY_EXISTS: 'Attendance rule already exists',
+    ATTENDANCE_TOO_EARLY: 'Attendance too early',
+    ATTENDANCE_ALREADY_MARKED: 'Attendance already marked',
+    NO_ATTENDANCE_RULE_TODAY: 'No attendance rule today',
+    STUDENT_NOT_IN_CLASS: 'Student not in class',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -143,5 +147,9 @@ export const messages = {
     ENROLLMENT_NOT_CHANGE_STUDENT_INFO: 'Đơn đã định danh không được sửa thông tin học sinh',
     ATTENDANCE_RULE_NOT_FOUND: 'Quy tắc điểm danh không tồn tại',
     ATTENDANCE_RULE_ALREADY_EXISTS: 'Quy tắc điểm danh đã tồn tại',
+    ATTENDANCE_TOO_EARLY: 'Điểm danh quá sớm',
+    ATTENDANCE_ALREADY_MARKED: 'Đã điểm danh',
+    NO_ATTENDANCE_RULE_TODAY: 'Không có quy tắc điểm danh hôm nay',
+    STUDENT_NOT_IN_CLASS: 'Học sinh không có trong lớp học',
   },
 }

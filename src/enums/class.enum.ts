@@ -43,8 +43,7 @@ export enum RuleType {
 export enum AttendanceStatus {
   PRESENT = 1, // Có mặt
   ABSENT = 2, // Vắng
-  EXCUSED = 3, // Nghỉ có phép
-  LATE = 4, // Đi trễ
+  LATE = 3, // Đi trễ
 }
 
 export enum TeacherEvaluationStatus {

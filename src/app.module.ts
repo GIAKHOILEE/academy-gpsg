@@ -37,6 +37,8 @@ import { NavigationModule } from '@modules/navigation/navigation.module'
 import { VoucherModule } from '@modules/voucher/voucher.module'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core'
+import { AttendanceRuleModule } from './modules/class-rules/attendance-rule/attendance-rule..module'
+import { AttendanceModule } from './modules/class-rules/attendance/attendance.module'
 
 @Module({
   imports: [
@@ -75,6 +77,8 @@ import { APP_GUARD } from '@nestjs/core'
     PostModule,
     NavigationModule,
     VoucherModule,
+    AttendanceRuleModule,
+    AttendanceModule,
   ],
   providers: [
     AppService,
