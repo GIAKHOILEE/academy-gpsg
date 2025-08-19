@@ -5,6 +5,9 @@ import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, Pri
 import { ClassStudents } from './class-students/class-student.entity'
 import { Semester } from './_semester/semester.entity'
 import { Scholastic } from './_scholastic/scholastic.entity'
+import { CourseRule } from '@modules/class-rules/_course-rules/course-rules.entity'
+import { Exam } from '@modules/class-rules/exam/exam.entity'
+import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
 
 @Entity({ name: 'classes' })
 export class Classes {
@@ -43,6 +46,7 @@ export class Classes {
   })
   schedule: Schedule[]
 
+  // ngày kết thúc ghi danh
   @Column({ nullable: true })
   end_enrollment_day: string
 
@@ -100,6 +104,15 @@ export class Classes {
   // danh sách học sinh
   @OneToMany(() => ClassStudents, classStudents => classStudents.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   class_students: ClassStudents[]
+
+  @OneToMany(() => CourseRule, courseRule => courseRule.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  course_rules: CourseRule[]
+
+  @OneToMany(() => Exam, exam => exam.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  exams: Exam[]
+
+  @OneToMany(() => AttendanceRule, attendanceRule => attendanceRule.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  attendance_rules: AttendanceRule[]
 
   @CreateDateColumn()
   created_at: Date

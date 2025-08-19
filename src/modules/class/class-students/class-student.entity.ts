@@ -1,6 +1,9 @@
 import { Student } from '@modules/students/students.entity'
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { Classes } from '../class.entity'
+import { ExamScore } from '@modules/class-rules/exam/exam-scores/exam-scores.entity'
+import { Attendance } from '@modules/class-rules/attendance/attendance.entity'
+import { TeacherEvaluation } from '@modules/class-rules/teacher-evaluations/teacher-evaluations.entity'
 
 @Entity({ name: 'class_students' })
 export class ClassStudents {
@@ -24,6 +27,15 @@ export class ClassStudents {
 
   @Column()
   student_id: number
+
+  @OneToMany(() => ExamScore, examScore => examScore.class_student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  exam_scores: ExamScore[]
+
+  @OneToMany(() => Attendance, attendance => attendance.class_student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  attendances: Attendance[]
+
+  @OneToMany(() => TeacherEvaluation, teacherEvaluation => teacherEvaluation.class_student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  teacher_evaluations: TeacherEvaluation[]
 
   @CreateDateColumn()
   created_at: Date

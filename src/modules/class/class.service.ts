@@ -11,7 +11,7 @@ import { Semester } from './_semester/semester.entity'
 import { Classes } from './class.entity'
 import { IClasses } from './class.interface'
 import { CreateClassDto } from './dtos/create-class.dto'
-import { GetStudentsOfClassDto, PaginateClassDto } from './dtos/paginate-class.dto'
+import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
 import { IStudent } from '@modules/students/students.interface'
 import { ClassStudents } from './class-students/class-student.entity'
@@ -70,7 +70,37 @@ export class ClassService {
       .getOne()
     if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name })
+    // ngày khai giảng phải sau ngày kết thúc ghi danh
+    if (rest.opening_day && rest.end_enrollment_day) {
+      if (new Date(rest.opening_day) < new Date(rest.end_enrollment_day)) {
+        throwAppException(
+          'OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY',
+          ErrorCode.OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY,
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+    }
+    // ngày kết thúc lớp phải sau ngày khai giảng
+    if (rest.closing_day && rest.opening_day) {
+      if (new Date(rest.closing_day) < new Date(rest.opening_day)) {
+        throwAppException('CLOSING_DAY_MUST_BE_AFTER_OPENING_DAY', ErrorCode.CLOSING_DAY_MUST_BE_AFTER_OPENING_DAY, HttpStatus.BAD_REQUEST)
+      }
+    }
+
+    // so sánh các ngày với ngày hiên tại để chỉnh status
+    const today = new Date()
+    let status = ClassStatus.ENROLLING
+    if (rest.opening_day && new Date(rest.opening_day) < today) {
+      status = ClassStatus.HAS_BEGUN
+    }
+    if (rest.closing_day && new Date(rest.closing_day) < today) {
+      status = ClassStatus.END_CLASS
+    }
+    if (rest.end_enrollment_day && new Date(rest.end_enrollment_day) < today) {
+      status = ClassStatus.END_ENROLLING
+    }
+
+    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status })
     const savedClass = await this.classRepository.save(classEntity)
 
     const formattedClass: IClasses = {
@@ -137,7 +167,37 @@ export class ClassService {
       if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
-    await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id })
+    // ngày khai giảng phải sau ngày kết thúc ghi danh
+    if (rest.opening_day && rest.end_enrollment_day) {
+      if (new Date(rest.opening_day) < new Date(rest.end_enrollment_day)) {
+        throwAppException(
+          'OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY',
+          ErrorCode.OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY,
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+    }
+    // ngày kết thúc lớp phải sau ngày khai giảng
+    if (rest.closing_day && rest.opening_day) {
+      if (new Date(rest.closing_day) < new Date(rest.opening_day)) {
+        throwAppException('CLOSING_DAY_MUST_BE_AFTER_OPENING_DAY', ErrorCode.CLOSING_DAY_MUST_BE_AFTER_OPENING_DAY, HttpStatus.BAD_REQUEST)
+      }
+    }
+
+    // so sánh các ngày với ngày hiên tại để chỉnh status
+    const today = new Date()
+    let status = existingClass.status
+    if (rest.closing_day && new Date(rest.closing_day) < today) {
+      status = ClassStatus.END_CLASS
+    }
+    if (rest.opening_day && rest.end_enrollment_day && new Date(rest.opening_day) < today && new Date(rest.end_enrollment_day) > today) {
+      status = ClassStatus.END_ENROLLING
+    }
+    if (rest.closing_day && rest.opening_day && new Date(rest.closing_day) < today && new Date(rest.opening_day) > today) {
+      status = ClassStatus.HAS_BEGUN
+    }
+
+    await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id, status })
   }
 
   async updateIsActive(id: number): Promise<void> {
@@ -402,7 +462,8 @@ export class ClassService {
   }
 
   // lấy list class của 1 học sinh
-  async getClassesOfStudent(userId: number, paginateClassDto: PaginationDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
+  async getClassesOfStudent(userId: number, paginateClassDto: PaginateClassOfStudentDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
+    const { name, code, classroom, ...rest } = paginateClassDto
     const student = await this.studentRepository.findOne({ where: { user_id: userId }, select: ['id'] })
     if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     const student_id = student.id
@@ -445,7 +506,17 @@ export class ClassService {
       .leftJoin('class.subject', 'subject')
       .where('class_students.student_id = :student_id', { student_id })
 
-    const { data, meta } = await paginate(classEntities, paginateClassDto)
+    if (name) {
+      classEntities.andWhere('class.name LIKE :name', { name: `%${name}%` })
+    }
+    if (code) {
+      classEntities.andWhere('class.code LIKE :code', { code: `%${code}%` })
+    }
+    if (classroom) {
+      classEntities.andWhere('class.classroom LIKE :classroom', { classroom: `%${classroom}%` })
+    }
+
+    const { data, meta } = await paginate(classEntities, rest)
 
     const classIds = data.map(classStudent => classStudent.class.id)
     let current_students_object = {}
