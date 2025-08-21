@@ -4,7 +4,7 @@ import { ResponseDto } from '@common/response.dto'
 import { CreateAttendanceRuleDto } from './dtos/create-attendance-rule.dto'
 import { PaginateAttendanceRuleDto } from './dtos/paginate-attendance-rule.dto'
 import { UpdateAttendanceRuleDto } from './dtos/update-attendance-rule.dto'
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 
@@ -16,6 +16,7 @@ export class AdminAttendanceRuleController {
   constructor(private readonly attendanceRuleService: AttendanceRuleService) {}
 
   @Post('class/:class_id')
+  @ApiOperation({ summary: 'Tạo quy tắc điểm danh' })
   @ApiBody({ type: [CreateAttendanceRuleDto] })
   async createAttendanceRule(@Param('class_id') class_id: number, @Body() createAttendanceRuleDto: CreateAttendanceRuleDto[]): Promise<ResponseDto> {
     const attendanceRule = await this.attendanceRuleService.createAttendanceRule(class_id, createAttendanceRuleDto)
@@ -27,6 +28,7 @@ export class AdminAttendanceRuleController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Lấy tất cả quy tắc điểm danh' })
   async getAllAttendanceRule(@Query() paginateAttendanceRuleDto: PaginateAttendanceRuleDto): Promise<ResponseDto> {
     const attendanceRules = await this.attendanceRuleService.getAllAttendanceRule(paginateAttendanceRuleDto)
     return new ResponseDto({
@@ -37,6 +39,7 @@ export class AdminAttendanceRuleController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Lấy chi tiết quy tắc điểm danh' })
   async getDetailAttendanceRule(@Param('id') id: number): Promise<ResponseDto> {
     const attendanceRule = await this.attendanceRuleService.getDetailAttendanceRule(id)
     return new ResponseDto({
@@ -47,6 +50,7 @@ export class AdminAttendanceRuleController {
   }
 
   @Put('class/:class_id')
+  @ApiOperation({ summary: 'Cập nhật quy tắc điểm danh' })
   @ApiBody({ type: [UpdateAttendanceRuleDto] })
   async updateAttendanceRule(@Param('class_id') class_id: number, @Body() updateAttendanceRuleDto: UpdateAttendanceRuleDto[]): Promise<ResponseDto> {
     await this.attendanceRuleService.updateAttendanceRule(class_id, updateAttendanceRuleDto)
@@ -74,6 +78,7 @@ export class UserAttendanceRuleController {
   constructor(private readonly attendanceRuleService: AttendanceRuleService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Lấy tất cả quy tắc điểm danh' })
   async getAllAttendanceRule(@Query() paginateAttendanceRuleDto: PaginateAttendanceRuleDto): Promise<ResponseDto> {
     const attendanceRules = await this.attendanceRuleService.getAllAttendanceRule(paginateAttendanceRuleDto)
     return new ResponseDto({
@@ -84,6 +89,7 @@ export class UserAttendanceRuleController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Lấy chi tiết quy tắc điểm danh' })
   async getDetailAttendanceRule(@Param('id') id: number): Promise<ResponseDto> {
     const attendanceRule = await this.attendanceRuleService.getDetailAttendanceRule(id)
     return new ResponseDto({
