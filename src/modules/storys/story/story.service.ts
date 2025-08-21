@@ -95,6 +95,11 @@ export class StoryService {
       query.where('story.topic_id = :topic_id', { topic_id })
     }
 
+    if (!rest.title && !topic_id) {
+      // random order nếu không có filter
+      query.orderBy('RAND()')
+    }
+
     const { data, meta } = await paginate(query, rest)
 
     const formattedStories: IStory[] = data.map(story => ({
