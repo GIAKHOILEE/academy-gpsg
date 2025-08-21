@@ -64,4 +64,43 @@ export class DashboardControllerUser {
       data: voucher,
     })
   }
+
+  @Get('/class')
+  @ApiOperation({ summary: 'Lấy thống kê lớp học' })
+  @Auth(Role.ADMIN)
+  @ApiBearerAuth()
+  async classStatistics(): Promise<ResponseDto> {
+    const classStatistics = await this.dashboardService.classStatistics()
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_CLASS_SUCCESS',
+      data: classStatistics,
+    })
+  }
+
+  @Get('/student')
+  @ApiOperation({ summary: 'Lấy thống kê sinh viên' })
+  @Auth(Role.ADMIN)
+  @ApiBearerAuth()
+  async graduateStudentStatistics(): Promise<ResponseDto> {
+    const graduateStudentStatistics = await this.dashboardService.graduateStudentStatistics()
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_STUDENT_SUCCESS',
+      data: graduateStudentStatistics,
+    })
+  }
+
+  @Get('/teacher')
+  @ApiOperation({ summary: 'Lấy thống kê giáo viên' })
+  @Auth(Role.ADMIN)
+  @ApiBearerAuth()
+  async teacherStatistics(): Promise<ResponseDto> {
+    const teacherStatistics = await this.dashboardService.teacherStatistics()
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_TEACHER_SUCCESS',
+      data: teacherStatistics,
+    })
+  }
 }
