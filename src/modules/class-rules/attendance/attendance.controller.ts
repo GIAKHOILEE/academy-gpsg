@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common'
 import { AttendanceService } from './attendance.service'
 import { CreateAttendanceDto } from './dtos/create-attendance.dto'
 import { HttpStatus } from '@nestjs/common'
 import { ResponseDto } from '@common/response.dto'
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 
@@ -46,8 +46,9 @@ export class UserAttendanceController {
 
   @Get('class/:class_id')
   @ApiOperation({ summary: 'Lấy lịch điểm danh' })
-  async getAttendanceReport(@Param('class_id') class_id: number): Promise<ResponseDto> {
-    const report = await this.attendanceService.getAttendanceReport(class_id)
+  @ApiQuery({ name: 'student_id', required: false, type: Number, description: 'ID của học viên' })
+  async getAttendanceReport(@Param('class_id') class_id: number, @Query('student_id') student_id?: number): Promise<ResponseDto> {
+    const report = await this.attendanceService.getAttendanceReport(class_id, student_id)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'ATTENDANCE_REPORT_GET_SUCCESSFULLY',

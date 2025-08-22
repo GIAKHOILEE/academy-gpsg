@@ -85,7 +85,9 @@ export class AttendanceService {
     return this.attendanceRepository.save(attendance)
   }
 
-  async getAttendanceReport(class_id: number) {
+  async getAttendanceReport(class_id: number, student_id?: number) {
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+
     // 1. Lấy danh sách buổi học (ngày điểm danh)
     const rules = await this.attendanceRuleRepository.find({
       where: { class_id },
@@ -94,7 +96,7 @@ export class AttendanceService {
     const lessonDates = rules.map(r => r.lesson_date) // ['2023-08-15', '2023-08-19', ...]
 
     // 2. Lấy danh sách học viên trong lớp
-    const classStudents = await this.classStudentsRepository
+    let classStudents = await this.classStudentsRepository
       .createQueryBuilder('class_student')
       .select(['class_student.id', 'student.id', 'user.code', 'user.full_name'])
       .leftJoin('class_student.student', 'student')
@@ -106,6 +108,10 @@ export class AttendanceService {
     const attendances = await this.attendanceRepository.find({
       where: { class_student: In(classStudents.map(cs => cs.id)) },
     })
+
+    if (student_id) {
+      classStudents = classStudents.filter(cs => cs.student.id === student_id)
+    }
 
     // 4. Format thành bảng
     const report = classStudents.map(cs => {
@@ -133,7 +139,13 @@ export class AttendanceService {
             row.records[date] = AttendanceStatus.ABSENT
           }
         } else {
-          row.records[date] = AttendanceStatus.ABSENT // chưa có record => vắng
+          if (date < today) {
+            // Buổi học đã qua nhưng không có điểm danh → Vắng
+            row.records[date] = AttendanceStatus.ABSENT
+          } else {
+            // Buổi học chưa diễn ra hoặc đang trong ngày hiện tại → default 0
+            row.records[date] = 0
+          }
         }
       }
 
