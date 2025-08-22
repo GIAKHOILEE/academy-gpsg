@@ -77,6 +77,17 @@ export class AdminAttendanceRuleController {
 export class UserAttendanceRuleController {
   constructor(private readonly attendanceRuleService: AttendanceRuleService) {}
 
+  @Get('/class/today')
+  @ApiOperation({ summary: 'Lấy danh sách lớp đang trong thời gian điểm danh' })
+  async getTodayAttendanceClass(): Promise<ResponseDto> {
+    const classes = await this.attendanceRuleService.getTodayAttendanceClass()
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'ATTENDANCE_RULE_GET_CLASS_TODAY_SUCCESSFULLY',
+      data: classes,
+    })
+  }
+
   @Get()
   @ApiOperation({ summary: 'Lấy tất cả quy tắc điểm danh' })
   async getAllAttendanceRule(@Query() paginateAttendanceRuleDto: PaginateAttendanceRuleDto): Promise<ResponseDto> {
