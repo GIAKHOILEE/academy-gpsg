@@ -28,4 +28,9 @@ export class PaginateStudentsDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Trạng thái 1: active, 2: inactive', enum: UserStatus })
   status?: UserStatus
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Mã thẻ của học viên' })
+  card_code?: string
 }

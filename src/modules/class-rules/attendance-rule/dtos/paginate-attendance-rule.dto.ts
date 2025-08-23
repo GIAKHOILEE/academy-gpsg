@@ -2,7 +2,7 @@ import { PaginationDto } from '@common/pagination'
 import { AttendanceRuleType } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class PaginateAttendanceRuleDto extends PaginationDto {
   @IsOptional()

@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { AttendanceRuleService } from './attendance-rule.service'
 import { ResponseDto } from '@common/response.dto'
 import { CreateAttendanceRuleDto } from './dtos/create-attendance-rule.dto'
 import { PaginateAttendanceRuleDto } from './dtos/paginate-attendance-rule.dto'
 import { UpdateAttendanceRuleDto } from './dtos/update-attendance-rule.dto'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 
@@ -79,8 +79,9 @@ export class UserAttendanceRuleController {
 
   @Get('/class/today')
   @ApiOperation({ summary: 'Lấy danh sách lớp đang trong thời gian điểm danh' })
-  async getTodayAttendanceClass(): Promise<ResponseDto> {
-    const classes = await this.attendanceRuleService.getTodayAttendanceClass()
+  @ApiQuery({ name: 'card_code', required: true, type: String, description: 'Mã thẻ của học viên' })
+  async getTodayAttendanceClass(@Query('card_code') card_code: string): Promise<ResponseDto> {
+    const classes = await this.attendanceRuleService.getTodayAttendanceClass(card_code)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'ATTENDANCE_RULE_GET_CLASS_TODAY_SUCCESSFULLY',

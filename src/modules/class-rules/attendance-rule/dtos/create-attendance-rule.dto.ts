@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator'
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 import { AttendanceRuleType } from '@enums/class.enum'
 
 export class CreateAttendanceRuleDto {
@@ -27,4 +27,9 @@ export class CreateAttendanceRuleDto {
   @IsString()
   @ApiProperty({ description: 'Thời gian kết thúc nhận thẻ', example: '17:00' })
   card_end_time: string
+
+  @IsOptional()
+  @IsNumber()
+  @ApiProperty({ description: 'Thời gian trễ', example: 10 })
+  delay: number
 }

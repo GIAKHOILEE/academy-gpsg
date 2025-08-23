@@ -8,12 +8,7 @@ export class CreateAttendanceDto {
   class_id: number
 
   @IsNotEmpty()
-  @IsNumber()
-  @ApiProperty({ description: 'ID học viên', example: 1 })
-  student_id: number
-
-  @IsNotEmpty()
   @IsString()
-  @ApiProperty({ description: 'Ngày điểm danh', example: '2025-01-01' })
-  attendance_date: string
+  @ApiProperty({ description: 'Mã thẻ học viên', example: '123456' })
+  card_code: string
 }

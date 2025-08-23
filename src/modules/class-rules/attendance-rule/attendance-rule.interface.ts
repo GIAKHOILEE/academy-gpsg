@@ -7,6 +7,7 @@ export interface IAttendanceRule {
   lesson_date?: string
   card_start_time?: string
   card_end_time?: string
+  delay: number
   class_id?: number
   class?: IClasses
 }

@@ -73,6 +73,8 @@ export const messages = {
     ATTENDANCE_ALREADY_MARKED: 'Attendance already marked',
     NO_ATTENDANCE_RULE_TODAY: 'No attendance rule today',
     STUDENT_NOT_IN_CLASS: 'Student not in class',
+    STUDENT_HAD_CARD_CODE: 'Student had card code',
+    STUDENT_CARD_CODE_ALREADY_EXISTS: 'Student card code already exists',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -151,5 +153,7 @@ export const messages = {
     ATTENDANCE_ALREADY_MARKED: 'Đã điểm danh',
     NO_ATTENDANCE_RULE_TODAY: 'Không có quy tắc điểm danh hôm nay',
     STUDENT_NOT_IN_CLASS: 'Học sinh không có trong lớp học',
+    STUDENT_HAD_CARD_CODE: 'Học sinh đã có mã thẻ',
+    STUDENT_CARD_CODE_ALREADY_EXISTS: 'Mã thẻ đã tồn tại',
   },
 }

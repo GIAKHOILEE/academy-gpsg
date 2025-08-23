@@ -1,4 +1,4 @@
-import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
+import { paginate, PaginationMeta } from '@common/pagination'
 import { arrayToObject, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Subject } from '@modules/subjects/subjects.entity'

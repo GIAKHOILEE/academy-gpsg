@@ -30,6 +30,10 @@ export class AttendanceRule {
   @Column()
   card_end_time: string
 
+  // thời gian cho phép trễ tính từ sau thời gian nhận thẻ
+  @Column({ type: 'int', default: 0 })
+  delay: number
+
   @CreateDateColumn()
   created_at: Date
 

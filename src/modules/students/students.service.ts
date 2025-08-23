@@ -5,11 +5,11 @@ import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, Repository } from 'typeorm'
+import { DataSource, Not, Repository } from 'typeorm'
 import { User } from '../users/user.entity'
-import { CreateStudentsDto } from './dtos/create-students.dto'
+import { CreateStudentCardCodeDto, CreateStudentsDto } from './dtos/create-students.dto'
 import { PaginateStudentsDto } from './dtos/paginate-students.dto'
-import { UpdateStudentsDto } from './dtos/update-students.dto'
+import { UpdateStudentCardCodeDto, UpdateStudentsDto } from './dtos/update-students.dto'
 import { Student } from './students.entity'
 import { IStudent } from './students.interface'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
@@ -224,6 +224,7 @@ export class StudentsService {
       .leftJoinAndSelect('students.user', 'user')
       .select([
         'students.id',
+        'students.card_code',
         'students.image_4x6',
         'students.diploma_image',
         'students.transcript_image',
@@ -269,6 +270,7 @@ export class StudentsService {
       deanery: student.user.deanery,
       diocese: student.user.diocese,
       congregation: student.user.congregation,
+      card_code: student.card_code,
       image_4x6: student.image_4x6,
       diploma_image: student.diploma_image,
       transcript_image: student.transcript_image,
@@ -324,6 +326,7 @@ export class StudentsService {
       deanery: student.user.deanery,
       diocese: student.user.diocese,
       congregation: student.user.congregation,
+      card_code: student.card_code,
       image_4x6: student.image_4x6,
       diploma_image: student.diploma_image,
       transcript_image: student.transcript_image,
@@ -335,5 +338,36 @@ export class StudentsService {
       data: formattedStudents,
       meta,
     }
+  }
+
+  async createStudentCardCode(createStudentCardCodeDto: CreateStudentCardCodeDto): Promise<void> {
+    const { card_code, user_id } = createStudentCardCodeDto
+
+    const student = await this.studentRepository.findOne({ where: { user_id } })
+    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const existingStudent = await this.studentRepository.exists({ where: { card_code } })
+    if (existingStudent) throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+
+    // check student đã có card_code chưa
+    if (student.card_code) throwAppException('STUDENT_HAD_CARD_CODE', ErrorCode.STUDENT_HAD_CARD_CODE, HttpStatus.BAD_REQUEST)
+
+    await this.studentRepository.update(student.id, { card_code })
+    return
+  }
+
+  async updateStudentCardCode(updateStudentCardCodeDto: UpdateStudentCardCodeDto): Promise<void> {
+    const { card_code, user_id } = updateStudentCardCodeDto
+
+    const student = await this.studentRepository.findOne({ where: { user_id } })
+    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const existingStudent = await this.studentRepository.exists({ where: { card_code, id: Not(student.id) } })
+    if (existingStudent) {
+      throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+    }
+
+    await this.studentRepository.update(student.id, { card_code })
+    return
   }
 }

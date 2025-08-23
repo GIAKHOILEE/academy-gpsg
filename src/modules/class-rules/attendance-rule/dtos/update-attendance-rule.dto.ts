@@ -27,4 +27,9 @@ export class UpdateAttendanceRuleDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Thời gian kết thúc nhận thẻ', example: '17:00' })
   card_end_time: string
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({ description: 'Thời gian trễ', example: 10 })
+  delay: number
 }

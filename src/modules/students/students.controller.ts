@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { StudentsService } from './students.service'
-import { CreateStudentsDto } from './dtos/create-students.dto'
+import { CreateStudentCardCodeDto, CreateStudentsDto } from './dtos/create-students.dto'
 import { ResponseDto } from '@common/response.dto'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { PaginateStudentsDto } from './dtos/paginate-students.dto'
-import { UpdateStudentsDto } from './dtos/update-students.dto'
+import { UpdateStudentCardCodeDto, UpdateStudentsDto } from './dtos/update-students.dto'
 
 @ApiBearerAuth()
 @Auth(Role.ADMIN, Role.STAFF)
@@ -14,6 +14,28 @@ import { UpdateStudentsDto } from './dtos/update-students.dto'
 @ApiTags('Admin Students')
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
+
+  @Post('card-code')
+  @ApiOperation({ summary: 'Tạo mã thẻ học viên' })
+  async createStudentCardCode(@Body() createStudentCardCodeDto: CreateStudentCardCodeDto): Promise<ResponseDto> {
+    const data = await this.studentsService.createStudentCardCode(createStudentCardCodeDto)
+    return {
+      statusCode: 201,
+      messageCode: 'STUDENT_CARD_CODE_CREATE_SUCCESS',
+      data,
+    }
+  }
+
+  @Put('card-code')
+  @ApiOperation({ summary: 'Cập nhật mã thẻ học viên' })
+  async updateStudentCardCode(@Body() updateStudentCardCodeDto: UpdateStudentCardCodeDto): Promise<ResponseDto> {
+    const data = await this.studentsService.updateStudentCardCode(updateStudentCardCodeDto)
+    return {
+      statusCode: 200,
+      messageCode: 'STUDENT_CARD_CODE_UPDATE_SUCCESS',
+      data,
+    }
+  }
 
   @Post()
   @ApiOperation({ summary: 'password: nếu không có mặc định là mã học viên' })

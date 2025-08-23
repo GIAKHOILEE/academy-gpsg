@@ -1,6 +1,6 @@
 import { UpdateUserDtoV2 } from '@modules/users/dtos/update-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Ảnh 4x6' })
@@ -32,4 +32,17 @@ export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @IsNumber()
   @IsOptional()
   graduate_year: number
+}
+
+// cập nhật mã thẻ của học viên
+export class UpdateStudentCardCodeDto {
+  @ApiPropertyOptional({ description: 'ID user của học viên' })
+  @IsNumber()
+  @IsNotEmpty()
+  user_id: number
+
+  @ApiPropertyOptional({ description: 'Mã thẻ của học viên' })
+  @IsString()
+  @IsNotEmpty()
+  card_code: string
 }

@@ -1,4 +1,3 @@
-import { PaginationDto } from '@common/pagination'
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'

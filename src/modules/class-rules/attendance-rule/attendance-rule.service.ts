@@ -4,14 +4,14 @@ import { AttendanceRule } from './attendance-rule.entity'
 import { CreateAttendanceRuleDto } from './dtos/create-attendance-rule.dto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Classes } from '@modules/class/class.entity'
-import { throwAppException } from '@common/utils'
+import { throwAppException, toMinutes } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { IAttendanceRule } from './attendance-rule.interface'
 import { UpdateAttendanceRuleDto } from './dtos/update-attendance-rule.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { PaginateAttendanceRuleDto } from './dtos/paginate-attendance-rule.dto'
 import { IClasses } from '@modules/class/class.interface'
-import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm'
+import { Student } from '@modules/students/students.entity'
 
 @Injectable()
 export class AttendanceRuleService {
@@ -20,6 +20,8 @@ export class AttendanceRuleService {
     private readonly attendanceRuleRepository: Repository<AttendanceRule>,
     @InjectRepository(Classes)
     private readonly classRepository: Repository<Classes>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
   ) {}
 
   async createAttendanceRule(class_id: number, createAttendanceRuleDto: CreateAttendanceRuleDto[]): Promise<IAttendanceRule[]> {
@@ -45,6 +47,7 @@ export class AttendanceRuleService {
       card_start_time: attendanceRule.card_start_time,
       card_end_time: attendanceRule.card_end_time,
       type: attendanceRule.type,
+      delay: attendanceRule.delay,
     }))
     return formattedAttendanceRule
   }
@@ -76,6 +79,7 @@ export class AttendanceRuleService {
       card_start_time: attendanceRule.card_start_time,
       card_end_time: attendanceRule.card_end_time,
       type: attendanceRule.type,
+      delay: attendanceRule.delay,
     }))
     return { data: formattedAttendanceRule, meta }
   }
@@ -91,28 +95,46 @@ export class AttendanceRuleService {
       card_start_time: attendanceRule.card_start_time,
       card_end_time: attendanceRule.card_end_time,
       type: attendanceRule.type,
+      delay: attendanceRule.delay,
     }
     return formattedAttendanceRule
   }
 
   // Lấy danh sách lớp đang trong thời gian điểm danh
-  async getTodayAttendanceClass(): Promise<IClasses[]> {
+  async getTodayAttendanceClass(card_code: string): Promise<IClasses[]> {
     const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
 
-    // Lấy giờ phút hiện tại (HH:mm)
+    // lấy student theo card_code
+    const student = await this.studentRepository.findOne({ where: { card_code }, relations: ['class_students'] })
+    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    // lấy class_id của student đang học
+    const classIdsOfStudent = student.class_students.map(cs => cs.class_id)
+    if (classIdsOfStudent.length === 0) return []
+
+    // Lấy giờ phút hiện tại
     const now = new Date()
     const currentTime = now.toTimeString().slice(0, 5) // "HH:mm"
+    const currentMinutes = toMinutes(currentTime)
 
+    // lấy rules theo ngày trước
     const rules = await this.attendanceRuleRepository.find({
-      where: {
-        lesson_date: today,
-        card_start_time: LessThanOrEqual(currentTime),
-        card_end_time: MoreThanOrEqual(currentTime),
-      },
+      where: { lesson_date: today },
     })
 
-    const classIds = rules.map(r => r.class_id)
-    if (classIds.length === 0) return []
+    // lọc theo start_time <= now <= end_time + delay
+    const validRules = rules.filter(r => {
+      const start = toMinutes(r.card_start_time)
+      const end = toMinutes(r.card_end_time) + r.delay
+      return start <= currentMinutes && currentMinutes <= end
+    })
+
+    const classIdsNow = validRules.map(r => r.class_id)
+    if (classIdsNow.length === 0) return []
+
+    // Lấy giao nhau giữa classIdsOfStudent và classIds
+    const validClassIds = classIdsOfStudent.filter(id => classIdsNow.includes(id))
+    if (validClassIds.length === 0) return []
 
     const classes = await this.classRepository
       .createQueryBuilder('classes')
@@ -122,7 +144,7 @@ export class AttendanceRuleService {
       .leftJoinAndSelect('teacher.user', 'user')
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
-      .where('classes.id IN (:...classIds)', { classIds })
+      .where('classes.id IN (:...classIds)', { classIds: validClassIds })
       .getMany()
 
     const formattedClasses: IClasses[] = classes.map(classEntity => ({

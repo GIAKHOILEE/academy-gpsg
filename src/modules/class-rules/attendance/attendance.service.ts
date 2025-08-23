@@ -28,7 +28,7 @@ export class AttendanceService {
   ) {}
 
   async createAttendance(createAttendanceDto: CreateAttendanceDto): Promise<Attendance> {
-    const { class_id, student_id } = createAttendanceDto
+    const { class_id, card_code } = createAttendanceDto
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
 
@@ -37,12 +37,12 @@ export class AttendanceService {
     if (!classExist) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     // 2. Check student tồn tại
-    const studentExist = await this.studentRepository.findOne({ where: { id: student_id } })
-    if (!studentExist) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    const student = await this.studentRepository.findOne({ where: { card_code } })
+    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     // 3. Check student có trong class
     const classStudent = await this.classStudentsRepository.findOne({
-      where: { class_id, student_id },
+      where: { class_id, student_id: student.id },
     })
     if (!classStudent) throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
 
@@ -70,7 +70,7 @@ export class AttendanceService {
       throwAppException('ATTENDANCE_TOO_EARLY', ErrorCode.ATTENDANCE_TOO_EARLY, HttpStatus.BAD_REQUEST)
     } else if (nowMinutes <= endMinutes) {
       // trong giờ điểm danh
-      const lateThreshold = startMinutes + 15 // VD cho phép đi trễ 15 phút
+      const lateThreshold = startMinutes
       status = nowMinutes <= lateThreshold ? AttendanceStatus.PRESENT : AttendanceStatus.LATE
     } else {
       // sau giờ điểm danh
