@@ -97,18 +97,18 @@ export class AttendanceRuleService {
 
   // Lấy danh sách lớp đang trong thời gian điểm danh
   async getTodayAttendanceClass(): Promise<IClasses[]> {
-    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+    // const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
 
-    // Lấy giờ phút hiện tại (HH:mm)
-    const now = new Date()
-    const currentTime = now.toTimeString().slice(0, 5) // "HH:mm"
+    // // Lấy giờ phút hiện tại (HH:mm)
+    // const now = new Date()
+    // const currentTime = now.toTimeString().slice(0, 5) // "HH:mm"
 
     const rules = await this.attendanceRuleRepository.find({
-      where: {
-        lesson_date: today,
-        card_start_time: LessThanOrEqual(currentTime),
-        card_end_time: MoreThanOrEqual(currentTime),
-      },
+      // where: {
+      //   lesson_date: today,
+      //   card_start_time: LessThanOrEqual(currentTime),
+      //   card_end_time: MoreThanOrEqual(currentTime),
+      // },
     })
 
     const classIds = rules.map(r => r.class_id)
