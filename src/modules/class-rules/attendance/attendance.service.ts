@@ -85,7 +85,7 @@ export class AttendanceService {
     return this.attendanceRepository.save(attendance)
   }
 
-  async getAttendanceReport(class_id: number, student_id?: number) {
+  async getAttendanceReport(class_id: number, user_id?: number) {
     const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
 
     // 1. Lấy danh sách buổi học (ngày điểm danh)
@@ -98,7 +98,7 @@ export class AttendanceService {
     // 2. Lấy danh sách học viên trong lớp
     let classStudents = await this.classStudentsRepository
       .createQueryBuilder('class_student')
-      .select(['class_student.id', 'student.id', 'user.code', 'user.full_name'])
+      .select(['class_student.id', 'student.id', 'user.id', 'user.code', 'user.full_name'])
       .leftJoin('class_student.student', 'student')
       .leftJoin('student.user', 'user')
       .where('class_student.class_id = :class_id', { class_id })
@@ -109,13 +109,16 @@ export class AttendanceService {
       where: { class_student: In(classStudents.map(cs => cs.id)) },
     })
 
-    if (student_id) {
-      classStudents = classStudents.filter(cs => cs.student.id === student_id)
+    if (user_id) {
+      const student = await this.studentRepository.findOne({ where: { user_id } })
+      if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      classStudents = classStudents.filter(cs => cs.student.id === student.id)
     }
 
     // 4. Format thành bảng
     const report = classStudents.map(cs => {
       const row: any = {
+        user_id: cs.student.user.id,
         student_id: cs.student.id,
         student_code: cs.student.user.code,
         student_name: cs.student.user.full_name,

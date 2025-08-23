@@ -26,7 +26,7 @@ export class AttendanceController {
   }
 
   @Get('class/:class_id')
-  @ApiOperation({ summary: 'Lấy lịch điểm danh' })
+  @ApiOperation({ summary: 'Lấy lịch sử điểm danh' })
   async getAttendanceReport(@Param('class_id') class_id: number): Promise<ResponseDto> {
     const report = await this.attendanceService.getAttendanceReport(class_id)
     return new ResponseDto({
@@ -45,10 +45,10 @@ export class UserAttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Get('class/:class_id')
-  @ApiOperation({ summary: 'Lấy lịch điểm danh' })
-  @ApiQuery({ name: 'student_id', required: false, type: Number, description: 'ID của học viên' })
-  async getAttendanceReport(@Param('class_id') class_id: number, @Query('student_id') student_id?: number): Promise<ResponseDto> {
-    const report = await this.attendanceService.getAttendanceReport(class_id, student_id)
+  @ApiOperation({ summary: 'Lấy lịch sử điểm danh' })
+  @ApiQuery({ name: 'user_id', required: false, type: Number, description: 'ID user của học viên' })
+  async getAttendanceReport(@Param('class_id') class_id: number, @Query('user_id') user_id?: number): Promise<ResponseDto> {
+    const report = await this.attendanceService.getAttendanceReport(class_id, user_id)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'ATTENDANCE_REPORT_GET_SUCCESSFULLY',
