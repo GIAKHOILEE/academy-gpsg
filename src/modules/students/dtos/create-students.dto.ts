@@ -3,6 +3,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateStudentsDto extends CreateUserDtoV2 {
+  @ApiPropertyOptional({ description: 'Mã thẻ của học viên' })
+  @IsString()
+  @IsOptional()
+  card_code: string
+
   @ApiPropertyOptional({ description: 'Ảnh 4x6' })
   @IsString()
   @IsOptional()

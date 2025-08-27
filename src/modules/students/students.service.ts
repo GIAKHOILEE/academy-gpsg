@@ -31,7 +31,7 @@ export class StudentsService {
     await queryRunner.startTransaction()
 
     try {
-      const { image_4x6, diploma_image, transcript_image, other_document, ...userData } = createStudentDto
+      const { image_4x6, diploma_image, transcript_image, other_document, card_code, ...userData } = createStudentDto
       const { password, email, code, ...rest } = userData
 
       // Kiểm tra email đã tồn tại
@@ -74,6 +74,12 @@ export class StudentsService {
 
       if (existingStudent) throwAppException('STUDENT_ALREADY_EXISTS', ErrorCode.STUDENT_ALREADY_EXISTS, HttpStatus.CONFLICT)
 
+      // Kiểm tra mã thẻ của học viên
+      if (card_code) {
+        const existingStudent = await queryRunner.manager.getRepository(Student).exists({ where: { card_code } })
+        if (existingStudent) throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+      }
+
       const student = queryRunner.manager.getRepository(Student).create({
         user_id: user.id,
         image_4x6: image_4x6 ?? null,
@@ -82,6 +88,7 @@ export class StudentsService {
         other_document: other_document ?? null,
         graduate: false,
         graduate_year: null,
+        card_code: card_code ?? null,
       })
 
       await queryRunner.manager.save(Student, student)
@@ -113,7 +120,7 @@ export class StudentsService {
     await queryRunner.connect()
     await queryRunner.startTransaction()
 
-    const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, ...userData } = updateStudentDto
+    const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, ...userData } = updateStudentDto
     const { email, ...rest } = userData
 
     try {
@@ -164,6 +171,12 @@ export class StudentsService {
         }
       }
 
+      // Kiểm tra mã thẻ của học viên
+      if (card_code) {
+        const existingStudent = await studentRepo.exists({ where: { card_code, id: Not(student.id) } })
+        if (existingStudent) throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+      }
+
       // Cập nhật student: merge tương tự
       const updatedStudent = studentRepo.merge(student, {
         image_4x6: image_4x6 ?? student.image_4x6,
@@ -172,6 +185,7 @@ export class StudentsService {
         other_document: other_document ?? student.other_document,
         graduate: graduate ?? student.graduate,
         graduate_year: graduate_year ?? student.graduate_year,
+        card_code: card_code ?? student.card_code,
       })
       await studentRepo.save(updatedStudent)
 
@@ -340,34 +354,34 @@ export class StudentsService {
     }
   }
 
-  async createStudentCardCode(createStudentCardCodeDto: CreateStudentCardCodeDto): Promise<void> {
-    const { card_code, user_id } = createStudentCardCodeDto
+  // async createStudentCardCode(createStudentCardCodeDto: CreateStudentCardCodeDto): Promise<void> {
+  //   const { card_code, user_id } = createStudentCardCodeDto
 
-    const student = await this.studentRepository.findOne({ where: { user_id } })
-    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+  //   const student = await this.studentRepository.findOne({ where: { user_id } })
+  //   if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    const existingStudent = await this.studentRepository.exists({ where: { card_code } })
-    if (existingStudent) throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+  //   const existingStudent = await this.studentRepository.exists({ where: { card_code } })
+  //   if (existingStudent) throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
-    // check student đã có card_code chưa
-    if (student.card_code) throwAppException('STUDENT_HAD_CARD_CODE', ErrorCode.STUDENT_HAD_CARD_CODE, HttpStatus.BAD_REQUEST)
+  //   // check student đã có card_code chưa
+  //   if (student.card_code) throwAppException('STUDENT_HAD_CARD_CODE', ErrorCode.STUDENT_HAD_CARD_CODE, HttpStatus.BAD_REQUEST)
 
-    await this.studentRepository.update(student.id, { card_code })
-    return
-  }
+  //   await this.studentRepository.update(student.id, { card_code })
+  //   return
+  // }
 
-  async updateStudentCardCode(updateStudentCardCodeDto: UpdateStudentCardCodeDto): Promise<void> {
-    const { card_code, user_id } = updateStudentCardCodeDto
+  // async updateStudentCardCode(updateStudentCardCodeDto: UpdateStudentCardCodeDto): Promise<void> {
+  //   const { card_code, user_id } = updateStudentCardCodeDto
 
-    const student = await this.studentRepository.findOne({ where: { user_id } })
-    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+  //   const student = await this.studentRepository.findOne({ where: { user_id } })
+  //   if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    const existingStudent = await this.studentRepository.exists({ where: { card_code, id: Not(student.id) } })
-    if (existingStudent) {
-      throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
-    }
+  //   const existingStudent = await this.studentRepository.exists({ where: { card_code, id: Not(student.id) } })
+  //   if (existingStudent) {
+  //     throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+  //   }
 
-    await this.studentRepository.update(student.id, { card_code })
-    return
-  }
+  //   await this.studentRepository.update(student.id, { card_code })
+  //   return
+  // }
 }
