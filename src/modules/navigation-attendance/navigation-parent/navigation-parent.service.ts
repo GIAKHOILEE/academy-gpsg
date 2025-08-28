@@ -1,21 +1,21 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { NavigationParent } from './navigation-parent.entity'
-import { CreateNavigationDto, FilterNavigationDto } from '../dtos/navigation.dto'
-import { UpdateNavigationDto } from '../dtos/navigation.dto'
-import { INavigation } from '../navigation.interface'
+import { NavigationParentAttendance } from './navigation-parent.entity'
+import { CreateNavigationAttendanceDto, FilterNavigationAttendanceDto } from '../dtos/navigation.dto'
+import { UpdateNavigationAttendanceDto } from '../dtos/navigation.dto'
+import { INavigationAttendance } from '../navigation.interface'
 import { convertToSlug, throwAppException } from 'src/common/utils'
 import { paginate } from 'src/common/pagination'
 import { ErrorCode } from '@enums/error-codes.enum'
 @Injectable()
-export class NavigationParentService {
+export class NavigationParentAttendanceService {
   constructor(
-    @InjectRepository(NavigationParent)
-    private navigationRepository: Repository<NavigationParent>,
+    @InjectRepository(NavigationParentAttendance)
+    private navigationRepository: Repository<NavigationParentAttendance>,
   ) {}
 
-  async findAll(filterNavigationDto: FilterNavigationDto, isAdmin: boolean): Promise<INavigation[]> {
+  async findAll(filterNavigationDto: FilterNavigationAttendanceDto, isAdmin: boolean): Promise<INavigationAttendance[]> {
     const { title } = filterNavigationDto
     const queryBuilder = this.navigationRepository.createQueryBuilder('navigation').leftJoinAndSelect('navigation.subNavigations', 'subNavigations')
     if (title) {
@@ -39,14 +39,20 @@ export class NavigationParentService {
       subNavigations: navigation.subNavigations
         .sort((a, b) => a.index - b.index)
         .map(sub => ({
-          ...sub,
+          id: sub.id,
+          index: sub.index,
+          slug: sub.slug,
+          title: sub.title,
+          // content: sub.content,
+          link: sub.link,
+          is_active: sub.is_active,
           navigationId: navigation.id,
         })),
     }))
     return navigationsWithSubNavigations
   }
 
-  async findOne(id: number, isAdmin: boolean): Promise<INavigation> {
+  async findOne(id: number, isAdmin: boolean): Promise<INavigationAttendance> {
     const queryBuilder = this.navigationRepository
       .createQueryBuilder('navigation')
       .leftJoinAndSelect('navigation.subNavigations', 'subNavigations')
@@ -57,7 +63,7 @@ export class NavigationParentService {
     const navigation = await queryBuilder.getOne()
 
     if (!navigation) {
-      throwAppException('NAVIGATION_NOT_FOUND', ErrorCode.NAVIGATION_NOT_FOUND)
+      throwAppException('NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.NAVIGATION_ATTENDANCE_NOT_FOUND)
     }
     const navigationWithSubNavigations = {
       ...navigation,
@@ -67,15 +73,15 @@ export class NavigationParentService {
           ...sub,
           navigationId: navigation.id,
         })),
-    } as INavigation
+    } as INavigationAttendance
     return navigationWithSubNavigations
   }
 
-  async create(createNavigationDto: CreateNavigationDto): Promise<INavigation> {
-    const { title, link } = createNavigationDto
+  async create(createNavigationDto: CreateNavigationAttendanceDto): Promise<INavigationAttendance> {
+    const { title, link, content } = createNavigationDto
     const navigation = await this.navigationRepository.createQueryBuilder('navigation').select('MAX(navigation.`index`) as maxIndex').getRawOne()
 
-    let maxIndex = 1.0001
+    let maxIndex = 1.001
     if (navigation?.maxIndex) {
       maxIndex = navigation.maxIndex + 100
     }
@@ -83,27 +89,28 @@ export class NavigationParentService {
 
     const existingNavigation = await this.navigationRepository.findOne({ where: { title } })
     if (existingNavigation) {
-      throwAppException('NAVIGATION_ALREADY_EXISTS', ErrorCode.NAVIGATION_ALREADY_EXISTS)
+      throwAppException('NAVIGATION_ATTENDANCE_ALREADY_EXISTS', ErrorCode.NAVIGATION_ATTENDANCE_ALREADY_EXISTS)
     }
 
     const newNavigation = {
       title,
       link,
+      content,
       index: maxIndex,
       slug: convertToSlug(title),
       is_active: true,
-    } as INavigation
+    } as INavigationAttendance
 
     return this.navigationRepository.save(newNavigation)
   }
 
-  async update(id: number, updateNavigationDto: UpdateNavigationDto): Promise<INavigation> {
+  async update(id: number, updateNavigationDto: UpdateNavigationAttendanceDto): Promise<INavigationAttendance> {
     const navigation = await this.findOne(id, true)
     Object.assign(navigation, { ...updateNavigationDto, slug: convertToSlug(updateNavigationDto.title) })
     return this.navigationRepository.save(navigation)
   }
 
-  async updateIndex(id: number, index: number): Promise<INavigation> {
+  async updateIndex(id: number, index: number): Promise<INavigationAttendance> {
     const navigation = await this.findOne(id, true)
     navigation.index = index
     return this.navigationRepository.save(navigation)
@@ -118,7 +125,7 @@ export class NavigationParentService {
   async remove(id: number): Promise<void> {
     const navigation = await this.navigationRepository.findOne({ where: { id } })
     if (!navigation) {
-      throwAppException('NAVIGATION_NOT_FOUND', ErrorCode.NAVIGATION_NOT_FOUND)
+      throwAppException('NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.NAVIGATION_ATTENDANCE_NOT_FOUND)
     }
     await this.navigationRepository.delete(id)
   }

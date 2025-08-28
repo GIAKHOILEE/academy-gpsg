@@ -1,24 +1,24 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { NavigationSub } from './navigation-sub.entity'
-import { CreateSubNavigationDto } from '../dtos/sub-navigation.dto'
-import { UpdateSubNavigationDto } from '../dtos/sub-navigation.dto'
-import { INavigation, ISubNavigation } from '../navigation.interface'
-import { NavigationParentService } from '../navigation-parent/navigation-parent.service'
-import { FilterSubNavigationDto } from '../dtos/sub-navigation.dto'
+import { NavigationSubAttendance } from './navigation-sub.entity'
+import { CreateSubNavigationAttendanceDto } from '../dtos/sub-navigation.dto'
+import { UpdateSubNavigationAttendanceDto } from '../dtos/sub-navigation.dto'
+import { INavigationAttendance, ISubNavigationAttendance } from '../navigation.interface'
+import { NavigationParentAttendanceService } from '../navigation-parent/navigation-parent.service'
+import { FilterSubNavigationAttendanceDto } from '../dtos/sub-navigation.dto'
 import { convertToSlug, throwAppException } from 'src/common/utils'
-import { NavigationParent } from '../navigation-parent/navigation-parent.entity'
+import { NavigationParentAttendance } from '../navigation-parent/navigation-parent.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
 @Injectable()
-export class NavigationSubService {
+export class NavigationSubAttendanceService {
   constructor(
-    @InjectRepository(NavigationSub)
-    private subNavigationRepository: Repository<NavigationSub>,
-    private navigationService: NavigationParentService,
+    @InjectRepository(NavigationSubAttendance)
+    private subNavigationRepository: Repository<NavigationSubAttendance>,
+    private navigationService: NavigationParentAttendanceService,
   ) {}
 
-  async findAll(filterSubNavigationDto: FilterSubNavigationDto, isAdmin: boolean): Promise<ISubNavigation[]> {
+  async findAll(filterSubNavigationDto: FilterSubNavigationAttendanceDto, isAdmin: boolean): Promise<ISubNavigationAttendance[]> {
     const { title } = filterSubNavigationDto
     const queryBuilder = this.subNavigationRepository.createQueryBuilder('sub_navigation')
     if (title) {
@@ -29,12 +29,18 @@ export class NavigationSubService {
     }
     const subNavigations = await queryBuilder.getMany()
     return subNavigations.map(sub => ({
-      ...sub,
+      id: sub.id,
+      index: sub.index,
+      slug: sub.slug,
+      title: sub.title,
+      // content: sub.content,
+      link: sub.link,
+      is_active: sub.is_active,
       // navigationId: sub.navigation.id,
     }))
   }
 
-  async findOne(id: number): Promise<ISubNavigation> {
+  async findOne(id: number): Promise<ISubNavigationAttendance> {
     const subNavigation = await this.subNavigationRepository
       .createQueryBuilder('sub_navigation')
       .leftJoin('sub_navigation.navigation', 'navigation')
@@ -43,6 +49,7 @@ export class NavigationSubService {
         'sub_navigation.index',
         'sub_navigation.slug',
         'sub_navigation.title',
+        'sub_navigation.content',
         'sub_navigation.link',
         'sub_navigation.is_active',
         'navigation.id',
@@ -51,21 +58,22 @@ export class NavigationSubService {
       .orderBy('sub_navigation.index', 'ASC')
       .getOne()
     if (!subNavigation) {
-      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
+      throwAppException('SUB_NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.SUB_NAVIGATION_ATTENDANCE_NOT_FOUND)
     }
     return {
       id: subNavigation.id,
       index: subNavigation.index,
       slug: subNavigation.slug,
       title: subNavigation.title,
+      content: subNavigation.content,
       link: subNavigation.link,
       is_active: subNavigation.is_active,
       navigationId: subNavigation.navigation.id,
     }
   }
 
-  async create(createSubNavigationDto: CreateSubNavigationDto): Promise<ISubNavigation> {
-    const { title, navigationId } = createSubNavigationDto
+  async create(createSubNavigationDto: CreateSubNavigationAttendanceDto): Promise<ISubNavigationAttendance> {
+    const { title, navigationId, content } = createSubNavigationDto
     const subNavigation = await this.subNavigationRepository
       .createQueryBuilder('sub_navigation')
       .select('MAX(sub_navigation.`index`) as maxIndex')
@@ -77,14 +85,15 @@ export class NavigationSubService {
     }
     const navigation = await this.navigationService.findOne(navigationId, true)
     if (!navigation) {
-      throwAppException('NAVIGATION_NOT_FOUND', ErrorCode.NAVIGATION_NOT_FOUND)
+      throwAppException('NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.NAVIGATION_ATTENDANCE_NOT_FOUND)
     }
     const existingSubNavigation = await this.subNavigationRepository.findOne({ where: { title } })
     if (existingSubNavigation) {
-      throwAppException('SUB_NAVIGATION_ALREADY_EXISTS', ErrorCode.SUB_NAVIGATION_ALREADY_EXISTS)
+      throwAppException('SUB_NAVIGATION_ATTENDANCE_ALREADY_EXISTS', ErrorCode.SUB_NAVIGATION_ATTENDANCE_ALREADY_EXISTS)
     }
     const newSubNavigation = this.subNavigationRepository.create({
       ...createSubNavigationDto,
+      content,
       index: maxIndex,
       slug: convertToSlug(title),
       is_active: true,
@@ -97,22 +106,22 @@ export class NavigationSubService {
     }
   }
 
-  async update(id: number, updateSubNavigationDto: UpdateSubNavigationDto): Promise<void> {
+  async update(id: number, updateSubNavigationDto: UpdateSubNavigationAttendanceDto): Promise<void> {
     const { navigationId, ...rest } = updateSubNavigationDto
     const subNavigation = await this.subNavigationRepository.findOne({ where: { id } })
     if (!subNavigation) {
-      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
+      throwAppException('SUB_NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.SUB_NAVIGATION_ATTENDANCE_NOT_FOUND)
     }
-    let navigation: INavigation = subNavigation.navigation as unknown as INavigation
+    let navigation: INavigationAttendance = subNavigation.navigation as unknown as INavigationAttendance
     if (navigationId) {
       navigation = await this.navigationService.findOne(navigationId, true)
       if (!navigation) {
-        throwAppException('NAVIGATION_NOT_FOUND', ErrorCode.NAVIGATION_NOT_FOUND)
+        throwAppException('NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.NAVIGATION_ATTENDANCE_NOT_FOUND)
       }
     }
     Object.assign(subNavigation, { slug: convertToSlug(rest.title), ...rest })
     if (navigationId) {
-      subNavigation.navigation = navigation as unknown as NavigationParent
+      subNavigation.navigation = navigation as unknown as NavigationParentAttendance
     }
 
     await this.subNavigationRepository.save(subNavigation)
@@ -121,7 +130,7 @@ export class NavigationSubService {
   async updateIndex(id: number, index: number): Promise<void> {
     const subNavigation = await this.findOne(id)
     if (!subNavigation) {
-      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
+      throwAppException('SUB_NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.SUB_NAVIGATION_ATTENDANCE_NOT_FOUND)
     }
     await this.subNavigationRepository.update(id, { index })
   }
@@ -129,7 +138,7 @@ export class NavigationSubService {
   async updateActive(id: number): Promise<void> {
     const subNavigation = await this.findOne(id)
     if (!subNavigation) {
-      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
+      throwAppException('SUB_NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.SUB_NAVIGATION_ATTENDANCE_NOT_FOUND)
     }
     await this.subNavigationRepository.update(id, { is_active: !subNavigation.is_active })
   }
@@ -137,7 +146,7 @@ export class NavigationSubService {
   async remove(id: number): Promise<void> {
     const subNavigation = await this.subNavigationRepository.findOne({ where: { id } })
     if (!subNavigation) {
-      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
+      throwAppException('SUB_NAVIGATION_ATTENDANCE_NOT_FOUND', ErrorCode.SUB_NAVIGATION_ATTENDANCE_NOT_FOUND)
     }
     await this.subNavigationRepository.delete(id)
   }

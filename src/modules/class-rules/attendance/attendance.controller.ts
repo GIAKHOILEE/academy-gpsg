@@ -14,17 +14,6 @@ import { Role } from '@enums/role.enum'
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Điểm danh' })
-  async createAttendance(@Body() createAttendanceDto: CreateAttendanceDto): Promise<ResponseDto> {
-    const attendance = await this.attendanceService.createAttendance(createAttendanceDto)
-    return new ResponseDto({
-      statusCode: HttpStatus.OK,
-      messageCode: 'ATTENDANCE_CREATED_SUCCESSFULLY',
-      data: attendance,
-    })
-  }
-
   @Get('class/:class_id')
   @ApiOperation({ summary: 'Lấy lịch sử điểm danh' })
   async getAttendanceReport(@Param('class_id') class_id: number): Promise<ResponseDto> {
@@ -43,6 +32,17 @@ export class AttendanceController {
 @Controller('attendance')
 export class UserAttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Điểm danh' })
+  async createAttendance(@Body() createAttendanceDto: CreateAttendanceDto): Promise<ResponseDto> {
+    const attendance = await this.attendanceService.createAttendance(createAttendanceDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'ATTENDANCE_CREATED_SUCCESSFULLY',
+      data: attendance,
+    })
+  }
 
   @Get('class/:class_id')
   @ApiOperation({ summary: 'Lấy lịch sử điểm danh' })

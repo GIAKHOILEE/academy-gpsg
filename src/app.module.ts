@@ -39,6 +39,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core'
 import { AttendanceRuleModule } from './modules/class-rules/attendance-rule/attendance-rule..module'
 import { AttendanceModule } from './modules/class-rules/attendance/attendance.module'
+import { NavigationAttendanceModule } from './modules/navigation-attendance/navigation.module'
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { AttendanceModule } from './modules/class-rules/attendance/attendance.mo
     BannerModule,
     PostCatalogModule,
     PostModule,
+    NavigationAttendanceModule,
     NavigationModule,
     VoucherModule,
     AttendanceRuleModule,
