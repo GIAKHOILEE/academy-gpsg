@@ -9,9 +9,10 @@ import { Semester } from './_semester/semester.entity'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { ClassStudents } from './class-students/class-student.entity'
 import { Student } from '@modules/students/students.entity'
+import { Enrollments } from '@modules/enrollments/enrollments.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Classes, Subject, Teacher, Semester, Scholastic, ClassStudents, Student])],
+  imports: [TypeOrmModule.forFeature([Classes, Subject, Teacher, Semester, Scholastic, ClassStudents, Student, Enrollments])],
   controllers: [AdminClassController, UserClassController, StudentClassController],
   providers: [ClassService],
 })

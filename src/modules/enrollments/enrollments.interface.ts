@@ -34,4 +34,5 @@ export interface IEnrollments {
   deanery?: string
   diocese?: string
   congregation?: string
+  avatar?: string
 }

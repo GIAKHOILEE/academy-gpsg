@@ -5,7 +5,7 @@ import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { Semester } from './_semester/semester.entity'
 import { Classes } from './class.entity'
@@ -18,6 +18,7 @@ import { ClassStudents } from './class-students/class-student.entity'
 import { ClassStatus } from '@enums/class.enum'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { Student } from '@modules/students/students.entity'
+import { Enrollments } from '@modules/enrollments/enrollments.entity'
 
 @Injectable()
 export class ClassService {
@@ -36,6 +37,8 @@ export class ClassService {
     private classStudentsRepository: Repository<ClassStudents>,
     @InjectRepository(Student)
     private studentRepository: Repository<Student>,
+    @InjectRepository(Enrollments)
+    private enrollmentRepository: Repository<Enrollments>,
   ) {}
 
   async createClass(createClassDto: CreateClassDto): Promise<IClasses> {
@@ -210,6 +213,15 @@ export class ClassService {
   async deleteClass(id: number): Promise<void> {
     const existingClass = await this.classRepository.exists({ where: { id } })
     if (!existingClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const hasEnrollment = await this.enrollmentRepository
+      .createQueryBuilder('enrollment')
+      .where('JSON_CONTAINS(enrollment.class_ids, :id)', { id: JSON.stringify(id) })
+      .getExists()
+
+    if (hasEnrollment) {
+      throwAppException('CLASS_HAS_ENROLLMENTS', ErrorCode.CLASS_HAS_ENROLLMENTS, HttpStatus.BAD_REQUEST)
+    }
 
     await this.classRepository.delete(id)
   }
