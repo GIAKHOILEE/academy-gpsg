@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { StudentsService } from './students.service'
-import { CreateStudentCardCodeDto, CreateStudentsDto } from './dtos/create-students.dto'
+import { CreateStudentsDto } from './dtos/create-students.dto'
 import { ResponseDto } from '@common/response.dto'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { PaginateStudentsDto } from './dtos/paginate-students.dto'
-import { UpdateStudentCardCodeDto, UpdateStudentsDto } from './dtos/update-students.dto'
+import { UpdateStudentsDto } from './dtos/update-students.dto'
 
 @ApiBearerAuth()
 @Auth(Role.ADMIN, Role.STAFF)
