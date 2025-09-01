@@ -69,7 +69,6 @@ export class EnrollmentsService {
     await queryRunner.connect()
     await queryRunner.startTransaction()
     try {
-      const classRepo = queryRunner.manager.getRepository(Classes)
       const { class_ids } = createEnrollmentDto
       // check student
       // có studentId là có đăng nhập, không có studentId là không đăng nhập
@@ -489,7 +488,7 @@ export class EnrollmentsService {
       let subject = ''
       let pdfTemplate = ''
       let pdfFilename = ''
-      let pdfData: any = {
+      const pdfData: any = {
         logo,
         background,
         stamp,

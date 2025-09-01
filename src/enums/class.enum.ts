@@ -31,3 +31,29 @@ export enum StatusEnrollment {
   PAY_LATE = 3, // thanh toán sau
   DEBT = 4, // nợ học phí
 }
+
+// Quy tắc đánh giá
+export enum RuleType {
+  ATTENDANCE_PERCENTAGE = 1,
+  TEACHER_EVALUATION = 2,
+  SCORE_BASED = 3,
+}
+
+// Trạng thái điểm danh
+export enum AttendanceStatus {
+  PRESENT = 1, // Có mặt
+  ABSENT = 2, // Vắng
+  LATE = 3, // Đi trễ
+}
+
+export enum TeacherEvaluationStatus {
+  PASS = 1,
+  FAIL = 2,
+}
+
+export enum AttendanceRuleType {
+  REGULAR = 1, // học bình thường
+  MAKEUP = 2, // học bù
+  EXAM = 3, // thi
+  OFF = 4, // nghỉ
+}

@@ -230,3 +230,9 @@ export function arrayToObject(array: any[], key: string): any {
     return acc
   }, {})
 }
+
+// helper: chuyển "HH:mm" => phút trong ngày
+export function toMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}

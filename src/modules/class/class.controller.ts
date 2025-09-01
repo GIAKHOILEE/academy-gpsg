@@ -1,4 +1,3 @@
-import { PaginationDto } from '@common/pagination'
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
@@ -6,7 +5,7 @@ import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Que
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ClassService } from './class.service'
 import { CreateClassDto } from './dtos/create-class.dto'
-import { GetStudentsOfClassDto, PaginateClassDto } from './dtos/paginate-class.dto'
+import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
 
 @ApiTags('Admin Classes')
@@ -150,7 +149,7 @@ export class StudentClassController {
 
   @Get()
   @ApiOperation({ summary: 'Get all classes of student' })
-  async getClassesOfStudent(@Request() req, @Query() paginateClassDto: PaginationDto): Promise<ResponseDto> {
+  async getClassesOfStudent(@Request() req, @Query() paginateClassDto: PaginateClassOfStudentDto): Promise<ResponseDto> {
     const classes = await this.classService.getClassesOfStudent(req.user.userId, paginateClassDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
@@ -161,7 +160,7 @@ export class StudentClassController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a class by id' })
+  @ApiOperation({ summary: 'Get students of a class by class id' })
   @ApiParam({ name: 'id', type: Number, description: 'The id of the class to get students' })
   async studentGetStudentsOfClass(@Param('id') id: number, @Query() getStudentsOfClassDto: GetStudentsOfClassDto): Promise<ResponseDto> {
     const students = await this.classService.studentGetStudentsOfClass(id, getStudentsOfClassDto)

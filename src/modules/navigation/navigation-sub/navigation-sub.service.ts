@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { NavigationSub } from './navigation-sub.entity'
@@ -7,8 +7,9 @@ import { UpdateSubNavigationDto } from '../dtos/sub-navigation.dto'
 import { INavigation, ISubNavigation } from '../navigation.interface'
 import { NavigationParentService } from '../navigation-parent/navigation-parent.service'
 import { FilterSubNavigationDto } from '../dtos/sub-navigation.dto'
-import { convertToSlug } from 'src/common/utils'
+import { convertToSlug, throwAppException } from 'src/common/utils'
 import { NavigationParent } from '../navigation-parent/navigation-parent.entity'
+import { ErrorCode } from '@enums/error-codes.enum'
 @Injectable()
 export class NavigationSubService {
   constructor(
@@ -50,7 +51,7 @@ export class NavigationSubService {
       .orderBy('sub_navigation.index', 'ASC')
       .getOne()
     if (!subNavigation) {
-      throw new NotFoundException(`SubNavigation with ID ${id} not found`)
+      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
     }
     return {
       id: subNavigation.id,
@@ -76,11 +77,11 @@ export class NavigationSubService {
     }
     const navigation = await this.navigationService.findOne(navigationId, true)
     if (!navigation) {
-      throw new NotFoundException(`Navigation with ID ${navigationId} not found`)
+      throwAppException('NAVIGATION_NOT_FOUND', ErrorCode.NAVIGATION_NOT_FOUND)
     }
     const existingSubNavigation = await this.subNavigationRepository.findOne({ where: { title } })
     if (existingSubNavigation) {
-      throw new BadRequestException('SubNavigation already exists')
+      throwAppException('SUB_NAVIGATION_ALREADY_EXISTS', ErrorCode.SUB_NAVIGATION_ALREADY_EXISTS)
     }
     const newSubNavigation = this.subNavigationRepository.create({
       ...createSubNavigationDto,
@@ -100,13 +101,13 @@ export class NavigationSubService {
     const { navigationId, ...rest } = updateSubNavigationDto
     const subNavigation = await this.subNavigationRepository.findOne({ where: { id } })
     if (!subNavigation) {
-      throw new NotFoundException(`SubNavigation with ID ${id} not found`)
+      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
     }
     let navigation: INavigation = subNavigation.navigation as unknown as INavigation
     if (navigationId) {
       navigation = await this.navigationService.findOne(navigationId, true)
       if (!navigation) {
-        throw new NotFoundException(`Navigation with ID ${navigationId} not found`)
+        throwAppException('NAVIGATION_NOT_FOUND', ErrorCode.NAVIGATION_NOT_FOUND)
       }
     }
     Object.assign(subNavigation, { slug: convertToSlug(rest.title), ...rest })
@@ -120,7 +121,7 @@ export class NavigationSubService {
   async updateIndex(id: number, index: number): Promise<void> {
     const subNavigation = await this.findOne(id)
     if (!subNavigation) {
-      throw new NotFoundException(`SubNavigation with ID ${id} not found`)
+      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
     }
     await this.subNavigationRepository.update(id, { index })
   }
@@ -128,7 +129,7 @@ export class NavigationSubService {
   async updateActive(id: number): Promise<void> {
     const subNavigation = await this.findOne(id)
     if (!subNavigation) {
-      throw new NotFoundException(`SubNavigation with ID ${id} not found`)
+      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
     }
     await this.subNavigationRepository.update(id, { is_active: !subNavigation.is_active })
   }
@@ -136,7 +137,7 @@ export class NavigationSubService {
   async remove(id: number): Promise<void> {
     const subNavigation = await this.subNavigationRepository.findOne({ where: { id } })
     if (!subNavigation) {
-      throw new BadRequestException('SubNavigation not found')
+      throwAppException('SUB_NAVIGATION_NOT_FOUND', ErrorCode.SUB_NAVIGATION_NOT_FOUND)
     }
     await this.subNavigationRepository.delete(id)
   }

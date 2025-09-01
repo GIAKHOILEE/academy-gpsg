@@ -67,7 +67,7 @@ export class PostService {
     return formatPost
   }
 
-  async getManyPost(params: PaginatePostDto, isAdmin: boolean, type: PostCatalogType): Promise<any> {
+  async getManyPost(params: PaginatePostDto, isAdmin: boolean, type: PostCatalogType, isKiot: boolean): Promise<any> {
     const { is_banner, ...paginationParams } = params
     const queryBuilder = this.postRepository
       .createQueryBuilder('post')
@@ -85,10 +85,8 @@ export class PostService {
         'post_catalog.slug',
       ])
 
-    if (type) {
-      queryBuilder.andWhere('post_catalog.type = :type', { type: type })
-    } else {
-      queryBuilder.andWhere('post.post_catalog IS NULL')
+    if (isKiot) {
+      queryBuilder.andWhere('post.is_kiot = :is_kiot', { is_kiot: true })
     }
 
     if (type) {
@@ -284,5 +282,44 @@ export class PostService {
         totalPages: Math.ceil(total / limit),
       },
     }
+  }
+
+  /*===========================================
+  ================= KIOT ======================
+  ============================================*/
+  async createKiotPost(createKiotPostDto: CreatePostDto): Promise<IPost> {
+    const { title, content, image, description } = createKiotPostDto
+
+    const slug = convertToSlug(title)
+
+    const post = this.postRepository.create({
+      title,
+      slug,
+      content,
+      image,
+      is_active: true,
+      is_banner: false,
+      is_kiot: true,
+      description,
+    })
+
+    const savedPost = await this.postRepository.save(post)
+    const formatPost = {
+      id: savedPost.id,
+      title: savedPost.title,
+      slug: savedPost.slug,
+      image: savedPost.image,
+      is_active: savedPost.is_active,
+      content: savedPost.content,
+      description: savedPost.description,
+      post_catalog: savedPost.post_catalog
+        ? {
+            id: savedPost.post_catalog.id,
+            name: savedPost.post_catalog.name,
+            slug: savedPost.post_catalog.slug,
+          }
+        : null,
+    }
+    return formatPost
   }
 }

@@ -11,6 +11,8 @@ import { Voucher } from './voucher.entity'
 import { IVoucher } from './voucher.interface'
 import { Student } from '@modules/students/students.entity'
 import { IStudent } from '@modules/students/students.interface'
+import { IEnrollments } from '@modules/enrollments/enrollments.interface'
+import { Enrollments } from '@modules/enrollments/enrollments.entity'
 @Injectable()
 export class VoucherService {
   constructor(
@@ -18,6 +20,8 @@ export class VoucherService {
     private readonly voucherRepository: Repository<Voucher>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Enrollments)
+    private readonly enrollmentRepository: Repository<Enrollments>,
   ) {}
 
   async createVoucher(createVoucherDto: CreateVoucherDto): Promise<IVoucher> {
@@ -120,7 +124,6 @@ export class VoucherService {
         .where('student.id = :id', { id: voucher.student_id })
         .getRawOne()
     }
-    console.log(student)
 
     const formattedVoucher: IVoucher = {
       id: voucher.id,
@@ -144,8 +147,11 @@ export class VoucherService {
     const query = this.voucherRepository.createQueryBuilder('voucher')
 
     const { data, meta } = await paginate(query, paginateVoucherDto)
-    const studentIds = data.map(voucher => voucher.student_id)
+    const studentIds = data.filter(v => v.student_id).map(v => v.student_id)
+    const enrollmentIds = data.filter(v => !v.student_id && v.enrollment_id).map(v => v.enrollment_id)
     let students: IStudent[] = []
+    let enrollments: IEnrollments[] = []
+
     if (studentIds.length > 0) {
       students = await this.studentRepository
         .createQueryBuilder('student')
@@ -155,22 +161,44 @@ export class VoucherService {
         .getMany()
     }
 
-    const arraytoObjectStudent = arrayToObject(students, 'id')
+    if (enrollmentIds.length > 0) {
+      enrollments = await this.enrollmentRepository
+        .createQueryBuilder('enrollments')
+        .select(['enrollments.id', 'enrollments.full_name', 'enrollments.saint_name'])
+        .where('enrollments.id IN (:...enrollmentIds)', { enrollmentIds })
+        .withDeleted()
+        .getMany()
+    }
 
-    const formattedData: IVoucher[] = data.map((voucher: Voucher) => ({
-      id: voucher.id,
-      code: voucher.code,
-      name: voucher.name,
-      type: voucher.type,
-      discount: voucher.discount,
-      student_id: voucher?.student_id,
-      full_name: arraytoObjectStudent[voucher.student_id]?.user?.full_name,
-      saint_name: arraytoObjectStudent[voucher.student_id]?.user?.saint_name,
-      enrollment_id: voucher?.enrollment_id,
-      actual_discount: voucher?.actual_discount,
-      is_used: voucher?.is_used,
-      use_at: voucher?.use_at,
-    }))
+    const arrayToObjectStudent = arrayToObject(students, 'id')
+    const arrayToObjectEnrollment = arrayToObject(enrollments, 'id')
+    const formattedData: IVoucher[] = data.map((voucher: Voucher) => {
+      let full_name: string | null = null
+      let saint_name: string | null = null
+
+      if (voucher.student_id) {
+        full_name = arrayToObjectStudent[voucher.student_id]?.user?.full_name ?? null
+        saint_name = arrayToObjectStudent[voucher.student_id]?.user?.saint_name ?? null
+      } else if (voucher.enrollment_id) {
+        full_name = arrayToObjectEnrollment[voucher.enrollment_id]?.full_name ?? null
+        saint_name = arrayToObjectEnrollment[voucher.enrollment_id]?.saint_name ?? null
+      }
+
+      return {
+        id: voucher.id,
+        code: voucher.code,
+        name: voucher.name,
+        type: voucher.type,
+        discount: voucher.discount,
+        student_id: voucher?.student_id,
+        enrollment_id: voucher?.enrollment_id,
+        full_name,
+        saint_name,
+        actual_discount: voucher?.actual_discount,
+        is_used: voucher?.is_used,
+        use_at: voucher?.use_at,
+      }
+    })
 
     return { data: formattedData, meta }
   }

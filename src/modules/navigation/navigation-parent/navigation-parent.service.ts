@@ -1,12 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { NavigationParent } from './navigation-parent.entity'
 import { CreateNavigationDto, FilterNavigationDto } from '../dtos/navigation.dto'
 import { UpdateNavigationDto } from '../dtos/navigation.dto'
 import { INavigation } from '../navigation.interface'
-import { convertToSlug } from 'src/common/utils'
+import { convertToSlug, throwAppException } from 'src/common/utils'
 import { paginate } from 'src/common/pagination'
+import { ErrorCode } from '@enums/error-codes.enum'
 @Injectable()
 export class NavigationParentService {
   constructor(
@@ -56,7 +57,7 @@ export class NavigationParentService {
     const navigation = await queryBuilder.getOne()
 
     if (!navigation) {
-      throw new NotFoundException(`Navigation with ID ${id} not found`)
+      throwAppException('NAVIGATION_NOT_FOUND', ErrorCode.NAVIGATION_NOT_FOUND)
     }
     const navigationWithSubNavigations = {
       ...navigation,
@@ -82,7 +83,7 @@ export class NavigationParentService {
 
     const existingNavigation = await this.navigationRepository.findOne({ where: { title } })
     if (existingNavigation) {
-      throw new BadRequestException('Navigation already exists')
+      throwAppException('NAVIGATION_ALREADY_EXISTS', ErrorCode.NAVIGATION_ALREADY_EXISTS)
     }
 
     const newNavigation = {
@@ -117,7 +118,7 @@ export class NavigationParentService {
   async remove(id: number): Promise<void> {
     const navigation = await this.navigationRepository.findOne({ where: { id } })
     if (!navigation) {
-      throw new BadRequestException('Navigation not found')
+      throwAppException('NAVIGATION_NOT_FOUND', ErrorCode.NAVIGATION_NOT_FOUND)
     }
     await this.navigationRepository.delete(id)
   }

@@ -15,6 +15,28 @@ import { UpdateStudentsDto } from './dtos/update-students.dto'
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 
+  // @Post('card-code')
+  // @ApiOperation({ summary: 'Tạo mã thẻ học viên' })
+  // async createStudentCardCode(@Body() createStudentCardCodeDto: CreateStudentCardCodeDto): Promise<ResponseDto> {
+  //   const data = await this.studentsService.createStudentCardCode(createStudentCardCodeDto)
+  //   return {
+  //     statusCode: 201,
+  //     messageCode: 'STUDENT_CARD_CODE_CREATE_SUCCESS',
+  //     data,
+  //   }
+  // }
+
+  // @Put('card-code')
+  // @ApiOperation({ summary: 'Cập nhật mã thẻ học viên' })
+  // async updateStudentCardCode(@Body() updateStudentCardCodeDto: UpdateStudentCardCodeDto): Promise<ResponseDto> {
+  //   const data = await this.studentsService.updateStudentCardCode(updateStudentCardCodeDto)
+  //   return {
+  //     statusCode: 200,
+  //     messageCode: 'STUDENT_CARD_CODE_UPDATE_SUCCESS',
+  //     data,
+  //   }
+  // }
+
   @Post()
   @ApiOperation({ summary: 'password: nếu không có mặc định là mã học viên' })
   async createStudent(@Body() createStudentDto: CreateStudentsDto): Promise<ResponseDto> {

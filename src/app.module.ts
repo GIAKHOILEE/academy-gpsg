@@ -37,6 +37,10 @@ import { NavigationModule } from '@modules/navigation/navigation.module'
 import { VoucherModule } from '@modules/voucher/voucher.module'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core'
+import { AttendanceRuleModule } from './modules/class-rules/attendance-rule/attendance-rule..module'
+import { AttendanceModule } from './modules/class-rules/attendance/attendance.module'
+import { NavigationAttendanceModule } from './modules/navigation-attendance/navigation.module'
+
 
 @Module({
   imports: [
@@ -73,8 +77,11 @@ import { APP_GUARD } from '@nestjs/core'
     BannerModule,
     PostCatalogModule,
     PostModule,
+    NavigationAttendanceModule,
     NavigationModule,
     VoucherModule,
+    AttendanceRuleModule,
+    AttendanceModule,
   ],
   providers: [
     AppService,
@@ -84,6 +91,7 @@ import { APP_GUARD } from '@nestjs/core'
       useClass: ThrottlerGuard,
     },
   ],
+
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
