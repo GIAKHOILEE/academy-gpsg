@@ -626,4 +626,15 @@ export class ClassService {
       }
     }
   }
+
+  // cronjob đầu ngày opening_day chuyển status qua HAS_BEGUN
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async cronjobUpdateOpeningClass(): Promise<void> {
+    const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.opening_day']).getMany()
+    for (const classEntity of classes) {
+      if (classEntity.opening_day < new Date().toISOString()) {
+        await this.classRepository.update(classEntity.id, { status: ClassStatus.HAS_BEGUN })
+      }
+    }
+  }
 }

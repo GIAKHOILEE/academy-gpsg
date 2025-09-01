@@ -27,6 +27,9 @@ export class Post {
   @Column({ default: true })
   is_banner: boolean
 
+  @Column({ default: false })
+  is_kiot: boolean
+
   @ManyToOne(() => PostCatalog, catalog => catalog.posts, { onUpdate: 'CASCADE', onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'post_catalog_id' })
   post_catalog: PostCatalog

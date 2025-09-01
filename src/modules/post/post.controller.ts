@@ -19,6 +19,18 @@ import { PostCatalogType } from '@enums/post.enum'
 export class PostControllerAdmin {
   constructor(private readonly postService: PostService) {}
   // ========================== BOTTOM ==========================
+
+  @Post('kiot')
+  @ApiOperation({ summary: 'Tạo bài viết kiot' })
+  async createKiotPost(@Body() createKiotPostDto: CreatePostDto): Promise<ResponseDto> {
+    const post = await this.postService.createKiotPost(createKiotPostDto)
+    return new ResponseDto({
+      statusCode: 201,
+      messageCode: 'CREATE_KIOT_POST_SUCCESS',
+      data: post,
+    })
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new post' })
   async create(@Body() createPostDto: CreatePostDto): Promise<ResponseDto> {
@@ -33,7 +45,7 @@ export class PostControllerAdmin {
   @Get()
   @ApiOperation({ summary: 'Get all posts' })
   async getAllPosts(@Query() query: PaginatePostDto): Promise<ResponseDto> {
-    const posts = await this.postService.getManyPost(query, true, PostCatalogType.BOTTOM)
+    const posts = await this.postService.getManyPost(query, true, PostCatalogType.BOTTOM, false)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_SUCCESS',
@@ -45,7 +57,7 @@ export class PostControllerAdmin {
   @Get('top')
   @ApiOperation({ summary: 'Get all posts top' })
   async getAllPostsTop(@Query() query: PaginatePostDto): Promise<ResponseDto> {
-    const posts = await this.postService.getManyPost(query, true, PostCatalogType.TOP)
+    const posts = await this.postService.getManyPost(query, true, PostCatalogType.TOP, false)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_TOP_SUCCESS',
@@ -57,10 +69,22 @@ export class PostControllerAdmin {
   @Get('private')
   @ApiOperation({ summary: 'Get all posts private' })
   async getAllPostsPrivate(@Query() query: PaginatePostDto): Promise<ResponseDto> {
-    const posts = await this.postService.getManyPost(query, true, null)
+    const posts = await this.postService.getManyPost(query, true, null, false)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_PRIVATE_SUCCESS',
+      data: posts.data,
+      meta: posts.meta,
+    })
+  }
+
+  @Get('kiot')
+  @ApiOperation({ summary: 'Get all kiot posts' })
+  async getAllKiotPosts(@Query() query: PaginatePostDto): Promise<ResponseDto> {
+    const posts = await this.postService.getManyPost(query, true, null, true)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'GET_ALL_KIOT_POSTS_SUCCESS',
       data: posts.data,
       meta: posts.meta,
     })
@@ -128,7 +152,7 @@ export class PostControllerUser {
   @Get()
   @ApiOperation({ summary: 'Get all posts' })
   async getAllPostsByUser(@Query() query: PaginatePostDto): Promise<ResponseDto> {
-    const posts = await this.postService.getManyPost(query, false, PostCatalogType.BOTTOM)
+    const posts = await this.postService.getManyPost(query, false, PostCatalogType.BOTTOM, false)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_SUCCESS',
@@ -140,7 +164,7 @@ export class PostControllerUser {
   @Get('top')
   @ApiOperation({ summary: 'Get all posts top' })
   async getAllPostsTopByUser(@Query() query: PaginatePostDto): Promise<ResponseDto> {
-    const posts = await this.postService.getManyPost(query, false, PostCatalogType.TOP)
+    const posts = await this.postService.getManyPost(query, false, PostCatalogType.TOP, false)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_TOP_SUCCESS',
@@ -156,6 +180,18 @@ export class PostControllerUser {
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'GET_ALL_POSTS_SLICE_SUCCESS',
+      data: posts.data,
+      meta: posts.meta,
+    })
+  }
+
+  @Get('kiot')
+  @ApiOperation({ summary: 'Get all kiot posts' })
+  async getAllKiotPostsByUser(@Query() query: PaginatePostDto): Promise<ResponseDto> {
+    const posts = await this.postService.getManyPost(query, false, null, true)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'GET_ALL_KIOT_POSTS_SUCCESS',
       data: posts.data,
       meta: posts.meta,
     })
