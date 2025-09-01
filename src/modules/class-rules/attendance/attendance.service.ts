@@ -98,7 +98,7 @@ export class AttendanceService {
     // 2. Lấy danh sách học viên trong lớp
     let classStudents = await this.classStudentsRepository
       .createQueryBuilder('class_student')
-      .select(['class_student.id', 'student.id', 'user.id', 'user.code', 'user.full_name'])
+      .select(['class_student.id', 'student.id', 'user.id', 'user.code', 'user.full_name', 'user.saint_name'])
       .leftJoin('class_student.student', 'student')
       .leftJoin('student.user', 'user')
       .where('class_student.class_id = :class_id', { class_id })
@@ -122,6 +122,7 @@ export class AttendanceService {
         student_id: cs.student.id,
         student_code: cs.student.user.code,
         student_name: cs.student.user.full_name,
+        student_saint_name: cs.student?.user?.saint_name,
         records: {},
         attendance_rate: 0,
       }

@@ -135,7 +135,6 @@ export class PostService {
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.post_catalog', 'post_catalog')
       .where('post.id = :id', { id })
-      .andWhere('post.is_kiot = :is_kiot', { is_kiot: false })
       .getOne()
 
     if (!post) {
