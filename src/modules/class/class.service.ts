@@ -83,6 +83,7 @@ export class ClassService {
     //     )
     //   }
     // }
+
     // ngày kết thúc lớp phải sau ngày khai giảng
     if (rest.closing_day && rest.opening_day) {
       if (new Date(rest.closing_day) < new Date(rest.opening_day)) {
@@ -180,6 +181,7 @@ export class ClassService {
     //     )
     //   }
     // }
+
 
     // ngày kết thúc lớp phải sau ngày khai giảng
     if (rest.closing_day && rest.opening_day) {
