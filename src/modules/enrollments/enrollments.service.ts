@@ -123,7 +123,7 @@ export class EnrollmentsService {
         .createQueryBuilder('class')
         .select(['class.id', 'class.name', 'class.price', 'class.status'])
         .where('class.id IN (:...class_ids)', { class_ids })
-        .andWhere('class.status = :status', { status: ClassStatus.ENROLLING })
+        // .andWhere('class.end_enrollment_day >= :today', { today: new Date().toISOString().split('T')[0] })
         .getMany()
       if (classEntities.length !== class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
