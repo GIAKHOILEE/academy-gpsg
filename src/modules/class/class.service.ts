@@ -74,15 +74,15 @@ export class ClassService {
     if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     // ngày khai giảng phải sau ngày kết thúc ghi danh
-    if (rest.opening_day && rest.end_enrollment_day) {
-      if (new Date(rest.opening_day) < new Date(rest.end_enrollment_day)) {
-        throwAppException(
-          'OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY',
-          ErrorCode.OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY,
-          HttpStatus.BAD_REQUEST,
-        )
-      }
-    }
+    // if (rest.opening_day && rest.end_enrollment_day) {
+    //   if (new Date(rest.opening_day) < new Date(rest.end_enrollment_day)) {
+    //     throwAppException(
+    //       'OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY',
+    //       ErrorCode.OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY,
+    //       HttpStatus.BAD_REQUEST,
+    //     )
+    //   }
+    // }
     // ngày kết thúc lớp phải sau ngày khai giảng
     if (rest.closing_day && rest.opening_day) {
       if (new Date(rest.closing_day) < new Date(rest.opening_day)) {
@@ -171,15 +171,16 @@ export class ClassService {
     }
 
     // ngày khai giảng phải sau ngày kết thúc ghi danh
-    if (rest.opening_day && rest.end_enrollment_day) {
-      if (new Date(rest.opening_day) < new Date(rest.end_enrollment_day)) {
-        throwAppException(
-          'OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY',
-          ErrorCode.OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY,
-          HttpStatus.BAD_REQUEST,
-        )
-      }
-    }
+    // if (rest.opening_day && rest.end_enrollment_day) {
+    //   if (new Date(rest.opening_day) < new Date(rest.end_enrollment_day)) {
+    //     throwAppException(
+    //       'OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY',
+    //       ErrorCode.OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY,
+    //       HttpStatus.BAD_REQUEST,
+    //     )
+    //   }
+    // }
+
     // ngày kết thúc lớp phải sau ngày khai giảng
     if (rest.closing_day && rest.opening_day) {
       if (new Date(rest.closing_day) < new Date(rest.opening_day)) {
@@ -303,7 +304,7 @@ export class ClassService {
   }
 
   async getAllClasses(paginateClassDto: PaginateClassDto, is_admin: boolean): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
-    const { subject_id, teacher_id, department_id, scholastic_id, semester_id, ...rest } = paginateClassDto
+    const { subject_id, teacher_id, department_id, scholastic_id, semester_id, is_register, ...rest } = paginateClassDto
 
     const query = this.classRepository
       .createQueryBuilder('classes')
@@ -334,6 +335,11 @@ export class ClassService {
       query.andWhere('subject.department_id = :department_id', { department_id })
     }
 
+    // filter lớp đang mở ghi danh end_enrollment_day theo thời gian so với hiện tại
+    const today = new Date().toISOString().split('T')[0]
+    if (is_register) {
+      query.andWhere('classes.end_enrollment_day >= :today', { today })
+    }
     if (!is_admin) {
       query.andWhere('classes.is_active = :is_active', { is_active: true })
     }
