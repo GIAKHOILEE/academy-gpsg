@@ -586,6 +586,7 @@ export class EnrollmentsService {
         'enrollment.class_ids',
         'student.id',
         'user.code',
+        'user.avatar',
       ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
@@ -663,6 +664,7 @@ export class EnrollmentsService {
       deanery: enrollment.deanery,
       diocese: enrollment.diocese,
       congregation: enrollment.congregation,
+      avatar: enrollment?.student?.user?.avatar ?? null,
     }
 
     return formatEnrollment

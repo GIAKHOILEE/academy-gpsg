@@ -2,7 +2,7 @@ import { PaginationDto } from '@common/pagination'
 import { ClassStatus } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class PaginateClassDto extends PaginationDto {
   @IsOptional()
@@ -50,6 +50,12 @@ export class PaginateClassDto extends PaginationDto {
   @IsNumber()
   @Type(() => Number)
   department_id: number
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo trạng thái đăng ký', example: true, type: Boolean })
+  @IsBoolean()
+  @Type(() => Boolean)
+  is_register: boolean
 }
 
 export class GetStudentsOfClassDto extends PaginationDto {
