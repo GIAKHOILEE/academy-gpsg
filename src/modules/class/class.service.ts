@@ -189,15 +189,19 @@ export class ClassService {
     }
 
     // so sánh các ngày với ngày hiên tại để chỉnh status
+    const openingDay = rest.opening_day ? new Date(rest.opening_day) : existingClass.opening_day
+    const endEnrollmentDay = rest.end_enrollment_day ? new Date(rest.end_enrollment_day) : existingClass.end_enrollment_day
+    const closingDay = rest.closing_day ? new Date(rest.closing_day) : existingClass.closing_day
+
     const today = new Date()
     let status = existingClass.status
-    if (rest.closing_day && new Date(rest.closing_day) < today) {
+    if (closingDay && closingDay < today) {
       status = ClassStatus.END_CLASS
     }
-    if (rest.opening_day && rest.end_enrollment_day && new Date(rest.opening_day) < today && new Date(rest.end_enrollment_day) > today) {
+    if (openingDay && endEnrollmentDay && openingDay < today && endEnrollmentDay > today) {
       status = ClassStatus.END_ENROLLING
     }
-    if (rest.closing_day && rest.opening_day && new Date(rest.closing_day) < today && new Date(rest.opening_day) > today) {
+    if (closingDay && openingDay && closingDay < today && openingDay > today) {
       status = ClassStatus.HAS_BEGUN
     }
 
