@@ -41,7 +41,6 @@ import { AttendanceRuleModule } from './modules/class-rules/attendance-rule/atte
 import { AttendanceModule } from './modules/class-rules/attendance/attendance.module'
 import { NavigationAttendanceModule } from './modules/navigation-attendance/navigation.module'
 
-
 @Module({
   imports: [
     ClsModule.forRoot({
@@ -91,7 +90,6 @@ import { NavigationAttendanceModule } from './modules/navigation-attendance/navi
       useClass: ThrottlerGuard,
     },
   ],
-
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
