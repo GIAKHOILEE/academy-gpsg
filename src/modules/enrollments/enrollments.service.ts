@@ -313,6 +313,39 @@ export class EnrollmentsService {
         // await enrollmentsRepo.update(id, { student_id: student.id })
       }
 
+      // lấy class_ids cũ và mới
+      const oldClassIds = enrollment.class_ids || []
+      const newClassIds = class_ids || oldClassIds
+      // update class_students khi đổi class_ids
+      if (status && status !== StatusEnrollment.PENDING) {
+        const removedClasses = oldClassIds.filter(id => !newClassIds.includes(id))
+        const addedClasses = newClassIds.filter(id => !oldClassIds.includes(id))
+        // Xoá student khỏi lớp bị bỏ
+        if (removedClasses.length > 0) {
+          await classStudentsRepo.delete({
+            student_id: enrollment.student_id,
+            class_id: In(removedClasses),
+          })
+        }
+
+        // Thêm student vào lớp mới (nếu chưa có)
+        if (addedClasses.length > 0) {
+          const existClassStudents = await classStudentsRepo.find({
+            where: { student_id: enrollment.student_id, class_id: In(addedClasses) },
+          })
+          const existIds = existClassStudents.map(cs => cs.class_id)
+          const toAdd = addedClasses.filter(id => !existIds.includes(id))
+          if (toAdd.length > 0) {
+            const classStudents = toAdd.map(class_id => ({
+              class_id,
+              student_id: enrollment.student_id,
+              ...rest,
+            }))
+            await classStudentsRepo.save(classStudents)
+          }
+        }
+      }
+
       // check class
       let totalFee = enrollment.total_fee
 
@@ -403,40 +436,6 @@ export class EnrollmentsService {
           enrollment.payment_status = PaymentStatus.PAID
         } else {
           enrollment.payment_status = PaymentStatus.UNPAID
-        }
-      }
-      // lấy class_ids cũ và mới
-      const oldClassIds = enrollment.class_ids || []
-      const newClassIds = class_ids || oldClassIds
-      // Nếu student không còn pending nữa → xử lý đổi lớp
-      if (status && status !== StatusEnrollment.PENDING) {
-        const removedClasses = oldClassIds.filter(id => !newClassIds.includes(id))
-        const addedClasses = newClassIds.filter(id => !oldClassIds.includes(id))
-
-        // Xoá student khỏi lớp bị bỏ
-        if (removedClasses.length > 0) {
-          await classStudentsRepo.delete({
-            student_id: enrollment.student_id,
-            class_id: In(removedClasses),
-          })
-        }
-
-        // Thêm student vào lớp mới (nếu chưa có)
-        if (addedClasses.length > 0) {
-          const existClassStudents = await classStudentsRepo.find({
-            where: { student_id: enrollment.student_id, class_id: In(addedClasses) },
-          })
-          const existIds = existClassStudents.map(cs => cs.class_id)
-          const toAdd = addedClasses.filter(id => !existIds.includes(id))
-
-          if (toAdd.length > 0) {
-            const classStudents = toAdd.map(class_id => ({
-              class_id,
-              student_id: enrollment.student_id,
-              ...rest,
-            }))
-            await classStudentsRepo.save(classStudents)
-          }
         }
       }
 
