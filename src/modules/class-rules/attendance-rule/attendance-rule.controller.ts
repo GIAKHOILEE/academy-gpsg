@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { AttendanceRuleService } from './attendance-rule.service'
 import { ResponseDto } from '@common/response.dto'
 import { CreateAttendanceRuleDto } from './dtos/create-attendance-rule.dto'
@@ -7,6 +7,7 @@ import { UpdateAttendanceRuleDto } from './dtos/update-attendance-rule.dto'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
+import { OptionalJwtAuthGuard } from '@guards/optional-jwt-auth.guard'
 
 @ApiTags('Admin Attendance Rules')
 @ApiBearerAuth()
@@ -77,6 +78,7 @@ export class AdminAttendanceRuleController {
 export class UserAttendanceRuleController {
   constructor(private readonly attendanceRuleService: AttendanceRuleService) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('/class/today')
   @ApiOperation({ summary: 'Lấy danh sách lớp đang trong thời gian điểm danh' })
   @ApiQuery({ name: 'card_code', required: true, type: String, description: 'Mã thẻ của học viên' })
