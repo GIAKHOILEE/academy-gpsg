@@ -189,21 +189,29 @@ export class ClassService {
       }
     }
 
-    // so sánh các ngày với ngày hiên tại để chỉnh status
+    // so sánh các ngày với ngày hiện tại để chỉnh status
     const openingDay = rest.opening_day ? new Date(rest.opening_day) : existingClass.opening_day
     const endEnrollmentDay = rest.end_enrollment_day ? new Date(rest.end_enrollment_day) : existingClass.end_enrollment_day
     const closingDay = rest.closing_day ? new Date(rest.closing_day) : existingClass.closing_day
 
     const today = new Date()
     let status = existingClass.status
+
+    // 1. Nếu đã kết thúc
     if (closingDay && closingDay < today) {
       status = ClassStatus.END_CLASS
     }
-    if (openingDay && endEnrollmentDay && openingDay < today && endEnrollmentDay > today) {
-      status = ClassStatus.END_ENROLLING
-    }
-    if (closingDay && openingDay && closingDay < today && openingDay > today) {
+    // 2. Nếu đã mở học rồi (ưu tiên hơn ENROLLING)
+    else if (openingDay && openingDay <= today) {
       status = ClassStatus.HAS_BEGUN
+    }
+    // 3. Nếu đang trong giai đoạn tuyển sinh
+    else if (openingDay && endEnrollmentDay && openingDay > today && endEnrollmentDay > today) {
+      status = ClassStatus.ENROLLING
+    }
+    // 4. Nếu hết hạn tuyển sinh
+    else if (openingDay && endEnrollmentDay && openingDay < today && endEnrollmentDay < today) {
+      status = ClassStatus.END_ENROLLING
     }
 
     await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id, status })
@@ -625,38 +633,78 @@ export class ClassService {
     return { data: formattedStudents, meta }
   }
 
-  // cronjob cuối ngày closing_day chuyển status qua END_CLASS
+  // // cronjob cuối ngày closing_day chuyển status qua END_CLASS
+  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  // async cronjobUpdateClassStatus(): Promise<void> {
+  //   const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.closing_day']).getMany()
+  //   for (const classEntity of classes) {
+  //     if (classEntity.closing_day < new Date().toISOString()) {
+  //       await this.classRepository.update(classEntity.id, { status: ClassStatus.END_CLASS })
+  //     }
+  //   }
+  // }
+
+  // // cronjob cuối ngày end_enrollment_day chuyển status qua END_CLASS
+  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  // async cronjobUpdateEndEnrollmentClass(): Promise<void> {
+  //   const classes = await this.classRepository
+  //     .createQueryBuilder('classes')
+  //     .select(['classes.id', 'classes.closing_day', 'classes.end_enrollment_day'])
+  //     .getMany()
+  //   for (const classEntity of classes) {
+  //     if (classEntity.end_enrollment_day < new Date().toISOString()) {
+  //       await this.classRepository.update(classEntity.id, { status: ClassStatus.END_ENROLLING })
+  //     }
+  //   }
+  // }
+
+  // // cronjob đầu ngày opening_day chuyển status qua HAS_BEGUN
+  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  // async cronjobUpdateOpeningClass(): Promise<void> {
+  //   const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.opening_day']).getMany()
+  //   for (const classEntity of classes) {
+  //     if (classEntity.opening_day < new Date().toISOString()) {
+  //       await this.classRepository.update(classEntity.id, { status: ClassStatus.HAS_BEGUN })
+  //     }
+  //   }
+  // }
+
+  // Cronjob: cập nhật status lớp học mỗi ngày lúc 00:00
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cronjobUpdateClassStatus(): Promise<void> {
-    const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.closing_day']).getMany()
-    for (const classEntity of classes) {
-      if (classEntity.closing_day < new Date().toISOString()) {
-        await this.classRepository.update(classEntity.id, { status: ClassStatus.END_CLASS })
-      }
-    }
-  }
-
-  // cronjob cuối ngày end_enrollment_day chuyển status qua END_CLASS
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async cronjobUpdateEndEnrollmentClass(): Promise<void> {
     const classes = await this.classRepository
       .createQueryBuilder('classes')
-      .select(['classes.id', 'classes.closing_day', 'classes.end_enrollment_day'])
+      .select(['classes.id', 'classes.opening_day', 'classes.end_enrollment_day', 'classes.closing_day', 'classes.status'])
       .getMany()
-    for (const classEntity of classes) {
-      if (classEntity.end_enrollment_day < new Date().toISOString()) {
-        await this.classRepository.update(classEntity.id, { status: ClassStatus.END_ENROLLING })
-      }
-    }
-  }
 
-  // cronjob đầu ngày opening_day chuyển status qua HAS_BEGUN
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async cronjobUpdateOpeningClass(): Promise<void> {
-    const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.opening_day']).getMany()
+    const today = new Date()
+
     for (const classEntity of classes) {
-      if (classEntity.opening_day < new Date().toISOString()) {
-        await this.classRepository.update(classEntity.id, { status: ClassStatus.HAS_BEGUN })
+      const openingDay = classEntity.opening_day ? new Date(classEntity.opening_day) : null
+      const endEnrollmentDay = classEntity.end_enrollment_day ? new Date(classEntity.end_enrollment_day) : null
+      const closingDay = classEntity.closing_day ? new Date(classEntity.closing_day) : null
+
+      let newStatus = classEntity.status
+
+      // 1. Ưu tiên: Đã kết thúc
+      if (closingDay && closingDay < today) {
+        newStatus = ClassStatus.END_CLASS
+      }
+      // 2. Ưu tiên: Đã bắt đầu học
+      else if (openingDay && openingDay <= today) {
+        newStatus = ClassStatus.HAS_BEGUN
+      }
+      // 3. Ưu tiên: Hết hạn tuyển sinh
+      else if (endEnrollmentDay && endEnrollmentDay < today) {
+        newStatus = ClassStatus.END_ENROLLING
+      }
+      // 4. Nếu vẫn trong giai đoạn tuyển sinh
+      else if (openingDay && endEnrollmentDay && openingDay > today && endEnrollmentDay > today) {
+        newStatus = ClassStatus.ENROLLING
+      }
+
+      if (newStatus !== classEntity.status) {
+        await this.classRepository.update(classEntity.id, { status: newStatus })
       }
     }
   }
