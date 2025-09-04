@@ -71,8 +71,6 @@ export class AdminAttendanceRuleController {
 }
 
 @ApiTags('User Attendance Rules')
-@ApiBearerAuth()
-@Auth()
 @Controller('attendance-rules')
 export class UserAttendanceRuleController {
   constructor(private readonly attendanceRuleService: AttendanceRuleService) {}
@@ -90,6 +88,8 @@ export class UserAttendanceRuleController {
   }
 
   @Get()
+  @ApiBearerAuth()
+  @Auth()
   @ApiOperation({ summary: 'Lấy tất cả quy tắc điểm danh' })
   async getAllAttendanceRule(@Query() paginateAttendanceRuleDto: PaginateAttendanceRuleDto): Promise<ResponseDto> {
     const attendanceRules = await this.attendanceRuleService.getAllAttendanceRule(paginateAttendanceRuleDto)
@@ -101,6 +101,8 @@ export class UserAttendanceRuleController {
   }
 
   @Get(':id')
+  @ApiBearerAuth()
+  @Auth()
   @ApiOperation({ summary: 'Lấy chi tiết quy tắc điểm danh' })
   async getDetailAttendanceRule(@Param('id') id: number): Promise<ResponseDto> {
     const attendanceRule = await this.attendanceRuleService.getDetailAttendanceRule(id)
