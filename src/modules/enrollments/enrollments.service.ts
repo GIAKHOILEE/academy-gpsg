@@ -361,9 +361,9 @@ export class EnrollmentsService {
         }
 
         // nếu status ClassStatus.END_ENROLLING thi khong cho update
-        if (classEntities.some(classEntity => classEntity.status === ClassStatus.END_ENROLLING)) {
-          throwAppException('CLASS_END_ENROLLING', ErrorCode.CLASS_END_ENROLLING, HttpStatus.BAD_REQUEST)
-        }
+        // if (classEntities.some(classEntity => classEntity.status === ClassStatus.END_ENROLLING)) {
+        //   throwAppException('CLASS_END_ENROLLING', ErrorCode.CLASS_END_ENROLLING, HttpStatus.BAD_REQUEST)
+        // }
 
         totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
         enrollment.class_ids = class_ids
