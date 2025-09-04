@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { AttendanceRuleService } from './attendance-rule.service'
 import { ResponseDto } from '@common/response.dto'
 import { CreateAttendanceRuleDto } from './dtos/create-attendance-rule.dto'
@@ -7,7 +7,6 @@ import { UpdateAttendanceRuleDto } from './dtos/update-attendance-rule.dto'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { OptionalJwtAuthGuard } from '@guards/optional-jwt-auth.guard'
 
 @ApiTags('Admin Attendance Rules')
 @ApiBearerAuth()
