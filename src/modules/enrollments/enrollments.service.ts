@@ -354,7 +354,6 @@ export class EnrollmentsService {
           .createQueryBuilder('class')
           .select(['class.id', 'class.name', 'class.price', 'class.status'])
           .where('class.id IN (:...class_ids)', { class_ids })
-          .andWhere('class.status = :status', { status: ClassStatus.ENROLLING })
           .getMany()
 
         if (classEntities.length !== class_ids.length) {
