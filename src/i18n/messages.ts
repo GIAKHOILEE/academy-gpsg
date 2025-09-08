@@ -84,6 +84,7 @@ export const messages = {
     NAVIGATION_NOT_FOUND: 'Navigation not found',
     SUB_NAVIGATION_ALREADY_EXISTS: 'Sub navigation already exists',
     SUB_NAVIGATION_NOT_FOUND: 'Sub navigation not found',
+    ATTENDANCE_NOT_FOUND: 'Attendance not found',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -173,5 +174,6 @@ export const messages = {
     NAVIGATION_NOT_FOUND: 'Điều hướng không tồn tại',
     SUB_NAVIGATION_ALREADY_EXISTS: 'Điều hướng phụ đã tồn tại',
     SUB_NAVIGATION_NOT_FOUND: 'Điều hướng phụ không tồn tại',
+    ATTENDANCE_NOT_FOUND: 'Điểm danh không tồn tại',
   },
 }

@@ -4,13 +4,14 @@ import { In, Repository } from 'typeorm'
 import { Attendance } from './attendance.entity'
 import { CreateAttendanceDto } from './dtos/create-attendance.dto'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { throwAppException } from '@common/utils'
+import { arrayToObject, throwAppException } from '@common/utils'
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { AttendanceRule } from '../attendance-rule/attendance-rule.entity'
 import { AttendanceStatus } from '@enums/class.enum'
 import { toMinutes } from '@common/utils'
+import { UpdateAttendanceDto } from './dtos/update-attendance.dto'
 
 @Injectable()
 export class AttendanceService {
@@ -158,5 +159,69 @@ export class AttendanceService {
     })
 
     return { lessonDates, report }
+  }
+
+  async updateAttendance(class_id: number, updateAttendanceDtos: UpdateAttendanceDto[]) {
+    const classExist = await this.classRepository.findOne({ where: { id: class_id } })
+    if (!classExist) {
+      throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    // lấy danh sách student_id
+    const studentIds = updateAttendanceDtos.map(dto => dto.student_id)
+
+    // query 1 lần lấy toàn bộ students
+    const students = await this.studentRepository.findBy({ id: In(studentIds) })
+    const studentMap = arrayToObject(students, 'id')
+
+    // query 1 lần lấy toàn bộ classStudents
+    const classStudents = await this.classStudentsRepository.find({
+      where: { class_id, student_id: In(studentIds) },
+    })
+    const classStudentMap = arrayToObject(classStudents, 'student_id')
+
+    // query 1 lần lấy toàn bộ attendances theo (class_student_id, attendance_date)
+    const classStudentIds = classStudents.map(cs => cs.id)
+    const attendanceDates = updateAttendanceDtos.map(dto => dto.attendance_date)
+
+    const attendances = await this.attendanceRepository.find({
+      where: {
+        class_student_id: In(classStudentIds),
+        attendance_date: In(attendanceDates),
+      },
+    })
+
+    // tạo key map để dễ tìm attendance: `${class_student_id}_${attendance_date}`
+    const attendanceMap = attendances.reduce(
+      (acc, a) => {
+        acc[`${a.class_student_id}_${a.attendance_date}`] = a
+        return acc
+      },
+      {} as Record<string, any>,
+    )
+
+    // xử lý update
+    const updates = updateAttendanceDtos.map(dto => {
+      const { student_id, attendance_date, status } = dto
+
+      if (!studentMap[student_id]) {
+        throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+
+      const classStudent = classStudentMap[student_id]
+      if (!classStudent) {
+        throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
+      }
+
+      const attendance = attendanceMap[`${classStudent.id}_${attendance_date}`]
+      if (!attendance) {
+        throwAppException('ATTENDANCE_NOT_FOUND', ErrorCode.ATTENDANCE_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+
+      attendance.status = status
+      return this.attendanceRepository.update(attendance.id, attendance)
+    })
+
+    return Promise.all(updates)
   }
 }
