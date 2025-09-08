@@ -40,8 +40,6 @@ export class AttendanceController {
 }
 
 @ApiTags('User Attendance')
-@ApiBearerAuth()
-@Auth()
 @Controller('attendance')
 export class UserAttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
@@ -58,6 +56,8 @@ export class UserAttendanceController {
   }
 
   @Get('class/:class_id')
+  @ApiBearerAuth()
+  @Auth()
   @ApiOperation({ summary: 'Lấy lịch sử điểm danh' })
   @ApiQuery({ name: 'user_id', required: false, type: Number, description: 'ID user của học viên' })
   async getAttendanceReport(@Param('class_id') class_id: number, @Query('user_id') user_id?: number): Promise<ResponseDto> {
