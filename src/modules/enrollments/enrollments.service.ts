@@ -9,7 +9,7 @@ import {
   renderPdfFromTemplate,
   throwAppException,
 } from '@common/utils'
-import { ClassStatus, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -250,7 +250,7 @@ export class EnrollmentsService {
           .getOne()
         if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-        const { full_name, saint_name, email, phone_number, address, birth_date, birth_place, parish, deanery, diocese, congregation } = rest // thông tin user
+        const { full_name, saint_name, email, phone_number, address, birth_place, parish, deanery, diocese, congregation } = rest // thông tin user
         // check thông tin có trùng với thông tin trong enrollment không
         if (
           full_name !== enrollment.full_name ||
@@ -258,7 +258,7 @@ export class EnrollmentsService {
           email !== enrollment.email ||
           phone_number !== enrollment.phone_number ||
           address !== enrollment.address ||
-          birth_date !== enrollment.birth_date ||
+          // birth_date !== enrollment.birth_date ||
           birth_place !== enrollment.birth_place ||
           parish !== enrollment.parish ||
           deanery !== enrollment.deanery ||

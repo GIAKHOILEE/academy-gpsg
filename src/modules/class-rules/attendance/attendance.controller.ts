@@ -1,11 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { AttendanceService } from './attendance.service'
 import { CreateAttendanceDto } from './dtos/create-attendance.dto'
 import { HttpStatus } from '@nestjs/common'
 import { ResponseDto } from '@common/response.dto'
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
+import { UpdateAttendanceDto } from './dtos/update-attendance.dto'
 
 @ApiTags('Admin Attendance')
 @ApiBearerAuth()
@@ -22,6 +23,18 @@ export class AttendanceController {
       statusCode: HttpStatus.OK,
       messageCode: 'ATTENDANCE_REPORT_GET_SUCCESSFULLY',
       data: report,
+    })
+  }
+
+  @Put('class/:class_id')
+  @ApiOperation({ summary: 'Cập nhật điểm danh của học viên' })
+  @ApiBody({ type: UpdateAttendanceDto, isArray: true })
+  async updateAttendance(@Param('class_id') class_id: number, @Body() updateAttendanceDtos: UpdateAttendanceDto[]): Promise<ResponseDto> {
+    const attendance = await this.attendanceService.updateAttendance(class_id, updateAttendanceDtos)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'ATTENDANCE_UPDATED_SUCCESSFULLY',
+      data: attendance,
     })
   }
 }
