@@ -656,7 +656,7 @@ export class EnrollmentsService {
     const formatEnrollment: IEnrollments = {
       id: enrollment.id,
       code: enrollment.code,
-      registration_date: enrollment.registration_date,
+      registration_date: new Date(enrollment.registration_date.getTime() + 7 * 60 * 60 * 1000),
       payment_method: enrollment.payment_method,
       payment_status: enrollment.payment_status,
       status: enrollment.status,
@@ -747,6 +747,7 @@ export class EnrollmentsService {
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
         ...enrollment,
+        registration_date: new Date(enrollment.registration_date.getTime() + 7 * 60 * 60 * 1000),
         student_id: enrollment?.student?.id,
         student_code: enrollment?.student?.user?.code,
         saint_name: enrollment.saint_name,
