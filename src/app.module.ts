@@ -40,6 +40,7 @@ import { APP_GUARD } from '@nestjs/core'
 import { AttendanceRuleModule } from './modules/class-rules/attendance-rule/attendance-rule..module'
 import { AttendanceModule } from './modules/class-rules/attendance/attendance.module'
 import { NavigationAttendanceModule } from './modules/navigation-attendance/navigation.module'
+import { HttpLoggerMiddleware } from '@middleware/http-logger.middleware'
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { NavigationAttendanceModule } from './modules/navigation-attendance/navi
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer.apply(HttpLoggerMiddleware).forRoutes('*')
     consumer.apply(LoggerMiddleware).forRoutes('*')
     consumer.apply(VisitLoggerMiddleware).forRoutes('/dashboard/analytics')
     consumer.apply(LanguageMiddleware).forRoutes('*')

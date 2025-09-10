@@ -66,6 +66,9 @@ COPY --from=builder --chown=nextjs:nodejs /usr/app/dist ./dist
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
+# Tạo thư mục logs với quyền
+RUN mkdir -p /usr/app/logs && chown -R nextjs:nodejs /usr/app/logs
+
 USER nextjs
 
 EXPOSE $PORT
