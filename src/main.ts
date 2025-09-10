@@ -82,12 +82,13 @@ async function bootstrap() {
   const port = process.env.PORT || 5000
   await app.listen(port)
 
-  console.log(`NODE_ENV: ${process.env.NODE_ENV}`)
-  
+  console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+
+  console.info(`🚀 Server running on: ${host}:${port}`);
   // Log startup
-  const logger = app.get(WINSTON_MODULE_PROVIDER);
-  logger.info(`🚀 Server running on: ${host}:${port}`, {
-    context: 'Bootstrap',
-  });
+  // const logger = app.get(WINSTON_MODULE_PROVIDER);
+  // logger.info(`🚀 Server running on: ${host}:${port}`, {
+  //   context: 'Bootstrap',
+  // });
 }
 bootstrap()
