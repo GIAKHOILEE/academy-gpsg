@@ -6,7 +6,7 @@ import { ClassStudents } from './class-students/class-student.entity'
 import { Semester } from './_semester/semester.entity'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { CourseRule } from '@modules/class-rules/_course-rules/course-rules.entity'
-import { Exam } from '@modules/class-rules/exam/exam.entity'
+import { Exam } from '@modules/class-rules/exam/_exam/exam.entity'
 import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
 
 @Entity({ name: 'classes' })

@@ -41,6 +41,7 @@ import { AttendanceRuleModule } from './modules/class-rules/attendance-rule/atte
 import { AttendanceModule } from './modules/class-rules/attendance/attendance.module'
 import { NavigationAttendanceModule } from './modules/navigation-attendance/navigation.module'
 import { HttpLoggerMiddleware } from '@middleware/http-logger.middleware'
+import { ExamModule } from '@modules/class-rules/exam/_exam/exam.module'
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { HttpLoggerMiddleware } from '@middleware/http-logger.middleware'
     VoucherModule,
     AttendanceRuleModule,
     AttendanceModule,
+    ExamModule,
   ],
   providers: [
     AppService,
@@ -95,7 +97,7 @@ import { HttpLoggerMiddleware } from '@middleware/http-logger.middleware'
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(HttpLoggerMiddleware).forRoutes('*')
-    consumer.apply(LoggerMiddleware).forRoutes('*')
+    // consumer.apply(LoggerMiddleware).forRoutes('*')
     consumer.apply(VisitLoggerMiddleware).forRoutes('/dashboard/analytics')
     consumer.apply(LanguageMiddleware).forRoutes('*')
   }

@@ -85,6 +85,11 @@ export const messages = {
     SUB_NAVIGATION_ALREADY_EXISTS: 'Sub navigation already exists',
     SUB_NAVIGATION_NOT_FOUND: 'Sub navigation not found',
     ATTENDANCE_NOT_FOUND: 'Attendance not found',
+    WEIGHT_PERCENTAGE_MUST_BE_LESS_THAN_100: 'Weight percentage must be less than 100',
+    WEIGHT_PERCENTAGE_MUST_BE_GREATER_THAN_0: 'Weight percentage must be greater than 0',
+    TOTAL_WEIGHT_MUST_BE_LESS_THAN_100: 'Total weight must be less than 100',
+    EXAM_NOT_FOUND: 'Exam not found',
+    EXAM_HAS_SCORES: 'Exam has scores',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -175,5 +180,10 @@ export const messages = {
     SUB_NAVIGATION_ALREADY_EXISTS: 'Điều hướng phụ đã tồn tại',
     SUB_NAVIGATION_NOT_FOUND: 'Điều hướng phụ không tồn tại',
     ATTENDANCE_NOT_FOUND: 'Điểm danh không tồn tại',
+    WEIGHT_PERCENTAGE_MUST_BE_LESS_THAN_100: 'Tỷ lệ trọng số phải nhỏ hơn 100',
+    WEIGHT_PERCENTAGE_MUST_BE_GREATER_THAN_0: 'Tỷ lệ trọng số phải lớn hơn 0',
+    TOTAL_WEIGHT_MUST_BE_LESS_THAN_100: 'Tổng tỷ lệ trọng số các đề kiểm tra phải nhỏ hơn 100',
+    EXAM_NOT_FOUND: 'Đề kiểm tra không tồn tại',
+    EXAM_HAS_SCORES: 'Đề kiểm tra này đã có điểm của học viên',
   },
 }

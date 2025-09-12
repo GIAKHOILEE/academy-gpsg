@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { Exam } from '../exam.entity'
+import { Exam } from '../_exam/exam.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 
 @Entity({ name: 'exam_scores' })
