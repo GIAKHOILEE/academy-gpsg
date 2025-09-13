@@ -42,6 +42,7 @@ import { AttendanceModule } from './modules/class-rules/attendance/attendance.mo
 import { NavigationAttendanceModule } from './modules/navigation-attendance/navigation.module'
 import { HttpLoggerMiddleware } from '@middleware/http-logger.middleware'
 import { ExamModule } from '@modules/class-rules/exam/_exam/exam.module'
+import { ClassRulesModule } from '@modules/class-rules/_class-rules/class-rules.module'
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { ExamModule } from '@modules/class-rules/exam/_exam/exam.module'
     VoucherModule,
     AttendanceRuleModule,
     AttendanceModule,
+    ClassRulesModule,
     ExamModule,
   ],
   providers: [

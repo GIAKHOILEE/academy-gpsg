@@ -90,6 +90,11 @@ export const messages = {
     TOTAL_WEIGHT_MUST_BE_LESS_THAN_100: 'Total weight must be less than 100',
     EXAM_NOT_FOUND: 'Exam not found',
     EXAM_HAS_SCORES: 'Exam has scores',
+    CLASS_RULE_NOT_FOUND: 'Class rule not found',
+    CLASS_RULE_ALREADY_EXISTS: 'Class rule already exists',
+    ATTENDANCE_PERCENTAGE_IS_REQUIRED: 'Attendance percentage is required',
+    ATTENDANCE_PERCENTAGE_MUST_BE_BETWEEN_0_AND_1: 'Attendance percentage must be between 0 and 1',
+    SCORE_IS_REQUIRED: 'Score is required',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -185,5 +190,10 @@ export const messages = {
     TOTAL_WEIGHT_MUST_BE_LESS_THAN_100: 'Tổng tỷ lệ trọng số các đề kiểm tra phải nhỏ hơn 100',
     EXAM_NOT_FOUND: 'Đề kiểm tra không tồn tại',
     EXAM_HAS_SCORES: 'Đề kiểm tra này đã có điểm của học viên',
+    CLASS_RULE_NOT_FOUND: 'Quy tắc lớp học không tồn tại',
+    CLASS_RULE_ALREADY_EXISTS: 'Quy tắc lớp học đã tồn tại',
+    ATTENDANCE_PERCENTAGE_IS_REQUIRED: 'Tỷ lệ điểm danh là bắt buộc',
+    ATTENDANCE_PERCENTAGE_MUST_BE_BETWEEN_0_AND_1: 'Tỷ lệ điểm danh phải nằm trong khoảng 0 và 1',
+    SCORE_IS_REQUIRED: 'Điểm là bắt buộc',
   },
 }

@@ -1,11 +1,11 @@
 import { ClassStatus, Schedule } from '@enums/class.enum'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { ClassStudents } from './class-students/class-student.entity'
 import { Semester } from './_semester/semester.entity'
 import { Scholastic } from './_scholastic/scholastic.entity'
-import { CourseRule } from '@modules/class-rules/_course-rules/course-rules.entity'
+import { ClassRule } from '@modules/class-rules/_class-rules/class-rules.entity'
 import { Exam } from '@modules/class-rules/exam/_exam/exam.entity'
 import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
 
@@ -105,8 +105,8 @@ export class Classes {
   @OneToMany(() => ClassStudents, classStudents => classStudents.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   class_students: ClassStudents[]
 
-  @OneToMany(() => CourseRule, courseRule => courseRule.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  course_rules: CourseRule[]
+  @OneToOne(() => ClassRule, rule => rule.class)
+  rule: ClassRule
 
   @OneToMany(() => Exam, exam => exam.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   exams: Exam[]
