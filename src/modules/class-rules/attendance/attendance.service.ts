@@ -39,7 +39,12 @@ export class AttendanceService {
     if (!classExist) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     // 2. Check student tồn tại
-    const student = await this.studentRepository.findOne({ where: { card_code } })
+    const student = await this.studentRepository
+      .createQueryBuilder('student')
+      .select(['student.id', 'user.id', 'user.full_name', 'user.email', 'user.gender', 'user.saint_name', 'user.address', 'user.avatar'])
+      .leftJoin('student.user', 'user')
+      .where('student.card_code = :card_code', { card_code })
+      .getOne()
     if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     // 3. Check student có trong class
@@ -89,13 +94,13 @@ export class AttendanceService {
     const formattedAttendance = {
       ...savedAttendance,
       student: {
-        id: student.id,
-        full_name: student.user.full_name,
-        email: student.user.email,
-        gender: student.user.gender,
-        saint_name: student.user.saint_name,
-        address: student.user.address,
-        avatar: student.user.avatar,
+        id: student?.id,
+        full_name: student?.user?.full_name,
+        email: student?.user?.email,
+        gender: student?.user?.gender,
+        saint_name: student?.user?.saint_name,
+        address: student?.user?.address,
+        avatar: student?.user?.avatar,
       },
     }
     return formattedAttendance
