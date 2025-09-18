@@ -12,6 +12,7 @@ import { AttendanceRule } from '../attendance-rule/attendance-rule.entity'
 import { AttendanceStatus } from '@enums/class.enum'
 import { toMinutes } from '@common/utils'
 import { UpdateAttendanceDto } from './dtos/update-attendance.dto'
+import { IAttendance } from './attendance.interface'
 
 @Injectable()
 export class AttendanceService {
@@ -28,7 +29,7 @@ export class AttendanceService {
     private readonly attendanceRuleRepository: Repository<AttendanceRule>,
   ) {}
 
-  async createAttendance(createAttendanceDto: CreateAttendanceDto): Promise<Attendance> {
+  async createAttendance(createAttendanceDto: CreateAttendanceDto) {
     const { class_id, card_code } = createAttendanceDto
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
@@ -83,7 +84,21 @@ export class AttendanceService {
       attendance_date: todayStr,
       status,
     })
-    return this.attendanceRepository.save(attendance)
+    const savedAttendance = await this.attendanceRepository.save(attendance)
+
+    const formattedAttendance = {
+      ...savedAttendance,
+      student: {
+        id: student.id,
+        full_name: student.user.full_name,
+        email: student.user.email,
+        gender: student.user.gender,
+        saint_name: student.user.saint_name,
+        address: student.user.address,
+        avatar: student.user.avatar,
+      },
+    }
+    return formattedAttendance
   }
 
   async getAttendanceReport(class_id: number, user_id?: number) {
