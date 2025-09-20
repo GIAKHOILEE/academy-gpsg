@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { Classes } from '@modules/class/class.entity'
-import { ExamScore } from './exam-scores/exam-scores.entity'
+import { ExamScore } from '../exam-scores/exam-scores.entity'
 
 @Entity({ name: 'exams' })
 export class Exam {

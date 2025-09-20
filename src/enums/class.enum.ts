@@ -37,6 +37,7 @@ export enum RuleType {
   ATTENDANCE_PERCENTAGE = 1,
   TEACHER_EVALUATION = 2,
   SCORE_BASED = 3,
+  ATTENDANCE_PERCENTAGE_AND_SCORE_BASED = 4,
 }
 
 // Trạng thái điểm danh

@@ -12,6 +12,7 @@ import { AttendanceRule } from '../attendance-rule/attendance-rule.entity'
 import { AttendanceStatus } from '@enums/class.enum'
 import { toMinutes } from '@common/utils'
 import { UpdateAttendanceDto } from './dtos/update-attendance.dto'
+import { IAttendance } from './attendance.interface'
 
 @Injectable()
 export class AttendanceService {
@@ -28,7 +29,7 @@ export class AttendanceService {
     private readonly attendanceRuleRepository: Repository<AttendanceRule>,
   ) {}
 
-  async createAttendance(createAttendanceDto: CreateAttendanceDto): Promise<Attendance> {
+  async createAttendance(createAttendanceDto: CreateAttendanceDto) {
     const { class_id, card_code } = createAttendanceDto
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
@@ -38,7 +39,12 @@ export class AttendanceService {
     if (!classExist) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     // 2. Check student tồn tại
-    const student = await this.studentRepository.findOne({ where: { card_code } })
+    const student = await this.studentRepository
+      .createQueryBuilder('student')
+      .select(['student.id', 'user.id', 'user.full_name', 'user.email', 'user.gender', 'user.saint_name', 'user.address', 'user.avatar'])
+      .leftJoin('student.user', 'user')
+      .where('student.card_code = :card_code', { card_code })
+      .getOne()
     if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     // 3. Check student có trong class
@@ -83,7 +89,21 @@ export class AttendanceService {
       attendance_date: todayStr,
       status,
     })
-    return this.attendanceRepository.save(attendance)
+    const savedAttendance = await this.attendanceRepository.save(attendance)
+
+    const formattedAttendance = {
+      ...savedAttendance,
+      student: {
+        id: student?.id,
+        full_name: student?.user?.full_name,
+        email: student?.user?.email,
+        gender: student?.user?.gender,
+        saint_name: student?.user?.saint_name,
+        address: student?.user?.address,
+        avatar: student?.user?.avatar,
+      },
+    }
+    return formattedAttendance
   }
 
   async getAttendanceReport(class_id: number, user_id?: number) {
@@ -109,13 +129,11 @@ export class AttendanceService {
     const attendances = await this.attendanceRepository.find({
       where: { class_student: In(classStudents.map(cs => cs.id)) },
     })
-
     if (user_id) {
       const student = await this.studentRepository.findOne({ where: { user_id } })
       if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
       classStudents = classStudents.filter(cs => cs.student.id === student.id)
     }
-
     // 4. Format thành bảng
     const report = classStudents.map(cs => {
       const row: any = {
@@ -169,11 +187,9 @@ export class AttendanceService {
 
     // lấy danh sách student_id
     const studentIds = updateAttendanceDtos.map(dto => dto.student_id)
-
     // query 1 lần lấy toàn bộ students
     const students = await this.studentRepository.findBy({ id: In(studentIds) })
     const studentMap = arrayToObject(students, 'id')
-
     // query 1 lần lấy toàn bộ classStudents
     const classStudents = await this.classStudentsRepository.find({
       where: { class_id, student_id: In(studentIds) },
@@ -183,7 +199,6 @@ export class AttendanceService {
     // query 1 lần lấy toàn bộ attendances theo (class_student_id, attendance_date)
     const classStudentIds = classStudents.map(cs => cs.id)
     const attendanceDates = updateAttendanceDtos.map(dto => dto.attendance_date)
-
     const attendances = await this.attendanceRepository.find({
       where: {
         class_student_id: In(classStudentIds),
@@ -199,9 +214,8 @@ export class AttendanceService {
       },
       {} as Record<string, any>,
     )
-
-    // xử lý update
-    const updates = updateAttendanceDtos.map(dto => {
+    // xử lý update / insert
+    const updates = updateAttendanceDtos.map(async dto => {
       const { student_id, attendance_date, status } = dto
 
       if (!studentMap[student_id]) {
@@ -213,13 +227,22 @@ export class AttendanceService {
         throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
       }
 
-      const attendance = attendanceMap[`${classStudent.id}_${attendance_date}`]
-      if (!attendance) {
-        throwAppException('ATTENDANCE_NOT_FOUND', ErrorCode.ATTENDANCE_NOT_FOUND, HttpStatus.NOT_FOUND)
-      }
+      const key = `${classStudent.id}_${attendance_date}`
+      let attendance = attendanceMap[key]
 
-      attendance.status = status
-      return this.attendanceRepository.update(attendance.id, attendance)
+      if (attendance) {
+        // đã có row thì update
+        attendance.status = status
+        return this.attendanceRepository.update(attendance.id, attendance)
+      } else {
+        // chưa có row thì tạo mới
+        attendance = this.attendanceRepository.create({
+          class_student_id: classStudent.id,
+          attendance_date,
+          status,
+        })
+        return this.attendanceRepository.save(attendance)
+      }
     })
 
     return Promise.all(updates)

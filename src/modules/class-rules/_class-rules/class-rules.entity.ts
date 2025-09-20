@@ -1,13 +1,13 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { RuleType } from '@enums/class.enum'
 import { Classes } from '@modules/class/class.entity'
 
-@Entity('course_rules')
-export class CourseRule {
+@Entity('class_rules')
+export class ClassRule {
   @PrimaryGeneratedColumn()
   id: number
 
-  @ManyToOne(() => Classes, cls => cls.course_rules, { onDelete: 'CASCADE' })
+  @OneToOne(() => Classes, cls => cls.rule, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'class_id' })
   class: Classes
 
@@ -18,9 +18,13 @@ export class CourseRule {
   @Column({ type: 'enum', enum: RuleType })
   type: RuleType // attendance_percentage, teacher_evaluation, score_based
 
-  // Ngưỡng yêu cầu (%)
+  // Ngưỡng yêu cầu (%) type: 1, 4
   @Column({ type: 'float', nullable: true })
-  threshold_percentage: number
+  attendance_percent: number
+
+  // Ngưỡng yêu cầu type: 2, 4
+  @Column({ type: 'float', nullable: true })
+  score: number
 
   // Mô tả
   @Column({ type: 'text', nullable: true })
