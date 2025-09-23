@@ -5,12 +5,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from 'src/common/response.dto'
 import { VisitorService } from '../visitor/visitor.service'
 import { DashboardService } from './dashboard.service'
-import { RevenueStatisticsDto, SemesterRevenueDto } from './dtos/dashboard.dto'
-@ApiTags('Admin Dashboard')
-@Controller('admin/dashboard')
-@Auth(Role.ADMIN)
-@ApiBearerAuth()
-export class DashboardController {}
+import { RevenueStatisticsDto, SemesterRevenueDto, TeacherRevenueDto } from './dtos/dashboard.dto'
 
 @Controller('dashboard')
 export class DashboardControllerUser {
@@ -103,8 +98,13 @@ export class DashboardControllerUser {
       data: teacherStatistics,
     })
   }
+}
 
-  @Get('/semester-revenue')
+@Controller('revenue')
+export class RevenueController {
+  constructor(private readonly dashboardService: DashboardService) {}
+
+  @Get('/statistics')
   @ApiOperation({ summary: 'Lấy thống kê doanh thu theo học kỳ' })
   async semesterRevenue(@Query() semesterRevenueDto: SemesterRevenueDto): Promise<ResponseDto> {
     const semesterRevenue = await this.dashboardService.semesterRevenue(semesterRevenueDto)
@@ -112,6 +112,17 @@ export class DashboardControllerUser {
       statusCode: 200,
       messageCode: 'DASHBOARD_GET_SEMESTER_REVENUE_SUCCESS',
       data: semesterRevenue,
+    })
+  }
+
+  @Get('/teacher')
+  @ApiOperation({ summary: 'Lấy thống kê doanh thu theo giáo viên' })
+  async teacherSalary(@Query() teacherRevenueDto: TeacherRevenueDto): Promise<ResponseDto> {
+    const teacherSalary = await this.dashboardService.teacherSalary(teacherRevenueDto)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_TEACHER_SALARY_SUCCESS',
+      data: teacherSalary,
     })
   }
 }

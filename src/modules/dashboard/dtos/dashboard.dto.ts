@@ -53,3 +53,23 @@ export class SemesterRevenueDto {
   @Type(() => Number)
   department_id: number
 }
+
+export class TeacherRevenueDto {
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Học kỳ' })
+  @Type(() => Number)
+  semester_id: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Niên khóa' })
+  @Type(() => Number)
+  scholastic_id: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Khoa' })
+  @Type(() => Number)
+  department_id: number
+}

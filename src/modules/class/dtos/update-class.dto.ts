@@ -25,7 +25,7 @@ export class UpdateClassDto {
 
   @IsNumber()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Số tiết học', example: 10 })
+  @ApiPropertyOptional({ description: 'Số tiết học', example: 1.5 })
   number_periods: number
 
   @IsNumber()
@@ -37,6 +37,16 @@ export class UpdateClassDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Phòng học', example: 'A101' })
   classroom: string
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Lương/tiết học của giáo viên', example: 1000000 })
+  salary: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Bồi dưỡng thêm của giáo viên', example: 1000000 })
+  extra_allowance: number
 
   @IsArray()
   @IsEnum(Schedule, { each: true })

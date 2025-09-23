@@ -2,15 +2,16 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
-import { RevenueStatisticsDto, SemesterRevenueDto } from './dtos/dashboard.dto'
+import { RevenueStatisticsDto, SemesterRevenueDto, TeacherRevenueDto } from './dtos/dashboard.dto'
 import { ClassStatus, PaymentStatus } from '@enums/class.enum'
 import { StatusEnrollment } from '@enums/class.enum'
 import { Voucher } from '@modules/voucher/voucher.entity'
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
-import { SemesterRevenueSummary } from './dashboard.interface'
+import { SemesterRevenueSummary, TeacherRevenueSummary } from './dashboard.interface'
 import { arrayToObject } from '@common/utils'
+import { TeacherSpecial } from '@enums/user.enum'
 @Injectable()
 export class DashboardService {
   constructor(
@@ -355,6 +356,131 @@ export class DashboardService {
 
     return {
       summary,
+      departments: Object.values(departmentsMap),
+    }
+  }
+
+  async teacherSalary(teacherRevenueDto: TeacherRevenueDto): Promise<any> {
+    const { semester_id, scholastic_id, department_id } = teacherRevenueDto
+
+    // 1. Build conditions động
+    let conditions = `e.status = ${StatusEnrollment.DONE}`
+    const params: any[] = []
+
+    if (semester_id) {
+      conditions += ` AND c.semester_id = ?`
+      params.push(semester_id)
+    }
+    if (scholastic_id) {
+      conditions += ` AND c.scholastic_id = ?`
+      params.push(scholastic_id)
+    }
+    if (department_id) {
+      conditions += ` AND s.department_id = ?`
+      params.push(department_id)
+    }
+
+    // 2. Query raw data
+    const sql = `
+      SELECT
+        t.id AS teacher_id,
+        u.full_name AS teacher_name,
+        d.id AS department_id,
+        d.name AS department_name,
+        c.id AS class_id,
+        c.name AS class_name,
+        c.number_periods,
+        c.salary AS salary_per_period,
+        c.extra_allowance,
+        t.special AS teacher_special,
+        COUNT(e.id) AS total_students,
+        SUM(c.price) AS total_revenue,
+        SUM(e.discount) AS discount
+      FROM enrollments e
+      JOIN JSON_TABLE(e.class_ids, '$[*]' COLUMNS (class_id INT PATH '$')) jt ON TRUE
+      JOIN classes c ON c.id = jt.class_id
+      JOIN subjects s ON s.id = c.subject_id
+      JOIN departments d ON d.id = s.department_id
+      JOIN teachers t ON t.id = c.teacher_id
+      JOIN user u ON u.id = t.user_id
+      WHERE ${conditions}
+      GROUP BY t.id, u.full_name, d.id, d.name, c.id, c.name,
+               c.number_periods, c.salary, c.extra_allowance, t.special
+      ORDER BY d.name, c.name
+    `
+    const rawData: any[] = await this.dataSource.query(sql, params)
+
+    // 3. Tính toán từng lớp
+    const classRows = rawData.map(row => {
+      const totalDiscount = Number(row.discount || 0)
+      const totalProfit = Number(row.total_revenue) - totalDiscount
+
+      const salaryCap = Number(row.number_periods) * Number(row.salary_per_period)
+      const extraAllowance = Number(row.extra_allowance || 0)
+
+      let finalSalary = 0
+      if (row.teacher_special === TeacherSpecial.LV1) {
+        // không đặc cách
+        finalSalary = (totalProfit >= salaryCap ? salaryCap : totalProfit) + extraAllowance
+      } else if (row.teacher_special === TeacherSpecial.LV2) {
+        // tích xanh
+        finalSalary = salaryCap + extraAllowance
+      } else if (row.teacher_special === TeacherSpecial.LV3) {
+        // ngôi sao vàng
+        finalSalary = totalProfit + extraAllowance
+      }
+
+      return {
+        class_id: row.class_id,
+        class_name: row.class_name,
+        teacher_id: row.teacher_id,
+        teacher_name: row.teacher_name,
+        number_periods: Number(row.number_periods),
+        salary: salaryCap, // lương gốc theo số tiết * rate
+        extra_allowance: extraAllowance,
+        salary_cap: salaryCap,
+        teacher_special: row.teacher_special,
+        final_salary: finalSalary,
+        department_id: row.department_id,
+        department_name: row.department_name,
+      }
+    })
+
+    // 4. Nhóm theo department
+    const departmentsMap: Record<number, any> = {}
+    let totalSalary = 0
+
+    for (const cls of classRows) {
+      if (!departmentsMap[cls.department_id]) {
+        departmentsMap[cls.department_id] = {
+          department_id: cls.department_id,
+          department_name: cls.department_name,
+          total_salary: 0,
+          classes: [],
+        }
+      }
+      departmentsMap[cls.department_id].classes.push({
+        class_id: cls.class_id,
+        class_name: cls.class_name,
+        teacher_id: cls.teacher_id,
+        teacher_name: cls.teacher_name,
+        number_periods: cls.number_periods,
+        salary: cls.salary,
+        extra_allowance: cls.extra_allowance,
+        salary_cap: cls.salary_cap,
+        teacher_special: cls.teacher_special,
+        final_salary: cls.final_salary,
+      })
+
+      departmentsMap[cls.department_id].total_salary += cls.final_salary
+      totalSalary += cls.final_salary
+    }
+
+    // 5. Build final result
+    return {
+      summary: {
+        total_salary: totalSalary,
+      },
       departments: Object.values(departmentsMap),
     }
   }

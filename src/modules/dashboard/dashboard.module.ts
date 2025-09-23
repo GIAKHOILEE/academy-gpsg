@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { DashboardController, DashboardControllerUser } from './dashboard.controller'
+import { DashboardControllerUser } from './dashboard.controller'
 import { DashboardService } from './dashboard.service'
 import { Visitor } from '../visitor/visitor.entity'
 import { VisitorService } from '../visitor/visitor.service'
@@ -9,9 +9,10 @@ import { Voucher } from '@modules/voucher/voucher.entity'
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
+import { RevenueController } from './dashboard.controller'
 @Module({
   imports: [TypeOrmModule.forFeature([Visitor, Enrollments, Voucher, Classes, Student, Teacher])],
-  controllers: [DashboardController, DashboardControllerUser],
+  controllers: [DashboardControllerUser, RevenueController],
   providers: [DashboardService, VisitorService],
 })
 export class DashboardModule {}
