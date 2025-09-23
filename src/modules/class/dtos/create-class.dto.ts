@@ -15,8 +15,13 @@ export class CreateClassDto {
 
   @IsNumber()
   @IsNotEmpty()
-  @ApiProperty({ description: 'Số tiết học', example: 10 })
+  @ApiProperty({ description: 'Số buổi học', example: 10 })
   number_lessons: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Số tiết học', example: 10 })
+  number_periods: number
 
   @IsString()
   @IsOptional()

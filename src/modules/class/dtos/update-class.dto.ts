@@ -26,6 +26,11 @@ export class UpdateClassDto {
   @IsNumber()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Số tiết học', example: 10 })
+  number_periods: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Số buổi học', example: 10 })
   number_lessons: number
 
   @IsString()

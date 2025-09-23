@@ -27,6 +27,10 @@ export class Classes {
   classroom: string
 
   // số tiết học
+  @Column({ nullable: true })
+  number_periods: number
+
+  // số buổi học
   @Column({ default: 0 })
   number_lessons: number
 
