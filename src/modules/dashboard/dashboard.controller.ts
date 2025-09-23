@@ -5,7 +5,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from 'src/common/response.dto'
 import { VisitorService } from '../visitor/visitor.service'
 import { DashboardService } from './dashboard.service'
-import { RevenueStatisticsDto } from './dtos/dashboard.dto'
+import { RevenueStatisticsDto, SemesterRevenueDto } from './dtos/dashboard.dto'
 @ApiTags('Admin Dashboard')
 @Controller('admin/dashboard')
 @Auth(Role.ADMIN)
@@ -101,6 +101,17 @@ export class DashboardControllerUser {
       statusCode: 200,
       messageCode: 'DASHBOARD_GET_TEACHER_SUCCESS',
       data: teacherStatistics,
+    })
+  }
+
+  @Get('/semester-revenue')
+  @ApiOperation({ summary: 'Lấy thống kê doanh thu theo học kỳ' })
+  async semesterRevenue(@Query() semesterRevenueDto: SemesterRevenueDto): Promise<ResponseDto> {
+    const semesterRevenue = await this.dashboardService.semesterRevenue(semesterRevenueDto)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_SEMESTER_REVENUE_SUCCESS',
+      data: semesterRevenue,
     })
   }
 }
