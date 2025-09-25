@@ -706,9 +706,9 @@ export class DashboardService {
         teacher_id: row.teacher_id,
         teacher_name: row.teacher_name,
         number_periods: Number(row.number_periods),
-        salary: salaryCap, // lương gốc theo số tiết * rate
+        salary: Number(row.salary_per_period), // lương gốc
         extra_allowance: extraAllowance,
-        salary_cap: salaryCap,
+        salary_cap: salaryCap, // lương mỗi tiết * số tiết
         teacher_special: row.teacher_special,
         final_salary: finalSalary,
         department_id: row.department_id,
