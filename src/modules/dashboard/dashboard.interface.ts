@@ -6,6 +6,7 @@ export interface SemesterRevenueSummary {
     total_revenue: number
     total_discount: number
     total_profit: number
+    total_salary: number
   }
   departments: {
     department_id: number
@@ -14,6 +15,7 @@ export interface SemesterRevenueSummary {
     total_revenue: number
     total_discount: number
     total_profit: number
+    total_salary: number
     classes: {
       class_id: number
       class_name: string
@@ -21,8 +23,9 @@ export interface SemesterRevenueSummary {
       total_students: number
       total_revenue: number
       total_discount: number
-      total_profit: number
       total_student_discount: number
+      total_profit: number
+      total_salary: number
     }[]
   }[]
 }
