@@ -654,10 +654,13 @@ export class DashboardService {
     const sql = `
       SELECT
         t.id AS teacher_id,
+        t.other_name AS teacher_other_name,
         u.full_name AS teacher_name,
+        u.saint_name AS teacher_saint_name,
         d.id AS department_id,
         d.name AS department_name,
         c.id AS class_id,
+        c.code AS class_code,
         c.name AS class_name,
         c.number_periods,
         c.salary AS salary_per_period,
@@ -702,9 +705,12 @@ export class DashboardService {
 
       return {
         class_id: row.class_id,
+        class_code: row.class_code,
         class_name: row.class_name,
         teacher_id: row.teacher_id,
         teacher_name: row.teacher_name,
+        teacher_other_name: row.teacher_other_name,
+        teacher_saint_name: row.teacher_saint_name,
         number_periods: Number(row.number_periods),
         salary: Number(row.salary_per_period), // lương gốc
         extra_allowance: extraAllowance,
@@ -731,9 +737,12 @@ export class DashboardService {
       }
       departmentsMap[cls.department_id].classes.push({
         class_id: cls.class_id,
+        class_code: cls.class_code,
         class_name: cls.class_name,
         teacher_id: cls.teacher_id,
         teacher_name: cls.teacher_name,
+        teacher_other_name: cls.teacher_other_name,
+        teacher_saint_name: cls.teacher_saint_name,
         number_periods: cls.number_periods,
         salary: cls.salary,
         extra_allowance: cls.extra_allowance,

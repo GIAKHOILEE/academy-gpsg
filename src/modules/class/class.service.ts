@@ -153,7 +153,7 @@ export class ClassService {
 
   async updateClass(id: number, updateClassDto: UpdateClassDto): Promise<void> {
     const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = updateClassDto
-
+    console.log(updateClassDto)
     const existingClass = await this.classRepository.findOne({ where: { id } })
     if (!existingClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
