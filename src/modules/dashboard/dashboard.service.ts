@@ -461,6 +461,7 @@ export class DashboardService {
       d.id AS department_id,
       d.name AS department_name,
       c.id AS class_id,
+      c.code AS class_code,
       c.name AS class_name,
       COALESCE(c.price,0) AS price,
       COALESCE(SUM(va.student_count),0) AS total_students,
@@ -491,6 +492,7 @@ export class DashboardService {
       department_id: Number(r.department_id),
       department_name: r.department_name,
       class_id: Number(r.class_id),
+      class_code: r.class_code,
       class_name: r.class_name,
       price: Number(r.price || 0),
       total_students: Number(r.total_students || 0),
@@ -602,6 +604,7 @@ export class DashboardService {
 
       dep.classes.push({
         class_id: cls.class_id,
+        class_code: cls.class_code,
         class_name: cls.class_name,
         price: cls.price,
         total_students: cls.total_students,
