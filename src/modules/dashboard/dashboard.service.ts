@@ -443,19 +443,14 @@ export class DashboardService {
         ce.student_count,
         ce.class_revenue,
         COALESCE(e.discount,0) AS enrollment_discount,
-        COALESCE(v.actual_discount,0) AS voucher_discount,
         et.total_revenue,
         et.total_classes,
-        CASE WHEN et.total_revenue > 0
-             THEN (ce.class_revenue / et.total_revenue) * COALESCE(v.actual_discount,0)
-             ELSE 0 END AS voucher_share,
         CASE WHEN et.total_classes > 0
              THEN (COALESCE(e.discount,0) / et.total_classes)
              ELSE 0 END AS enrollment_share
       FROM class_enrollment ce
       JOIN enrollment_totals et ON et.enrollment_id = ce.enrollment_id
       JOIN enrollments e ON e.id = ce.enrollment_id
-      LEFT JOIN voucher v ON v.enrollment_id = e.id AND v.is_used = TRUE
     )
     SELECT
       d.id AS department_id,
@@ -466,9 +461,9 @@ export class DashboardService {
       COALESCE(c.price,0) AS price,
       COALESCE(SUM(va.student_count),0) AS total_students,
       COALESCE(SUM(va.class_revenue),0) AS total_revenue,
-      COALESCE(SUM(va.voucher_share),0) + COALESCE(SUM(va.enrollment_share),0) AS total_discount,
-      (COALESCE(SUM(va.class_revenue),0) - (COALESCE(SUM(va.voucher_share),0) + COALESCE(SUM(va.enrollment_share),0))) AS total_profit,
-      COALESCE(COUNT(DISTINCT CASE WHEN (va.voucher_share + va.enrollment_share) > 0 THEN va.enrollment_id END),0) AS total_student_discount
+      COALESCE(SUM(va.enrollment_share),0) AS total_discount,
+      (COALESCE(SUM(va.class_revenue),0) - COALESCE(SUM(va.enrollment_share),0)) AS total_profit,
+      COALESCE(COUNT(DISTINCT CASE WHEN va.enrollment_share > 0 THEN va.enrollment_id END),0) AS total_student_discount
     FROM voucher_alloc va
     JOIN classes c ON c.id = va.class_id
     JOIN subjects s ON s.id = va.subject_id
