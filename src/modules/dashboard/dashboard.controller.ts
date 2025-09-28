@@ -102,6 +102,8 @@ export class DashboardControllerUser {
 }
 
 @Controller('revenue')
+@Auth(Role.FINANCE)
+@ApiBearerAuth()
 export class RevenueController {
   constructor(private readonly dashboardService: DashboardService) {}
 

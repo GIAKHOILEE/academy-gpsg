@@ -17,6 +17,7 @@ export interface IEnrollments {
   debt?: number
   note?: string
   user_note?: string
+  is_read_note?: boolean
   is_logged?: boolean
   classes?: IClasses[]
   // thông tin sinh viên

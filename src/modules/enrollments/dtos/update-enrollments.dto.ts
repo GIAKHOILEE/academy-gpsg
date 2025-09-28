@@ -1,6 +1,6 @@
 import { PaymentMethod, StatusEnrollment } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateEnrollmentsDto {
   @ApiPropertyOptional({ description: 'Mã student', example: '123456' })
@@ -58,6 +58,11 @@ export class UpdateEnrollmentsDto {
   @IsString()
   @IsOptional()
   user_note: string
+
+  @ApiPropertyOptional({ description: 'Đã đọc ghi chú', example: true })
+  @IsBoolean()
+  @IsOptional()
+  is_read_note: boolean
 
   // thông tin sinh viên
   @ApiPropertyOptional({ description: 'Tên thánh', example: 'Tên thánh' })
