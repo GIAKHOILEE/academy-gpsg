@@ -72,17 +72,35 @@ export class AttendanceService {
 
     let status: AttendanceStatus
 
+    // trước giờ điểm danh
     if (nowMinutes < startMinutes) {
-      // điểm danh sớm
       throwAppException('ATTENDANCE_TOO_EARLY', ErrorCode.ATTENDANCE_TOO_EARLY, HttpStatus.BAD_REQUEST)
-    } else if (nowMinutes <= endMinutes) {
-      // trong giờ điểm danh
-      const lateThreshold = startMinutes
-      status = nowMinutes <= lateThreshold ? AttendanceStatus.PRESENT : AttendanceStatus.LATE
-    } else {
-      // sau giờ điểm danh
-      status = AttendanceStatus.ABSENT
     }
+
+    // Trong giờ điểm danh
+    if (nowMinutes >= startMinutes && nowMinutes <= endMinutes) {
+      status = AttendanceStatus.PRESENT
+    }
+
+    // Sau giờ điểm danh
+    if (nowMinutes > endMinutes) {
+      status = AttendanceStatus.LATE
+    }
+
+    // if (nowMinutes < startMinutes) {
+    //   // điểm danh sớm
+    //   throwAppException('ATTENDANCE_TOO_EARLY', ErrorCode.ATTENDANCE_TOO_EARLY, HttpStatus.BAD_REQUEST)
+    // } else if (nowMinutes <= endMinutes) {
+    //   console.log('nowMinutes', nowMinutes)
+    //   console.log('startMinutes', startMinutes)
+    //   console.log('endMinutes', endMinutes)
+    //   // trong giờ điểm danh
+    //   const lateThreshold = startMinutes
+    //   status = nowMinutes <= lateThreshold ? AttendanceStatus.PRESENT : AttendanceStatus.LATE
+    // } else {
+    //   // sau giờ điểm danh
+    //   status = AttendanceStatus.ABSENT
+    // }
 
     const attendance = this.attendanceRepository.create({
       class_student_id: classStudent.id,
