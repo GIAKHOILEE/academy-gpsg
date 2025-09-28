@@ -117,6 +117,59 @@ export class AdminStaffController {
   }
 }
 
+@ApiTags('admin/finance')
+@Controller('admin/finance')
+@ApiBearerAuth()
+@Auth(Role.ADMIN)
+export class AdminFinanceController {
+  constructor(private readonly userService: UserService) {}
+
+  @ApiOperation({ summary: 'Tạo tài khoản mới cho nhân viên tài chính' })
+  @Post('register')
+  async registerFinance(@Body() createUserDto: CreateUserDto): Promise<ResponseDto> {
+    const user = await this.userService.createFinance(createUserDto)
+    return new ResponseDto({
+      messageCode: 'FINANCE_CREATED_SUCCESS',
+      statusCode: 200,
+      data: user,
+    })
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Lấy danh sách nhân viên tài chính' })
+  async getFinance(@Query() paginateUserDto: PaginateUserDto): Promise<ResponseDto> {
+    const users = await this.userService.getAllUsers(paginateUserDto, Role.FINANCE)
+    return new ResponseDto({
+      messageCode: 'FINANCE_RETRIEVED_SUCCESS',
+      statusCode: 200,
+      data: users.data,
+      meta: users.meta,
+    })
+  }
+
+  @ApiOperation({ summary: 'Cập nhật trạng thái của nhân viên tài chính' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @Put(':id/status')
+  async updateStatus(@Param('id', ParseIntPipe) id: number, @Body('status') status: UserStatus): Promise<ResponseDto> {
+    await this.userService.updateStatus(id, status)
+    return new ResponseDto({
+      messageCode: 'USER_STATUS_UPDATED_SUCCESS',
+      statusCode: 200,
+    })
+  }
+
+  @ApiOperation({ summary: 'Cập nhật thông tin của nhân viên tài chính' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @Put(':id')
+  async updateUser(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto): Promise<ResponseDto> {
+    await this.userService.updateUser(id, updateUserDto)
+    return new ResponseDto({
+      messageCode: 'USER_UPDATED_SUCCESS',
+      statusCode: 200,
+    })
+  }
+}
+
 // ============================================
 // ================== USER ===================
 // ============================================

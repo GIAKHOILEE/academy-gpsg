@@ -4,6 +4,7 @@ export enum Role {
   STUDENT = 2,
   TEACHER = 3,
   STAFF = 4,
+  FINANCE = 5,
 }
 
 export enum Gender {

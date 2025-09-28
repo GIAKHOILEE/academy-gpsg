@@ -26,7 +26,19 @@ export class Classes {
   @Column({ nullable: true })
   classroom: string
 
+  // lương/tiết học của giáo viên
+  @Column({ type: 'decimal', precision: 10, scale: 0, nullable: true })
+  salary: number
+
+  // bồi dưỡng thêm
+  @Column({ type: 'decimal', precision: 10, scale: 0, default: 0 })
+  extra_allowance: number
+
   // số tiết học
+  @Column({ type: 'float', nullable: true })
+  number_periods: number
+
+  // số buổi học
   @Column({ default: 0 })
   number_lessons: number
 

@@ -154,6 +154,7 @@ export class EnrollmentsService {
         prepaid,
         debt,
         student_id: studentId,
+        is_read_note: createEnrollmentDto.user_note ? false : null,
       })
 
       const savedEnrollment = await queryRunner.manager.save(Enrollments, enrollment)
@@ -616,6 +617,7 @@ export class EnrollmentsService {
         'enrollment.note',
         'enrollment.discount',
         'enrollment.user_note',
+        'enrollment.is_read_note',
         'enrollment.class_ids',
         'student.id',
         'user.code',
@@ -666,6 +668,7 @@ export class EnrollmentsService {
       discount: enrollment.discount,
       note: enrollment.note,
       user_note: enrollment.user_note,
+      is_read_note: enrollment.is_read_note,
       is_logged: enrollment.is_logged,
       voucher_code: enrollment.voucher_code,
       payment_info: {
@@ -725,6 +728,7 @@ export class EnrollmentsService {
         'enrollment.discount',
         'enrollment.note',
         'enrollment.user_note',
+        'enrollment.is_read_note',
         'enrollment.is_logged',
         'enrollment.saint_name',
         'enrollment.full_name',
@@ -756,6 +760,7 @@ export class EnrollmentsService {
         phone_number: enrollment.phone_number,
         address: enrollment.address,
         discount: enrollment.discount,
+        is_read_note: enrollment.is_read_note,
       }
     })
 

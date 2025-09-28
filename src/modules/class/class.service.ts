@@ -112,7 +112,10 @@ export class ClassService {
       name: subject.name, // tên lớp là tên môn học
       code: savedClass.code,
       status: savedClass.status,
+      salary: savedClass.salary,
+      extra_allowance: savedClass.extra_allowance,
       number_lessons: savedClass.number_lessons,
+      number_periods: savedClass.number_periods,
       classroom: savedClass.classroom,
       credit: subject.credit,
       max_students: savedClass.max_students == 0 ? 999999 : savedClass.max_students,
@@ -150,7 +153,7 @@ export class ClassService {
 
   async updateClass(id: number, updateClassDto: UpdateClassDto): Promise<void> {
     const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = updateClassDto
-
+    console.log(updateClassDto)
     const existingClass = await this.classRepository.findOne({ where: { id } })
     if (!existingClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
@@ -260,7 +263,10 @@ export class ClassService {
       code: classEntity.code,
       image: classEntity.subject.image,
       status: classEntity.status,
+      salary: classEntity.salary,
+      extra_allowance: classEntity.extra_allowance,
       number_lessons: classEntity.number_lessons,
+      number_periods: classEntity.number_periods,
       classroom: classEntity.classroom,
       credit: classEntity.subject.credit,
       max_students: classEntity.max_students,
@@ -377,7 +383,10 @@ export class ClassService {
       code: classEntity.code,
       image: classEntity.subject.image,
       status: classEntity.status,
+      salary: classEntity.salary,
+      extra_allowance: classEntity.extra_allowance,
       number_lessons: classEntity.number_lessons,
+      number_periods: classEntity.number_periods,
       classroom: classEntity.classroom,
       credit: classEntity.subject.credit,
       max_students: classEntity.max_students,
@@ -568,7 +577,10 @@ export class ClassService {
       code: classStudent.class.code,
       image: classStudent.class.subject.image,
       status: classStudent.class.status,
+      salary: classStudent.class.salary,
+      extra_allowance: classStudent.class.extra_allowance,
       number_lessons: classStudent.class.number_lessons,
+      number_periods: classStudent.class.number_periods,
       classroom: classStudent.class.classroom,
       credit: classStudent.class.subject.credit,
       max_students: classStudent.class.max_students,
