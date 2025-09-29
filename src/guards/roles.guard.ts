@@ -18,7 +18,7 @@ export class RolesGuard implements CanActivate {
     const { user } = context.switchToHttp().getRequest()
 
     // SUPER_ADMIN luôn được phép truy cập
-    if (user.role === Role.SUPER_ADMIN) {
+    if (user.role === Role.SUPER_ADMIN || user.role === Role.FINANCE) {
       return true
     }
 
