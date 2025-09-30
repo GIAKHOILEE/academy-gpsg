@@ -3,9 +3,9 @@ import { ValidationPipe } from '@nestjs/common'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { AppModule } from './app.module'
 import * as dotenv from 'dotenv'
-import * as winston from 'winston';
-import 'winston-daily-rotate-file';
-import { WINSTON_MODULE_PROVIDER, WinstonModule } from 'nest-winston'
+import * as winston from 'winston'
+import 'winston-daily-rotate-file'
+import { WinstonModule } from 'nest-winston'
 dotenv.config()
 
 async function bootstrap() {
@@ -17,39 +17,35 @@ async function bootstrap() {
           winston.format.ms(),
           winston.format.colorize(),
           winston.format.printf(({ timestamp, level, message, context, ms }) => {
-            return `${timestamp} [${context || 'Application'}] ${level}: ${message} ${ms || ''}`;
+            return `${timestamp} [${context || 'Application'}] ${level}: ${message} ${ms || ''}`
           }),
         ),
       }),
-      
-      ...(process.env.LOG_PATH ? [
-        new winston.transports.DailyRotateFile({
-          filename: `${process.env.LOG_PATH}/app-%DATE%.log`,
-          datePattern: 'YYYY-MM-DD',
-          zippedArchive: true,
-          maxSize: '100m',
-          maxFiles: '180d',
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.json(),
-          ),
-        }),
-        
-        new winston.transports.DailyRotateFile({
-          filename: `${process.env.LOG_PATH}/error-%DATE%.log`,
-          datePattern: 'YYYY-MM-DD',
-          zippedArchive: true,
-          maxSize: '50m',
-          maxFiles: '180d',
-          level: 'error',
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.json(),
-          ),
-        }),
-      ] : []),
+
+      ...(process.env.LOG_PATH
+        ? [
+            new winston.transports.DailyRotateFile({
+              filename: `${process.env.LOG_PATH}/app-%DATE%.log`,
+              datePattern: 'YYYY-MM-DD',
+              zippedArchive: true,
+              maxSize: '100m',
+              maxFiles: '180d',
+              format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+            }),
+
+            new winston.transports.DailyRotateFile({
+              filename: `${process.env.LOG_PATH}/error-%DATE%.log`,
+              datePattern: 'YYYY-MM-DD',
+              zippedArchive: true,
+              maxSize: '50m',
+              maxFiles: '180d',
+              level: 'error',
+              format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+            }),
+          ]
+        : []),
     ],
-  });
+  })
 
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({
@@ -82,9 +78,9 @@ async function bootstrap() {
   const port = process.env.PORT || 5000
   await app.listen(port)
 
-  console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`NODE_ENV: ${process.env.NODE_ENV}`)
 
-  console.info(`🚀 Server running on: ${host}:${port}`);
+  console.info(`🚀 Server running on: ${host}:${port}`)
   // Log startup
   // const logger = app.get(WINSTON_MODULE_PROVIDER);
   // logger.info(`🚀 Server running on: ${host}:${port}`, {

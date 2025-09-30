@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common'
+import { Injectable, HttpStatus } from '@nestjs/common'
 import { DataSource, In } from 'typeorm'
 import { BulkExamScoreByStudentDto } from './dtos/create-exam-scores.dto'
 import { ExamScore } from './exam-scores.entity'
@@ -113,7 +113,7 @@ export class ExamScoreService {
     // Query: lấy tất cả class_students của lớp, join students -> users,
     // join exams của lớp (all exams), và left join exam_scores tương ứng
 
-    const params: any[] = [class_id]
+    const params: any[] = []
     let sql = `
       SELECT
         cs.id AS class_student_id,
@@ -132,16 +132,25 @@ export class ExamScoreService {
       LEFT JOIN user u ON u.id = s.user_id
       LEFT JOIN exams e ON e.class_id = cs.class_id
       LEFT JOIN exam_scores es ON es.exam_id = e.id AND es.class_student_id = cs.id
-      WHERE cs.class_id = ?
     `
 
+    const conditions: string[] = []
+
+    if (class_id) {
+      conditions.push(`cs.class_id = ?`)
+      params.push(class_id)
+    }
+
     if (student_id) {
-      sql += ` AND cs.student_id = ?`
+      conditions.push(`cs.student_id = ?`)
       params.push(student_id)
     }
 
-    sql += ` ORDER BY s.id, e.id`
+    if (conditions.length > 0) {
+      sql += ` WHERE ` + conditions.join(' AND ')
+    }
 
+    sql += ` ORDER BY s.id, e.id`
     const rows: Array<{
       class_student_id: number
       student_id: number

@@ -499,9 +499,9 @@ export class DashboardService {
 
     // 4) Lấy thông tin lớp + giáo viên (để tính lương). Lấy chỉ những class_id có trong classRows
     const classIds = Array.from(new Set(classRows.map(c => c.class_id)))
-    let classInfoById: Record<number, any> = {}
+    const classInfoById: Record<number, any> = {}
     if (classIds.length > 0) {
-      const placeholders = classIds.map(_ => '?').join(',')
+      const placeholders = classIds.map(() => '?').join(',')
       const classInfoSql = `
       SELECT c.id AS class_id,
              COALESCE(c.number_periods,0) AS number_periods,
