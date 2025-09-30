@@ -43,6 +43,7 @@ import { NavigationAttendanceModule } from './modules/navigation-attendance/navi
 import { HttpLoggerMiddleware } from '@middleware/http-logger.middleware'
 import { ExamModule } from '@modules/class-rules/exam/_exam/exam.module'
 import { ClassRulesModule } from '@modules/class-rules/_class-rules/class-rules.module'
+import { ExamScoreModule } from '@modules/class-rules/exam/exam-scores/exam-scores.module'
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { ClassRulesModule } from '@modules/class-rules/_class-rules/class-rules.
     AttendanceModule,
     ClassRulesModule,
     ExamModule,
+    ExamScoreModule,
   ],
   providers: [
     AppService,
