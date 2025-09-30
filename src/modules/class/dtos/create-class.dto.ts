@@ -50,8 +50,8 @@ export class CreateClassDto {
 
   @IsArray()
   @IsEnum(Schedule, { each: true })
-  @IsNotEmpty()
-  @ApiProperty({
+  @IsOptional()
+  @ApiPropertyOptional({
     enum: Schedule,
     description: 'Lịch học',
     example: [Schedule.SUNDAY, Schedule.MONDAY, Schedule.TUESDAY, Schedule.WEDNESDAY, Schedule.THURSDAY, Schedule.FRIDAY, Schedule.SATURDAY],
