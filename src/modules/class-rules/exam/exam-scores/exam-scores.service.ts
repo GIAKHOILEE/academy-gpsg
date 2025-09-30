@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common'
 import { DataSource, In } from 'typeorm'
 import { BulkExamScoreByStudentDto } from './dtos/create-exam-scores.dto'
 import { ExamScore } from './exam-scores.entity'
@@ -6,6 +6,9 @@ import { Exam } from '../_exam/exam.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
+import { PaginateExamScoresDto } from './dtos/paginate-exam-scores.dto'
+import { throwAppException } from '@common/utils'
+import { ErrorCode } from '@enums/error-codes.enum'
 
 @Injectable()
 export class ExamScoreService {
@@ -23,7 +26,7 @@ export class ExamScoreService {
       // check điểm nằm trong khoảng 0-10
       const invalidScores = scores.filter(s => s.score < 0 || s.score > 10)
       if (invalidScores.length > 0) {
-        throw new BadRequestException(`Có điểm nằm ngoài khoảng 0-10: ${invalidScores.map(s => `${s.student_id}: ${s.score}`).join(', ')}`)
+        throwAppException('SCORE_BETWEEN_0_AND_10', ErrorCode.SCORE_BETWEEN_0_AND_10, HttpStatus.BAD_REQUEST)
       }
 
       // check exam_id tồn tại
@@ -32,7 +35,7 @@ export class ExamScoreService {
         where: { id: In(examIds) },
       })
       if (exams.length !== examIds.length) {
-        throw new BadRequestException(`Có exam_id không tồn tại: ${examIds.filter(id => !exams.some(e => e.id === id)).join(', ')}`)
+        throwAppException('EXAM_NOT_FOUND', ErrorCode.EXAM_NOT_FOUND, HttpStatus.BAD_REQUEST)
       }
 
       // check student_id tồn tại
@@ -41,7 +44,7 @@ export class ExamScoreService {
         where: { id: In(studentIds) },
       })
       if (students.length !== studentIds.length) {
-        throw new BadRequestException(`Có student_id không tồn tại: ${studentIds.filter(id => !students.some(s => s.id === id)).join(', ')}`)
+        throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.BAD_REQUEST)
       }
 
       // check class_id tồn tại
@@ -49,7 +52,7 @@ export class ExamScoreService {
         where: { id: class_id },
       })
       if (!classes) {
-        throw new BadRequestException(`Class_id không tồn tại: ${class_id}`)
+        throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.BAD_REQUEST)
       }
 
       // 1) Lấy list class_student tương ứng (student_id thuộc class_id)
@@ -61,7 +64,7 @@ export class ExamScoreService {
       const foundStudentIds = classStudents.map(cs => cs.student_id)
       const missing = studentIds.filter(id => !foundStudentIds.includes(id))
       if (missing.length > 0) {
-        throw new BadRequestException(`Các student_id không thuộc class hoặc chưa được thêm vào class: ${missing.join(',')}`)
+        throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
       }
 
       // map student_id -> class_student_id
@@ -105,25 +108,13 @@ export class ExamScoreService {
     }
   }
 
-  async getClassScoreboard(class_id: number) {
-    if (!class_id) throw new BadRequestException('class_id is required')
-
+  async getClassScoreboard(dto: PaginateExamScoresDto) {
+    const { class_id, student_id } = dto
     // Query: lấy tất cả class_students của lớp, join students -> users,
     // join exams của lớp (all exams), và left join exam_scores tương ứng
-    const rows: Array<{
-      class_student_id: number
-      student_id: number
-      code: string | null
-      saint_name: string | null
-      full_name: string | null
-      email: string | null
-      stored_score: number | null
-      exam_id: number | null
-      exam_name: string | null
-      exam_score: number | null
-      weight_percentage: number | null
-    }> = await this.dataSource.query(
-      `
+
+    const params: any[] = [class_id]
+    let sql = `
       SELECT
         cs.id AS class_student_id,
         s.id AS student_id,
@@ -142,10 +133,28 @@ export class ExamScoreService {
       LEFT JOIN exams e ON e.class_id = cs.class_id
       LEFT JOIN exam_scores es ON es.exam_id = e.id AND es.class_student_id = cs.id
       WHERE cs.class_id = ?
-      ORDER BY s.id, e.id
-      `,
-      [class_id],
-    )
+    `
+
+    if (student_id) {
+      sql += ` AND cs.student_id = ?`
+      params.push(student_id)
+    }
+
+    sql += ` ORDER BY s.id, e.id`
+
+    const rows: Array<{
+      class_student_id: number
+      student_id: number
+      code: string | null
+      saint_name: string | null
+      full_name: string | null
+      email: string | null
+      stored_score: number | null
+      exam_id: number | null
+      exam_name: string | null
+      exam_score: number | null
+      weight_percentage: number | null
+    }> = await this.dataSource.query(sql, params)
 
     // Group rows by class_student_id and compute final_score
     const map = new Map<number, any>()

@@ -96,6 +96,7 @@ export const messages = {
     ATTENDANCE_PERCENTAGE_IS_REQUIRED: 'Attendance percentage is required',
     ATTENDANCE_PERCENTAGE_MUST_BE_BETWEEN_0_AND_1: 'Attendance percentage must be between 0 and 1',
     SCORE_IS_REQUIRED: 'Score is required',
+    SCORE_BETWEEN_0_AND_10: 'Score must be between 0 and 10',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -197,5 +198,6 @@ export const messages = {
     ATTENDANCE_PERCENTAGE_IS_REQUIRED: 'Tỷ lệ điểm danh là bắt buộc',
     ATTENDANCE_PERCENTAGE_MUST_BE_BETWEEN_0_AND_1: 'Tỷ lệ điểm danh phải nằm trong khoảng 0 và 1',
     SCORE_IS_REQUIRED: 'Điểm là bắt buộc',
+    SCORE_BETWEEN_0_AND_10: 'Điểm phải nằm trong khoảng 0-10',
   },
 }

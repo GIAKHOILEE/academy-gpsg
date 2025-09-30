@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query } from '@nestjs/common'
 import { ExamScoreService } from './exam-scores.service'
 import { BulkExamScoreByStudentDto } from './dtos/create-exam-scores.dto'
 import { ResponseDto } from '@common/response.dto'
+import { PaginateExamScoresDto } from './dtos/paginate-exam-scores.dto'
 
 @Controller('exam-scores')
 export class ExamScoreController {
@@ -17,8 +18,8 @@ export class ExamScoreController {
   }
 
   @Get('scoreboard')
-  async getScoreboard(@Query('class_id') class_id: number): Promise<ResponseDto> {
-    const result = await this.examScoreService.getClassScoreboard(class_id)
+  async getScoreboard(@Query() dto: PaginateExamScoresDto): Promise<ResponseDto> {
+    const result = await this.examScoreService.getClassScoreboard(dto)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'EXAM_SCORES_RETRIEVED_SUCCESS',
