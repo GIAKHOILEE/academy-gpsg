@@ -12,7 +12,6 @@ import { AttendanceRule } from '../attendance-rule/attendance-rule.entity'
 import { AttendanceStatus } from '@enums/class.enum'
 import { toMinutes } from '@common/utils'
 import { UpdateAttendanceDto } from './dtos/update-attendance.dto'
-import { IAttendance } from './attendance.interface'
 
 @Injectable()
 export class AttendanceService {

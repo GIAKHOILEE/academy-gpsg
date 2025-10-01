@@ -1,5 +1,4 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
-import { OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { ClassRule } from './class-rules.entity'

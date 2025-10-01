@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { RuleType } from '@enums/class.enum'
 import { Classes } from '@modules/class/class.entity'
 
@@ -16,7 +16,7 @@ export class ClassRule {
 
   // Loại quy tắc
   @Column({ type: 'enum', enum: RuleType })
-  type: RuleType // attendance_percentage, teacher_evaluation, score_based
+  type: RuleType // attendance_percentage, teacher_evaluation, score_based, attendance_percentage_and_score_based
 
   // Ngưỡng yêu cầu (%) type: 1, 4
   @Column({ type: 'float', nullable: true })

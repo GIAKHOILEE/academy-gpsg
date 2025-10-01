@@ -1,5 +1,3 @@
-import { TeacherSpecial } from '@enums/user.enum'
-
 export interface SemesterRevenueSummary {
   summary: {
     total_students: number

@@ -1,5 +1,6 @@
 import { PaginationDto } from '@common/pagination'
 import { ApiPropertyOptional } from '@nestjs/swagger'
+import { Type } from 'class-transformer'
 import { IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class PaginateExamDto extends PaginationDto {
@@ -9,6 +10,7 @@ export class PaginateExamDto extends PaginationDto {
     description: 'ID của lớp',
     example: 1,
   })
+  @Type(() => Number)
   class_id?: number
 
   @IsOptional()
