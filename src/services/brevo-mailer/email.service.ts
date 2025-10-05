@@ -16,7 +16,7 @@ export class BrevoMailerService {
   private readonly apiUrl = process.env.BREVO_API_URL
   constructor(private readonly httpService: HttpService) {}
 
-  async sendMail(receivers: IReceiver[], subject: string, filePath: string, data: any, attachment?: Attachment) {
+  async sendMail(receivers: IReceiver[], subject: string, filePath: string, data: any, attachment?: Attachment, rawContent?: string) {
     console.log('sendMail', receivers, subject, filePath, data)
 
     try {
@@ -26,6 +26,15 @@ export class BrevoMailerService {
         'content-type': 'application/json',
       }
 
+      let htmlContent = ''
+      if (rawContent) {
+        // nếu FE truyền content thẳng thì dùng luôn
+        htmlContent = rawContent
+      } else if (filePath) {
+        // nếu có filePath thì load template HBS
+        htmlContent = this.readAndSendHbs(filePath, data)
+      }
+
       const emailData: any = {
         sender: {
           name: process.env.SENDER_NAME,
@@ -33,7 +42,7 @@ export class BrevoMailerService {
         },
         to: receivers,
         subject: subject,
-        htmlContent: this.readAndSendHbs(filePath, data),
+        htmlContent: htmlContent,
       }
       if (attachment) {
         emailData.attachment = [

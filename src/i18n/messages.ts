@@ -97,6 +97,8 @@ export const messages = {
     ATTENDANCE_PERCENTAGE_MUST_BE_BETWEEN_0_AND_1: 'Attendance percentage must be between 0 and 1',
     SCORE_IS_REQUIRED: 'Score is required',
     SCORE_BETWEEN_0_AND_10: 'Score must be between 0 and 10',
+    ONLY_STUDENT_OR_TEACHER: 'Role không hợp lệ, chỉ cho phép STUDENT hoặc TEACHER',
+    NO_EMAIL_FOUND: 'Không tìm thấy email người nhận',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -199,5 +201,7 @@ export const messages = {
     ATTENDANCE_PERCENTAGE_MUST_BE_BETWEEN_0_AND_1: 'Tỷ lệ điểm danh phải nằm trong khoảng 0 và 1',
     SCORE_IS_REQUIRED: 'Điểm là bắt buộc',
     SCORE_BETWEEN_0_AND_10: 'Điểm phải nằm trong khoảng 0-10',
+    ONLY_STUDENT_OR_TEACHER: 'Role không hợp lệ, chỉ cho phép STUDENT hoặc TEACHER',
+    NO_EMAIL_FOUND: 'Không tìm thấy email người nhận',
   },
 }
