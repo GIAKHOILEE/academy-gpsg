@@ -12,6 +12,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm'
+import { ClassActivitiesEntity } from '@modules/class-activities/class-activities/class-activities.entity'
 
 @Entity({ name: 'teachers' })
 export class Teacher {
@@ -67,6 +68,9 @@ export class Teacher {
 
   @OneToMany(() => Classes, classes => classes.teacher, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   classes: Classes[]
+
+  @OneToMany(() => ClassActivitiesEntity, classActivities => classActivities.teacher, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  class_activities: ClassActivitiesEntity[]
 
   @CreateDateColumn()
   created_at: Date

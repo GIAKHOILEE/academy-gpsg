@@ -3,6 +3,8 @@ import { JoinColumn } from 'typeorm'
 import { User } from '../users/user.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
+import { CommentEntity } from '@modules/class-activities/comment/comment.entity'
+
 @Entity({ name: 'students' })
 export class Student {
   @PrimaryGeneratedColumn()
@@ -52,6 +54,9 @@ export class Student {
   // danh sách đăng ký
   @OneToMany(() => Enrollments, enrollments => enrollments.student)
   enrollments: Enrollments[]
+
+  @OneToMany(() => CommentEntity, comment => comment.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  comments: CommentEntity[]
 
   @CreateDateColumn()
   created_at: Date

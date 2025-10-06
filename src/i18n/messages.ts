@@ -99,6 +99,9 @@ export const messages = {
     SCORE_BETWEEN_0_AND_10: 'Score must be between 0 and 10',
     ONLY_STUDENT_OR_TEACHER: 'Role không hợp lệ, chỉ cho phép STUDENT hoặc TEACHER',
     NO_EMAIL_FOUND: 'Không tìm thấy email người nhận',
+    CLASS_ACTIVITIES_NOT_FOUND: 'Hoạt động lớp học không tồn tại',
+    TEACHER_NOT_IN_CLASS: 'Teacher not in class',
+    COMMENT_NOT_FOUND: 'Comment not found',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -203,5 +206,8 @@ export const messages = {
     SCORE_BETWEEN_0_AND_10: 'Điểm phải nằm trong khoảng 0-10',
     ONLY_STUDENT_OR_TEACHER: 'Role không hợp lệ, chỉ cho phép STUDENT hoặc TEACHER',
     NO_EMAIL_FOUND: 'Không tìm thấy email người nhận',
+    CLASS_ACTIVITIES_NOT_FOUND: 'Hoạt động lớp học không tồn tại',
+    TEACHER_NOT_IN_CLASS: 'Giáo viên không có trong lớp học',
+    COMMENT_NOT_FOUND: 'Bình luận không tồn tại',
   },
 }
