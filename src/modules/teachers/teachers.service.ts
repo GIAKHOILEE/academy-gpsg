@@ -240,11 +240,20 @@ export class TeachersService {
   }
 
   async getTeachers(paginateTeachersDto: PaginateTeachersDto) {
-    const { full_name, email, phone_number, status, ...rest } = paginateTeachersDto
-    const query = this.teacherRepository
-      .createQueryBuilder('teachers')
-      .leftJoinAndSelect('teachers.user', 'user')
-      .where('teachers.deleted_at IS NULL')
+    const { full_name, email, phone_number, status, class_name, class_code, class_id, semester_id, department_id, scholastic_id, ...rest } =
+      paginateTeachersDto
+    const query = this.teacherRepository.createQueryBuilder('teachers').leftJoinAndSelect('teachers.user', 'user')
+
+    // Join tới classes (bảng classes) để filter theo lớp
+    // (dùng left join vì teacher có thể chưa có class)
+    query.leftJoin('classes', 'classes', 'classes.teacher_id = teachers.id')
+
+    // Nếu cần filter department, join subject để lấy subject.department_id
+    // (giả sử bảng subject tên là 'subjects' và trường id là subject.id)
+    query.leftJoin('subjects', 'subject', 'subject.id = classes.subject_id')
+
+    // luôn chỉ lấy teachers chưa bị xóa
+    query.where('teachers.deleted_at IS NULL')
 
     if (full_name) {
       query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })
@@ -261,6 +270,34 @@ export class TeachersService {
     if (status) {
       query.andWhere('user.status = :status', { status })
     }
+
+    // Các filter liên quan tới class / subject
+    if (class_name) {
+      query.andWhere('classes.name LIKE :class_name', { class_name: `%${class_name}%` })
+    }
+
+    if (class_code) {
+      query.andWhere('classes.code = :class_code', { class_code })
+    }
+
+    if (class_id) {
+      query.andWhere('classes.id = :class_id', { class_id })
+    }
+
+    if (semester_id) {
+      query.andWhere('classes.semester_id = :semester_id', { semester_id })
+    }
+
+    if (scholastic_id) {
+      query.andWhere('classes.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+
+    if (department_id) {
+      // department lưu ở subject.department_id
+      query.andWhere('subject.department_id = :department_id', { department_id })
+    }
+
+    query.distinct(true)
 
     const { data, meta } = await paginate(query, rest)
 
