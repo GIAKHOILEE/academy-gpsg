@@ -137,23 +137,23 @@ export class ClassActivitiesService {
         'comment.content',
         'comment.created_at',
         'comment.updated_at',
-        'student.id',
+        'user.id',
         'user.full_name',
         'user.saint_name',
         'user.avatar',
       ])
-      .leftJoin('comment.student', 'student')
-      .leftJoin('student.user', 'user')
+      .leftJoin('comment.user', 'user')
       .where('comment.class_activities_id = :id', { id })
       .getMany()
     const formattedComments = comments.map(comment => ({
       id: comment.id,
       content: comment.content,
-      student: {
-        id: comment.student.id,
-        full_name: comment.student.user.full_name,
-        saint_name: comment.student.user.saint_name,
-        avatar: comment.student.user.avatar,
+      role: comment.role,
+      user: {
+        id: comment.user.id,
+        full_name: comment.user.full_name,
+        saint_name: comment.user.saint_name,
+        avatar: comment.user.avatar,
       },
       created_at: formatStringDate(comment.created_at.toISOString()),
       updated_at: formatStringDate(comment.updated_at.toISOString()),

@@ -102,6 +102,7 @@ export const messages = {
     CLASS_ACTIVITIES_NOT_FOUND: 'Hoạt động lớp học không tồn tại',
     TEACHER_NOT_IN_CLASS: 'Teacher not in class',
     COMMENT_NOT_FOUND: 'Comment not found',
+    ONLY_STUDENT_AND_TEACHER_CAN_COMMENT: 'Only student and teacher can comment',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -209,5 +210,6 @@ export const messages = {
     CLASS_ACTIVITIES_NOT_FOUND: 'Hoạt động lớp học không tồn tại',
     TEACHER_NOT_IN_CLASS: 'Giáo viên không có trong lớp học',
     COMMENT_NOT_FOUND: 'Bình luận không tồn tại',
+    ONLY_STUDENT_AND_TEACHER_CAN_COMMENT: 'Chỉ học sinh và giáo viên mới được bình luận',
   },
 }

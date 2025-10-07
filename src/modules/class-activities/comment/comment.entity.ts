@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
 import { ClassActivitiesEntity } from '../class-activities/class-activities.entity'
-import { Student } from '@modules/students/students.entity'
+import { Role } from '@enums/role.enum'
+import { User } from '@modules/users/user.entity'
 
 @Entity('comments')
 export class CommentEntity {
@@ -10,12 +11,15 @@ export class CommentEntity {
   @Column({ type: 'text' })
   content: string
 
-  @Column()
-  student_id: number
+  @Column({ type: 'enum', enum: Role, default: Role.STUDENT })
+  role: Role
 
-  @ManyToOne(() => Student, student => student.comments, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'student_id' })
-  student: Student
+  @Column()
+  user_id: number
+
+  @ManyToOne(() => User, user => user.comments, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User
 
   @Column()
   class_activities_id: number

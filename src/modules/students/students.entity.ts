@@ -55,9 +55,6 @@ export class Student {
   @OneToMany(() => Enrollments, enrollments => enrollments.student)
   enrollments: Enrollments[]
 
-  @OneToMany(() => CommentEntity, comment => comment.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  comments: CommentEntity[]
-
   @CreateDateColumn()
   created_at: Date
 
