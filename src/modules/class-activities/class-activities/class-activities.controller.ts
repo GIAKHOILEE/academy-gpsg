@@ -44,7 +44,8 @@ export class AdminClassActivitiesController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'CLASS_ACTIVITIES_FETCHED_SUCCESSFULLY',
-      data: classActivities,
+      data: classActivities.data,
+      meta: classActivities.meta,
     })
   }
 
@@ -105,7 +106,8 @@ export class TeacherClassActivitiesController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'CLASS_ACTIVITIES_FETCHED_SUCCESSFULLY',
-      data: classActivities,
+      data: classActivities.data,
+      meta: classActivities.meta,
     })
   }
 
@@ -155,7 +157,8 @@ export class StudentClassActivitiesController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'CLASS_ACTIVITIES_FETCHED_SUCCESSFULLY',
-      data: classActivities,
+      data: classActivities.data,
+      meta: classActivities.meta,
     })
   }
 }
