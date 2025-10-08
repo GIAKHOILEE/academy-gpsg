@@ -9,10 +9,12 @@ import { Teacher } from '@modules/teachers/teachers.entity'
 import { Voucher } from '@modules/voucher/voucher.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, Repository } from 'typeorm'
+import { DataSource, Raw, Repository } from 'typeorm'
 import { SemesterRevenueSummary } from './dashboard.interface'
 import { RevenueStatisticsDto, SemesterRevenueDto, TeacherRevenueDto } from './dtos/dashboard.dto'
 import { UpdateTeacherSalaryDto } from './dtos/update.dto'
+import { Gender, Role } from '@enums/role.enum'
+import { User } from '@modules/users/user.entity'
 @Injectable()
 export class DashboardService {
   constructor(
@@ -26,9 +28,160 @@ export class DashboardService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Teacher)
     private readonly teacherRepository: Repository<Teacher>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
   ) {}
 
+  // thống kê dân số học viên
+  async studentStatistics(): Promise<any> {
+    const result = await this.userRepository
+      .createQueryBuilder('u')
+      .select([
+        // Nam
+        `SUM(CASE WHEN u.gender = 1 AND u.saint_name IS NOT NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS male_giaodan`,
+        `SUM(CASE WHEN u.gender = 1 AND u.congregation IS NOT NULL THEN 1 ELSE 0 END) AS male_tusi`,
+        `SUM(CASE WHEN u.gender = 1 AND u.saint_name IS NULL THEN 1 ELSE 0 END) AS male_daokhac`,
+
+        // Nữ
+        `SUM(CASE WHEN u.gender = 2 AND u.saint_name IS NOT NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS female_giaodan`,
+        `SUM(CASE WHEN u.gender = 2 AND u.congregation IS NOT NULL THEN 1 ELSE 0 END) AS female_tusi`,
+        `SUM(CASE WHEN u.gender = 2 AND u.saint_name IS NULL THEN 1 ELSE 0 END) AS female_daokhac`,
+
+        // Khác / không xác định
+        `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND u.saint_name IS NOT NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS other_giaodan`,
+        `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND u.congregation IS NOT NULL THEN 1 ELSE 0 END) AS other_tusi`,
+        `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND u.saint_name IS NULL THEN 1 ELSE 0 END) AS other_daokhac`,
+      ])
+      .where('u.role = :role', { role: Role.STUDENT })
+      .getRawOne()
+    const data = {
+      male: {
+        parishioners: +result.male_giaodan,
+        friar: +result.male_tusi,
+        otherReligions: +result.male_daokhac,
+        total: +result.male_giaodan + +result.male_tusi + +result.male_daokhac,
+      },
+      female: {
+        parishioners: +result.female_giaodan,
+        friar: +result.female_tusi,
+        otherReligions: +result.female_daokhac,
+        total: +result.female_giaodan + +result.female_tusi + +result.female_daokhac,
+      },
+      other: {
+        parishioners: +result.other_giaodan,
+        friar: +result.other_tusi,
+        otherReligions: +result.other_daokhac,
+        total: +result.other_giaodan + +result.other_tusi + +result.other_daokhac,
+      },
+      total: {
+        parishioners: +result.male_giaodan + +result.female_giaodan + +result.other_giaodan,
+        friar: +result.male_tusi + +result.female_tusi + +result.other_tusi,
+        otherReligions: +result.male_daokhac + +result.female_daokhac + +result.other_daokhac,
+        total:
+          +result.male_giaodan +
+          +result.female_giaodan +
+          +result.other_giaodan +
+          +result.male_tusi +
+          +result.female_tusi +
+          +result.other_tusi +
+          +result.male_daokhac +
+          +result.female_daokhac +
+          +result.other_daokhac,
+      },
+    }
+
+    // tổng số lớp
+    const totalClass = await this.classRepository.count()
+    // tổng số giảng viên
+    const totalTeacher = await this.teacherRepository.count()
+
+    return {
+      totalClass,
+      totalTeacher,
+      ...data,
+    }
+  }
+
+  // thông kê tuổi học viên
+  async studentAgeStatistics(): Promise<any> {
+    const today = new Date()
+
+    const ageGroups = [
+      { label: 'Từ 1-9', min: 1, max: 9 },
+      { label: 'Từ 10-19', min: 10, max: 19 },
+      { label: 'Từ 20-29', min: 20, max: 29 },
+      { label: 'Từ 30-39', min: 30, max: 39 },
+      { label: 'Từ 40-49', min: 40, max: 49 },
+      { label: 'Từ 50-59', min: 50, max: 59 },
+      { label: 'Từ 60-69', min: 60, max: 69 },
+      { label: 'Trên 70', min: 70, max: 200 },
+    ]
+
+    const results = []
+
+    for (const group of ageGroups) {
+      const minYear = today.getFullYear() - group.max
+      const maxYear = today.getFullYear() - group.min
+
+      const male = await this.userRepository.count({
+        where: {
+          role: Role.STUDENT,
+          gender: Gender.MALE,
+          birth_date: Raw(
+            alias => `
+            (
+              STR_TO_DATE(${alias}, '%Y-%m-%d') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
+              OR STR_TO_DATE(${alias}, '%d-%m-%Y') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
+            )
+          `,
+          ),
+        },
+      })
+
+      const female = await this.userRepository.count({
+        where: {
+          role: Role.STUDENT,
+          gender: Gender.FEMALE,
+          birth_date: Raw(
+            alias => `
+            (
+              STR_TO_DATE(${alias}, '%Y-%m-%d') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
+              OR STR_TO_DATE(${alias}, '%d-%m-%Y') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
+            )
+          `,
+          ),
+        },
+      })
+
+      const other = await this.userRepository.count({
+        where: {
+          role: Role.STUDENT,
+          gender: Raw(alias => `(${alias} = ${Gender.OTHER} OR ${alias} IS NULL)`),
+          birth_date: Raw(
+            alias => `
+            (
+              STR_TO_DATE(${alias}, '%Y-%m-%d') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
+              OR STR_TO_DATE(${alias}, '%d-%m-%Y') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
+            )
+          `,
+          ),
+        },
+      })
+
+      results.push({
+        ageGroup: group.label,
+        male: male,
+        female: female,
+        other: other,
+        total: male + female + other,
+      })
+    }
+
+    return results
+  }
+
+  // Tổng doanh thu
   async revenueStatistics(revenueStatisticsDto: RevenueStatisticsDto): Promise<{
     totalRevenue: number // Tổng doanh thu
     paidRevenue: number // Đã thanh toán
@@ -222,178 +375,6 @@ export class DashboardService {
     }
   }
 
-  // async semesterRevenue(semesterRevenueDto: SemesterRevenueDto): Promise<SemesterRevenueSummary> {
-  //   const { semester_id, scholastic_id, department_id } = semesterRevenueDto
-
-  //   // 1. Build conditions động
-  //   let conditions = `e.status = ${StatusEnrollment.DONE}`
-  //   const params: any[] = []
-
-  //   if (semester_id) {
-  //     conditions += ` AND c.semester_id = ${semester_id}`
-  //   }
-  //   if (scholastic_id) {
-  //     conditions += ` AND c.scholastic_id = ${scholastic_id}`
-  //   }
-  //   if (department_id) {
-  //     conditions += ` AND s.department_id = ${department_id}`
-  //   }
-
-  //   // 2. Query: enrollment expand -> mỗi class trong enrollment
-  //   const classEnrollmentSql = `
-  //     SELECT
-  //       e.id AS enrollment_id,
-  //       ec.value AS class_id,
-  //       c.subject_id,
-  //       s.department_id,
-  //       c.price,
-  //       1 AS student_count,
-  //       c.price AS class_revenue
-  //     FROM enrollments e
-  //     CROSS JOIN JSON_TABLE(e.class_ids, '$[*]' COLUMNS(value INT PATH '$')) ec
-  //     JOIN classes c ON c.id = ec.value
-  //     JOIN subjects s ON s.id = c.subject_id
-  //     WHERE ${conditions}
-  //   `
-  //   // const classEnrollment = await this.dataSource.query(classEnrollmentSql, params)
-
-  //   // 3. Query: tổng revenue / tổng class per enrollment
-  //   const enrollmentTotalsSql = `
-  //     SELECT
-  //       ce.enrollment_id,
-  //       SUM(ce.class_revenue) AS total_revenue,
-  //       COUNT(*) AS total_classes
-  //     FROM (${classEnrollmentSql}) ce
-  //     GROUP BY ce.enrollment_id
-  //   `
-  //   // const enrollmentTotals = await this.dataSource.query(enrollmentTotalsSql, params)
-  //   // const totalsMap = arrayToObject(enrollmentTotals, 'enrollment_id')
-
-  //   // 4. Query: join voucher + phân bổ discount
-  //   const voucherAllocationSql = `
-  //     SELECT
-  //       ce.enrollment_id,
-  //       ce.class_id,
-  //       ce.department_id,
-  //       ce.subject_id,
-  //       ce.price,
-  //       ce.student_count,
-  //       ce.class_revenue,
-  //       e.discount AS enrollment_discount,
-  //       v.actual_discount AS voucher_discount,
-  //       et.total_revenue,
-  //       et.total_classes,
-  //       CASE
-  //         WHEN et.total_revenue > 0
-  //         THEN (ce.class_revenue / et.total_revenue) * IFNULL(v.actual_discount,0)
-  //         ELSE 0
-  //       END AS voucher_share,
-  //       (IFNULL(e.discount,0) / NULLIF(et.total_classes,0)) AS enrollment_share
-  //     FROM (${classEnrollmentSql}) ce
-  //     JOIN (${enrollmentTotalsSql}) et ON et.enrollment_id = ce.enrollment_id
-  //     JOIN enrollments e ON e.id = ce.enrollment_id
-  //     LEFT JOIN voucher v ON v.enrollment_id = e.id AND v.is_used = true
-  //   `
-  //   // const voucherAllocation = await this.dataSource.query(voucherAllocationSql, params)
-
-  //   // 5. Query: tổng hợp theo department + class
-  //   const revenueSql = `
-  //     SELECT
-  //       d.id AS department_id,
-  //       d.name AS department_name,
-  //       c.id AS class_id,
-  //       c.name AS class_name,
-  //       c.price AS price,
-  //       SUM(va.student_count) AS total_students,
-  //       SUM(va.class_revenue) AS total_revenue,
-  //       SUM(va.voucher_share + va.enrollment_share) AS total_discount,
-  //       SUM(va.class_revenue) - SUM(va.voucher_share + va.enrollment_share) AS total_profit,
-  //       COUNT(DISTINCT CASE WHEN (va.voucher_share + va.enrollment_share) > 0 THEN va.enrollment_id END) AS total_student_discount       FROM (${voucherAllocationSql}) va
-  //     JOIN classes c ON c.id = va.class_id
-  //     JOIN subjects s ON s.id = va.subject_id
-  //     JOIN departments d ON d.id = va.department_id
-  //     GROUP BY d.id, d.name, c.id, c.name, c.price
-  //     ORDER BY d.name, c.name
-  //   `
-  //   const rows = await this.dataSource.query(revenueSql, params)
-
-  //   // get teacher salary totals (same filters) and prepare map
-  //   const salaryInfo = await this.teacherSalary({ semester_id, scholastic_id, department_id })
-  //   const salaryByDept: Record<number, number> = {}
-  //   for (const d of salaryInfo.departments) salaryByDept[d.department_id] = d.total_salary
-  //   const totalSalaryAll = Number(salaryInfo.total_salary || 0)
-
-  //   // map results and compute summary
-  //   const rowsNormalized = rows.map(r => ({
-  //     department_id: Number(r.department_id),
-  //     department_name: r.department_name,
-  //     class_id: Number(r.class_id),
-  //     class_name: r.class_name,
-  //     price: Number(r.price || 0),
-  //     total_students: Number(r.total_students || 0),
-  //     total_revenue: Number(r.total_revenue || 0),
-  //     total_discount: Number(r.total_discount || 0),
-  //     total_profit: Number(r.total_profit || 0),
-  //     total_student_discount: Number(r.total_student_discount || 0),
-  //   }))
-
-  //   // 6. Mapping summary
-  //   const summary = {
-  //     total_students: rowsNormalized.reduce((acc, r) => acc + r.total_students, 0),
-  //     total_revenue: rowsNormalized.reduce((acc, r) => acc + r.total_revenue, 0),
-  //     total_discount: rowsNormalized.reduce((acc, r) => acc + r.total_discount, 0),
-  //     // subtract total teacher salary to get net profit
-  //     total_profit: rowsNormalized.reduce((acc, r) => acc + r.total_profit, 0) - totalSalaryAll,
-  //   }
-
-  //   // group by department and subtract dept salary
-  //   const departmentsMap: Record<number, any> = {}
-  //   for (const r of rowsNormalized) {
-  //     if (!departmentsMap[r.department_id]) {
-  //       departmentsMap[r.department_id] = {
-  //         department_id: r.department_id,
-  //         department_name: r.department_name,
-  //         total_students: 0,
-  //         total_revenue: 0,
-  //         total_discount: 0,
-  //         total_profit: 0,
-  //         classes: [],
-  //       }
-  //     }
-  //     const dep = departmentsMap[r.department_id]
-
-  //     dep.total_students += r.total_students
-  //     dep.total_revenue += r.total_revenue
-  //     dep.total_discount += r.total_discount
-  //     dep.total_profit += r.total_profit // will subtract salary below
-
-  //     dep.classes.push({
-  //       class_id: r.class_id,
-  //       class_name: r.class_name,
-  //       price: r.price,
-  //       total_students: r.total_students,
-  //       total_revenue: r.total_revenue,
-  //       total_discount: r.total_discount,
-  //       total_profit: r.total_profit,
-  //       total_student_discount: r.total_student_discount,
-  //     })
-  //   }
-
-  //   // subtract salary per department
-  //   for (const dep of Object.values(departmentsMap)) {
-  //     const depSalary = Number(salaryByDept[dep.department_id] || 0)
-  //     dep.total_profit = Number(dep.total_profit) - depSalary
-  //     // optionally include dept total_salary field:
-  //     dep.total_salary = depSalary
-  //   }
-
-  //   return {
-  //     summary,
-  //     departments: Object.values(departmentsMap),
-  //   }
-  // }
-
-  // helper: build conditions (inlines numbers to avoid repeated ? in nested queries)
   private buildConditions(semester_id?: number, scholastic_id?: number, department_id?: number): string {
     let cond = `e.status = ${StatusEnrollment.DONE}`
     if (semester_id) cond += ` AND c.semester_id = ${+semester_id}`

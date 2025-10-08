@@ -10,8 +10,9 @@ import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { RevenueController } from './dashboard.controller'
+import { User } from '@modules/users/user.entity'
 @Module({
-  imports: [TypeOrmModule.forFeature([Visitor, Enrollments, Voucher, Classes, Student, Teacher])],
+  imports: [TypeOrmModule.forFeature([Visitor, Enrollments, Voucher, Classes, Student, Teacher, User])],
   controllers: [DashboardControllerUser, RevenueController],
   providers: [DashboardService, VisitorService],
 })

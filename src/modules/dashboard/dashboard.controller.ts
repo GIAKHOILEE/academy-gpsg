@@ -15,6 +15,28 @@ export class DashboardControllerUser {
     private readonly dashboardService: DashboardService,
   ) {}
 
+  @Get('/student/age')
+  @ApiOperation({ summary: 'Lấy thống kê tuổi học viên' })
+  async studentAgeStatistics(): Promise<ResponseDto> {
+    const studentAgeStatistics = await this.dashboardService.studentAgeStatistics()
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_STUDENT_AGE_SUCCESS',
+      data: studentAgeStatistics,
+    })
+  }
+
+  @Get('/student')
+  @ApiOperation({ summary: 'Lấy thống kê dân số học viên' })
+  async studentStatistics(): Promise<ResponseDto> {
+    const studentStatistics = await this.dashboardService.studentStatistics()
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_STUDENT_SUCCESS',
+      data: studentStatistics,
+    })
+  }
+
   @Get('/analytics')
   async getDashboardData(): Promise<ResponseDto> {
     const currentOnline = await this.visitorService.countCurrentlyOnline()
@@ -74,18 +96,18 @@ export class DashboardControllerUser {
     })
   }
 
-  @Get('/student')
-  @ApiOperation({ summary: 'Lấy thống kê sinh viên' })
-  @Auth(Role.ADMIN)
-  @ApiBearerAuth()
-  async graduateStudentStatistics(): Promise<ResponseDto> {
-    const graduateStudentStatistics = await this.dashboardService.graduateStudentStatistics()
-    return new ResponseDto({
-      statusCode: 200,
-      messageCode: 'DASHBOARD_GET_STUDENT_SUCCESS',
-      data: graduateStudentStatistics,
-    })
-  }
+  // @Get('/student')
+  // @ApiOperation({ summary: 'Lấy thống kê sinh viên' })
+  // @Auth(Role.ADMIN)
+  // @ApiBearerAuth()
+  // async graduateStudentStatistics(): Promise<ResponseDto> {
+  //   const graduateStudentStatistics = await this.dashboardService.graduateStudentStatistics()
+  //   return new ResponseDto({
+  //     statusCode: 200,
+  //     messageCode: 'DASHBOARD_GET_STUDENT_SUCCESS',
+  //     data: graduateStudentStatistics,
+  //   })
+  // }
 
   @Get('/teacher')
   @ApiOperation({ summary: 'Lấy thống kê giáo viên' })
