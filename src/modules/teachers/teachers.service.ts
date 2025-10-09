@@ -97,14 +97,14 @@ export class TeachersService {
       await queryRunner.manager.save(Teacher, teacher)
 
       // Send email
-      if (email) {
-        await this.emailService.sendMail([{ email: email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
-          name: user.full_name,
-          username: user.code,
-          password: password ?? code,
-          loginLink: `${process.env.FRONTEND_URL}`,
-        })
-      }
+      // if (email) {
+      //   await this.emailService.sendMail([{ email: email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
+      //     name: user.full_name,
+      //     username: user.code,
+      //     password: password ?? code,
+      //     loginLink: `${process.env.FRONTEND_URL}`,
+      //   })
+      // }
 
       await queryRunner.commitTransaction()
     } catch (error) {
