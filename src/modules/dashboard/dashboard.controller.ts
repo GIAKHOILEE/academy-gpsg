@@ -26,7 +26,7 @@ export class DashboardControllerUser {
     })
   }
 
-  @Get('/student')
+  @Get('/student/statistics')
   @ApiOperation({ summary: 'Lấy thống kê dân số học viên' })
   async studentStatistics(): Promise<ResponseDto> {
     const studentStatistics = await this.dashboardService.studentStatistics()
@@ -96,18 +96,18 @@ export class DashboardControllerUser {
     })
   }
 
-  // @Get('/student')
-  // @ApiOperation({ summary: 'Lấy thống kê sinh viên' })
-  // @Auth(Role.ADMIN)
-  // @ApiBearerAuth()
-  // async graduateStudentStatistics(): Promise<ResponseDto> {
-  //   const graduateStudentStatistics = await this.dashboardService.graduateStudentStatistics()
-  //   return new ResponseDto({
-  //     statusCode: 200,
-  //     messageCode: 'DASHBOARD_GET_STUDENT_SUCCESS',
-  //     data: graduateStudentStatistics,
-  //   })
-  // }
+  @Get('/student')
+  @ApiOperation({ summary: 'Lấy thống kê sinh viên' })
+  @Auth(Role.ADMIN)
+  @ApiBearerAuth()
+  async graduateStudentStatistics(): Promise<ResponseDto> {
+    const graduateStudentStatistics = await this.dashboardService.graduateStudentStatistics()
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_STUDENT_SUCCESS',
+      data: graduateStudentStatistics,
+    })
+  }
 
   @Get('/teacher')
   @ApiOperation({ summary: 'Lấy thống kê giáo viên' })
