@@ -12,6 +12,7 @@ import { UpdateCommentDto } from './dtos/update-comment.dto'
 import { Role } from '@enums/role.enum'
 import { User } from '@modules/users/user.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
+import { Student } from '@modules/students/students.entity'
 
 @Injectable()
 export class CommentService {
@@ -26,6 +27,8 @@ export class CommentService {
     private readonly classStudentRepository: Repository<ClassStudents>,
     @InjectRepository(Teacher)
     private readonly teacherRepository: Repository<Teacher>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
   ) {}
 
   async createComment(createCommentDto: CreateCommentDto, role: Role, userId: number): Promise<void> {
@@ -47,7 +50,8 @@ export class CommentService {
 
     // check if student is in class
     if (role === Role.STUDENT) {
-      const classStudent = await this.classStudentRepository.findOne({ where: { class_id: classActivities.class_id, student_id: userId } })
+      const student = await this.studentRepository.findOne({ where: { user_id: userId } })
+      const classStudent = await this.classStudentRepository.findOne({ where: { class_id: classActivities.class_id, student_id: student.id } })
       if (!classStudent) {
         throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
       }
@@ -94,9 +98,8 @@ export class CommentService {
     }
     // check if student is in class
     if (role === Role.STUDENT) {
-      const classStudent = await this.classStudentRepository.findOne({
-        where: { class_id: comment.class_activities.id, student_id: comment.user.id },
-      })
+      const student = await this.studentRepository.findOne({ where: { user_id: userId } })
+      const classStudent = await this.classStudentRepository.findOne({ where: { class_id: comment.class_activities.id, student_id: student.id } })
       if (!classStudent) {
         throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
       }

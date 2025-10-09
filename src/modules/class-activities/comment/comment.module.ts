@@ -7,9 +7,10 @@ import { ClassActivitiesEntity } from '../class-activities/class-activities.enti
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { User } from '@modules/users/user.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
+import { Student } from '@modules/students/students.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CommentEntity, ClassActivitiesEntity, User, ClassStudents, Teacher])],
+  imports: [TypeOrmModule.forFeature([CommentEntity, ClassActivitiesEntity, User, ClassStudents, Teacher, Student])],
   controllers: [StudentCommentController, TeacherCommentController],
   providers: [CommentService],
 })
