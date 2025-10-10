@@ -43,6 +43,10 @@ import { HttpLoggerMiddleware } from '@middleware/http-logger.middleware'
 import { ExamModule } from '@modules/class-rules/exam/_exam/exam.module'
 import { ClassRulesModule } from '@modules/class-rules/_class-rules/class-rules.module'
 import { ExamScoreModule } from '@modules/class-rules/exam/exam-scores/exam-scores.module'
+import { AnnouncementStationModule } from '@modules/announcement-station/announcement-station.module'
+import { ClassActivitiesModule } from '@modules/class-activities/class-activities/class-activities.module'
+import { StudentCommentModule } from '@modules/class-activities/comment/comment.module'
+
 
 @Module({
   imports: [
@@ -87,6 +91,10 @@ import { ExamScoreModule } from '@modules/class-rules/exam/exam-scores/exam-scor
     ClassRulesModule,
     ExamModule,
     ExamScoreModule,
+    AnnouncementStationModule,
+    ClassActivitiesModule,
+    StudentCommentModule,
+
   ],
   providers: [
     AppService,

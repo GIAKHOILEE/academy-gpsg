@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm'
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm'
 import { UserStatus } from '@enums/status.enum'
 import { Gender, Role } from '@enums/role.enum'
+import { CommentEntity } from '@modules/class-activities/comment/comment.entity'
 
 @Entity()
 export class User {
@@ -25,7 +26,7 @@ export class User {
   @Column({ nullable: true })
   saint_name: string
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: Gender.OTHER })
   gender: Gender
 
   @Column({ nullable: true })
@@ -71,6 +72,9 @@ export class User {
     default: UserStatus.ACTIVE,
   })
   status: UserStatus
+
+  @OneToMany(() => CommentEntity, comment => comment.user, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  comments: CommentEntity[]
 
   // @Column({ default: false, nullable: true })
   // is_temporary: boolean

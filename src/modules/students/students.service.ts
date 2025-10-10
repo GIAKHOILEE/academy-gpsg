@@ -296,11 +296,29 @@ export class StudentsService {
   }
 
   async getAllStudents(paginateStudentsDto: PaginateStudentsDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { full_name, email, phone_number, status, code, ...rest } = paginateStudentsDto
-    const query = this.studentRepository
-      .createQueryBuilder('students')
-      .leftJoinAndSelect('students.user', 'user')
-      .where('students.deleted_at IS NULL')
+    const { full_name, email, phone_number, status, code, class_name, class_code, class_id, semester_id, department_id, scholastic_id, ...rest } =
+      paginateStudentsDto
+
+    // base query: students + user
+    const query = this.studentRepository.createQueryBuilder('students').leftJoinAndSelect('students.user', 'user')
+
+    // Determine if we need to join class_students + classes (bridge)
+    const needClassJoin = Boolean(class_code || class_id || semester_id || department_id || scholastic_id || class_name)
+
+    if (needClassJoin) {
+      // join once and reuse aliases
+      query.leftJoin('students.class_students', 'class_students')
+      query.leftJoin('class_students.class', 'class')
+    }
+
+    // If department filter is present, we need subject -> department joins
+    if (department_id) {
+      // join class.subject -> subject and subject.department -> department
+      query.leftJoin('class.subject', 'subject')
+      query.leftJoin('subject.department', 'department')
+    }
+
+    // Filters on user fields
     if (full_name) {
       query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })
     }
@@ -321,25 +339,57 @@ export class StudentsService {
       query.andWhere('user.code LIKE :code', { code: `%${code}%` })
     }
 
+    // Class-related filters (only valid if we already joined class_students/class)
+    if (class_name) {
+      query.andWhere('class.name LIKE :class_name', { class_name: `%${class_name}%` })
+    }
+
+    if (class_code) {
+      query.andWhere('class.code LIKE :class_code', { class_code: `%${class_code}%` })
+    }
+
+    if (class_id) {
+      query.andWhere('class.id = :class_id', { class_id })
+    }
+
+    if (semester_id) {
+      query.andWhere('class.semester_id = :semester_id', { semester_id })
+    }
+
+    if (scholastic_id) {
+      query.andWhere('class.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+
+    if (department_id) {
+      // department_id sits on subject.department_id
+      query.andWhere('subject.department_id = :department_id', { department_id })
+      // or if you joined department entity: `department.id = :department_id`
+    }
+
+    // ensure soft-delete filter
+    query.andWhere('students.deleted_at IS NULL')
+
+    // pagination (reuse your paginate util)
     const { data, meta } = await paginate(query, rest)
 
+    // format results same as before
     const formattedStudents = data.map(student => ({
       id: student.id,
-      code: student.user.code,
-      full_name: student.user.full_name,
-      email: student.user.email,
-      gender: student.user.gender,
-      phone_number: student.user.phone_number,
-      status: student.user.status,
-      saint_name: student.user.saint_name,
-      address: student.user.address,
-      avatar: student.user.avatar,
-      birth_place: student.user.birth_place,
-      birth_date: student.user.birth_date,
-      parish: student.user.parish,
-      deanery: student.user.deanery,
-      diocese: student.user.diocese,
-      congregation: student.user.congregation,
+      code: student.user?.code,
+      full_name: student.user?.full_name,
+      email: student.user?.email,
+      gender: student.user?.gender,
+      phone_number: student.user?.phone_number,
+      status: student.user?.status,
+      saint_name: student.user?.saint_name,
+      address: student.user?.address,
+      avatar: student.user?.avatar,
+      birth_place: student.user?.birth_place,
+      birth_date: student.user?.birth_date,
+      parish: student.user?.parish,
+      deanery: student.user?.deanery,
+      diocese: student.user?.diocese,
+      congregation: student.user?.congregation,
       card_code: student.card_code,
       image_4x6: student.image_4x6,
       diploma_image: student.diploma_image,
