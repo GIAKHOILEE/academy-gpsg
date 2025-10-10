@@ -47,6 +47,7 @@ import { AnnouncementStationModule } from '@modules/announcement-station/announc
 import { ClassActivitiesModule } from '@modules/class-activities/class-activities/class-activities.module'
 import { StudentCommentModule } from '@modules/class-activities/comment/comment.module'
 
+
 @Module({
   imports: [
     ClsModule.forRoot({
@@ -93,6 +94,7 @@ import { StudentCommentModule } from '@modules/class-activities/comment/comment.
     AnnouncementStationModule,
     ClassActivitiesModule,
     StudentCommentModule,
+
   ],
   providers: [
     AppService,

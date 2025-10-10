@@ -211,5 +211,6 @@ export const messages = {
     TEACHER_NOT_IN_CLASS: 'Giáo viên không có trong lớp học',
     COMMENT_NOT_FOUND: 'Bình luận không tồn tại',
     ONLY_STUDENT_AND_TEACHER_CAN_COMMENT: 'Chỉ học sinh và giáo viên mới được bình luận',
+
   },
 }
