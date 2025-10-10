@@ -56,7 +56,7 @@ export class CommentService {
         throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
       }
     } else if (role === Role.TEACHER) {
-      const teacher = await this.teacherRepository.findOne({ where: { id: userId } })
+      const teacher = await this.teacherRepository.findOne({ where: { user_id: userId } })
       if (!teacher) {
         throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
       }
@@ -104,7 +104,7 @@ export class CommentService {
         throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
       }
     } else if (role === Role.TEACHER) {
-      const teacher = await this.teacherRepository.findOne({ where: { id: userId } })
+      const teacher = await this.teacherRepository.findOne({ where: { user_id: userId } })
       if (!teacher) {
         throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
       }
