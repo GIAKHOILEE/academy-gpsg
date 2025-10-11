@@ -12,7 +12,6 @@ import { UpdateClassActivitiesDto } from './dtos/update-class-activities.dto'
 import { PaginateClassActivitiesDto } from './dtos/paginate-class-activities.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { CommentEntity } from '../comment/comment.entity'
-import { IComment } from '../comment/comment.interface'
 
 @Injectable()
 export class ClassActivitiesService {

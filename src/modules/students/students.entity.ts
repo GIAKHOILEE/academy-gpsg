@@ -3,7 +3,6 @@ import { JoinColumn } from 'typeorm'
 import { User } from '../users/user.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
-import { CommentEntity } from '@modules/class-activities/comment/comment.entity'
 
 @Entity({ name: 'students' })
 export class Student {

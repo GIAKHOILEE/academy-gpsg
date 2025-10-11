@@ -7,7 +7,7 @@ import { Teacher } from '@modules/teachers/teachers.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
-import { In, Repository } from 'typeorm'
+import { Repository } from 'typeorm'
 
 @Injectable()
 export class AnnouncementStationService {

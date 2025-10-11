@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, Req, Request } from '@nestjs/common'
+import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, Request } from '@nestjs/common'
 import { MailboxesService } from './mailboxes.service'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
