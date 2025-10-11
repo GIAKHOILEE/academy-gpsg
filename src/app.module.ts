@@ -46,6 +46,7 @@ import { ExamScoreModule } from '@modules/class-rules/exam/exam-scores/exam-scor
 import { AnnouncementStationModule } from '@modules/announcement-station/announcement-station.module'
 import { ClassActivitiesModule } from '@modules/class-activities/class-activities/class-activities.module'
 import { StudentCommentModule } from '@modules/class-activities/comment/comment.module'
+import { MailboxesModule } from './modules/mailboxes/mailboxes.module'
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { StudentCommentModule } from '@modules/class-activities/comment/comment.
     AnnouncementStationModule,
     ClassActivitiesModule,
     StudentCommentModule,
+    MailboxesModule,
   ],
   providers: [
     AppService,
