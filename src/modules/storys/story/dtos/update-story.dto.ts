@@ -2,6 +2,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateStoryDto {
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Index bài viết', example: 1 })
+  index?: number
+
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ example: 'Story Title' })

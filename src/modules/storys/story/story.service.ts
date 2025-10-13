@@ -1,7 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-
 import { paginate, PaginationMeta } from '@common/pagination'
 import { formatStringDate, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
@@ -25,11 +24,22 @@ export class StoryService {
     const topic = await this.topicRepository.findOne({ where: { id: createStoryDto.topic_id } })
     if (!topic) throwAppException('TOPIC_NOT_FOUND', ErrorCode.TOPIC_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    const story = this.storyRepository.create(createStoryDto)
+    const storyMaxIndex = await this.storyRepository.createQueryBuilder('story').select('MAX(story.index) as maxIndex').getRawOne()
+    let maxIndex = 1.0001
+    if (storyMaxIndex?.maxIndex) {
+      maxIndex = storyMaxIndex.maxIndex + 100
+    }
+
+    const story = this.storyRepository.create({
+      ...createStoryDto,
+      index: maxIndex,
+    })
+
     const savedStory = await this.storyRepository.save(story)
 
     const formattedStory: IStory = {
       id: savedStory.id,
+      index: savedStory.index,
       title: savedStory.title,
       thumbnail: savedStory.thumbnail,
       content: savedStory.content,
@@ -73,6 +83,7 @@ export class StoryService {
 
     const formattedStory: IStory = {
       id: story.id,
+      index: story.index,
       title: story.title,
       thumbnail: story.thumbnail,
       content: story.content,
@@ -89,7 +100,17 @@ export class StoryService {
     const query = this.storyRepository
       .createQueryBuilder('story')
       .leftJoinAndSelect('story.topic', 'topic')
-      .select(['story.id', 'story.title', 'story.thumbnail', 'story.content', 'story.topic_id', 'story.created_at', 'topic.id', 'topic.name'])
+      .select([
+        'story.id',
+        'story.title',
+        'story.thumbnail',
+        'story.content',
+        'story.topic_id',
+        'story.created_at',
+        'topic.id',
+        'topic.name',
+        'story.index',
+      ])
 
     if (topic_id) {
       query.where('story.topic_id = :topic_id', { topic_id })
@@ -104,6 +125,7 @@ export class StoryService {
 
     const formattedStories: IStory[] = data.map(story => ({
       id: story.id,
+      index: story.index,
       title: story.title,
       thumbnail: story.thumbnail,
       content: story.content,

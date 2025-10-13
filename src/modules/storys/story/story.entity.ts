@@ -6,6 +6,9 @@ export class Story {
   @PrimaryGeneratedColumn()
   id: number
 
+  @Column({ type: 'float', default: 1.001 })
+  index: number
+
   @Column()
   title: string
 
