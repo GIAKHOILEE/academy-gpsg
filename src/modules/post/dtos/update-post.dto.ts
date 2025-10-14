@@ -7,11 +7,6 @@ export class UpdatePostDto {
   @ApiPropertyOptional({ description: 'Tên bài viết', example: 'Bài viết 1' })
   title?: string
 
-  @IsNumber()
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'Index bài viết', example: 1 })
-  index?: number
-
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Ảnh bài viết', example: 'https://example.com/image.jpg' })

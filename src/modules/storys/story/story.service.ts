@@ -65,6 +65,13 @@ export class StoryService {
     }
   }
 
+  async updateIndex(id: number, index: number): Promise<void> {
+    const story = await this.storyRepository.createQueryBuilder('story').select(['story.id', 'story.index']).where('story.id = :id', { id }).getOne()
+    if (!story) throwAppException('STORY_NOT_FOUND', ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    await this.storyRepository.createQueryBuilder('story').update(Story).set({ index }).where('id = :id', { id }).execute()
+  }
+
   async deleteStory(id: number): Promise<void> {
     const existsStory = await this.storyRepository.exists({ where: { id } })
     if (!existsStory) throwAppException('STORY_NOT_FOUND', ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
