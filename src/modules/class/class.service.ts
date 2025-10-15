@@ -335,9 +335,9 @@ export class ClassService {
       .leftJoinAndSelect('classes.semester', 'semester')
 
     // nếu không có status thì mặc định lấy hết trừ status số 4
-    if (!paginateClassDto.status) {
-      query.andWhere('classes.status != :status', { status: ClassStatus.END_CLASS })
-    }
+    // if (!paginateClassDto.status) {
+    //   query.andWhere('classes.status != :status', { status: ClassStatus.END_CLASS })
+    // }
     if (subject_id) {
       query.andWhere('subject.id = :subject_id', { subject_id })
     }
