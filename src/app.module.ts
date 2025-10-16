@@ -47,6 +47,7 @@ import { AnnouncementStationModule } from '@modules/announcement-station/announc
 import { ClassActivitiesModule } from '@modules/class-activities/class-activities/class-activities.module'
 import { StudentCommentModule } from '@modules/class-activities/comment/comment.module'
 import { MailboxesModule } from './modules/mailboxes/mailboxes.module'
+import { FinancesModule } from './modules/finances/finances.module'
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { MailboxesModule } from './modules/mailboxes/mailboxes.module'
     ClassActivitiesModule,
     StudentCommentModule,
     MailboxesModule,
+    FinancesModule,
   ],
   providers: [
     AppService,
