@@ -12,6 +12,7 @@ import { AttendanceRule } from '../attendance-rule/attendance-rule.entity'
 import { AttendanceStatus } from '@enums/class.enum'
 import { toMinutes } from '@common/utils'
 import { UpdateAttendanceDto } from './dtos/update-attendance.dto'
+import { PaginateAttendanceDto } from './dtos/paginate-attendance.dto'
 
 @Injectable()
 export class AttendanceService {
@@ -123,7 +124,7 @@ export class AttendanceService {
     return formattedAttendance
   }
 
-  async getAttendanceReport(class_id: number, user_id?: number) {
+  async getAttendanceReport(class_id: number, paginateAttendanceDto?: PaginateAttendanceDto) {
     const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
 
     // 1. Lấy danh sách buổi học (ngày điểm danh)
@@ -134,23 +135,37 @@ export class AttendanceService {
     const lessonDates = rules.map(r => r.lesson_date) // ['2023-08-15', '2023-08-19', ...]
 
     // 2. Lấy danh sách học viên trong lớp
-    let classStudents = await this.classStudentsRepository
+    let qb = await this.classStudentsRepository
       .createQueryBuilder('class_student')
       .select(['class_student.id', 'student.id', 'user.id', 'user.code', 'user.full_name', 'user.saint_name'])
       .leftJoin('class_student.student', 'student')
       .leftJoin('student.user', 'user')
       .where('class_student.class_id = :class_id', { class_id })
-      .getMany()
+    // .getMany()
+
+    // Nếu có name thì filter theo name (partial match, case-insensitive) trên full_name / saint_name / code
+    if (paginateAttendanceDto?.full_name) {
+      qb.andWhere(`(LOWER(user.full_name) LIKE :q)`, {
+        q: `%${paginateAttendanceDto.full_name.toLowerCase()}%`,
+      })
+    }
+
+    // Nếu có user_id, ưu tiên filter theo user_id
+    if (paginateAttendanceDto?.user_id) {
+      qb.andWhere('user.id = :user_id', { user_id: paginateAttendanceDto.user_id })
+    }
+
+    const classStudents = await qb.getMany()
 
     // 3. Lấy toàn bộ attendance trong lớp
     const attendances = await this.attendanceRepository.find({
       where: { class_student: In(classStudents.map(cs => cs.id)) },
     })
-    if (user_id) {
-      const student = await this.studentRepository.findOne({ where: { user_id } })
-      if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
-      classStudents = classStudents.filter(cs => cs.student.id === student.id)
-    }
+    // if (user_id) {
+    //   const student = await this.studentRepository.findOne({ where: { user_id } })
+    //   if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    //   classStudents = classStudents.filter(cs => cs.student.id === student.id)
+    // }
     // 4. Format thành bảng
     const report = classStudents.map(cs => {
       const row: any = {
