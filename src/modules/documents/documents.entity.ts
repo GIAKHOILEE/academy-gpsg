@@ -6,6 +6,12 @@ export class DocumentsEntity {
   id: number
 
   @Column({ type: 'varchar', length: 255, nullable: true })
+  batch_code: string
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  code: string
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
   name: string
 
   @Column({ type: 'float', default: 1.001 })

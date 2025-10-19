@@ -13,7 +13,7 @@ export class ClassActivitiesEntity {
   @Column({ type: 'varchar', length: 255 })
   description: string
 
-  @Column({ type: 'text' })
+  @Column({ type: 'mediumtext' })
   content: string
 
   @Column()

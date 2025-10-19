@@ -15,7 +15,7 @@ export class Story {
   @Column()
   thumbnail: string
 
-  @Column({ type: 'text' })
+  @Column({ type: 'mediumtext' })
   content: string
 
   @Column()
