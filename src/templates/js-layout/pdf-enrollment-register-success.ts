@@ -8,7 +8,7 @@ export default function renderRegisterSuccess(doc: any, data: any) {
     .text('HỌC VIỆN MỤC VỤ', 120)
     .text('6bis Tôn Đức Thắng, P. Sài Gòn, Tp. HCM', 120)
     .text('ĐT: (028) 6291 0366 - Zalo: 0706 757 366', 120)
-    .text('Email: hvmvsalgon@gmail.com', 120)
+    .text('Email: hvmvsaigon@gmail.com', 120)
     .moveDown()
 
   doc.fontSize(18).text('PHIẾU THU', { align: 'center' })
