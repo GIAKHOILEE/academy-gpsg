@@ -18,8 +18,8 @@ export class AttendanceController {
 
   @Get('class/:class_id')
   @ApiOperation({ summary: 'Lấy lịch sử điểm danh' })
-  async getAttendanceReport(@Param('class_id') class_id: number): Promise<ResponseDto> {
-    const report = await this.attendanceService.getAttendanceReport(class_id)
+  async getAttendanceReport(@Param('class_id') class_id: number, @Query() paginateAttendanceDto: PaginateAttendanceDto): Promise<ResponseDto> {
+    const report = await this.attendanceService.getAttendanceReport(class_id, paginateAttendanceDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'ATTENDANCE_REPORT_GET_SUCCESSFULLY',
