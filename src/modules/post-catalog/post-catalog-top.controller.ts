@@ -80,12 +80,11 @@ export class PostCatalogTopAdminController {
   @Put('index/:id')
   @ApiOperation({ summary: 'Update index post-catalog by id' })
   @ApiParam({ name: 'id', type: Number, description: 'Post catalog id' })
-  async updateIndex(@Param('id') id: number, @Body() index: number): Promise<ResponseDto> {
-    const postCatalog = await this.postCatalogService.updateIndex(id, index)
+  async updateIndex(@Param('id') id: number, @Query('index') index: number): Promise<ResponseDto> {
+    await this.postCatalogService.updateIndex(id, index)
     return new ResponseDto({
       messageCode: 'UPDATE_INDEX_POST_CATALOG_SUCCESS',
       statusCode: 200,
-      data: postCatalog,
     })
   }
 

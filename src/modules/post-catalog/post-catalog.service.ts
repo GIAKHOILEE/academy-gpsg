@@ -283,7 +283,11 @@ export class PostCatalogService {
   }
 
   async updateIndex(id: number, index: number): Promise<void> {
-    const postCatalog = await this.postCatalogRepository.findOneBy({ id })
+    const postCatalog = await this.postCatalogRepository
+      .createQueryBuilder('post_catalogs')
+      .select(['post_catalogs.id', 'post_catalogs.index'])
+      .where('post_catalogs.id = :id', { id })
+      .getOne()
     if (!postCatalog) {
       throwAppException('POST_CATALOG_NOT_FOUND', ErrorCode.POST_CATALOG_NOT_FOUND, HttpStatus.NOT_FOUND)
     }

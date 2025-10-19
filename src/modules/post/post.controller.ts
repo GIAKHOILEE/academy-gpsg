@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from 'src/common/response.dto'
 import { CreatePostDto } from './dtos/create-post.dto'
 import { PaginatePostDto } from './dtos/paginate-post.dto'
@@ -118,6 +118,17 @@ export class PostControllerAdmin {
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'UPDATE_IS_BANNER_POST_SUCCESS',
+    })
+  }
+
+  @Put('index/:id')
+  @ApiOperation({ summary: 'Update index of post by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the post to update' })
+  async updateIndex(@Param('id') id: string, @Query('index') index: number): Promise<ResponseDto> {
+    await this.postService.updateIndex(Number(id), index)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'UPDATE_INDEX_POST_SUCCESS',
     })
   }
 

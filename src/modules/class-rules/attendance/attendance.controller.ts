@@ -7,6 +7,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { UpdateAttendanceDto } from './dtos/update-attendance.dto'
+import { PaginateAttendanceDto } from './dtos/paginate-attendance.dto'
 
 @ApiTags('Admin Attendance')
 @ApiBearerAuth()
@@ -17,8 +18,8 @@ export class AttendanceController {
 
   @Get('class/:class_id')
   @ApiOperation({ summary: 'Lấy lịch sử điểm danh' })
-  async getAttendanceReport(@Param('class_id') class_id: number): Promise<ResponseDto> {
-    const report = await this.attendanceService.getAttendanceReport(class_id)
+  async getAttendanceReport(@Param('class_id') class_id: number, @Query() paginateAttendanceDto: PaginateAttendanceDto): Promise<ResponseDto> {
+    const report = await this.attendanceService.getAttendanceReport(class_id, paginateAttendanceDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'ATTENDANCE_REPORT_GET_SUCCESSFULLY',
@@ -59,9 +60,8 @@ export class UserAttendanceController {
   @ApiBearerAuth()
   @Auth()
   @ApiOperation({ summary: 'Lấy lịch sử điểm danh' })
-  @ApiQuery({ name: 'user_id', required: false, type: Number, description: 'ID user của học viên' })
-  async getAttendanceReport(@Param('class_id') class_id: number, @Query('user_id') user_id?: number): Promise<ResponseDto> {
-    const report = await this.attendanceService.getAttendanceReport(class_id, user_id)
+  async getAttendanceReport(@Param('class_id') class_id: number, @Query() paginateAttendanceDto: PaginateAttendanceDto): Promise<ResponseDto> {
+    const report = await this.attendanceService.getAttendanceReport(class_id, paginateAttendanceDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'ATTENDANCE_REPORT_GET_SUCCESSFULLY',

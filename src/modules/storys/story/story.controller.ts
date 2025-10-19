@@ -61,6 +61,17 @@ export class AdminStoryController {
     })
   }
 
+  @Put('index/:id')
+  @ApiOperation({ summary: 'Update index of story by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the story to update' })
+  async updateIndex(@Param('id') id: string, @Query('index') index: number): Promise<ResponseDto> {
+    await this.storyService.updateIndex(Number(id), index)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'UPDATE_INDEX_STORY_SUCCESS',
+    })
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a story by id' })
   @ApiParam({ name: 'id', type: Number })

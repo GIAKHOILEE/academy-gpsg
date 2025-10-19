@@ -6,13 +6,16 @@ export class Story {
   @PrimaryGeneratedColumn()
   id: number
 
+  @Column({ type: 'float', default: 1.001 })
+  index: number
+
   @Column()
   title: string
 
   @Column()
   thumbnail: string
 
-  @Column({ type: 'text' })
+  @Column({ type: 'mediumtext' })
   content: string
 
   @Column()

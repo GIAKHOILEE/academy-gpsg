@@ -1,6 +1,7 @@
 export interface IPost {
   id?: number
-  index?: number
+  title: string
+  index: number
   description?: string
   content?: string
   slug: string

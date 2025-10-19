@@ -6,6 +6,7 @@ import * as dotenv from 'dotenv'
 import * as winston from 'winston'
 import 'winston-daily-rotate-file'
 import { WinstonModule } from 'nest-winston'
+import * as express from 'express'
 dotenv.config()
 
 async function bootstrap() {
@@ -52,6 +53,9 @@ async function bootstrap() {
       instance,
     }),
   })
+  // set body parser limits ở đây (trước app.listen)
+  app.use(express.json({ limit: '50mb' }))
+  app.use(express.urlencoded({ limit: '50mb', extended: true }))
   app.enableCors({
     origin: '*',
   })

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { paginate, PaginationDto } from 'src/common/pagination'
 import { convertToSlug, throwAppException } from 'src/common/utils'
@@ -12,6 +12,7 @@ import { PostCatalog } from '../post-catalog/post-catalog.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { PostCatalogType } from '@enums/post.enum'
 import { DataSource } from 'typeorm'
+import { Banner } from '@modules/banner/banner.entity'
 
 @Injectable()
 export class PostService {
@@ -36,6 +37,12 @@ export class PostService {
       }
     }
 
+    const postMaxIndex = await this.postRepository.createQueryBuilder('post').select('MAX(post.index) as maxIndex').getRawOne()
+    let maxIndex = 1.0001
+    if (postMaxIndex?.maxIndex) {
+      maxIndex = postMaxIndex.maxIndex + 100
+    }
+
     const post = this.postRepository.create({
       title,
       slug,
@@ -45,12 +52,14 @@ export class PostService {
       is_banner: true,
       post_catalog: catalog,
       description,
+      index: maxIndex,
     })
 
     const savedPost = await this.postRepository.save(post)
     const formatPost = {
       id: savedPost.id,
       title: savedPost.title,
+      index: savedPost.index,
       slug: savedPost.slug,
       image: savedPost.image,
       is_active: savedPost.is_active,
@@ -75,6 +84,7 @@ export class PostService {
       .select([
         'post.id',
         'post.title',
+        'post.index',
         'post.slug',
         'post.image',
         'post.is_active',
@@ -109,6 +119,7 @@ export class PostService {
       return {
         id: post.id,
         title: post.title,
+        index: post.index,
         slug: post.slug,
         image: post.image,
         is_active: post.is_active,
@@ -144,6 +155,7 @@ export class PostService {
     const formatPost = {
       id: post.id,
       title: post.title,
+      index: post.index,
       slug: post.slug,
       image: post.image,
       content: post.content,
@@ -213,6 +225,14 @@ export class PostService {
     }
     await this.postRepository.createQueryBuilder('post').update(Post).set({ is_banner: !post.is_banner }).where('id = :id', { id }).execute()
     return
+  }
+
+  async updateIndex(id: number, index: number): Promise<void> {
+    const post = await this.postRepository.createQueryBuilder('post').select(['post.id', 'post.index']).where('post.id = :id', { id }).getOne()
+    if (!post) {
+      throwAppException('POST_NOT_FOUND', ErrorCode.POST_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    await this.postRepository.createQueryBuilder('post').update(Post).set({ index }).where('id = :id', { id }).execute()
   }
 
   async delete(id: number): Promise<void> {
@@ -307,6 +327,7 @@ export class PostService {
     const formatPost = {
       id: savedPost.id,
       title: savedPost.title,
+      index: savedPost.index,
       slug: savedPost.slug,
       image: savedPost.image,
       is_active: savedPost.is_active,

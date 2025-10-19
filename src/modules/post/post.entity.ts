@@ -6,13 +6,16 @@ export class Post {
   @PrimaryGeneratedColumn()
   id: number
 
+  @Column({ type: 'float', default: 1.001 })
+  index: number
+
   @Column({ length: 255 })
   title: string
 
   @Column({ type: 'text', nullable: true, default: null })
   description: string
 
-  @Column({ type: 'text', nullable: true, default: null })
+  @Column({ type: 'mediumtext', nullable: true, default: null })
   content: string
 
   @Column({ length: 255 })
