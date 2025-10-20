@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Not, Repository } from 'typeorm'
 import { ClassRule } from './class-rules.entity'
 import { CreateClassRulesDto } from './dtos/create-class-rules.dto'
 import { UpdateClassRulesDto } from './dtos/update-class-rules.dto'
@@ -91,7 +91,7 @@ export class ClassRulesService {
         throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
       }
 
-      const classRule = await this.classRulesRepository.findOne({ where: { class_id } })
+      const classRule = await this.classRulesRepository.findOne({ where: { class_id, id: Not(id) } })
       if (classRule) {
         throwAppException('CLASS_RULE_ALREADY_EXISTS', ErrorCode.CLASS_RULE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
       }
