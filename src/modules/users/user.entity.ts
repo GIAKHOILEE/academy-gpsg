@@ -2,7 +2,6 @@ import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { UserStatus } from '@enums/status.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { CommentEntity } from '@modules/class-activities/comment/comment.entity'
-import { MailboxesEntity } from '@modules/mailboxes/mailboxes.entity'
 
 @Entity()
 export class User {
@@ -76,9 +75,6 @@ export class User {
 
   @OneToMany(() => CommentEntity, comment => comment.user, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   comments: CommentEntity[]
-
-  @OneToMany(() => MailboxesEntity, mailbox => mailbox.user, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  mailboxes: MailboxesEntity[]
 
   // @Column({ default: false, nullable: true })
   // is_temporary: boolean

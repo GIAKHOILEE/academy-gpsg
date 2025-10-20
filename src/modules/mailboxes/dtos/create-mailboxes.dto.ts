@@ -1,10 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsNotEmpty, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class CreateMailboxesDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Title of the mailbox',
     example: 'Title',
   })
@@ -17,4 +17,28 @@ export class CreateMailboxesDto {
     example: 'Content',
   })
   content: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'Full name of the mailbox',
+    example: 'Full Name',
+  })
+  full_name?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'Email of the mailbox',
+    example: 'Email',
+  })
+  email?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'Phone number of the mailbox',
+    example: 'Phone Number',
+  })
+  phone_number?: string
 }

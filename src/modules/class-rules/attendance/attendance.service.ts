@@ -135,7 +135,7 @@ export class AttendanceService {
     const lessonDates = rules.map(r => r.lesson_date) // ['2023-08-15', '2023-08-19', ...]
 
     // 2. Lấy danh sách học viên trong lớp
-    let qb = await this.classStudentsRepository
+    const qb = await this.classStudentsRepository
       .createQueryBuilder('class_student')
       .select(['class_student.id', 'student.id', 'user.id', 'user.code', 'user.full_name', 'user.saint_name'])
       .leftJoin('class_student.student', 'student')

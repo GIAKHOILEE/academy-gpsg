@@ -49,7 +49,6 @@ import { StudentCommentModule } from '@modules/class-activities/comment/comment.
 import { MailboxesModule } from './modules/mailboxes/mailboxes.module'
 import { FinancesModule } from './modules/finances/finances.module'
 
-
 @Module({
   imports: [
     ClsModule.forRoot({
