@@ -713,6 +713,7 @@ export class EnrollmentsService {
     data: IEnrollments[]
     meta: PaginateEnrollmentsDto
   }> {
+    const { semester_id, scholastic_id, ...rest } = paginateEnrollmentsDto
     const queryBuilder = this.enrollmentsRepository.createQueryBuilder('enrollment')
     queryBuilder
       .select([
@@ -740,6 +741,14 @@ export class EnrollmentsService {
       ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
+      // join tới bảng classes qua relation class_ids
+      .leftJoin(
+        Classes, // entity target hoặc table name
+        'c',
+        'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
+      )
+      .leftJoin('c.semester', 'semester')
+      .leftJoin('c.scholastic', 'scholastic')
       .withDeleted()
     if (isSoftDelete) {
       queryBuilder.where('enrollment.deleted_at IS NOT NULL')
@@ -747,7 +756,18 @@ export class EnrollmentsService {
       queryBuilder.andWhere('enrollment.deleted_at IS NULL')
     }
 
-    const { data, meta } = await paginate(queryBuilder, paginateEnrollmentsDto)
+    // lọc theo scholastic (áp dụng lên class 'c')
+    if (scholastic_id) {
+      queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+
+    // lọc theo semester
+    if (semester_id) {
+      queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
+    }
+    queryBuilder.distinct(true)
+
+    const { data, meta } = await paginate(queryBuilder, rest)
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
         ...enrollment,

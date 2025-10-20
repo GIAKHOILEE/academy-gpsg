@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Not, Repository } from 'typeorm'
 import { Exam } from './exam.entity'
 import { CreateExamDto } from './dtos/create-exam.dto'
 import { UpdateExamDto } from './dtos/update-exam.dto'
@@ -80,7 +80,7 @@ export class ExamService {
         throwAppException('WEIGHT_PERCENTAGE_MUST_BE_GREATER_THAN_0', ErrorCode.WEIGHT_PERCENTAGE_MUST_BE_GREATER_THAN_0, HttpStatus.BAD_REQUEST)
       }
 
-      const exams = await this.examRepository.find({ where: { class_id }, select: ['weight_percentage'] })
+      const exams = await this.examRepository.find({ where: { class_id, id: Not(id) }, select: ['weight_percentage'] })
       const totalWeight = exams.reduce((acc, exam) => acc + exam.weight_percentage, 0)
       if (totalWeight + weight_percentage > 100) {
         throwAppException('TOTAL_WEIGHT_MUST_BE_LESS_THAN_100', ErrorCode.TOTAL_WEIGHT_MUST_BE_LESS_THAN_100, HttpStatus.BAD_REQUEST)
