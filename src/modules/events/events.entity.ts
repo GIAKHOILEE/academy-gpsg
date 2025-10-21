@@ -23,7 +23,7 @@ export class Event {
   @Column({ nullable: true })
   description: string
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   content: string
 
   @Column()
