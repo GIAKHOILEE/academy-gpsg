@@ -736,6 +736,7 @@ export class EnrollmentsService {
         'enrollment.email',
         'enrollment.phone_number',
         'enrollment.address',
+        'enrollment.class_ids',
         'student.id',
         'user.code',
       ])
@@ -768,6 +769,18 @@ export class EnrollmentsService {
     queryBuilder.distinct(true)
 
     const { data, meta } = await paginate(queryBuilder, rest)
+
+    // lấy ra các class từ class_ids
+    const classesIds = data.map(enrollment => enrollment.class_ids)
+    const uniqueClassesIds = [...new Set(classesIds)] // bỏ trùng id
+    const classes = await this.classRepository
+      .createQueryBuilder('class')
+      .select(['class.id', 'class.name', 'class.code'])
+      .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
+      .getMany()
+
+    const classesMap = arrayToObject(classes, 'id')
+
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
         ...enrollment,
@@ -781,6 +794,8 @@ export class EnrollmentsService {
         address: enrollment.address,
         discount: enrollment.discount,
         is_read_note: enrollment.is_read_note,
+        class_ids: enrollment.class_ids,
+        classes: enrollment.class_ids.map(classId => classesMap[classId]),
       }
     })
 
