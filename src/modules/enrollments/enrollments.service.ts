@@ -739,6 +739,7 @@ export class EnrollmentsService {
         'enrollment.class_ids',
         'student.id',
         'user.code',
+        'user.birth_date',
       ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
@@ -789,6 +790,7 @@ export class EnrollmentsService {
         student_code: enrollment?.student?.user?.code,
         saint_name: enrollment.saint_name,
         full_name: enrollment.full_name,
+        birth_date: enrollment?.student?.user?.birth_date,
         email: enrollment.email,
         phone_number: enrollment.phone_number,
         address: enrollment.address,
