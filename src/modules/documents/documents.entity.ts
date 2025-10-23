@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { DocumentsOrderEntity } from './documents-order.entity'
 
 @Entity('documents')
 export class DocumentsEntity {
@@ -9,9 +10,6 @@ export class DocumentsEntity {
   batch_code: string
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  code: string
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
   name: string
 
   @Column({ type: 'float', default: 1.001 })
@@ -20,8 +18,11 @@ export class DocumentsEntity {
   @Column({ type: 'int', default: 0 })
   quantity: number
 
-  @Column({ type: 'float', default: 0 })
-  price: number
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  import_price: number
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  sell_price: number
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   image: string
@@ -31,6 +32,12 @@ export class DocumentsEntity {
 
   @Column({ nullable: true })
   day_import: string
+
+  @Column({ type: 'boolean', default: false })
+  is_sold: boolean
+
+  @OneToMany(() => DocumentsOrderEntity, documentOrder => documentOrder.document)
+  documents_order: DocumentsOrderEntity[]
 
   @CreateDateColumn()
   created_at: Date
