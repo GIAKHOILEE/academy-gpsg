@@ -48,7 +48,7 @@ import { ClassActivitiesModule } from '@modules/class-activities/class-activitie
 import { StudentCommentModule } from '@modules/class-activities/comment/comment.module'
 import { MailboxesModule } from './modules/mailboxes/mailboxes.module'
 import { FinancesModule } from './modules/finances/finances.module'
-
+import { DocumentsModule } from './modules/documents/documents.module'
 
 @Module({
   imports: [
@@ -98,6 +98,7 @@ import { FinancesModule } from './modules/finances/finances.module'
     StudentCommentModule,
     MailboxesModule,
     FinancesModule,
+    DocumentsModule,
   ],
   providers: [
     AppService,

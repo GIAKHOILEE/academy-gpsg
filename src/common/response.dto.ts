@@ -2,7 +2,8 @@ export class ResponseDto {
   statusCode?: number
   messageCode: string
   data?: any
-  meta?: any
+  meta?: any;
+  [key: string]: any
 
   constructor(response: ResponseDto) {
     this.messageCode = response.messageCode

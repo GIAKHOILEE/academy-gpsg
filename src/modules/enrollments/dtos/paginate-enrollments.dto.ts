@@ -3,7 +3,7 @@ import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enu
 import { UserStatus } from '@enums/status.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsEnum, IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class PaginateEnrollmentsDto extends PaginationDto {
   @IsOptional()
@@ -49,4 +49,16 @@ export class PaginateEnrollmentsDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Trạng thái đăng nhập', enum: UserStatus })
   @Type(() => Number)
   is_logged?: UserStatus
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({ description: 'ID học kỳ' })
+  @Type(() => Number)
+  semester_id?: number
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({ description: 'ID niên khóa' })
+  @Type(() => Number)
+  scholastic_id?: number
 }

@@ -29,11 +29,10 @@ export class AdminFinancesController {
   @Put(':id')
   @ApiOperation({ summary: 'Update a finance' })
   async updateFinances(@Param('id') id: number, @Body() updateFinancesDto: UpdateFinancesDto): Promise<ResponseDto> {
-    const finance = await this.financesService.updateFinances(id, updateFinancesDto)
+    await this.financesService.updateFinances(id, updateFinancesDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'FINANCE_UPDATED_SUCCESSFULLY',
-      data: finance,
     })
   }
 

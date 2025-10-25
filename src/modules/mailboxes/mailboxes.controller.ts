@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, Request } from '@nestjs/common'
+import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { MailboxesService } from './mailboxes.service'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
@@ -51,15 +51,13 @@ export class AdminMailboxesController {
 
 @Controller('mailboxes')
 @ApiTags('User Mailboxes')
-@ApiBearerAuth()
-@Auth()
 export class UserMailboxesController {
   constructor(private readonly mailboxesService: MailboxesService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a mailbox' })
-  async createMailboxes(@Body() createMailboxesDto: CreateMailboxesDto, @Request() req): Promise<ResponseDto> {
-    const mailboxes = await this.mailboxesService.createMailboxes(createMailboxesDto, req.user.userId)
+  async createMailboxes(@Body() createMailboxesDto: CreateMailboxesDto): Promise<ResponseDto> {
+    const mailboxes = await this.mailboxesService.createMailboxes(createMailboxesDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'MAILBOX_CREATED',
@@ -69,8 +67,8 @@ export class UserMailboxesController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a mailbox' })
-  async updateMailboxes(@Param('id') id: number, @Body() updateMailboxesDto: UpdateMailboxesDto, @Request() req): Promise<ResponseDto> {
-    const mailboxes = await this.mailboxesService.userUpdateMailboxes(id, updateMailboxesDto, req.user.userId)
+  async updateMailboxes(@Param('id') id: number, @Body() updateMailboxesDto: UpdateMailboxesDto): Promise<ResponseDto> {
+    const mailboxes = await this.mailboxesService.userUpdateMailboxes(id, updateMailboxesDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'MAILBOX_UPDATED',
@@ -80,8 +78,8 @@ export class UserMailboxesController {
 
   @Get()
   @ApiOperation({ summary: 'Get all My mailboxes' })
-  async getMailboxes(@Query() paginateMailboxesDto: PaginateMailboxesDto, @Request() req): Promise<ResponseDto> {
-    const mailboxes = await this.mailboxesService.getMailboxes(paginateMailboxesDto, req.user.userId)
+  async getMailboxes(@Query() paginateMailboxesDto: PaginateMailboxesDto): Promise<ResponseDto> {
+    const mailboxes = await this.mailboxesService.getMailboxes(paginateMailboxesDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'MAILBOX_GET_ALL_MY',

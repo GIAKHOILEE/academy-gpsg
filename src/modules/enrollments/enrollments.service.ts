@@ -713,6 +713,7 @@ export class EnrollmentsService {
     data: IEnrollments[]
     meta: PaginateEnrollmentsDto
   }> {
+    const { semester_id, scholastic_id, ...rest } = paginateEnrollmentsDto
     const queryBuilder = this.enrollmentsRepository.createQueryBuilder('enrollment')
     queryBuilder
       .select([
@@ -735,11 +736,21 @@ export class EnrollmentsService {
         'enrollment.email',
         'enrollment.phone_number',
         'enrollment.address',
+        'enrollment.class_ids',
         'student.id',
         'user.code',
+        'user.birth_date',
       ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
+      // join tới bảng classes qua relation class_ids
+      .leftJoin(
+        Classes, // entity target hoặc table name
+        'c',
+        'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
+      )
+      .leftJoin('c.semester', 'semester')
+      .leftJoin('c.scholastic', 'scholastic')
       .withDeleted()
     if (isSoftDelete) {
       queryBuilder.where('enrollment.deleted_at IS NOT NULL')
@@ -747,7 +758,30 @@ export class EnrollmentsService {
       queryBuilder.andWhere('enrollment.deleted_at IS NULL')
     }
 
-    const { data, meta } = await paginate(queryBuilder, paginateEnrollmentsDto)
+    // lọc theo scholastic (áp dụng lên class 'c')
+    if (scholastic_id) {
+      queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+
+    // lọc theo semester
+    if (semester_id) {
+      queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
+    }
+    queryBuilder.distinct(true)
+
+    const { data, meta } = await paginate(queryBuilder, rest)
+
+    // lấy ra các class từ class_ids
+    const classesIds = data.map(enrollment => enrollment.class_ids)
+    const uniqueClassesIds = [...new Set(classesIds)] // bỏ trùng id
+    const classes = await this.classRepository
+      .createQueryBuilder('class')
+      .select(['class.id', 'class.name', 'class.code'])
+      .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
+      .getMany()
+
+    const classesMap = arrayToObject(classes, 'id')
+
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
         ...enrollment,
@@ -756,11 +790,14 @@ export class EnrollmentsService {
         student_code: enrollment?.student?.user?.code,
         saint_name: enrollment.saint_name,
         full_name: enrollment.full_name,
+        birth_date: enrollment?.student?.user?.birth_date,
         email: enrollment.email,
         phone_number: enrollment.phone_number,
         address: enrollment.address,
         discount: enrollment.discount,
         is_read_note: enrollment.is_read_note,
+        class_ids: enrollment.class_ids,
+        classes: enrollment.class_ids.map(classId => classesMap[classId]),
       }
     })
 

@@ -20,7 +20,7 @@ export class FinancesService {
   async createFinances(finances: CreateFinancesDto): Promise<IFinances> {
     const { amount_received, amount_spent, ...rest } = finances
     const total_amount = amount_received ? amount_received : 0 - (amount_spent ? amount_spent : 0)
-    const newFinances = this.financesRepository.create({ ...rest, total_amount })
+    const newFinances = this.financesRepository.create({ ...rest, amount_received, amount_spent, total_amount })
     const savedFinances = await this.financesRepository.save(newFinances)
     const formattedFinances: IFinances = {
       ...savedFinances,
@@ -30,31 +30,30 @@ export class FinancesService {
     return formattedFinances
   }
 
-  async updateFinances(id: number, finances: UpdateFinancesDto): Promise<IFinances> {
+  async updateFinances(id: number, finances: UpdateFinancesDto): Promise<void> {
     const { amount_received, amount_spent, ...rest } = finances
     const financesToUpdate = await this.financesRepository.findOne({ where: { id } })
     if (!financesToUpdate) {
       throwAppException('FINANCES_NOT_FOUND', ErrorCode.FINANCES_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
-    const receive = amount_received ? amount_received : financesToUpdate.amount_received
-    const spent = amount_spent ? amount_spent : financesToUpdate.amount_spent
+    const receive = amount_received ?? financesToUpdate.amount_received
+    const spent = amount_spent ?? financesToUpdate.amount_spent
     const total_amount = receive - spent
 
-    await this.financesRepository.update(id, { ...rest, total_amount })
-    const formattedFinances: IFinances = {
-      id: financesToUpdate.id,
-      name: financesToUpdate.name,
-      type: financesToUpdate.type,
-      amount_received: financesToUpdate.amount_received,
-      amount_spent: financesToUpdate.amount_spent,
-      total_amount: financesToUpdate.total_amount,
-      statement: financesToUpdate.statement,
-      payment_method: financesToUpdate.payment_method,
-      day: financesToUpdate.day,
-      created_at: formatStringDate(financesToUpdate.created_at.toISOString()),
-      updated_at: formatStringDate(financesToUpdate.updated_at.toISOString()),
-    }
-    return formattedFinances
+    await this.financesRepository.update(id, { ...rest, amount_received: receive, amount_spent: spent, total_amount })
+    // const formattedFinances: IFinances = {
+    //   id: financesToUpdate.id,
+    //   name: financesToUpdate.name,
+    //   type: financesToUpdate.type,
+    //   amount_received: financesToUpdate.amount_received,
+    //   amount_spent: financesToUpdate.amount_spent,
+    //   total_amount: financesToUpdate.total_amount,
+    //   statement: financesToUpdate.statement,
+    //   payment_method: financesToUpdate.payment_method,
+    //   day: financesToUpdate.day,
+    //   created_at: formatStringDate(financesToUpdate.created_at.toISOString()),
+    //   updated_at: formatStringDate(financesToUpdate.updated_at.toISOString()),
+    // }
   }
 
   async getFinances(paginateDto: PaginateFinancesDto): Promise<{ data: IFinances[]; meta: PaginationMeta }> {
