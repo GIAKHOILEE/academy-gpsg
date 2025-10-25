@@ -12,6 +12,7 @@ import { PostCatalog } from '../post-catalog/post-catalog.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { PostCatalogType } from '@enums/post.enum'
 import { DataSource } from 'typeorm'
+import { Banner } from '@modules/banner/banner.entity'
 
 @Injectable()
 export class PostService {
