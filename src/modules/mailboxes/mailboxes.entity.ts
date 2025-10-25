@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { User } from '@modules/users/user.entity'
 
 @Entity('mailboxes')
 export class MailboxesEntity {
@@ -22,6 +23,9 @@ export class MailboxesEntity {
 
   @Column({ nullable: true })
   phone_number: string
+
+  @ManyToOne(() => User, user => user.mailboxes, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  user: User
 
   @CreateDateColumn()
   created_at: Date

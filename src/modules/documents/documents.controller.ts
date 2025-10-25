@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { DocumentsService } from './documents.service'
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { ResponseDto } from '@common/response.dto'
 import { CreateDocumentsDto } from './dtos/create-documents.dto'
 import { PaginateDocumentDto, PaginateDocumentOrderDto } from './dtos/paginate-documents.dto'
-import { BuyDocumentsDto, CreateDocumentOrderDto, UpdateDocumentsDto, UserBuyDocumentDto } from './dtos/update-documents.dto'
+import { CreateDocumentOrderDto, UpdateDocumentsDto } from './dtos/update-documents.dto'
 
 @ApiTags('Admin Documents')
 @ApiBearerAuth()
