@@ -26,6 +26,17 @@ export class AdminDocumentsController {
     })
   }
 
+  @Post('order')
+  @ApiOperation({ summary: 'Mua tài liệu' })
+  async createDocumentOrder(@Body() createDocumentOrderDto: CreateDocumentOrderDto): Promise<ResponseDto> {
+    const documentOrder = await this.documentsService.buyDocument(createDocumentOrderDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.CREATED,
+      messageCode: 'DOCUMENT_ORDER_CREATED_SUCCESSFULLY',
+      data: documentOrder,
+    })
+  }
+
   @Get()
   @ApiOperation({ summary: 'Lấy tất cả tài liệu' })
   async getDocuments(@Query() paginateDocumentDto: PaginateDocumentDto): Promise<ResponseDto> {
@@ -120,17 +131,6 @@ export class UserDocumentsController {
       statusCode: HttpStatus.OK,
       messageCode: 'DOCUMENT_FETCHED_SUCCESSFULLY',
       data: document,
-    })
-  }
-
-  @Post('order')
-  @ApiOperation({ summary: 'Mua tài liệu' })
-  async createDocumentOrder(@Body() createDocumentOrderDto: CreateDocumentOrderDto): Promise<ResponseDto> {
-    const documentOrder = await this.documentsService.buyDocument(createDocumentOrderDto)
-    return new ResponseDto({
-      statusCode: HttpStatus.CREATED,
-      messageCode: 'DOCUMENT_ORDER_CREATED_SUCCESSFULLY',
-      data: documentOrder,
     })
   }
 }
