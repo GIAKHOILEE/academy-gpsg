@@ -61,25 +61,13 @@ export class CloudinaryService {
   }
 
   async deleteFile(url: string) {
-    try {
-      console.log('Received URL:', url)
-      console.log('Type of URL:', typeof url)
+    console.log('Received URL:', url)
+    console.log('Type of URL:', typeof url)
 
-      if (!url || typeof url !== 'string') {
-        throw new BadRequestException(`URL must be a string, received: ${JSON.stringify(url)}`)
-      }
-
-      const matches = url.match(/\/upload\/v\d+\/([^\.]+)/)
-      if (!matches) {
-        throw new BadRequestException('Invalid Cloudinary URL')
-      }
-
-      const publicId = matches[1]
-      console.log('Deleting:', publicId)
-
-      return await this.cloudinary.uploader.destroy(publicId)
-    } catch (error) {
-      throw new BadRequestException(error.message)
+    if (this.env === 'production') {
+      await this.deleteFileFromStoragePath(url)
+    } else {
+      await this.deleteFileFromCloudinary(url)
     }
   }
 
@@ -125,6 +113,48 @@ export class CloudinaryService {
       })
     } catch (error: any) {
       throw new BadRequestException(error?.message || 'Upload file to cloudinary failed')
+    }
+  }
+
+  private async deleteFileFromCloudinary(url: string) {
+    try {
+      if (!url || typeof url !== 'string') {
+        throw new BadRequestException(`URL must be a string, received: ${JSON.stringify(url)}`)
+      }
+
+      const matches = url.match(/\/upload\/v\d+\/([^\.]+)/)
+      if (!matches) {
+        throw new BadRequestException('Invalid Cloudinary URL')
+      }
+
+      const publicId = matches[1]
+      console.log('Deleting:', publicId)
+
+      return await this.cloudinary.uploader.destroy(publicId)
+    } catch (error: any) {
+      throw new BadRequestException(error?.message || 'Delete file from cloudinary failed')
+    }
+  }
+
+  private async deleteFileFromStoragePath(url: string) {
+    try {
+      if (!url || typeof url !== 'string') {
+        throw new BadRequestException(`URL must be a string, received: ${JSON.stringify(url)}`)
+      }
+
+      // URL kiểu: https://file.hvmv.edu.vn/1730135238382_a1b2c3d4.png
+      const fileName = path.basename(url) // → "1730135238382_a1b2c3d4.png"
+      const filePath = path.join(this.storagePath, fileName)
+
+      // Kiểm tra tồn tại rồi mới xoá
+      if (fs.existsSync(filePath)) {
+        await fs.promises.unlink(filePath)
+        console.log('Deleted from storage:', filePath)
+      } else {
+        console.warn('File not found in storage:', filePath)
+      }
+    } catch (error: any) {
+      throw new BadRequestException(error?.message || 'Delete file from storage path failed')
     }
   }
 }
