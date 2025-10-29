@@ -20,9 +20,7 @@ ARG PORT
 ENV PORT=$PORT
 WORKDIR /usr/app
 
-# KHÔNG TẠO USER MỚI - Dùng node user có sẵn (UID 1000)
-# node:21-alpine đã có sẵn user 'node' với UID/GID 1000
-
+# Install required packages including su-exec
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -31,38 +29,81 @@ RUN apk add --no-cache \
     ca-certificates \
     ttf-freefont \
     tzdata \
+    su-exec \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone \
     && rm -rf /var/cache/apk/* \
     && rm -rf /tmp/*
 
-# Copy package files với owner là node user
-COPY --from=builder --chown=node:node /usr/app/package*.json ./
+# Copy package files - use root ownership first
+COPY --from=builder /usr/app/package*.json ./
 
-# Install production dependencies
+# Install production dependencies as root
 RUN yarn install --production --frozen-lockfile \
     && yarn cache clean \
     && rm -rf /tmp/* \
     && rm -rf ~/.npm
 
-# Copy built application với owner là node user
-COPY --from=builder --chown=node:node /usr/app/dist ./dist
+# Copy built application
+COPY --from=builder /usr/app/dist ./dist
 
 # Puppeteer config
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-# Tạo thư mục với quyền cho node user
-RUN mkdir -p /usr/app/logs /usr/app/storage \
-    && chown -R node:node /usr/app/logs /usr/app/storage \
-    && chmod -R 775 /usr/app/storage
+# Create entrypoint script that fixes ALL permissions
+RUN cat > /entrypoint.sh << 'EOF'
+#!/bin/sh
+set -e
 
-# Switch to node user (UID 1000)
-USER node
+echo "🔧 Starting permission fix..."
+
+# Fix logs directory permissions
+if [ -d "/usr/app/logs" ]; then
+    echo "📝 Fixing logs permissions..."
+    chown -R node:node /usr/app/logs
+    chmod -R 775 /usr/app/logs
+    # Also fix existing log files if any
+    find /usr/app/logs -type f -exec chmod 664 {} \;
+    echo "✅ Logs permissions fixed"
+fi
+
+# Fix storage directory permissions  
+if [ -d "/usr/app/storage" ]; then
+    echo "📁 Fixing storage permissions..."
+    chown -R node:node /usr/app/storage
+    chmod -R 775 /usr/app/storage
+    echo "✅ Storage permissions fixed"
+fi
+
+# Create required directories if not exist
+DIRS="/usr/app/logs /usr/app/storage /usr/app/storage/images /usr/app/storage/documents /usr/app/storage/uploads"
+for dir in $DIRS; do
+    if [ ! -d "$dir" ]; then
+        echo "Creating $dir..."
+        mkdir -p "$dir"
+        chown node:node "$dir"
+        chmod 775 "$dir"
+    fi
+done
+
+echo "🚀 Starting application as node user..."
+exec su-exec node:node node dist/main
+EOF
+
+# Make entrypoint executable
+RUN chmod +x /entrypoint.sh
+
+# Create directories (will be properly owned by entrypoint)
+RUN mkdir -p /usr/app/logs /usr/app/storage
+
+# DO NOT switch user here - let entrypoint handle everything
+# USER node
 
 EXPOSE $PORT
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:${PORT}/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})" || exit 1
+  CMD wget -q --spider http://localhost:${PORT}/health || exit 1
 
-CMD ["node", "dist/main"]
+# Use entrypoint to fix permissions then run as node user
+ENTRYPOINT ["/entrypoint.sh"]
