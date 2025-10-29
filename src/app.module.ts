@@ -49,6 +49,7 @@ import { StudentCommentModule } from '@modules/class-activities/comment/comment.
 import { MailboxesModule } from './modules/mailboxes/mailboxes.module'
 import { FinancesModule } from './modules/finances/finances.module'
 import { DocumentsModule } from './modules/documents/documents.module'
+import { TimekeepingModule } from './modules/timekeeping/timekeeping.module'
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { DocumentsModule } from './modules/documents/documents.module'
     MailboxesModule,
     FinancesModule,
     DocumentsModule,
+    TimekeepingModule,
   ],
   providers: [
     AppService,
