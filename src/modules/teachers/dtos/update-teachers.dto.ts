@@ -62,4 +62,25 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   @IsString()
   @ApiPropertyOptional({ description: 'pdf file CV' })
   cv: string
+
+  // banking
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Tên ngân hàng' })
+  bank_name: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Số tài khoản ngân hàng' })
+  bank_account_number: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Tên chủ tài khoản ngân hàng' })
+  bank_account_name: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Chi nhánh ngân hàng' })
+  bank_branch: string
 }

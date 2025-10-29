@@ -72,6 +72,19 @@ export class Teacher {
   @OneToMany(() => ClassActivitiesEntity, classActivities => classActivities.teacher, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   class_activities: ClassActivitiesEntity[]
 
+  // banking
+  @Column({ nullable: true })
+  bank_name: string
+
+  @Column({ nullable: true })
+  bank_account_number: string
+
+  @Column({ nullable: true })
+  bank_account_name: string
+
+  @Column({ nullable: true })
+  bank_branch: string
+
   @CreateDateColumn()
   created_at: Date
 

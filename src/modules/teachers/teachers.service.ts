@@ -46,6 +46,10 @@ export class TeachersService {
         boarding,
         start_date,
         cv,
+        bank_name,
+        bank_account_number,
+        bank_account_name,
+        bank_branch,
         ...userData
       } = createTeacherDto
       const { password, email, code, ...rest } = userData
@@ -92,6 +96,10 @@ export class TeachersService {
         boarding,
         start_date,
         cv,
+        bank_name,
+        bank_account_number,
+        bank_account_name,
+        bank_branch,
       })
 
       await queryRunner.manager.save(Teacher, teacher)
@@ -131,6 +139,10 @@ export class TeachersService {
         boarding,
         start_date,
         cv,
+        bank_name,
+        bank_account_number,
+        bank_account_name,
+        bank_branch,
         ...userData
       } = updateTeacherDto
       const { email, ...rest } = userData
@@ -168,6 +180,10 @@ export class TeachersService {
         boarding: boarding,
         start_date: start_date,
         cv: cv,
+        bank_name: bank_name,
+        bank_account_number: bank_account_number,
+        bank_account_name: bank_account_name,
+        bank_branch: bank_branch,
       })
       await queryRunner.manager.save(Teacher, updatedTeacher)
       await queryRunner.commitTransaction()
@@ -235,6 +251,10 @@ export class TeachersService {
       boarding: teacher.boarding,
       start_date: teacher.start_date,
       cv: teacher.cv,
+      bank_name: teacher.bank_name,
+      bank_account_number: teacher.bank_account_number,
+      bank_account_name: teacher.bank_account_name,
+      bank_branch: teacher.bank_branch,
     }
     return formattedTeacher
   }
@@ -327,6 +347,10 @@ export class TeachersService {
       boarding: teacher.boarding,
       start_date: teacher.start_date,
       cv: teacher.cv,
+      bank_name: teacher.bank_name,
+      bank_account_number: teacher.bank_account_number,
+      bank_account_name: teacher.bank_account_name,
+      bank_branch: teacher.bank_branch,
     }))
 
     return {
