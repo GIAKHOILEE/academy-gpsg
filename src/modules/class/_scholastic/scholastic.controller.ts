@@ -37,6 +37,17 @@ export class AdminScholasticController {
     })
   }
 
+  @Put('index/:id')
+  @ApiOperation({ summary: 'Update index of scholastic by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the scholastic to update' })
+  async updateIndex(@Param('id') id: number, @Query('index') index: number): Promise<ResponseDto> {
+    await this.scholasticService.updateIndex(id, index)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'SCHOLASTIC_INDEX_UPDATED_SUCCESSFULLY',
+    })
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a scholastic' })
   @ApiParam({ name: 'id', type: Number, description: 'The id of the scholastic to delete' })

@@ -28,10 +28,20 @@ export class ScholasticService {
     })
     if (scholastic) throwAppException('SCHOLASTIC_ALREADY_EXISTS', ErrorCode.SCHOLASTIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
+    const scholasticMaxIndex = await this.scholasticRepository
+      .createQueryBuilder('scholastic')
+      .select('MAX(scholastic.index) as maxIndex')
+      .getRawOne()
+    let maxIndex = 1.0001
+    if (scholasticMaxIndex?.maxIndex) {
+      maxIndex = scholasticMaxIndex.maxIndex + 100
+    }
+
     const newScholastic = this.scholasticRepository.create(createScholasticDto)
     const savedScholastic = await this.scholasticRepository.save(newScholastic)
     return {
       id: savedScholastic.id,
+      index: maxIndex,
       name: savedScholastic.name,
     }
   }
@@ -44,6 +54,12 @@ export class ScholasticService {
     if (existingScholastic) throwAppException('SCHOLASTIC_ALREADY_EXISTS', ErrorCode.SCHOLASTIC_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
 
     await this.scholasticRepository.update(id, updateScholasticDto)
+  }
+
+  async updateIndex(id: number, index: number): Promise<void> {
+    const scholastic = await this.scholasticRepository.exists({ where: { id } })
+    if (!scholastic) throwAppException('SCHOLASTIC_NOT_FOUND', ErrorCode.SCHOLASTIC_NOT_FOUND, HttpStatus.NOT_FOUND)
+    await this.scholasticRepository.update(id, { index })
   }
 
   async delete(id: number): Promise<void> {
@@ -63,6 +79,7 @@ export class ScholasticService {
 
     const formattedData = data.map(scholastic => ({
       id: scholastic.id,
+      index: scholastic.index,
       name: scholastic.name,
     }))
     return { data: formattedData, meta }
@@ -74,6 +91,7 @@ export class ScholasticService {
 
     return {
       id: scholastic.id,
+      index: scholastic.index,
       name: scholastic.name,
     }
   }
