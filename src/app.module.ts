@@ -50,6 +50,7 @@ import { MailboxesModule } from './modules/mailboxes/mailboxes.module'
 import { FinancesModule } from './modules/finances/finances.module'
 import { DocumentsModule } from './modules/documents/documents.module'
 import { TimekeepingModule } from './modules/timekeeping/timekeeping.module'
+import { EvaluationModule } from './modules/evaluation/evaluation.module'
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { TimekeepingModule } from './modules/timekeeping/timekeeping.module'
     FinancesModule,
     DocumentsModule,
     TimekeepingModule,
+    EvaluationModule,
   ],
   providers: [
     AppService,
