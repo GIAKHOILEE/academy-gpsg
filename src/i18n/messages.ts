@@ -112,6 +112,11 @@ export const messages = {
     BATCH_CODE_ALREADY_EXISTS: 'Batch code already exists',
     IS_SOLD_DOCUMENT_CANNOT_UPDATE_QUANTITY: 'Is sold document cannot update quantity',
     DOCUMENT_ORDER_NOT_FOUND: 'Document order not found',
+    TIMEKEEPING_NOT_FOUND: 'Timekeeping not found',
+    QUESTION_NOT_FOUND: 'Question not found',
+    QUESTION_HAS_ANSWER_NOT_CHANGE_TYPE: 'Question has answer cannot change type',
+    QUESTION_HAS_ANSWER: 'Question has answer',
+    OPTIONS_REQUIRED: 'Options is required for single choice and multiple choice',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -229,5 +234,10 @@ export const messages = {
     BATCH_CODE_ALREADY_EXISTS: 'Mã lô đã tồn tại',
     IS_SOLD_DOCUMENT_CANNOT_UPDATE_QUANTITY: 'Tài liệu đã bán không được cập nhật số lượng',
     DOCUMENT_ORDER_NOT_FOUND: 'Đơn hàng tài liệu không tồn tại',
+    TIMEKEEPING_NOT_FOUND: 'Bảng chấm công không tồn tại',
+    QUESTION_NOT_FOUND: 'Câu hỏi không tồn tại',
+    QUESTION_HAS_ANSWER_NOT_CHANGE_TYPE: 'Câu hỏi đã có đáp án không được thay đổi loại câu hỏi',
+    QUESTION_HAS_ANSWER: 'Câu hỏi đã có đáp án',
+    OPTIONS_REQUIRED: 'Options là bắt buộc cho loại single choice và multiple choice',
   },
 }

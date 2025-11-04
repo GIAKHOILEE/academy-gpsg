@@ -134,5 +134,4 @@ export class UserDocumentsController {
       data: document,
     })
   }
-
 }

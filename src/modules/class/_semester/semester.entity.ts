@@ -7,6 +7,9 @@ export class Semester {
   @PrimaryGeneratedColumn()
   id: number
 
+  @Column({ type: 'float', default: 1.001 })
+  index: number
+
   @Column()
   name: string
 

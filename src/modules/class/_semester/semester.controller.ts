@@ -37,6 +37,17 @@ export class AdminSemesterController {
     })
   }
 
+  @Put('index/:id')
+  @ApiOperation({ summary: 'Update index of semester by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the semester to update' })
+  async updateIndex(@Param('id') id: number, @Query('index') index: number): Promise<ResponseDto> {
+    await this.semesterService.updateIndex(id, index)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'SEMESTER_INDEX_UPDATED_SUCCESSFULLY',
+    })
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a semester' })
   @ApiParam({ name: 'id', type: Number, description: 'The id of the semester to delete' })

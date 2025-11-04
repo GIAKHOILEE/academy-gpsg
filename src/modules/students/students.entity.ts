@@ -3,6 +3,7 @@ import { JoinColumn } from 'typeorm'
 import { User } from '../users/user.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
+import { Answers } from '@modules/evaluation/answers/answers.entity'
 
 @Entity({ name: 'students' })
 export class Student {
@@ -53,6 +54,9 @@ export class Student {
   // danh sách đăng ký
   @OneToMany(() => Enrollments, enrollments => enrollments.student)
   enrollments: Enrollments[]
+
+  @OneToMany(() => Answers, answers => answers.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  answers: Answers[]
 
   @CreateDateColumn()
   created_at: Date

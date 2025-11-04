@@ -44,6 +44,12 @@ export class SemesterService {
     await this.semesterRepository.update(id, updateSemesterDto)
   }
 
+  async updateIndex(id: number, index: number): Promise<void> {
+    const semester = await this.semesterRepository.exists({ where: { id } })
+    if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
+    await this.semesterRepository.update(id, { index })
+  }
+
   async delete(id: number): Promise<void> {
     const semester = await this.semesterRepository.exists({ where: { id } })
     if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
