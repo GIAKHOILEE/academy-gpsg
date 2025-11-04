@@ -20,7 +20,9 @@ ARG PORT
 ENV PORT=$PORT
 WORKDIR /usr/app
 
-# Install required packages
+# KHÔNG TẠO USER MỚI - Dùng node user có sẵn (UID 1000)
+# node:21-alpine đã có sẵn user 'node' với UID/GID 1000
+
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -34,7 +36,7 @@ RUN apk add --no-cache \
     && rm -rf /var/cache/apk/* \
     && rm -rf /tmp/*
 
-# Copy package files with node ownership
+# Copy package files với owner là node user
 COPY --from=builder --chown=node:node /usr/app/package*.json ./
 
 # Install production dependencies
@@ -43,19 +45,19 @@ RUN yarn install --production --frozen-lockfile \
     && rm -rf /tmp/* \
     && rm -rf ~/.npm
 
-# Copy built application with node ownership
+# Copy built application với owner là node user
 COPY --from=builder --chown=node:node /usr/app/dist ./dist
 
 # Puppeteer config
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-# Create directories with correct ownership
+# Tạo thư mục với quyền cho node user
 RUN mkdir -p /usr/app/logs /usr/app/storage \
     && chown -R node:node /usr/app/logs /usr/app/storage \
-    && chmod -R 775 /usr/app/logs /usr/app/storage
+    && chmod -R 775 /usr/app/storage
 
-# Switch to node user
+# Switch to node user (UID 1000)
 USER node
 
 EXPOSE $PORT
