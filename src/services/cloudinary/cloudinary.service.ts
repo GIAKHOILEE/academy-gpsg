@@ -157,49 +157,4 @@ export class CloudinaryService {
       throw new BadRequestException(error?.message || 'Delete file from storage path failed')
     }
   }
-
-  /* ==================================================== 
-  =================== PRIVATE METHODS =================== 
-  ======================================================  */
-
-  // upload file to storage path
-  private async uploadFileToStoragePath(file: Express.Multer.File) {
-    try {
-      // tạo folder nếu chưa có
-      if (!fs.existsSync(this.storagePath)) {
-        fs.mkdirSync(this.storagePath, { recursive: true })
-      }
-
-      const ext = path.extname(file.originalname || '') || ''
-      // Tên file generate từ timestamp
-      const fileName = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`
-      const filePath = path.join(this.storagePath, fileName)
-
-      await fs.promises.writeFile(filePath, file.buffer)
-
-      const fileUrl = `${this.fileDomain}/${fileName}`
-
-      return fileUrl
-    } catch (err: any) {
-      throw new BadRequestException(err?.message || 'Upload file to storage path failed')
-    }
-  }
-
-  // upload file to cloudinary
-  private async uploadToCloudinary(file: Express.Multer.File): Promise<string> {
-    try {
-      return await new Promise((resolve, reject) => {
-        this.cloudinary.uploader
-          .upload_stream({ resource_type: 'auto', folder: process.env.CLOUDINARY_FOLDER }, (error: any, result: any) => {
-            if (error) {
-              return reject(new BadRequestException(error.message || 'Cloudinary upload error'))
-            }
-            resolve(result.secure_url)
-          })
-          .end(file.buffer)
-      })
-    } catch (error: any) {
-      throw new BadRequestException(error?.message || 'Upload file to cloudinary failed')
-    }
-  }
 }
