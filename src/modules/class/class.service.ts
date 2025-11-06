@@ -127,6 +127,7 @@ export class ClassService {
       end_time: savedClass.end_time,
       opening_day: savedClass.opening_day,
       closing_day: savedClass.closing_day,
+      is_evaluate: false,
       subject: {
         id: subject.id,
         code: subject.code,
@@ -279,6 +280,7 @@ export class ClassService {
       end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
+      is_evaluate: classEntity.is_evaluate,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -399,6 +401,7 @@ export class ClassService {
       end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
+      is_evaluate: classEntity.is_evaluate,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -592,6 +595,7 @@ export class ClassService {
       end_time: classStudent.class.end_time,
       opening_day: classStudent.class.opening_day,
       closing_day: classStudent.class.closing_day,
+      is_evaluate: classStudent.class.is_evaluate,
       subject: {
         id: classStudent.class.subject.id,
         code: classStudent.class.subject.code,
