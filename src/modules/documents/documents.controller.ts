@@ -37,6 +37,7 @@ export class AdminDocumentsController {
     })
   }
 
+
   @Get()
   @ApiOperation({ summary: 'Lấy tất cả tài liệu' })
   async getDocuments(@Query() paginateDocumentDto: PaginateDocumentDto): Promise<ResponseDto> {
