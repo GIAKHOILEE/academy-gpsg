@@ -68,7 +68,7 @@ export class ClassRulesService {
   }
 
   async updateClassRules(id: number, updateClassRulesDto: UpdateClassRulesDto): Promise<void> {
-    const { class_id, type, attendance_percent, score, description } = updateClassRulesDto
+    const { class_id, type, attendance_percent, score } = updateClassRulesDto
     const classRules = await this.classRulesRepository
       .createQueryBuilder('class_rules')
       .select([
@@ -111,15 +111,7 @@ export class ClassRulesService {
       }
     }
 
-    const newClassRules = {
-      class_id: classRules.class_id,
-      type: classRules.type || type,
-      attendance_percent: classRules.attendance_percent,
-      score: classRules.score,
-      description: classRules.description || description,
-    }
-
-    await this.classRulesRepository.update(id, newClassRules)
+    await this.classRulesRepository.update(id, updateClassRulesDto)
   }
 
   async deleteClassRules(id: number): Promise<void> {
