@@ -531,6 +531,7 @@ export class ClassService {
         'class.end_time',
         'class.opening_day',
         'class.closing_day',
+        'class.is_evaluate',
         'subject.id',
         'subject.image',
         'subject.code',

@@ -71,6 +71,10 @@ export class CloudinaryService {
     }
   }
 
+  /* ==================================================== 
+  =================== PRIVATE METHODS =================== 
+  ======================================================  */
+
   private async deleteFileFromCloudinary(url: string) {
     try {
       if (!url || typeof url !== 'string') {
@@ -112,10 +116,6 @@ export class CloudinaryService {
       throw new BadRequestException(error?.message || 'Delete file from storage path failed')
     }
   }
-
-  /* ==================================================== 
-  =================== PRIVATE METHODS =================== 
-  ======================================================  */
 
   // upload file to storage path
   private async uploadFileToStoragePath(file: Express.Multer.File) {
