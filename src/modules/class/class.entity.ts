@@ -81,6 +81,10 @@ export class Classes {
   @Column({ default: true })
   is_active: boolean
 
+  // Bật tắt đánh giá
+  @Column({ default: false })
+  is_evaluate: boolean
+
   // môn học
   @ManyToOne(() => Subject, subject => subject.classes, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'subject_id' })
