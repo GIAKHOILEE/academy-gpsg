@@ -1,11 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator'
+import { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator'
 
 export class CreateClassActivitiesDto {
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ description: 'Tên hoạt động', example: 'Hoạt động 1' })
   title: string
+
+  @IsArray()
+  @IsString({ each: true })
+  @ApiProperty({ description: 'URL của các file', example: ['https://example.com/file1.pdf', 'https://example.com/file2.pdf'], type: [String] })
+  file_url: string[]
 
   @IsNotEmpty()
   @IsString()
