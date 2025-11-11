@@ -85,4 +85,10 @@ export class PaginateClassOfStudentDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Phòng học' })
   classroom: string
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
+  @IsEnum(ClassStatus)
+  @Type(() => Number)
+  status: ClassStatus
 }
