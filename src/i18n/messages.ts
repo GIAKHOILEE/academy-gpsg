@@ -117,6 +117,7 @@ export const messages = {
     QUESTION_HAS_ANSWER_NOT_CHANGE_TYPE: 'Question has answer cannot change type',
     QUESTION_HAS_ANSWER: 'Question has answer',
     OPTIONS_REQUIRED: 'Options is required for single choice and multiple choice',
+    SETTINGS_NOT_FOUND: 'Settings not found',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -239,5 +240,6 @@ export const messages = {
     QUESTION_HAS_ANSWER_NOT_CHANGE_TYPE: 'Câu hỏi đã có đáp án không được thay đổi loại câu hỏi',
     QUESTION_HAS_ANSWER: 'Câu hỏi đã có đáp án',
     OPTIONS_REQUIRED: 'Options là bắt buộc cho loại single choice và multiple choice',
+    SETTINGS_NOT_FOUND: 'Cài đặt không tồn tại',
   },
 }

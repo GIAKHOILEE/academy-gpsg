@@ -107,11 +107,6 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Học kỳ', example: 1 })
   semester_id: number
 
-  @IsBoolean()
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'Bật tắt đánh giá', example: false })
-  is_evaluate: boolean
-
   // @IsNumber()
   // @IsOptional()
   // @ApiPropertyOptional({ description: 'Khoa', example: 1 })
