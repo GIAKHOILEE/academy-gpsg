@@ -20,7 +20,7 @@ export class AnnouncementStationService {
   ) {}
 
   async sendAnnouncement(announcementDto: AnnouncementDto) {
-    const { role, userIds, title, content } = announcementDto
+    const { role, userIds, title, content, file_url } = announcementDto
 
     let emails: string[] = []
 
@@ -48,6 +48,12 @@ export class AnnouncementStationService {
       throwAppException('NO_EMAIL_FOUND', ErrorCode.NO_EMAIL_FOUND, HttpStatus.BAD_REQUEST)
     }
 
+    // Trong sendAnnouncement: nếu announcementDto.file_url là array url -> gợi ý hiển thị trong content
+    const attachmentsHtml =
+      file_url && file_url.length ? `<p>File đính kèm:</p><ul>${file_url.map(url => `<li><a href="${url}">${url}</a></li>`).join('')}</ul>` : ''
+
+    const fullContent = `${content}${attachmentsHtml}`
+
     // nếu mail có @example.com thì bỏ qua
     emails = emails.filter(email => !email.includes('@example.com'))
 
@@ -57,7 +63,7 @@ export class AnnouncementStationService {
       null,
       null,
       null,
-      content,
+      fullContent,
     )
   }
 }

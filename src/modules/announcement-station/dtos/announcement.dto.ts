@@ -19,6 +19,11 @@ export class AnnouncementDto {
   })
   content: string
 
+  @IsArray()
+  @IsString({ each: true })
+  @ApiProperty({ description: 'URL của các file', example: ['https://example.com/file1.pdf', 'https://example.com/file2.pdf'], type: [String] })
+  file_url: string[]
+
   @IsEnum(Role)
   @IsNotEmpty()
   @ApiProperty({
