@@ -260,8 +260,20 @@ export class TeachersService {
   }
 
   async getTeachers(paginateTeachersDto: PaginateTeachersDto) {
-    const { full_name, email, phone_number, status, class_name, class_code, class_id, semester_id, department_id, scholastic_id, ...rest } =
-      paginateTeachersDto
+    const {
+      full_name,
+      email,
+      phone_number,
+      status,
+      class_name,
+      class_code,
+      class_status,
+      class_id,
+      semester_id,
+      department_id,
+      scholastic_id,
+      ...rest
+    } = paginateTeachersDto
     const query = this.teacherRepository.createQueryBuilder('teachers').leftJoinAndSelect('teachers.user', 'user')
 
     // Join tới classes (bảng classes) để filter theo lớp
@@ -302,6 +314,10 @@ export class TeachersService {
 
     if (class_id) {
       query.andWhere('classes.id = :class_id', { class_id })
+    }
+
+    if (class_status) {
+      query.andWhere('classes.status = :class_status', { class_status })
     }
 
     if (semester_id) {

@@ -296,8 +296,21 @@ export class StudentsService {
   }
 
   async getAllStudents(paginateStudentsDto: PaginateStudentsDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { full_name, email, phone_number, status, code, class_name, class_code, class_id, semester_id, department_id, scholastic_id, ...rest } =
-      paginateStudentsDto
+    const {
+      full_name,
+      email,
+      phone_number,
+      status,
+      code,
+      class_name,
+      class_code,
+      class_status,
+      class_id,
+      semester_id,
+      department_id,
+      scholastic_id,
+      ...rest
+    } = paginateStudentsDto
 
     // base query: students + user
     const query = this.studentRepository.createQueryBuilder('students').leftJoinAndSelect('students.user', 'user')
@@ -350,6 +363,10 @@ export class StudentsService {
 
     if (class_id) {
       query.andWhere('class.id = :class_id', { class_id })
+    }
+
+    if (class_status) {
+      query.andWhere('class.status = :class_status', { class_status })
     }
 
     if (semester_id) {
