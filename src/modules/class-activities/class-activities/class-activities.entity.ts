@@ -10,6 +10,9 @@ export class ClassActivitiesEntity {
   @Column({ type: 'varchar', length: 255 })
   title: string
 
+  @Column({ type: 'json', nullable: true })
+  file_url: string[]
+
   @Column({ type: 'varchar', length: 255 })
   description: string
 

@@ -3,6 +3,7 @@ import { IComment } from '../comment/comment.interface'
 export interface IClassActivities {
   id: number
   title?: string
+  file_url: string[]
   description?: string
   content?: string
   class_id?: number

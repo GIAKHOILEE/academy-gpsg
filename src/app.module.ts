@@ -51,6 +51,9 @@ import { FinancesModule } from './modules/finances/finances.module'
 import { DocumentsModule } from './modules/documents/documents.module'
 import { TimekeepingModule } from './modules/timekeeping/timekeeping.module'
 import { EvaluationModule } from './modules/evaluation/evaluation.module'
+import { SettingsModule } from './modules/settings/settings.module'
+import { SettingSeeder } from '@seeders/setting.seeder'
+import { Settings } from './modules/settings/settings.entity'
 
 @Module({
   imports: [
@@ -61,7 +64,7 @@ import { EvaluationModule } from './modules/evaluation/evaluation.module'
       },
     }),
     TypeOrmModule.forRoot(databaseConfig),
-    TypeOrmModule.forFeature([User, Visitor]),
+    TypeOrmModule.forFeature([User, Visitor, Settings]),
     ThrottlerModule.forRoot([{ ttl: 1, limit: 10 }]),
     AuthModule,
     UsersModule,
@@ -103,10 +106,12 @@ import { EvaluationModule } from './modules/evaluation/evaluation.module'
     DocumentsModule,
     TimekeepingModule,
     EvaluationModule,
+    SettingsModule,
   ],
   providers: [
     AppService,
     SuperAdminSeeder,
+    SettingSeeder,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

@@ -109,6 +109,7 @@ export class ClassActivitiesService {
       .select([
         'class_activities.id',
         'class_activities.title',
+        'class_activities.file_url',
         'class_activities.description',
         'class_activities.content',
         'class_activities.class_id',
@@ -179,6 +180,7 @@ export class ClassActivitiesService {
       .select([
         'class_activities.id',
         'class_activities.title',
+        'class_activities.file_url',
         'class_activities.description',
         'class_activities.class_id',
         'class_activities.content',

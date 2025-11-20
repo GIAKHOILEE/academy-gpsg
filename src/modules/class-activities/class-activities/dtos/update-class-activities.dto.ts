@@ -1,11 +1,21 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateClassActivitiesDto {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên hoạt động', example: 'Hoạt động 1' })
   title?: string
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ApiPropertyOptional({
+    description: 'URL của các file',
+    example: ['https://example.com/file1.pdf', 'https://example.com/file2.pdf'],
+    type: [String],
+  })
+  file_url?: string[]
 
   @IsOptional()
   @IsString()
