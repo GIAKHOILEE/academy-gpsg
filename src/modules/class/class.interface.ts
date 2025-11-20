@@ -29,6 +29,7 @@ export interface IClasses {
   opening_day?: string
   closing_day?: string
   is_active?: boolean
+  is_evaluate?: boolean
   scholastic?: IScholastic
   semester?: ISemester
   department?: IDepartment
