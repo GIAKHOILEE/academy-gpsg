@@ -77,9 +77,6 @@ export class User {
   @OneToMany(() => CommentEntity, comment => comment.user, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   comments: CommentEntity[]
 
-  @OneToMany(() => MailboxesEntity, mailbox => mailbox.user, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  mailboxes: MailboxesEntity[]
-
   // @Column({ default: false, nullable: true })
   // is_temporary: boolean
 
