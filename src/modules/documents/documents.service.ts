@@ -195,10 +195,9 @@ export class DocumentsService {
       .leftJoin('document_order.document', 'document')
     const { data, meta } = await paginate(query, paginateDocumentOrderDto)
 
-    console.log(data)
     let totalProfit = 0
     const formattedData: IDocumentsOrder[] = data.map(documentOrder => {
-      totalProfit += documentOrder.profit
+      totalProfit += Number(documentOrder.profit)
       return {
         id: documentOrder.id,
         series: documentOrder.series.toString().padStart(3, '0'),
@@ -220,6 +219,7 @@ export class DocumentsService {
         },
       }
     })
+    console.log(totalProfit)
     return { data: formattedData, meta, total_profit: totalProfit }
   }
 
