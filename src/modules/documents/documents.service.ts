@@ -5,7 +5,7 @@ import { DocumentsEntity } from './documents.entity'
 import { CreateDocumentsDto } from './dtos/create-documents.dto'
 import { IDocuments, IDocumentsOrder } from './documents.interface'
 import { CreateDocumentOrderDto, UpdateDocumentsDto } from './dtos/update-documents.dto'
-import { formatStringDate, throwAppException } from '@common/utils'
+import { formatStringDateUTC7, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { DataSource, Not } from 'typeorm'
 import { paginate, PaginationMeta } from '@common/pagination'
@@ -208,7 +208,7 @@ export class DocumentsService {
         phone: documentOrder.phone,
         address: documentOrder.address,
         note: documentOrder.note,
-        created_at: formatStringDate(documentOrder.created_at.toISOString()),
+        created_at: formatStringDateUTC7(documentOrder.created_at.toISOString()), // UTC+7
         document: {
           id: documentOrder.document.id,
           name: documentOrder.document.name,
