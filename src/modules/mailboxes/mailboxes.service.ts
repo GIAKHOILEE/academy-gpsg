@@ -97,4 +97,12 @@ export class MailboxesService {
     }
     return formattedMailboxes
   }
+
+  async deleteMailboxes(id: number): Promise<void> {
+    const mailboxes = await this.mailboxesRepository.exists({ where: { id } })
+    if (!mailboxes) {
+      throwAppException('MAILBOX_NOT_FOUND', ErrorCode.MAILBOX_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    await this.mailboxesRepository.delete(id)
+  }
 }

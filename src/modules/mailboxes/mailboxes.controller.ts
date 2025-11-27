@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { MailboxesService } from './mailboxes.service'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
@@ -45,6 +45,16 @@ export class AdminMailboxesController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'MAILBOX_UPDATED_IS_READ',
+    })
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a mailbox' })
+  async deleteMailboxes(@Param('id') id: number): Promise<ResponseDto> {
+    await this.mailboxesService.deleteMailboxes(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'MAILBOX_DELETED',
     })
   }
 }
