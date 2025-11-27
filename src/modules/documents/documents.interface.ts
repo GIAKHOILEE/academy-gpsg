@@ -4,8 +4,10 @@ export interface IDocuments {
   name?: string
   index?: number
   quantity?: number
+  quantity_original?: number
   import_price?: number
   sell_price?: number
+  price_per_unit?: number
   image?: string
   description?: string
   day_import?: string

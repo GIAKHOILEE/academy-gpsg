@@ -35,7 +35,14 @@ export class DocumentsService {
       throwAppException('BATCH_CODE_ALREADY_EXISTS', ErrorCode.BATCH_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
-    const newDocument = this.documentsRepository.create({ ...document, index: maxIndex })
+    const pricePerUnit = document.import_price / document.quantity
+    const quantityOriginal = document.quantity
+    const newDocument = this.documentsRepository.create({
+      ...document,
+      index: maxIndex,
+      price_per_unit: pricePerUnit,
+      quantity_original: quantityOriginal,
+    })
     return this.documentsRepository.save(newDocument)
   }
 
@@ -56,7 +63,13 @@ export class DocumentsService {
       throwAppException('BATCH_CODE_ALREADY_EXISTS', ErrorCode.BATCH_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
-    await this.documentsRepository.update(id, document)
+    const pricePerUnit = document.import_price / document.quantity
+    const quantityOriginal = document.quantity
+    await this.documentsRepository.update(id, {
+      ...document,
+      price_per_unit: pricePerUnit,
+      quantity_original: quantityOriginal,
+    })
   }
 
   async updateIndex(id: number, index: number): Promise<void> {
@@ -121,7 +134,7 @@ export class DocumentsService {
             document_id: doc.id,
             series: startSeries + i,
             price: doc.sell_price,
-            profit: doc.sell_price - doc.import_price,
+            profit: doc.sell_price - doc.price_per_unit,
             ...user,
           })
           await queryRunner.manager.save(DocumentsOrderEntity, documentsOrder)
