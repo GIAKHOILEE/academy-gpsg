@@ -56,6 +56,18 @@ export class PaginateClassDto extends PaginationDto {
   @IsBoolean()
   @Type(() => Boolean)
   is_register: boolean
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo học video', example: true, type: Boolean })
+  @IsBoolean()
+  @Type(() => Boolean)
+  learn_video: boolean
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo học meeting', example: true, type: Boolean })
+  @IsBoolean()
+  @Type(() => Boolean)
+  learn_meeting: boolean
 }
 
 export class GetStudentsOfClassDto extends PaginationDto {

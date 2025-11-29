@@ -128,6 +128,8 @@ export class ClassService {
       opening_day: savedClass.opening_day,
       closing_day: savedClass.closing_day,
       is_evaluate: false,
+      learn_video: savedClass.learn_video,
+      learn_meeting: savedClass.learn_meeting,
       subject: {
         id: subject.id,
         code: subject.code,
@@ -281,6 +283,8 @@ export class ClassService {
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       is_evaluate: classEntity.is_evaluate,
+      learn_video: classEntity.learn_video,
+      learn_meeting: classEntity.learn_meeting,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -402,6 +406,8 @@ export class ClassService {
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       is_evaluate: classEntity.is_evaluate,
+      learn_video: classEntity.learn_video,
+      learn_meeting: classEntity.learn_meeting,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -532,6 +538,8 @@ export class ClassService {
         'class.opening_day',
         'class.closing_day',
         'class.is_evaluate',
+        'class.learn_video',
+        'class.learn_meeting',
         'subject.id',
         'subject.image',
         'subject.code',
@@ -597,6 +605,8 @@ export class ClassService {
       opening_day: classStudent.class.opening_day,
       closing_day: classStudent.class.closing_day,
       is_evaluate: classStudent.class.is_evaluate,
+      learn_video: classStudent.class.learn_video,
+      learn_meeting: classStudent.class.learn_meeting,
       subject: {
         id: classStudent.class.subject.id,
         code: classStudent.class.subject.code,

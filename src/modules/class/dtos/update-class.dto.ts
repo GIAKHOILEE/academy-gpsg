@@ -112,6 +112,16 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Bật tắt đánh giá', example: false })
   is_evaluate: boolean
 
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Học video', example: true, default: false })
+  learn_video: boolean
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Học meeting', example: true, default: false })
+  learn_meeting: boolean
+
   // @IsNumber()
   // @IsOptional()
   // @ApiPropertyOptional({ description: 'Khoa', example: 1 })

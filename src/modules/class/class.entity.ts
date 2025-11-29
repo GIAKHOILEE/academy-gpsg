@@ -85,6 +85,12 @@ export class Classes {
   @Column({ default: false })
   is_evaluate: boolean
 
+  @Column({ default: false })
+  learn_video: boolean
+
+  @Column({ default: false })
+  learn_meeting: boolean
+
   // môn học
   @ManyToOne(() => Subject, subject => subject.classes, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'subject_id' })
