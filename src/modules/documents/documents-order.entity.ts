@@ -19,6 +19,7 @@ export class DocumentsOrderEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   price: number
 
+  //lợi nhuận mỗi cuốn = giá bán - giá gốc
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   profit: number
 

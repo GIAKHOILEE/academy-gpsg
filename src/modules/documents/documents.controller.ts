@@ -37,7 +37,6 @@ export class AdminDocumentsController {
     })
   }
 
-
   @Get()
   @ApiOperation({ summary: 'Lấy tất cả tài liệu' })
   async getDocuments(@Query() paginateDocumentDto: PaginateDocumentDto): Promise<ResponseDto> {
@@ -57,9 +56,11 @@ export class AdminDocumentsController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'DOCUMENT_ORDERS_FETCHED_SUCCESSFULLY',
-      total_profit: documentOrders.total_profit,
       data: documentOrders.data,
-      meta: documentOrders.meta,
+      meta: {
+        ...documentOrders.meta,
+        total_profit: documentOrders.total_profit,
+      },
     })
   }
 

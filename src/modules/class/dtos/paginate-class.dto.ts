@@ -56,6 +56,12 @@ export class PaginateClassDto extends PaginationDto {
   @IsBoolean()
   @Type(() => Boolean)
   is_register: boolean
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo học online', example: true, type: Boolean })
+  @IsBoolean()
+  @Type(() => Boolean)
+  is_online: boolean
 }
 
 export class GetStudentsOfClassDto extends PaginationDto {

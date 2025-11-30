@@ -11,9 +11,10 @@ import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import { HttpModule } from '@nestjs/axios'
 import { Voucher } from '@modules/voucher/voucher.entity'
 import { Footer } from '@modules/footer/footer.entity'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Enrollments, Student, Classes, User, Voucher, Footer]), ScheduleModule.forRoot(), HttpModule],
+  imports: [TypeOrmModule.forFeature([Enrollments, Student, Classes, User, Voucher, Footer, ClassStudents]), ScheduleModule.forRoot(), HttpModule],
   controllers: [AdminEnrollmentsController, EnrollmentsController],
   providers: [EnrollmentsService, BrevoMailerService],
 })

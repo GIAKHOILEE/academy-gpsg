@@ -5,6 +5,12 @@ export enum ClassStatus {
   END_CLASS = 4, // Đã kết thúc
 }
 
+export enum LearnType {
+  OFFLINE = 1,
+  VIDEO = 2,
+  MEETING = 3,
+}
+
 export enum Schedule {
   SUNDAY = 1,
   MONDAY = 2,

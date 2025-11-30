@@ -18,11 +18,18 @@ export class DocumentsEntity {
   @Column({ type: 'int', default: 0 })
   quantity: number
 
+  @Column({ type: 'int', default: 0 })
+  quantity_original: number
+
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   import_price: number
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   sell_price: number
+
+  //giá gốc mỗi cuốn = giá nhập / số lượng (import_price / quantity_original)
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  price_per_unit: number
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   image: string

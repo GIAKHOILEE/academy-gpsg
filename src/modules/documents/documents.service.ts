@@ -5,7 +5,7 @@ import { DocumentsEntity } from './documents.entity'
 import { CreateDocumentsDto } from './dtos/create-documents.dto'
 import { IDocuments, IDocumentsOrder } from './documents.interface'
 import { CreateDocumentOrderDto, UpdateDocumentsDto } from './dtos/update-documents.dto'
-import { formatStringDate, throwAppException } from '@common/utils'
+import { formatStringDateUTC7, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { DataSource, Not } from 'typeorm'
 import { paginate, PaginationMeta } from '@common/pagination'
@@ -35,7 +35,14 @@ export class DocumentsService {
       throwAppException('BATCH_CODE_ALREADY_EXISTS', ErrorCode.BATCH_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
-    const newDocument = this.documentsRepository.create({ ...document, index: maxIndex })
+    const pricePerUnit = document.import_price / document.quantity
+    const quantityOriginal = document.quantity
+    const newDocument = this.documentsRepository.create({
+      ...document,
+      index: maxIndex,
+      price_per_unit: pricePerUnit,
+      quantity_original: quantityOriginal,
+    })
     return this.documentsRepository.save(newDocument)
   }
 
@@ -56,7 +63,13 @@ export class DocumentsService {
       throwAppException('BATCH_CODE_ALREADY_EXISTS', ErrorCode.BATCH_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
     }
 
-    await this.documentsRepository.update(id, document)
+    const pricePerUnit = document.import_price / document.quantity
+    const quantityOriginal = document.quantity
+    await this.documentsRepository.update(id, {
+      ...document,
+      price_per_unit: pricePerUnit,
+      quantity_original: quantityOriginal,
+    })
   }
 
   async updateIndex(id: number, index: number): Promise<void> {
@@ -121,7 +134,7 @@ export class DocumentsService {
             document_id: doc.id,
             series: startSeries + i,
             price: doc.sell_price,
-            profit: doc.sell_price - doc.import_price,
+            profit: doc.sell_price - doc.price_per_unit,
             ...user,
           })
           await queryRunner.manager.save(DocumentsOrderEntity, documentsOrder)
@@ -195,10 +208,9 @@ export class DocumentsService {
       .leftJoin('document_order.document', 'document')
     const { data, meta } = await paginate(query, paginateDocumentOrderDto)
 
-    console.log(data)
     let totalProfit = 0
     const formattedData: IDocumentsOrder[] = data.map(documentOrder => {
-      totalProfit += documentOrder.profit
+      totalProfit += Number(documentOrder.profit)
       return {
         id: documentOrder.id,
         series: documentOrder.series.toString().padStart(3, '0'),
@@ -209,7 +221,7 @@ export class DocumentsService {
         phone: documentOrder.phone,
         address: documentOrder.address,
         note: documentOrder.note,
-        created_at: formatStringDate(documentOrder.created_at.toISOString()),
+        created_at: formatStringDateUTC7(documentOrder.created_at.toISOString()), // UTC+7
         document: {
           id: documentOrder.document.id,
           name: documentOrder.document.name,
@@ -220,6 +232,7 @@ export class DocumentsService {
         },
       }
     })
+    console.log(totalProfit)
     return { data: formattedData, meta, total_profit: totalProfit }
   }
 

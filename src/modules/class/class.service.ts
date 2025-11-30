@@ -84,6 +84,14 @@ export class ClassService {
     //   }
     // }
 
+    // chỉ cần có 1 trong 2 là true thì mới được tạo lớp online
+    let is_online = false
+    if (rest.learn_video || rest.learn_meeting) {
+      is_online = true
+    } else {
+      is_online = false
+    }
+
     // ngày kết thúc lớp phải sau ngày khai giảng
     if (rest.closing_day && rest.opening_day) {
       if (new Date(rest.closing_day) < new Date(rest.opening_day)) {
@@ -104,7 +112,7 @@ export class ClassService {
       status = ClassStatus.END_ENROLLING
     }
 
-    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status })
+    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status, is_online })
     const savedClass = await this.classRepository.save(classEntity)
 
     const formattedClass: IClasses = {
@@ -128,6 +136,9 @@ export class ClassService {
       opening_day: savedClass.opening_day,
       closing_day: savedClass.closing_day,
       is_evaluate: false,
+      learn_video: savedClass.learn_video,
+      learn_meeting: savedClass.learn_meeting,
+      is_online: savedClass.is_online,
       subject: {
         id: subject.id,
         code: subject.code,
@@ -154,7 +165,6 @@ export class ClassService {
 
   async updateClass(id: number, updateClassDto: UpdateClassDto): Promise<void> {
     const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = updateClassDto
-    console.log(updateClassDto)
     const existingClass = await this.classRepository.findOne({ where: { id } })
     if (!existingClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
@@ -218,7 +228,17 @@ export class ClassService {
       status = ClassStatus.END_ENROLLING
     }
 
-    await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id, status })
+    // chỉ cần có 1 trong 2 là true thì mới được tạo lớp online
+    let is_online = false
+    const learn_video = rest.learn_video ?? existingClass.learn_video
+    const learn_meeting = rest.learn_meeting ?? existingClass.learn_meeting
+    if (learn_video || learn_meeting) {
+      is_online = true
+    } else {
+      is_online = false
+    }
+
+    await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id, status, is_online })
   }
 
   async updateIsActive(id: number): Promise<void> {
@@ -281,6 +301,9 @@ export class ClassService {
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       is_evaluate: classEntity.is_evaluate,
+      learn_video: classEntity.learn_video,
+      learn_meeting: classEntity.learn_meeting,
+      is_online: classEntity.is_online,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -402,6 +425,9 @@ export class ClassService {
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
       is_evaluate: classEntity.is_evaluate,
+      learn_video: classEntity.learn_video,
+      learn_meeting: classEntity.learn_meeting,
+      is_online: classEntity.is_online,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -456,6 +482,7 @@ export class ClassService {
       .createQueryBuilder('class_students')
       .select([
         'class_students.id',
+        'class_students.learn_type',
         'student.id',
         'user.code',
         'user.gender',
@@ -486,6 +513,7 @@ export class ClassService {
     const { data, meta } = await paginate(classStudents, rest)
     const formattedStudents: IStudent[] = data.map(classStudent => ({
       id: classStudent.student.id,
+      learn_type: classStudent.learn_type,
       code: classStudent.student.user.code,
       gender: classStudent.student.user.gender,
       avatar: classStudent.student.user.avatar,
@@ -517,6 +545,7 @@ export class ClassService {
         'class_students.id',
         'class_students.class_id',
         'class_students.student_id',
+        'class_students.learn_type',
         'class.id',
         'class.name',
         'class.code',
@@ -532,6 +561,8 @@ export class ClassService {
         'class.opening_day',
         'class.closing_day',
         'class.is_evaluate',
+        'class.learn_video',
+        'class.learn_meeting',
         'subject.id',
         'subject.image',
         'subject.code',
@@ -577,6 +608,7 @@ export class ClassService {
 
     const formattedClasses: IClasses[] = data.map(classStudent => ({
       id: classStudent.class.id,
+      learn_type: classStudent.learn_type,
       name: classStudent.class.name,
       code: classStudent.class.code,
       image: classStudent.class.subject.image,
@@ -597,6 +629,8 @@ export class ClassService {
       opening_day: classStudent.class.opening_day,
       closing_day: classStudent.class.closing_day,
       is_evaluate: classStudent.class.is_evaluate,
+      learn_video: classStudent.class.learn_video,
+      learn_meeting: classStudent.class.learn_meeting,
       subject: {
         id: classStudent.class.subject.id,
         code: classStudent.class.subject.code,
@@ -627,7 +661,7 @@ export class ClassService {
 
     const classStudents = await this.classStudentsRepository
       .createQueryBuilder('class_students')
-      .select(['class_students.id', 'student.id', 'user.gender', 'user.avatar', 'user.full_name', 'user.saint_name'])
+      .select(['class_students.id', 'class_students.learn_type', 'student.id', 'user.gender', 'user.avatar', 'user.full_name', 'user.saint_name'])
       .leftJoin('class_students.student', 'student')
       .leftJoin('student.user', 'user')
       .where('class_students.class_id = :class_id', { class_id })
@@ -642,6 +676,7 @@ export class ClassService {
     const { data, meta } = await paginate(classStudents, rest)
     const formattedStudents: IStudent[] = data.map(classStudent => ({
       id: classStudent.student.id,
+      learn_type: classStudent.learn_type,
       gender: classStudent.student.user.gender,
       avatar: classStudent.student.user.avatar,
       full_name: classStudent.student.user.full_name,

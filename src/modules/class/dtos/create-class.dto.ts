@@ -1,6 +1,6 @@
 import { ClassStatus, Schedule } from '@enums/class.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateClassDto {
   @IsString()
@@ -107,6 +107,16 @@ export class CreateClassDto {
   @IsNotEmpty()
   @ApiProperty({ description: 'Học kỳ', example: 1 })
   semester_id: number
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Học video', example: true, default: false })
+  learn_video: boolean
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Học meeting', example: true, default: false })
+  learn_meeting: boolean
 
   // @IsNumber()
   // @IsOptional()

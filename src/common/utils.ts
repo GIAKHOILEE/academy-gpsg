@@ -62,6 +62,24 @@ export function formatStringDate(stringDate: string, noTime: boolean = false): s
   return noTime ? `${day}/${month}/${year}` : `${day}/${month}/${year} ${hours}:${minutes}`
 }
 
+export function formatStringDateUTC7(dateString: string, noTime: boolean = false): string {
+  // Chuyển "2025-10-23 13:17:53.531053" → "2025-10-23T13:17:53.531Z"
+  const normalized = dateString.replace(' ', 'T')
+
+  const date = new Date(normalized)
+
+  // Cộng thêm 7 giờ cho UTC+7
+  const utc7Date = new Date(date.getTime() + 7 * 60 * 60 * 1000)
+
+  const day = String(utc7Date.getDate()).padStart(2, '0')
+  const month = String(utc7Date.getMonth() + 1).padStart(2, '0')
+  const year = utc7Date.getFullYear()
+  const hours = String(utc7Date.getHours()).padStart(2, '0')
+  const minutes = String(utc7Date.getMinutes()).padStart(2, '0')
+
+  return noTime ? `${day}/${month}/${year}` : `${day}/${month}/${year} ${hours}:${minutes}`
+}
+
 export function formatCurrency(value: string | number): string {
   const number = typeof value === 'string' ? parseFloat(value) : value
 

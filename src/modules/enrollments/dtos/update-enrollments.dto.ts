@@ -1,4 +1,4 @@
-import { PaymentMethod, StatusEnrollment } from '@enums/class.enum'
+import { LearnType, PaymentMethod, StatusEnrollment } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
@@ -8,10 +8,16 @@ export class UpdateEnrollmentsDto {
   @IsOptional()
   student_code: string
 
-  @ApiPropertyOptional({ description: 'Mã lớp', example: [1, 2, 3] })
+  @ApiPropertyOptional({
+    description: 'Mã lớp và hình thức học',
+    example: [
+      { class_id: 1, learn_type: 1 },
+      { class_id: 2, learn_type: 3 },
+    ],
+  })
   @IsArray()
   @IsOptional()
-  class_ids: number[]
+  class_ids: { class_id: number; learn_type: LearnType }[]
 
   @ApiPropertyOptional({ description: 'Mã Voucher', example: 'VC_001' })
   @IsString()
