@@ -4,6 +4,7 @@ import { Classes } from '../class.entity'
 import { ExamScore } from '@modules/class-rules/exam/exam-scores/exam-scores.entity'
 import { Attendance } from '@modules/class-rules/attendance/attendance.entity'
 import { TeacherEvaluation } from '@modules/class-rules/teacher-evaluations/teacher-evaluations.entity'
+import { LearnType } from '@enums/class.enum'
 
 @Entity({ name: 'class_students' })
 export class ClassStudents {
@@ -27,6 +28,9 @@ export class ClassStudents {
 
   @Column()
   student_id: number
+
+  @Column({ type: 'enum', enum: LearnType, default: LearnType.OFFLINE })
+  learn_type: LearnType
 
   @OneToMany(() => ExamScore, examScore => examScore.class_student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   exam_scores: ExamScore[]

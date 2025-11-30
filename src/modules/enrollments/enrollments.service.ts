@@ -9,7 +9,7 @@ import {
   renderPdfFromTemplate,
   throwAppException,
 } from '@common/utils'
-import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -62,6 +62,8 @@ export class EnrollmentsService {
     private readonly emailService: BrevoMailerService,
     @InjectRepository(Footer)
     private readonly footerRepository: Repository<Footer>,
+    @InjectRepository(ClassStudents)
+    private readonly classStudentsRepository: Repository<ClassStudents>,
   ) {}
 
   async createEnrollmentV2(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, userId?: number): Promise<IEnrollments> {
@@ -119,13 +121,38 @@ export class EnrollmentsService {
       }
 
       // check class
+      const classIds = class_ids.map(item => item.class_id)
       const classEntities = await this.classRepository
         .createQueryBuilder('class')
-        .select(['class.id', 'class.name', 'class.price', 'class.status'])
-        .where('class.id IN (:...class_ids)', { class_ids })
+        .select(['class.id', 'class.name', 'class.price', 'class.status', 'class.learn_video', 'class.learn_meeting'])
+        .where('class.id IN (:...class_ids)', { class_ids: classIds })
         // .andWhere('class.end_enrollment_day >= :today', { today: new Date().toISOString().split('T')[0] })
         .getMany()
       if (classEntities.length !== class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+      // check lớp có type học không
+      const classMap = arrayToObject(classEntities, 'id')
+      for (const item of class_ids) {
+        if (item.learn_type === LearnType.OFFLINE) {
+          // OFFLINE mặc định luôn được chấp nhận (theo yêu cầu)
+          continue
+        }
+        if (item.learn_type === LearnType.VIDEO) {
+          if (!classMap[item.class_id].learn_video) {
+            // lớp này không hỗ trợ video
+            throwAppException('CLASS_DOES_NOT_SUPPORT_VIDEO', ErrorCode.CLASS_DOES_NOT_SUPPORT_VIDEO, HttpStatus.BAD_REQUEST)
+          }
+          continue
+        }
+        if (item.learn_type === LearnType.MEETING) {
+          if (!classMap[item.class_id].learn_meeting) {
+            // lớp này không hỗ trợ meeting
+            throwAppException('CLASS_DOES_NOT_SUPPORT_MEETING', ErrorCode.CLASS_DOES_NOT_SUPPORT_MEETING, HttpStatus.BAD_REQUEST)
+          }
+          continue
+        }
+        // learn_type không hợp lệ
+        throwAppException('CLASS_DOES_NOT_SUPPORT_LEARN_TYPE', ErrorCode.CLASS_DOES_NOT_SUPPORT_LEARN_TYPE, HttpStatus.BAD_REQUEST)
+      }
 
       // Tổng tiền học
       const totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
@@ -149,7 +176,7 @@ export class EnrollmentsService {
         ...createEnrollmentDto,
         is_logged: isLogged,
         code: generateRandomString(5),
-        class_ids,
+        class_ids: class_ids.map(item => item.class_id),
         total_fee: totalFee,
         prepaid,
         debt,
@@ -159,12 +186,6 @@ export class EnrollmentsService {
 
       const savedEnrollment = await queryRunner.manager.save(Enrollments, enrollment)
 
-      // send mail
-      if (enrollment.email) {
-        setImmediate(() => {
-          this.handleEnrollmentEmail(enrollment, 'register').catch(err => console.error('Email register job failed:', err))
-        })
-      }
       // check voucher
       if (createEnrollmentDto.voucher_code) {
         const voucher = await this.voucherRepository.findOne({ where: { code: createEnrollmentDto.voucher_code } })
@@ -202,9 +223,22 @@ export class EnrollmentsService {
         deanery: createEnrollmentDto.deanery,
         diocese: createEnrollmentDto.diocese,
         congregation: createEnrollmentDto.congregation,
+        classes: class_ids.map(item => ({
+          class_id: item.class_id,
+          learn_type: item.learn_type,
+          class: classMap[item.class_id],
+        })),
       }
 
       await queryRunner.commitTransaction()
+
+      // send mail
+      if (enrollment.email) {
+        setImmediate(() => {
+          this.handleEnrollmentEmail(enrollment, 'register').catch(err => console.error('Email register job failed:', err))
+        })
+      }
+
       return formatEnrollment
     } catch (error) {
       await queryRunner.rollbackTransaction()
@@ -316,7 +350,7 @@ export class EnrollmentsService {
 
       // lấy class_ids cũ và mới
       const oldClassIds = enrollment.class_ids || []
-      const newClassIds = class_ids || oldClassIds
+      const newClassIds = class_ids.map(item => item.class_id) || oldClassIds
       // update class_students khi đổi class_ids
       if (status && status !== StatusEnrollment.PENDING) {
         const removedClasses = oldClassIds.filter(id => !newClassIds.includes(id))
@@ -354,25 +388,20 @@ export class EnrollmentsService {
         const classEntities = await classRepo
           .createQueryBuilder('class')
           .select(['class.id', 'class.name', 'class.price', 'class.status'])
-          .where('class.id IN (:...class_ids)', { class_ids })
+          .where('class.id IN (:...class_ids)', { class_ids: newClassIds })
           .getMany()
 
         if (classEntities.length !== class_ids.length) {
           throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
         }
 
-        // nếu status ClassStatus.END_ENROLLING thi khong cho update
-        // if (classEntities.some(classEntity => classEntity.status === ClassStatus.END_ENROLLING)) {
-        //   throwAppException('CLASS_END_ENROLLING', ErrorCode.CLASS_END_ENROLLING, HttpStatus.BAD_REQUEST)
-        // }
-
         totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
-        enrollment.class_ids = class_ids
+        enrollment.class_ids = newClassIds
         enrollment.total_fee = totalFee
       }
 
+      // phải có status là nợ học phí mới được trả trước
       if (prepaid) {
-        // phải có status là nợ học phí mới được trả trước
         if (enrollment.status !== StatusEnrollment.DEBT && status !== StatusEnrollment.DEBT)
           throwAppException('ENROLLMENT_NOT_DEBT', ErrorCode.ENROLLMENT_NOT_DEBT, HttpStatus.BAD_REQUEST)
         enrollment.prepaid = prepaid
@@ -405,7 +434,7 @@ export class EnrollmentsService {
         const classEntities = await classRepo
           .createQueryBuilder('class')
           .select(['class.id', 'class.max_students'])
-          .where('class.id IN (:...class_ids)', { class_ids })
+          .where('class.id IN (:...class_ids)', { class_ids: newClassIds })
           .getMany()
 
         const classEntitiesObject = arrayToObject(classEntities, 'id')
@@ -414,13 +443,13 @@ export class EnrollmentsService {
           .createQueryBuilder('class_students')
           .select('class_students.class_id', 'class_id')
           .addSelect('COUNT(class_students.id)', 'count')
-          .where('class_students.class_id IN (:...class_ids)', { class_ids })
+          .where('class_students.class_id IN (:...class_ids)', { class_ids: newClassIds })
           .groupBy('class_students.class_id')
           .getRawMany()
 
         const current_students_object = arrayToObject(current_students, 'class_id')
 
-        for (const class_id of class_ids) {
+        for (const class_id of newClassIds) {
           const maxStudents = Number(classEntitiesObject[class_id]?.max_students ?? 0)
           const studentCount = Number(current_students_object[class_id]?.count || 0)
 
@@ -657,6 +686,14 @@ export class EnrollmentsService {
       .withDeleted()
       .getMany()
     if (listClass.length !== enrollment.class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const classStudents = await this.classStudentsRepository
+      .createQueryBuilder('class_students')
+      .select(['class_students.class_id', 'class_students.learn_type'])
+      .where('class_students.class_id IN (:...class_ids)', { class_ids: enrollment.class_ids })
+      .andWhere('class_students.student_id = :student_id', { student_id: enrollment.student?.id })
+      .getMany()
+    const classStudentsObject = arrayToObject(classStudents, 'class_id')
     const formatEnrollment: IEnrollments = {
       id: enrollment.id,
       code: enrollment.code,
@@ -678,18 +715,22 @@ export class EnrollmentsService {
         content: payment_info[0]?.content,
       },
       classes: listClass.map(classEntity => ({
-        id: classEntity.id,
-        name: classEntity.name,
-        code: classEntity.code,
-        price: classEntity.price,
-        learn_video: classEntity.learn_video,
-        learn_meeting: classEntity.learn_meeting,
-        end_enrollment_day: classEntity.end_enrollment_day,
-        schedule: classEntity.schedule,
-        start_time: classEntity.start_time,
-        end_time: classEntity.end_time,
-        start_date: classEntity.opening_day,
-        end_date: classEntity.closing_day,
+        class_id: classEntity.id,
+        learn_type: classStudentsObject[classEntity.id]?.learn_type,
+        class: {
+          id: classEntity.id,
+          name: classEntity.name,
+          code: classEntity.code,
+          price: classEntity.price,
+          learn_video: classEntity.learn_video,
+          learn_meeting: classEntity.learn_meeting,
+          end_enrollment_day: classEntity.end_enrollment_day,
+          schedule: classEntity.schedule,
+          start_time: classEntity.start_time,
+          end_time: classEntity.end_time,
+          start_date: classEntity.opening_day,
+          end_date: classEntity.closing_day,
+        },
       })),
       student_id: enrollment?.student?.id ? enrollment?.student?.id : null,
       student_code: enrollment?.student?.user?.code ? enrollment?.student?.user?.code : null,
@@ -801,7 +842,7 @@ export class EnrollmentsService {
         discount: enrollment.discount,
         is_read_note: enrollment.is_read_note,
         class_ids: enrollment.class_ids,
-        classes: enrollment.class_ids.map(classId => classesMap[classId]),
+        // classes: enrollment.class_ids.map(classId => classesMap[classId]),
       }
     })
 

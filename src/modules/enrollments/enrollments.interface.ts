@@ -1,4 +1,4 @@
-import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { IClasses } from '@modules/class/class.interface'
 import { IFooter } from '@modules/footer/footer.interface'
 
@@ -19,7 +19,7 @@ export interface IEnrollments {
   user_note?: string
   is_read_note?: boolean
   is_logged?: boolean
-  classes?: IClasses[]
+  classes?: { class_id: number; learn_type: LearnType; class: IClasses }[]
   // thông tin sinh viên
   // student?: IStudent
   student_id?: number
