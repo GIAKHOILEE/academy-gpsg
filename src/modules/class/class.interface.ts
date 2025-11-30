@@ -32,6 +32,7 @@ export interface IClasses {
   is_evaluate?: boolean
   learn_video?: boolean
   learn_meeting?: boolean
+  is_online?: boolean
   scholastic?: IScholastic
   semester?: ISemester
   department?: IDepartment

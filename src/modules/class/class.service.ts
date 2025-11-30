@@ -84,6 +84,14 @@ export class ClassService {
     //   }
     // }
 
+    // chỉ cần có 1 trong 2 là true thì mới được tạo lớp online
+    let is_online = false
+    if (rest.learn_video || rest.learn_meeting) {
+      is_online = true
+    } else {
+      is_online = false
+    }
+
     // ngày kết thúc lớp phải sau ngày khai giảng
     if (rest.closing_day && rest.opening_day) {
       if (new Date(rest.closing_day) < new Date(rest.opening_day)) {
@@ -104,7 +112,7 @@ export class ClassService {
       status = ClassStatus.END_ENROLLING
     }
 
-    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status })
+    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status, is_online })
     const savedClass = await this.classRepository.save(classEntity)
 
     const formattedClass: IClasses = {
@@ -130,6 +138,7 @@ export class ClassService {
       is_evaluate: false,
       learn_video: savedClass.learn_video,
       learn_meeting: savedClass.learn_meeting,
+      is_online: savedClass.is_online,
       subject: {
         id: subject.id,
         code: subject.code,
@@ -156,7 +165,6 @@ export class ClassService {
 
   async updateClass(id: number, updateClassDto: UpdateClassDto): Promise<void> {
     const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = updateClassDto
-    console.log(updateClassDto)
     const existingClass = await this.classRepository.findOne({ where: { id } })
     if (!existingClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
@@ -220,7 +228,17 @@ export class ClassService {
       status = ClassStatus.END_ENROLLING
     }
 
-    await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id, status })
+    // chỉ cần có 1 trong 2 là true thì mới được tạo lớp online
+    let is_online = false
+    const learn_video = rest.learn_video ?? existingClass.learn_video
+    const learn_meeting = rest.learn_meeting ?? existingClass.learn_meeting
+    if (learn_video || learn_meeting) {
+      is_online = true
+    } else {
+      is_online = false
+    }
+
+    await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id, status, is_online })
   }
 
   async updateIsActive(id: number): Promise<void> {
@@ -285,6 +303,7 @@ export class ClassService {
       is_evaluate: classEntity.is_evaluate,
       learn_video: classEntity.learn_video,
       learn_meeting: classEntity.learn_meeting,
+      is_online: classEntity.is_online,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -408,6 +427,7 @@ export class ClassService {
       is_evaluate: classEntity.is_evaluate,
       learn_video: classEntity.learn_video,
       learn_meeting: classEntity.learn_meeting,
+      is_online: classEntity.is_online,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
