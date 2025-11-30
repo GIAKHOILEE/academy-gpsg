@@ -743,31 +743,57 @@ export class EnrollmentsService {
       ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
-      // join tới bảng classes qua relation class_ids
-      .leftJoin(
-        Classes, // entity target hoặc table name
-        'c',
-        'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
-      )
-      .leftJoin('c.semester', 'semester')
-      .leftJoin('c.scholastic', 'scholastic')
-      .withDeleted()
+    //   // join tới bảng classes qua relation class_ids
+    //   .leftJoin(
+    //     Classes, // entity target hoặc table name
+    //     'c',
+    //     'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
+    //   )
+    //   .leftJoin('c.semester', 'semester')
+    //   .leftJoin('c.scholastic', 'scholastic')
+    //   .withDeleted()
+    // if (isSoftDelete) {
+    //   queryBuilder.where('enrollment.deleted_at IS NOT NULL')
+    // } else {
+    //   queryBuilder.andWhere('enrollment.deleted_at IS NULL')
+    // }
+
+    // Chỉ join với bảng classes khi cần filter theo semester_id hoặc scholastic_id
+    // JSON_CONTAINS rất chậm và không thể dùng index, nên chỉ dùng khi thực sự cần
+    if (semester_id || scholastic_id) {
+      queryBuilder
+        .leftJoin(
+          Classes,
+          'c',
+          'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
+        )
+
+    // if (scholastic_id) {
+    //   queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+    // }
+      if (scholastic_id) {
+        queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+      }
+
+    //   // lọc theo semester
+    // if (semester_id) {
+    //   queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
+    // }
+    // queryBuilder.distinct(true)
+      if (semester_id) {
+        queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
+      }
+
+      queryBuilder.distinct(true)
+    }
+
+    queryBuilder.withDeleted()
+
     if (isSoftDelete) {
-      queryBuilder.where('enrollment.deleted_at IS NOT NULL')
+      queryBuilder.andWhere('enrollment.deleted_at IS NOT NULL')
     } else {
       queryBuilder.andWhere('enrollment.deleted_at IS NULL')
     }
-
-    // lọc theo scholastic (áp dụng lên class 'c')
-    if (scholastic_id) {
-      queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
-    }
-
-    // lọc theo semester
-    if (semester_id) {
-      queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
-    }
-    queryBuilder.distinct(true)
 
     const { data, meta } = await paginate(queryBuilder, rest)
 
