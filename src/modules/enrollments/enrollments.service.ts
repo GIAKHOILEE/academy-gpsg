@@ -369,11 +369,13 @@ export class EnrollmentsService {
             where: { student_id: enrollment.student_id, class_id: In(addedClasses) },
           })
           const existIds = existClassStudents.map(cs => cs.class_id)
+          const class_ids_object = arrayToObject(class_ids, 'class_id')
           const toAdd = addedClasses.filter(id => !existIds.includes(id))
           if (toAdd.length > 0) {
             const classStudents = toAdd.map(class_id => ({
               class_id,
               student_id: enrollment.student_id,
+              learn_type: class_ids_object[class_id].learn_type,
               ...rest,
             }))
             await classStudentsRepo.save(classStudents)
@@ -478,9 +480,11 @@ export class EnrollmentsService {
             where: { student_id: enrollment.student_id, class_id: In(enrollment.class_ids) },
           })
           if (existClassStudents.length > 0) throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
+          const class_ids_object = arrayToObject(class_ids, 'class_id')
           const classStudents = enrollment.class_ids.map(class_id => ({
             class_id,
             student_id: enrollment.student_id,
+            learn_type: class_ids_object[class_id].learn_type,
             ...rest,
           }))
           await classStudentsRepo.save(classStudents)
@@ -499,6 +503,14 @@ export class EnrollmentsService {
         ...rest,
       })
       await enrollmentsRepo.save(updatedEnrollment)
+      // cập nhật learn_type vào class_students
+      const classStudents = await classStudentsRepo.find({
+        where: { student_id: enrollment.student_id, class_id: In(enrollment.class_ids) },
+      })
+      const class_ids_object = arrayToObject(class_ids, 'class_id')
+      for (const classStudent of classStudents) {
+        await classStudentsRepo.update(classStudent.id, { learn_type: class_ids_object[classStudent.class_id].learn_type })
+      }
 
       // send mail
       if (enrollment.email) {
