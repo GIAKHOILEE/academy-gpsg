@@ -802,48 +802,25 @@ export class EnrollmentsService {
       ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
-    //   // join tới bảng classes qua relation class_ids
-    //   .leftJoin(
-    //     Classes, // entity target hoặc table name
-    //     'c',
-    //     'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
-    //   )
-    //   .leftJoin('c.semester', 'semester')
-    //   .leftJoin('c.scholastic', 'scholastic')
-    //   .withDeleted()
-    // if (isSoftDelete) {
-    //   queryBuilder.where('enrollment.deleted_at IS NOT NULL')
-    // } else {
-    //   queryBuilder.andWhere('enrollment.deleted_at IS NULL')
-    // }
-
-    // Chỉ join với bảng classes khi cần filter theo semester_id hoặc scholastic_id
-    // JSON_CONTAINS rất chậm và không thể dùng index, nên chỉ dùng khi thực sự cần
     if (semester_id || scholastic_id) {
       queryBuilder
-        .leftJoin(
-          Classes,
-          'c',
-          'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
-        )
+        .addSelect(qb => {
+          const subQuery = qb
+            .select('JSON_ARRAYAGG(JSON_OBJECT("id", c.id, "name", c.name))')
+            .from(Classes, 'c')
+            .where('JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")')
 
-    // if (scholastic_id) {
-    //   queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
-    // }
-      if (scholastic_id) {
-        queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
-      }
+          if (semester_id) {
+            subQuery.andWhere('c.semester_id = :semester_id', { semester_id })
+          }
+          if (scholastic_id) {
+            subQuery.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+          }
 
-    //   // lọc theo semester
-    // if (semester_id) {
-    //   queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
-    // }
-    // queryBuilder.distinct(true)
-      if (semester_id) {
-        queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
-      }
-
-      queryBuilder.distinct(true)
+          return subQuery
+        }, 'classes')
+        .groupBy('enrollment.id')
+      console.log(queryBuilder.getSql())
     }
 
     queryBuilder.withDeleted()
@@ -857,15 +834,19 @@ export class EnrollmentsService {
     const { data, meta } = await paginate(queryBuilder, rest)
 
     // lấy ra các class từ class_ids
-    const classesIds = data.map(enrollment => enrollment.class_ids.map(item => item.class_id))
+    const classesIds = data.flatMap(enrollment => enrollment.class_ids.map(item => item.class_id) || [])
     const uniqueClassesIds = [...new Set(classesIds)] // bỏ trùng id
-    const classes = await this.classRepository
-      .createQueryBuilder('class')
-      .select(['class.id', 'class.name', 'class.code'])
-      .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
-      .getMany()
 
-    const classesMap = arrayToObject(classes, 'id')
+    let classesMap: Record<number, any> = {}
+    if (uniqueClassesIds.length > 0) {
+      const classes = await this.classRepository
+        .createQueryBuilder('class')
+        .select(['class.id', 'class.name', 'class.code'])
+        .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
+        .getMany()
+
+      classesMap = arrayToObject(classes, 'id')
+    }
 
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
