@@ -1,4 +1,4 @@
-import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { Student } from '@modules/students/students.entity'
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
@@ -30,7 +30,7 @@ export class Enrollments {
 
   // List mã lớp đăng ký
   @Column({ type: 'json', nullable: true })
-  class_ids: number[]
+  class_ids: { class_id: number; learn_type: LearnType }[]
 
   // Tổng học phí
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })

@@ -176,7 +176,7 @@ export class EnrollmentsService {
         ...createEnrollmentDto,
         is_logged: isLogged,
         code: generateRandomString(5),
-        class_ids: class_ids.map(item => item.class_id),
+        class_ids,
         total_fee: totalFee,
         prepaid,
         debt,
@@ -349,8 +349,8 @@ export class EnrollmentsService {
       }
 
       // lấy class_ids cũ và mới
-      const oldClassIds = enrollment.class_ids || []
-      const newClassIds = class_ids.map(item => item.class_id) || oldClassIds
+      const oldClassIds = enrollment.class_ids.map(item => item.class_id)
+      const newClassIds = class_ids.map(item => item.class_id)
       // update class_students khi đổi class_ids
       if (status && status !== StatusEnrollment.PENDING) {
         const removedClasses = oldClassIds.filter(id => !newClassIds.includes(id))
@@ -376,7 +376,6 @@ export class EnrollmentsService {
               class_id,
               student_id: enrollment.student_id,
               learn_type: class_ids_object[class_id].learn_type,
-              ...rest,
             }))
             await classStudentsRepo.save(classStudents)
           }
@@ -398,7 +397,7 @@ export class EnrollmentsService {
         }
 
         totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
-        enrollment.class_ids = newClassIds
+        enrollment.class_ids = class_ids
         enrollment.total_fee = totalFee
       }
 
@@ -480,12 +479,10 @@ export class EnrollmentsService {
             where: { student_id: enrollment.student_id, class_id: In(enrollment.class_ids) },
           })
           if (existClassStudents.length > 0) throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
-          const class_ids_object = arrayToObject(class_ids, 'class_id')
-          const classStudents = enrollment.class_ids.map(class_id => ({
-            class_id,
+          const classStudents = enrollment.class_ids.map(item => ({
+            class_id: item.class_id,
             student_id: enrollment.student_id,
-            learn_type: class_ids_object[class_id].learn_type,
-            ...rest,
+            learn_type: item.learn_type,
           }))
           await classStudentsRepo.save(classStudents)
         }
@@ -504,13 +501,15 @@ export class EnrollmentsService {
       })
       await enrollmentsRepo.save(updatedEnrollment)
       // cập nhật learn_type vào class_students
-      const classStudents = await classStudentsRepo.find({
-        where: { student_id: enrollment.student_id, class_id: In(enrollment.class_ids) },
-      })
-      const class_ids_object = arrayToObject(class_ids, 'class_id')
-      for (const classStudent of classStudents) {
-        await classStudentsRepo.update(classStudent.id, { learn_type: class_ids_object[classStudent.class_id].learn_type })
-      }
+      // const classStudents = await classStudentsRepo.find({
+      //   where: { student_id: enrollment.student_id, class_id: In(enrollment.class_ids) },
+      // })
+      // console.log('classStudents', classStudents)
+      // const class_ids_object = arrayToObject(class_ids, 'class_id')
+      // console.log('class_ids_object', class_ids_object)
+      // for (const classStudent of classStudents) {
+      //   await classStudentsRepo.update(classStudent.id, { learn_type: class_ids_object[classStudent.class_id].learn_type })
+      // }
 
       // send mail
       if (enrollment.email) {
@@ -532,6 +531,7 @@ export class EnrollmentsService {
     try {
       if (!enrollment.email) return
 
+      const class_ids = enrollment.class_ids.map(item => item.class_id)
       const listClass = await this.classRepository
         .createQueryBuilder('class')
         .select([
@@ -544,7 +544,7 @@ export class EnrollmentsService {
           'class.closing_day',
           'class.opening_day',
         ])
-        .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
+        .where('class.id IN (:...class_ids)', { class_ids })
         .getMany()
 
       const formatClass = listClass.map((classEntity: Classes, index: number) => ({
@@ -678,6 +678,7 @@ export class EnrollmentsService {
       payment_info = await this.footerRepository.find({ where: { type: FooterEnum.TRANSFER } })
     }
 
+    const class_ids = enrollment.class_ids.map(item => item.class_id)
     const listClass = await this.classRepository
       .createQueryBuilder('class')
       .select([
@@ -694,18 +695,19 @@ export class EnrollmentsService {
         'class.opening_day',
         'class.closing_day',
       ])
-      .where('class.id IN (:...class_ids)', { class_ids: enrollment.class_ids })
+      .where('class.id IN (:...class_ids)', { class_ids })
       .withDeleted()
       .getMany()
     if (listClass.length !== enrollment.class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    const classStudents = await this.classStudentsRepository
-      .createQueryBuilder('class_students')
-      .select(['class_students.class_id', 'class_students.learn_type'])
-      .where('class_students.class_id IN (:...class_ids)', { class_ids: enrollment.class_ids })
-      .andWhere('class_students.student_id = :student_id', { student_id: enrollment.student?.id })
-      .getMany()
-    const classStudentsObject = arrayToObject(classStudents, 'class_id')
+    // const classStudents = await this.classStudentsRepository
+    //   .createQueryBuilder('class_students')
+    //   .select(['class_students.class_id', 'class_students.learn_type'])
+    //   .where('class_students.class_id IN (:...class_ids)', { class_ids })
+    //   .andWhere('class_students.student_id = :student_id', { student_id: enrollment.student?.id })
+    //   .getMany()
+    // const classStudentsObject = arrayToObject(classStudents, 'class_id')
+    const classStudentsObject = arrayToObject(enrollment.class_ids, 'class_id')
     const formatEnrollment: IEnrollments = {
       id: enrollment.id,
       code: enrollment.code,
@@ -800,48 +802,25 @@ export class EnrollmentsService {
       ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
-    //   // join tới bảng classes qua relation class_ids
-    //   .leftJoin(
-    //     Classes, // entity target hoặc table name
-    //     'c',
-    //     'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
-    //   )
-    //   .leftJoin('c.semester', 'semester')
-    //   .leftJoin('c.scholastic', 'scholastic')
-    //   .withDeleted()
-    // if (isSoftDelete) {
-    //   queryBuilder.where('enrollment.deleted_at IS NOT NULL')
-    // } else {
-    //   queryBuilder.andWhere('enrollment.deleted_at IS NULL')
-    // }
-
-    // Chỉ join với bảng classes khi cần filter theo semester_id hoặc scholastic_id
-    // JSON_CONTAINS rất chậm và không thể dùng index, nên chỉ dùng khi thực sự cần
     if (semester_id || scholastic_id) {
       queryBuilder
-        .leftJoin(
-          Classes,
-          'c',
-          'JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")',
-        )
+        .addSelect(qb => {
+          const subQuery = qb
+            .select('JSON_ARRAYAGG(JSON_OBJECT("id", c.id, "name", c.name))')
+            .from(Classes, 'c')
+            .where('JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")')
 
-    // if (scholastic_id) {
-    //   queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
-    // }
-      if (scholastic_id) {
-        queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
-      }
+          if (semester_id) {
+            subQuery.andWhere('c.semester_id = :semester_id', { semester_id })
+          }
+          if (scholastic_id) {
+            subQuery.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+          }
 
-    //   // lọc theo semester
-    // if (semester_id) {
-    //   queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
-    // }
-    // queryBuilder.distinct(true)
-      if (semester_id) {
-        queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
-      }
-
-      queryBuilder.distinct(true)
+          return subQuery
+        }, 'classes')
+        .groupBy('enrollment.id')
+      console.log(queryBuilder.getSql())
     }
 
     queryBuilder.withDeleted()
@@ -855,9 +834,9 @@ export class EnrollmentsService {
     const { data, meta } = await paginate(queryBuilder, rest)
 
     // lấy ra các class từ class_ids
-    const classesIds = data.flatMap(enrollment => enrollment.class_ids || [])
+    const classesIds = data.flatMap(enrollment => enrollment.class_ids.map(item => item.class_id) || [])
     const uniqueClassesIds = [...new Set(classesIds)] // bỏ trùng id
-    
+
     let classesMap: Record<number, any> = {}
     if (uniqueClassesIds.length > 0) {
       const classes = await this.classRepository
