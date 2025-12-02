@@ -532,6 +532,7 @@ export class EnrollmentsService {
       if (!enrollment.email) return
 
       const class_ids = enrollment.class_ids.map(item => item.class_id)
+      const classMap = arrayToObject(enrollment.class_ids, 'class_id')
       const listClass = await this.classRepository
         .createQueryBuilder('class')
         .select([
@@ -547,17 +548,29 @@ export class EnrollmentsService {
         .where('class.id IN (:...class_ids)', { class_ids })
         .getMany()
 
-      const formatClass = listClass.map((classEntity: Classes, index: number) => ({
-        id: classEntity.id,
-        index: index + 1,
-        name: classEntity.name,
-        price: formatCurrency(classEntity.price),
-        schedule: mapScheduleToVietnamese(classEntity.schedule).join(', '),
-        start_time: classEntity.start_time,
-        end_time: classEntity.end_time,
-        start_date: formatStringDate(classEntity.opening_day, true),
-        end_date: formatStringDate(classEntity.closing_day, true),
-      }))
+      // format class
+      const formatClass = listClass.map((classEntity: Classes, index: number) => {
+        let learn_type = classMap[classEntity.id]?.learn_type
+        if (learn_type === LearnType.VIDEO) {
+          learn_type = 'Học qua video'
+        } else if (learn_type === LearnType.MEETING) {
+          learn_type = 'Học qua meeting'
+        } else {
+          learn_type = 'Học trực tiếp'
+        }
+        return {
+          id: classEntity.id,
+          index: index + 1,
+          name: classEntity.name,
+          price: formatCurrency(classEntity.price),
+          schedule: mapScheduleToVietnamese(classEntity.schedule).join(', '),
+          start_time: classEntity.start_time,
+          end_time: classEntity.end_time,
+          start_date: formatStringDate(classEntity.opening_day, true),
+          end_date: formatStringDate(classEntity.closing_day, true),
+          learn_type: learn_type,
+        }
+      })
 
       let templateName = ''
       let subject = ''
@@ -593,13 +606,13 @@ export class EnrollmentsService {
 
       if (type === 'payment' && status === StatusEnrollment.DONE) {
         subject = 'Xác nhận thanh toán thành công'
-        templateName = 'enrollment-payment-success'
-        pdfTemplate = 'pdf-enrollment-payment-success'
+        templateName = 'enrollment-payment-success' // hbs email
+        pdfTemplate = 'pdf-enrollment-payment-success' // hbs pdf đính kèm trong email
         pdfFilename = 'payment-success.pdf'
       } else if (type === 'register') {
         subject = 'Xác nhận đăng ký khóa học thành công'
-        templateName = 'enrollment-register-succsess'
-        pdfTemplate = 'pdf-enrollment-register-success'
+        templateName = 'enrollment-register-succsess' // hbs email
+        pdfTemplate = 'pdf-enrollment-register-success' // hbs pdf đính kèm trong email
         pdfFilename = 'register-success.pdf'
         pdfData.qrCode = qrCode
       } else {
