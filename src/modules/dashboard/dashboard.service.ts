@@ -394,15 +394,21 @@ export class DashboardService {
     WITH class_enrollment AS (
       SELECT
         e.id AS enrollment_id,
-        CAST(ec.value AS UNSIGNED) AS class_id,
+        CAST(ec.class_id AS UNSIGNED) AS class_id,
         c.subject_id,
         s.department_id,
         COALESCE(c.price,0) AS price,
         1 AS student_count,
         COALESCE(c.price,0) AS class_revenue
       FROM enrollments e
-      CROSS JOIN JSON_TABLE(e.class_ids, '$[*]' COLUMNS(value INT PATH '$')) ec
-      JOIN classes c ON c.id = ec.value
+      CROSS JOIN JSON_TABLE(
+        e.class_ids,
+        '$[*]' COLUMNS(
+          class_id INT PATH '$.class_id',
+          learn_type VARCHAR(50) PATH '$.learn_type'
+        )
+      ) ec
+      JOIN classes c ON c.id = ec.class_id
       JOIN subjects s ON s.id = c.subject_id
       WHERE ${conditions}
     ),
@@ -649,7 +655,13 @@ export class DashboardService {
         SUM(c.price) AS total_revenue,
         SUM(e.discount) AS discount
       FROM enrollments e
-      JOIN JSON_TABLE(e.class_ids, '$[*]' COLUMNS (class_id INT PATH '$')) jt ON TRUE
+      JOIN JSON_TABLE(
+        e.class_ids,
+        '$[*]' COLUMNS (
+          class_id INT PATH '$.class_id',
+          learn_type VARCHAR(50) PATH '$.learn_type'
+        )
+      ) jt ON TRUE
       JOIN classes c ON c.id = jt.class_id
       JOIN subjects s ON s.id = c.subject_id
       JOIN departments d ON d.id = s.department_id
