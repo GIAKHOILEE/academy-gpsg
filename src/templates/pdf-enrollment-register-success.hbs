@@ -207,6 +207,7 @@
       .course-table td {
         padding: 8px;
         border: 1px solid #ccc;
+        vertical-align: top;
       }
 
       .course-table th {
@@ -214,6 +215,7 @@
         font-weight: bold;
       }
 
+      /* Cột width đã điều chỉnh để thêm cột "Hình thức học" */
       .course-table .col-stt {
         width: 8%;
         text-align: center;
@@ -221,6 +223,7 @@
 
       .course-table .col-subject {
         width: 35%;
+        text-align: left;
       }
 
       .course-table .col-schedule {
@@ -228,14 +231,15 @@
         font-size: 10px;
       }
 
-      .course-table .col-start {
-        width: 17%;
+      .course-table .col-format {
+        width: 12%;
         text-align: center;
-        font-size: 10px;
+        font-size: 11px;
       }
 
       .course-table .col-fee {
-        width: 20%;
+        width: 25%;
+        text-align: center;
       }
 
       .summary-table {
@@ -356,7 +360,7 @@
         <div class='header'>
           <img src='{{logo}}' alt='icon' />
           <div>
-            <h2>TỔNG GIÁO PHẬN THÀNH PHỐ HỒ CHÍ MINH</h2>
+            <h2>Tổng Giáo Phận Sài Gòn</h2>
             <h3>HỌC VIỆN MỤC VỤ</h3>
             <p>6bis Tôn Đức Thắng, Phường Sài Gòn, Tp. Hồ Chí Minh</p>
             <p>Điện thoại: (028) 6291 0366 - 0706 757 366 (Zalo) | Email: hvmvsaigon@gmail.com | Website: hvmvsaigon.edu.vn</p>
@@ -418,25 +422,28 @@
                 <th class='col-stt'>STT</th>
                 <th class='col-subject'>Môn học</th>
                 <th class='col-schedule'>Lịch học</th>
+                <th class='col-format'>Hình thức học</th>
                 <th class='col-fee'>Lệ phí</th>
               </tr>
             </thead>
             <tbody id='courseTableBody'>
               {{#each classes}}
                 <tr>
-                  <td style='text-align: center'>{{this.index}}</td>
-                  <td>{{this.name}}</td>
-                  <td>Thứ
+                  <td class='col-stt' style='text-align: center'>{{this.index}}</td>
+                  <td class='col-subject'>{{this.name}}</td>
+                  <td class='col-schedule'>Thứ
                     {{this.schedule}}
                     |
                     {{this.start_time}}
                     -
                     {{this.end_time}}
-                    | Khai giảng:
+                    <br />
+                    Khai giảng:
                     {{this.start_date}}
                     - Kết thúc:
                     {{this.end_date}}</td>
-                  <td style='text-align: right'>{{this.price}} đ</td>
+                  <td class='col-format'>{{this.learn_type}}</td>
+                  <td class='col-fee' style='text-align: right'>{{this.price}} đ</td>
                 </tr>
               {{/each}}
             </tbody>

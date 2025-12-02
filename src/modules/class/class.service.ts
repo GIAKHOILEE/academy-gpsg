@@ -5,7 +5,7 @@ import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Raw, Repository } from 'typeorm'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { Semester } from './_semester/semester.entity'
 import { Classes } from './class.entity'
@@ -254,7 +254,7 @@ export class ClassService {
 
     const hasEnrollment = await this.enrollmentRepository
       .createQueryBuilder('enrollment')
-      .where('JSON_CONTAINS(enrollment.class_ids, :id)', { id: JSON.stringify(id) })
+      .where("JSON_CONTAINS(enrollment.class_ids, :obj, '$')", { obj: JSON.stringify({ class_id: id }) })
       .getExists()
 
     if (hasEnrollment) {
