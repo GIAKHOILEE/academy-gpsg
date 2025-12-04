@@ -121,6 +121,8 @@ export const messages = {
     QUESTION_HAS_ANSWER: 'Question has answer',
     OPTIONS_REQUIRED: 'Options is required for single choice and multiple choice',
     SETTINGS_NOT_FOUND: 'Settings not found',
+    LESSON_NOT_FOUND: 'Lesson not found',
+    CLASS_IS_NOT_ONLINE: 'Class does not support online learning',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -247,5 +249,7 @@ export const messages = {
     QUESTION_HAS_ANSWER: 'Câu hỏi đã có đáp án',
     OPTIONS_REQUIRED: 'Options là bắt buộc cho loại single choice và multiple choice',
     SETTINGS_NOT_FOUND: 'Cài đặt không tồn tại',
+    LESSON_NOT_FOUND: 'Buổi học không tồn tại',
+    CLASS_IS_NOT_ONLINE: 'Lớp học không hỗ trợ học online',
   },
 }
