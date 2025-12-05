@@ -123,6 +123,9 @@ export const messages = {
     SETTINGS_NOT_FOUND: 'Settings not found',
     LESSON_NOT_FOUND: 'Lesson not found',
     CLASS_IS_NOT_ONLINE: 'Class does not support online learning',
+    DISCUSS_NOT_FOUND: 'Discuss not found',
+    DISCUSS_NOT_ALLOW_UPDATE: 'Discuss not allow update',
+    DISCUSS_NOT_ALLOW_DELETE: 'Discuss not allow delete',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -251,5 +254,8 @@ export const messages = {
     SETTINGS_NOT_FOUND: 'Cài đặt không tồn tại',
     LESSON_NOT_FOUND: 'Buổi học không tồn tại',
     CLASS_IS_NOT_ONLINE: 'Lớp học không hỗ trợ học online',
+    DISCUSS_NOT_FOUND: 'Bình luận không tồn tại',
+    DISCUSS_NOT_ALLOW_UPDATE: 'Bình luận không được phép cập nhật',
+    DISCUSS_NOT_ALLOW_DELETE: 'Bình luận không được phép xóa',
   },
 }

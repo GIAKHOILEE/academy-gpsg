@@ -55,6 +55,7 @@ import { SettingsModule } from './modules/settings/settings.module'
 import { SettingSeeder } from '@seeders/setting.seeder'
 import { Settings } from './modules/settings/settings.entity'
 import { LessonModule } from '@modules/_online-feature/lesson/lesson.module'
+import { DiscussModule } from '@modules/_online-feature/discuss/discuss.module'
 
 @Module({
   imports: [
@@ -109,6 +110,7 @@ import { LessonModule } from '@modules/_online-feature/lesson/lesson.module'
     EvaluationModule,
     SettingsModule,
     LessonModule,
+    DiscussModule,
   ],
   providers: [
     AppService,
