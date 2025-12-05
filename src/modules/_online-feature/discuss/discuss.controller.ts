@@ -1,17 +1,46 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, Req } from '@nestjs/common'
 import { DiscussService } from './discuss.service'
 import { ResponseDto } from '@common/response.dto'
-import { ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { CreateDiscussDto } from './dtos/create-discuss.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { UpdateDiscussDto } from './dtos/update-discuss.dto'
 import { PaginateChildDiscussDto, PaginateDiscussDto } from './dtos/paginate-discuss.dto'
 
+@Controller('admin/discuss')
+@ApiTags('Admin Discuss')
+@ApiBearerAuth()
+@Auth(Role.ADMIN)
+export class AdminDiscussController {
+  constructor(private readonly discussService: DiscussService) {}
+  @Get('parent')
+  @ApiOperation({ summary: 'Get parent discusses' })
+  async getPaginateDiscusses(@Query() paginateDiscussDto: PaginateDiscussDto): Promise<ResponseDto> {
+    const discusses = await this.discussService.getParentDiscuss(paginateDiscussDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'DISCUSS_FETCHED_SUCCESSFULLY',
+      data: discusses,
+    })
+  }
+
+  @Get('child')
+  @ApiOperation({ summary: 'Get child discusses by parent id' })
+  async getDiscussById(@Query() paginateDiscussDto: PaginateChildDiscussDto): Promise<ResponseDto> {
+    const discuss = await this.discussService.getListChildDiscuss(paginateDiscussDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'DISCUSS_FETCHED_SUCCESSFULLY',
+      data: discuss,
+    })
+  }
+}
 @Controller('discuss')
+@ApiTags('User Discuss')
 @ApiBearerAuth()
 @Auth()
-export class DiscussController {
+export class UserDiscussController {
   constructor(private readonly discussService: DiscussService) {}
 
   @Post()
@@ -26,7 +55,7 @@ export class DiscussController {
   }
 
   @Get('parent')
-  @ApiOperation({ summary: 'Get paginate discusses' })
+  @ApiOperation({ summary: 'Get parent discusses' })
   async getPaginateDiscusses(@Query() paginateDiscussDto: PaginateDiscussDto): Promise<ResponseDto> {
     const discusses = await this.discussService.getParentDiscuss(paginateDiscussDto)
     return new ResponseDto({
@@ -37,7 +66,7 @@ export class DiscussController {
   }
 
   @Get('child')
-  @ApiOperation({ summary: 'Get a discuss by id' })
+  @ApiOperation({ summary: 'Get child discusses by parent id' })
   async getDiscussById(@Query() paginateDiscussDto: PaginateChildDiscussDto): Promise<ResponseDto> {
     const discuss = await this.discussService.getListChildDiscuss(paginateDiscussDto)
     return new ResponseDto({
