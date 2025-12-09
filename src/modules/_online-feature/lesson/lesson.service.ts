@@ -54,10 +54,14 @@ export class LessonService {
       id: savedLesson.id,
       index: savedLesson.index,
       title: savedLesson.title,
+      schedule: savedLesson.schedule,
+      start_time: savedLesson.start_time,
+      end_time: savedLesson.end_time,
       description: savedLesson.description,
       video_url: savedLesson.video_url,
       slide_url: savedLesson.slide_url,
       document_url: savedLesson.document_url,
+      meeting_url: savedLesson.meeting_url,
       class_id: savedLesson.class.id,
     }
     return formattedLesson
@@ -98,7 +102,19 @@ export class LessonService {
 
     const queryBuilder = this.lessonRepository
       .createQueryBuilder('lesson')
-      .select(['lesson.id', 'lesson.title', 'lesson.description', 'lesson.index', 'lesson.video_url', 'lesson.slide_url', 'lesson.document_url'])
+      .select([
+        'lesson.id',
+        'lesson.title',
+        'lesson.schedule',
+        'lesson.start_time',
+        'lesson.end_time',
+        'lesson.description',
+        'lesson.index',
+        'lesson.video_url',
+        'lesson.slide_url',
+        'lesson.document_url',
+        'lesson.meeting_url',
+      ])
       .leftJoin('lesson.class', 'class')
 
     if (class_id) {
@@ -117,10 +133,14 @@ export class LessonService {
         id: lesson.id,
         index: lesson.index,
         title: lesson.title,
+        schedule: lesson.schedule,
+        start_time: lesson.start_time,
+        end_time: lesson.end_time,
         description: lesson.description,
         video_url: lesson.video_url,
         slide_url: lesson.slide_url,
         document_url: lesson.document_url,
+        meeting_url: lesson.meeting_url,
       }
     })
 
@@ -135,12 +155,16 @@ export class LessonService {
     return {
       id: lesson.id,
       title: lesson.title,
+      schedule: lesson.schedule,
+      start_time: lesson.start_time,
+      end_time: lesson.end_time,
       description: lesson.description,
       index: lesson.index,
       class_id: lesson.class.id,
       video_url: lesson.video_url,
       slide_url: lesson.slide_url,
       document_url: lesson.document_url,
+      meeting_url: lesson.meeting_url,
     }
   }
 }

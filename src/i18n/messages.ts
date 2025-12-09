@@ -126,6 +126,8 @@ export const messages = {
     DISCUSS_NOT_FOUND: 'Discuss not found',
     DISCUSS_NOT_ALLOW_UPDATE: 'Discuss not allow update',
     DISCUSS_NOT_ALLOW_DELETE: 'Discuss not allow delete',
+    HOMEWORK_NOT_FOUND: 'Homework not found',
+    HOMEWORK_HAS_SUBMISSIONS: 'Homework has submissions',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -257,5 +259,7 @@ export const messages = {
     DISCUSS_NOT_FOUND: 'Bình luận không tồn tại',
     DISCUSS_NOT_ALLOW_UPDATE: 'Bình luận không được phép cập nhật',
     DISCUSS_NOT_ALLOW_DELETE: 'Bình luận không được phép xóa',
+    HOMEWORK_NOT_FOUND: 'Bài tập không tồn tại',
+    HOMEWORK_HAS_SUBMISSIONS: 'Bài tập đã có đáp án của học sinh, không được cập nhật',
   },
 }

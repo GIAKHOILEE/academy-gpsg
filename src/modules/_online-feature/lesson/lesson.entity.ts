@@ -2,6 +2,7 @@ import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToO
 import { UpdateDateColumn } from 'typeorm'
 import { Classes } from '@modules/class/class.entity'
 import { Discuss } from '../discuss/discuss.entity'
+import { Homeworks } from '../homeworks/entities/homeworks.entity'
 
 @Entity('lesson')
 export class Lesson {
@@ -13,6 +14,14 @@ export class Lesson {
 
   @Column()
   title: string
+
+  @Column({ nullable: true })
+  schedule: string
+
+  @Column({ nullable: true })
+  start_time: string
+  @Column({ nullable: true })
+  end_time: string
 
   @Column()
   description: string
@@ -26,12 +35,18 @@ export class Lesson {
   @Column({ nullable: true, type: 'json' })
   document_url: string[]
 
+  @Column({ nullable: true })
+  meeting_url: string
+
   @ManyToOne(() => Classes, classes => classes.lessons, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'class_id' })
   class: Classes
 
   @OneToMany(() => Discuss, discusses => discusses.lesson, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   discusses: Discuss[]
+
+  @OneToMany(() => Homeworks, homeworks => homeworks.lesson, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  homeworks: Homeworks[]
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date

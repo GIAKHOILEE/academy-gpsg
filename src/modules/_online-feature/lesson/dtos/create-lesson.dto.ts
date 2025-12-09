@@ -18,6 +18,30 @@ export class CreateLessonDto {
   })
   title: string
 
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
+    description: 'Thời gian học',
+    example: '10:00',
+  })
+  schedule: string
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
+    description: 'Thời gian bắt đầu',
+    example: '10:00',
+  })
+  start_time: string
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
+    description: 'Thời gian kết thúc',
+    example: '10:00',
+  })
+  end_time: string
+
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({
@@ -49,4 +73,12 @@ export class CreateLessonDto {
     example: ['https://www.google.com', 'https://www.google.com'],
   })
   document_url: string[]
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'URL của cuộc họp',
+    example: 'https://www.google.com',
+  })
+  meeting_url: string
 }

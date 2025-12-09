@@ -56,6 +56,7 @@ import { SettingSeeder } from '@seeders/setting.seeder'
 import { Settings } from './modules/settings/settings.entity'
 import { LessonModule } from '@modules/_online-feature/lesson/lesson.module'
 import { DiscussModule } from '@modules/_online-feature/discuss/discuss.module'
+import { HomeworkModule } from '@modules/_online-feature/homeworks/homeworks.module'
 
 @Module({
   imports: [
@@ -111,6 +112,7 @@ import { DiscussModule } from '@modules/_online-feature/discuss/discuss.module'
     SettingsModule,
     LessonModule,
     DiscussModule,
+    HomeworkModule,
   ],
   providers: [
     AppService,
