@@ -77,6 +77,28 @@ export class TeacherHomeworkController {
     })
   }
 
+  @Get()
+  @ApiOperation({ summary: 'Get many homeworks' })
+  async getManyHomeworks(@Query() paginateHomeworksDto: PaginateHomeworksDto): Promise<ResponseDto> {
+    const homeworks = await this.homeworkService.getManyHomeworks(paginateHomeworksDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORKS_FETCHED_SUCCESSFULLY',
+      data: homeworks,
+    })
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a homework' })
+  async getHomeworkById(@Param('id') id: number): Promise<ResponseDto> {
+    const homework = await this.homeworkService.getHomeworkById(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_FETCHED_SUCCESSFULLY',
+      data: homework,
+    })
+  }
+
   @Put(':id')
   @ApiOperation({ summary: 'Update a homework' })
   async updateHomework(@Param('id') id: number, @Body() updateHomeworkDto: CreateHomeworksDto): Promise<ResponseDto> {
@@ -84,6 +106,35 @@ export class TeacherHomeworkController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_UPDATED_SUCCESSFULLY',
+      data: homework,
+    })
+  }
+}
+
+@Controller('student/homeworks')
+@ApiTags('Student Homework')
+@ApiBearerAuth()
+@Auth(Role.STUDENT)
+export class StudentHomeworkController {
+  constructor(private readonly homeworkService: HomeworkService) {}
+  @Get()
+  @ApiOperation({ summary: 'Get many homeworks' })
+  async getManyHomeworks(@Query() paginateHomeworksDto: PaginateHomeworksDto): Promise<ResponseDto> {
+    const homeworks = await this.homeworkService.getManyHomeworks(paginateHomeworksDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORKS_FETCHED_SUCCESSFULLY',
+      data: homeworks,
+    })
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a homework' })
+  async getHomeworkById(@Param('id') id: number): Promise<ResponseDto> {
+    const homework = await this.homeworkService.getHomeworkById(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_FETCHED_SUCCESSFULLY',
       data: homework,
     })
   }

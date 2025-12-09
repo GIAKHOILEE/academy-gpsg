@@ -6,12 +6,12 @@ import { HomeworkOption } from './entities/option.entity'
 import { HomeworkSubmission } from './entities/submission.entity'
 import { HomeworkAnswer } from './entities/answer.entity'
 import { HomeworkService } from './homeworks.service'
-import { AdminHomeworkController, TeacherHomeworkController } from './homeworks.controller'
+import { AdminHomeworkController, StudentHomeworkController, TeacherHomeworkController } from './homeworks.controller'
 import { Lesson } from '../lesson/lesson.entity'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Homeworks, HomeworkQuestion, HomeworkOption, HomeworkSubmission, HomeworkAnswer, Lesson])],
-  controllers: [AdminHomeworkController, TeacherHomeworkController],
+  controllers: [AdminHomeworkController, TeacherHomeworkController, StudentHomeworkController],
   providers: [HomeworkService],
   exports: [HomeworkService],
 })
