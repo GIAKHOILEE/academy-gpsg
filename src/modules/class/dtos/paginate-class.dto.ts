@@ -91,6 +91,11 @@ export class PaginateClassOfStudentDto extends PaginationDto {
   classroom: string
 
   @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo học online', example: true, type: Boolean })
+  @IsBooleanString()
+  is_online: string
+
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
   @IsEnum(ClassStatus)
   @Type(() => Number)
