@@ -8,9 +8,10 @@ import { HomeworkAnswer } from './entities/answer.entity'
 import { HomeworkService } from './homeworks.service'
 import { AdminHomeworkController, StudentHomeworkController, TeacherHomeworkController } from './homeworks.controller'
 import { Lesson } from '../lesson/lesson.entity'
+import { Student } from '@modules/students/students.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Homeworks, HomeworkQuestion, HomeworkOption, HomeworkSubmission, HomeworkAnswer, Lesson])],
+  imports: [TypeOrmModule.forFeature([Homeworks, HomeworkQuestion, HomeworkOption, HomeworkSubmission, HomeworkAnswer, Lesson, Student])],
   controllers: [AdminHomeworkController, TeacherHomeworkController, StudentHomeworkController],
   providers: [HomeworkService],
   exports: [HomeworkService],

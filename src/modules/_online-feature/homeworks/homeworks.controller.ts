@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, Req } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
@@ -6,6 +6,7 @@ import { ResponseDto } from '@common/response.dto'
 import { HomeworkService } from './homeworks.service'
 import { CreateHomeworksDto } from './dtos/create-homeworks.dto'
 import { PaginateHomeworksDto } from './dtos/paginate-homeworks.dto'
+import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
 
 @Controller('admin/homeworks')
 @ApiTags('Admin Homework')
@@ -13,6 +14,16 @@ import { PaginateHomeworksDto } from './dtos/paginate-homeworks.dto'
 @Auth(Role.ADMIN)
 export class AdminHomeworkController {
   constructor(private readonly homeworkService: HomeworkService) {}
+  // @Post('submit')
+  // @ApiOperation({ summary: 'Submit a homework' })
+  // async submitHomework(@Body() submitHomeworkDto: SubmitHomeworkDto, @Req() req): Promise<ResponseDto> {
+  //   const submission = await this.homeworkService.submitHomework(req.user.userId, submitHomeworkDto)
+  //   return new ResponseDto({
+  //     statusCode: HttpStatus.OK,
+  //     messageCode: 'HOMEWORK_SUBMITTED_SUCCESSFULLY',
+  //     data: submission,
+  //   })
+  // }
 
   @Post()
   @ApiOperation({ summary: 'Create a homework' })
@@ -136,6 +147,17 @@ export class StudentHomeworkController {
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_FETCHED_SUCCESSFULLY',
       data: homework,
+    })
+  }
+
+  @Post('submit')
+  @ApiOperation({ summary: 'Submit a homework' })
+  async submitHomework(@Body() submitHomeworkDto: SubmitHomeworkDto, @Req() req): Promise<ResponseDto> {
+    const submission = await this.homeworkService.submitHomework(req.user.userId, submitHomeworkDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMITTED_SUCCESSFULLY',
+      data: submission,
     })
   }
 }

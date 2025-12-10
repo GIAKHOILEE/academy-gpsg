@@ -223,10 +223,14 @@ export class HomeworkService {
     return homework
   }
 
-  async submitHomework(studentId: number, submitDto: SubmitHomeworkDto) {
+  async submitHomework(userId: number, submitDto: SubmitHomeworkDto) {
     // validate entities
-    const student = await this.studentRepo.findOne({ where: { id: studentId } })
+    const student = await this.studentRepo.findOne({ where: { user: { id: userId } } })
     if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    // nếu đã submit bài thì không được submit lại
+    const hasSubmission = await this.submissionRepo.exists({ where: { homework: { id: submitDto.homework_id }, student: { user: { id: userId } } } })
+    if (hasSubmission) throwAppException('HOMEWORK_ALREADY_SUBMITTED', ErrorCode.HOMEWORK_ALREADY_SUBMITTED, HttpStatus.BAD_REQUEST)
 
     const hw = await this.hwRepo.findOne({
       where: { id: submitDto.homework_id },
@@ -238,13 +242,13 @@ export class HomeworkService {
       throwAppException('ANSWERS_REQUIRED', ErrorCode.ANSWERS_REQUIRED, HttpStatus.BAD_REQUEST)
     }
 
-    // build map questionId -> question
+    // build map questionId -> question (dùng để lấy question từ questionId)
     const qMap = new Map<number, HomeworkQuestion>()
     for (const q of hw.questions || []) qMap.set(q.id, q)
 
-    // validate payload questions exist and types
+    // validate các câu hỏi có tồn tại và loại câu hỏi
     for (const ansPayload of submitDto.answers) {
-      const q = qMap.get(ansPayload.questionId)
+      const q = qMap.get(ansPayload.question_id)
       if (!q) throwAppException('QUESTION_NOT_BELONG_TO_HOMEWORK', ErrorCode.QUESTION_NOT_BELONG_TO_HOMEWORK, HttpStatus.BAD_REQUEST)
 
       if (q.type === QuestionType.ESSAY) {
@@ -252,11 +256,17 @@ export class HomeworkService {
           throwAppException('QUESTION_REQUIRES_ANSWER_TEXT', ErrorCode.QUESTION_REQUIRES_ANSWER_TEXT, HttpStatus.BAD_REQUEST)
         }
       } else {
-        // MCQ types: require selected_option_ids array
+        // MCQ types: yêu cầu mảng selected_option_ids
         if (!Array.isArray(ansPayload.selected_option_ids) || ansPayload.selected_option_ids.length === 0) {
           throwAppException('QUESTION_REQUIRES_SELECTED_OPTION_IDS', ErrorCode.QUESTION_REQUIRES_SELECTED_OPTION_IDS, HttpStatus.BAD_REQUEST)
         }
-        // optional: check that selected option ids belong to q.options
+
+        // Nếu là single-select mà chọn nhiều option -> lỗi
+        if (q.type === QuestionType.MCQ_SINGLE && ansPayload.selected_option_ids.length > 1) {
+          throwAppException('MCQ_SINGLE_ONLY_ONE_OPTION_ALLOWED', ErrorCode.MCQ_SINGLE_ONLY_ONE_OPTION_ALLOWED, HttpStatus.BAD_REQUEST)
+        }
+
+        // optional: kiểm tra option id có thuộc câu hỏi không
         const optIds = (q.options || []).map(o => o.id)
         for (const id of ansPayload.selected_option_ids) {
           if (!optIds.includes(id)) {
@@ -286,7 +296,7 @@ export class HomeworkService {
       // create answers
       const createdAnswers: HomeworkAnswer[] = []
       for (const a of submitDto.answers) {
-        const q = qMap.get(a.questionId)
+        const q = qMap.get(a.question_id)
         const newAns = ansRepo.create({
           submission: savedSub,
           question: q,
@@ -316,7 +326,7 @@ export class HomeworkService {
           const isCorrect = selected.length === 1 && correctIds.includes(selected[0])
           ans.score = isCorrect ? Number(q.points) : 0
         } else {
-          // MCQ_MULTI -> partial credit (correct chosen / correct total), no penalty
+          // MCQ_MULTI -> điểm từng câu (correct chosen / correct total), không có phạt
           const correctChosen = selected.filter(id => correctIds.includes(id)).length
           const portion = correctIds.length ? correctChosen / correctIds.length : 0
           ans.score = Number(q.points) * Math.max(0, portion)
@@ -325,19 +335,19 @@ export class HomeworkService {
         await ansRepo.save(ans)
       }
 
-      // determine if there are any essay questions -> if none, mark AUTO_GRADED
+      // kiểm tra có câu hỏi essay không -> nếu không có thì đánh dấu AUTO_GRADED
       const hasEssay = hw.questions.some(q => q.type === QuestionType.ESSAY)
       if (!hasEssay) {
-        // all auto graded
+        // tất cả đều tự động chấm
         const sumQuestionPoints = hw.total_points ?? (hw.questions.reduce((s, q) => s + Number(q.points || 0), 0) || 1)
         const percent = (totalScore / sumQuestionPoints) * 100
 
         savedSub.score = Number(totalScore)
         savedSub.status = SubmissionStatus.AUTO_GRADED
-        ;(savedSub as any).percent = percent // if you have percent column; else compute on client
+        ;(savedSub as any).percent = percent // nếu có cột percent thì lưu vào đó, nếu không thì tính toán trên client
         await subRepo.save(savedSub)
       } else {
-        // partial score recorded for MCQ answers; submission.status remains PENDING
+        // điểm từng câu cho MCQ answers; submission.status vẫn là PENDING
         savedSub.score = Number(totalScore)
         await subRepo.save(savedSub)
       }
@@ -346,11 +356,63 @@ export class HomeworkService {
       await queryRunner.release()
 
       // return submission with relations (use normal repo to fetch)
-      const result = await this.submissionRepo.findOne({
-        where: { id: savedSub.id },
-        relations: ['homework', 'answers', 'answers.question', 'answers.question.options', 'student'],
-      })
-      return result
+      // const result = await this.submissionRepo.findOne({
+      //   where: { id: savedSub.id },
+      //   relations: ['homework', 'answers', 'answers.question', 'answers.question.options', 'student'],
+      // })
+      const result = await this.submissionRepo
+        .createQueryBuilder('submission')
+        .select([
+          'submission.id',
+          'submission.score',
+          'submission.status',
+          'homework.id',
+          'homework.title',
+          'homework.description',
+          'homework.total_points',
+          'answers.id',
+          'answers.score',
+          'answers.answer_text',
+          'answers.selected_option_ids',
+          'question.id',
+          'question.content',
+          'question.type',
+          'question.points',
+          'options.id',
+          'options.content',
+          'options.is_correct',
+          'student.id',
+          'user.id',
+          'user.full_name',
+          'user.code',
+          'user.email',
+          'user.saint_name',
+          'user.gender',
+        ])
+        .leftJoin('submission.homework', 'homework')
+        .leftJoin('submission.answers', 'answers')
+        .leftJoin('answers.question', 'question')
+        .leftJoin('question.options', 'options')
+        .leftJoin('submission.student', 'student')
+        .leftJoin('student.user', 'user')
+        .where('submission.id = :id', { id: savedSub.id })
+        .getOne()
+
+      const formattedResult = {
+        id: result.id,
+        score: result.score,
+        status: result.status,
+        homework: result.homework,
+        answers: result.answers,
+        student: {
+          id: result.student.id,
+          name: result.student.user.full_name,
+          email: result.student.user.email,
+          phone: result.student.user.phone_number,
+          avatar: result.student.user.avatar,
+        },
+      }
+      return formattedResult
     } catch (err) {
       try {
         await queryRunner.rollbackTransaction()
