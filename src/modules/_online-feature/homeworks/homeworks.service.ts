@@ -16,6 +16,7 @@ import { IHomework } from './homeworks.interface'
 import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
 import { Student } from '@modules/students/students.entity'
 import { QuestionType, SubmissionStatus } from '@enums/homework.enum'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 
 @Injectable()
 export class HomeworkService {
@@ -30,6 +31,8 @@ export class HomeworkService {
     private answerRepo: Repository<HomeworkAnswer>,
     @InjectRepository(Student)
     private studentRepo: Repository<Student>,
+    @InjectRepository(ClassStudents)
+    private classStudentRepo: Repository<ClassStudents>,
     private dataSource: DataSource,
   ) {}
 
@@ -232,10 +235,20 @@ export class HomeworkService {
     const hasSubmission = await this.submissionRepo.exists({ where: { homework: { id: submitDto.homework_id }, student: { user: { id: userId } } } })
     if (hasSubmission) throwAppException('HOMEWORK_ALREADY_SUBMITTED', ErrorCode.HOMEWORK_ALREADY_SUBMITTED, HttpStatus.BAD_REQUEST)
 
-    const hw = await this.hwRepo.findOne({
-      where: { id: submitDto.homework_id },
-      relations: ['questions', 'questions.options'],
-    })
+    const hw = await this.hwRepo
+      .createQueryBuilder('homework')
+      .leftJoinAndSelect('homework.lesson', 'lesson')
+      .leftJoinAndSelect('homework.questions', 'questions')
+      .leftJoinAndSelect('questions.options', 'options')
+      .leftJoinAndSelect('lesson.class', 'class')
+      .where('homework.id = :id', { id: submitDto.homework_id })
+      .getOne()
+
+    console.log(hw)
+    // kiểm tra student có trong lớp không
+    const classStudent = await this.classStudentRepo.findOne({ where: { student: { user: { id: userId } }, class: { id: hw.lesson.class.id } } })
+    if (!classStudent) throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
+
     if (!hw) throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (!Array.isArray(submitDto.answers) || submitDto.answers.length === 0) {
