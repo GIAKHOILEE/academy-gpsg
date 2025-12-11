@@ -135,6 +135,10 @@ export const messages = {
     OPTION_NOT_BELONG_TO_QUESTION: 'Option not belong to question',
     MCQ_SINGLE_ONLY_ONE_OPTION_ALLOWED: 'MCQ single only one option allowed',
     HOMEWORK_ALREADY_SUBMITTED: 'Homework already submitted',
+    INVALID_SCORE: 'Invalid score',
+    SCORE_EXCEEDS_MAX: 'Score exceeds max',
+    SUBMISSION_NOT_FOUND: 'Submission not found',
+    ANSWER_NOT_BELONG_TO_SUBMISSION: 'Answer not belong to submission',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -275,5 +279,9 @@ export const messages = {
     QUESTION_REQUIRES_SELECTED_OPTION_IDS: 'Câu hỏi yêu cầu chọn đáp án',
     OPTION_NOT_BELONG_TO_QUESTION: 'Đáp án không thuộc câu hỏi',
     MCQ_SINGLE_ONLY_ONE_OPTION_ALLOWED: 'chỉ được chọn 1 đáp án',
+    INVALID_SCORE: 'Điểm không hợp lệ',
+    SCORE_EXCEEDS_MAX: 'Điểm vượt quá điểm tối đa của câu hỏi',
+    SUBMISSION_NOT_FOUND: 'Bài nộp không tồn tại',
+    ANSWER_NOT_BELONG_TO_SUBMISSION: 'Đáp án không thuộc bài nộp',
   },
 }

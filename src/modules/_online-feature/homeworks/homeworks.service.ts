@@ -17,6 +17,7 @@ import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
 import { Student } from '@modules/students/students.entity'
 import { QuestionType, SubmissionStatus } from '@enums/homework.enum'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
+import { GradeSubmissionDto } from './dtos/submission-grade.dto'
 
 @Injectable()
 export class HomeworkService {
@@ -433,6 +434,96 @@ export class HomeworkService {
         // ignore rollback error but log if needed
       }
       await queryRunner.release()
+      throw err
+    }
+  }
+
+  // grade one submission
+  async teacherGradeSubmission(graderId: number, gradeDto: GradeSubmissionDto) {
+    const { submission_id, answers: answersPayload } = gradeDto
+
+    // start transaction
+    const queryRunner = this.dataSource.createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+    try {
+      const subRepo = queryRunner.manager.getRepository(HomeworkSubmission)
+      const ansRepo = queryRunner.manager.getRepository(HomeworkAnswer)
+      const hwRepo = queryRunner.manager.getRepository(Homeworks)
+
+      const submission = await subRepo.findOne({
+        where: { id: submission_id },
+        relations: ['homework', 'answers', 'answers.question', 'answers.question.options', 'student'],
+      })
+      if (!submission) throwAppException('SUBMISSION_NOT_FOUND', ErrorCode.SUBMISSION_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      // optionally: check permission: graderId is teacher of this class/homework (not implemented here)
+      // validate payload answers belong to submission
+      const ansMap = new Map<number, HomeworkAnswer>()
+      for (const a of submission.answers || []) ansMap.set(a.id, a)
+
+      // apply grading per answer
+      for (const aPayload of answersPayload) {
+        const exist = ansMap.get(aPayload.answer_id)
+        if (!exist) {
+          throwAppException('ANSWER_NOT_BELONG_TO_SUBMISSION', ErrorCode.ANSWER_NOT_BELONG_TO_SUBMISSION, HttpStatus.BAD_REQUEST)
+        }
+
+        // load question points (already in relations)
+        const q = exist.question as HomeworkQuestion
+        if (!q) throwAppException('QUESTION_NOT_FOUND', ErrorCode.QUESTION_NOT_FOUND, HttpStatus.BAD_REQUEST)
+
+        const maxPoint = Number(q.points || 0)
+        const given = Number(aPayload.score)
+        if (isNaN(given) || given < 0) {
+          throwAppException('INVALID_SCORE', ErrorCode.INVALID_SCORE, HttpStatus.BAD_REQUEST)
+        }
+        if (given > maxPoint) {
+          throwAppException('SCORE_EXCEEDS_MAX', ErrorCode.SCORE_EXCEEDS_MAX, HttpStatus.BAD_REQUEST)
+        }
+
+        // persist grading to answer
+        exist.score = given
+        exist.feedback = aPayload.feedback ?? exist.feedback
+        await ansRepo.save(exist)
+      }
+
+      // recompute total score
+      const reloadedAnswers = await ansRepo.find({ where: { submission: { id: submission.id } } as any, relations: ['question'] })
+      const totalScore = reloadedAnswers.reduce((s, a) => s + Number(a.score || 0), 0)
+
+      // compute percent: prefer homework.total_points if set
+      const hw = await hwRepo.findOne({ where: { id: submission.homework.id }, relations: ['questions'] })
+      const sumQuestionPoints = hw?.total_points ?? (hw?.questions?.reduce((s, q) => s + Number(q.points || 0), 0) || 1)
+      const percent = (totalScore / sumQuestionPoints) * 100
+
+      // update submission
+      submission.score = Number(totalScore)
+      ;(submission as any).percent = percent // nếu có cột percent, map tương ứng hoặc add column
+      submission.status = SubmissionStatus.GRADED
+      submission.graded_by = { id: graderId } as any
+      submission.graded_at = new Date()
+      await subRepo.save(submission)
+
+      await queryRunner.commitTransaction()
+      await queryRunner.release()
+
+      // return full submission using main repo to avoid queryRunner release race
+      return this.submissionRepo.findOne({
+        where: { id: submission.id },
+        relations: ['homework', 'answers', 'answers.question', 'answers.question.options', 'student', 'graded_by'],
+      })
+    } catch (err) {
+      try {
+        await queryRunner.rollbackTransaction()
+      } catch (e) {
+        /* ignore */
+      }
+      try {
+        await queryRunner.release()
+      } catch (e) {
+        /* ignore */
+      }
       throw err
     }
   }
