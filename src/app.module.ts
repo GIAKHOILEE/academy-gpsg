@@ -57,6 +57,7 @@ import { Settings } from './modules/settings/settings.entity'
 import { LessonModule } from '@modules/_online-feature/lesson/lesson.module'
 import { DiscussModule } from '@modules/_online-feature/discuss/discuss.module'
 import { HomeworkModule } from '@modules/_online-feature/homeworks/homeworks.module'
+import { ConsultModule } from '@modules/consult/consult.module'
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { HomeworkModule } from '@modules/_online-feature/homeworks/homeworks.mod
     TimekeepingModule,
     EvaluationModule,
     SettingsModule,
+    ConsultModule,
     LessonModule,
     DiscussModule,
     HomeworkModule,

@@ -139,6 +139,7 @@ export const messages = {
     SCORE_EXCEEDS_MAX: 'Score exceeds max',
     SUBMISSION_NOT_FOUND: 'Submission not found',
     ANSWER_NOT_BELONG_TO_SUBMISSION: 'Answer not belong to submission',
+    CONSULT_NOT_FOUND: 'Consult not found',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -283,5 +284,6 @@ export const messages = {
     SCORE_EXCEEDS_MAX: 'Điểm vượt quá điểm tối đa của câu hỏi',
     SUBMISSION_NOT_FOUND: 'Bài nộp không tồn tại',
     ANSWER_NOT_BELONG_TO_SUBMISSION: 'Đáp án không thuộc bài nộp',
+    CONSULT_NOT_FOUND: 'Tư vấn không tồn tại',
   },
 }
