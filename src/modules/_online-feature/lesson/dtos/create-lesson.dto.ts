@@ -21,6 +21,14 @@ export class CreateLessonDto {
   @IsNotEmpty()
   @IsString()
   @ApiProperty({
+    description: 'Ngày bắt đầu học',
+    example: '01/01/2025',
+  })
+  start_date: string
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
     description: 'Thời gian học',
     example: '10:00',
   })

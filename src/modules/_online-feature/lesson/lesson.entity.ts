@@ -19,6 +19,9 @@ export class Lesson {
   schedule: string
 
   @Column({ nullable: true })
+  start_date: string
+
+  @Column({ nullable: true })
   start_time: string
   @Column({ nullable: true })
   end_time: string

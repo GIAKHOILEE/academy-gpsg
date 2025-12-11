@@ -5,6 +5,7 @@ export interface ILesson {
   index?: number
   title?: string
   schedule?: string
+  start_date?: string
   start_time?: string
   end_time?: string
   description?: string

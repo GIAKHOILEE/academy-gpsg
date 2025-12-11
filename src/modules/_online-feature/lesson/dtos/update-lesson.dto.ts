@@ -13,6 +13,14 @@ export class UpdateLessonDto {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({
+    description: 'Ngày bắt đầu học',
+    example: '01/01/2025',
+  })
+  start_date?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
     description: 'Thời gian học',
     example: '10:00',
   })
