@@ -58,6 +58,7 @@ import { LessonModule } from '@modules/_online-feature/lesson/lesson.module'
 import { DiscussModule } from '@modules/_online-feature/discuss/discuss.module'
 import { HomeworkModule } from '@modules/_online-feature/homeworks/homeworks.module'
 import { ConsultModule } from '@modules/consult/consult.module'
+import { ClassNotificationsModule } from '@modules/class/notifications/notifications.module'
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { ConsultModule } from '@modules/consult/consult.module'
     SemesterModule,
     ScholasticModule,
     DepartmentModule,
+    ClassNotificationsModule,
     ClassModule,
     CalendarsModule,
     NotificationsModule,

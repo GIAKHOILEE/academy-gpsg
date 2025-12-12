@@ -61,7 +61,9 @@ export class DiscussService {
       ...createDiscussDto,
       user: existUser,
       lesson: existLesson,
-      user_responded: !parent_id ? true : false, // nếu là cmt đầu tiên thì đánh dấu là cmt của học viên
+      // user_responded: !parent_id ? true : false, // nếu là cmt đầu tiên thì đánh dấu là cmt của học viên
+      user_responded: existUser.role === Role.STUDENT ? true : false,
+      admin_responded: existUser.role !== Role.STUDENT ? true : false,
     })
     const savedDiscuss = await this.discussRepository.save(discuss)
     return {
