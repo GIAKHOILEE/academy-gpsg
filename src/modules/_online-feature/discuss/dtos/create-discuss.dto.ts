@@ -16,4 +16,7 @@ export class CreateDiscussDto {
   @IsNumber()
   @ApiProperty({ description: 'Lesson id', example: 1 })
   lesson_id: number
+
+  admin_responded?: boolean
+  user_responded?: boolean
 }

@@ -6,6 +6,8 @@ export interface IDiscuss {
   number_comment?: number
   parent_id?: number
   content?: string
+  admin_responded?: boolean
+  user_responded?: boolean
   user?: IUser
   lesson?: ILesson
   created_at?: string

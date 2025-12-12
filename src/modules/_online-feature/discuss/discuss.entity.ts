@@ -13,6 +13,12 @@ export class Discuss {
   @Column()
   content: string
 
+  @Column({ default: false })
+  admin_responded: boolean
+
+  @Column({ default: false })
+  user_responded: boolean
+
   @ManyToOne(() => User, user => user.discusses, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User
