@@ -26,9 +26,9 @@ export class CreateLessonDto {
   })
   start_date: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Thời gian học',
     example: '10:00',
   })
