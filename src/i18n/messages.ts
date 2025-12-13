@@ -140,6 +140,7 @@ export const messages = {
     SUBMISSION_NOT_FOUND: 'Submission not found',
     ANSWER_NOT_BELONG_TO_SUBMISSION: 'Answer not belong to submission',
     CONSULT_NOT_FOUND: 'Consult not found',
+    CLASS_IS_ONLINE: 'Class is online',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -285,5 +286,6 @@ export const messages = {
     SUBMISSION_NOT_FOUND: 'Bài nộp không tồn tại',
     ANSWER_NOT_BELONG_TO_SUBMISSION: 'Đáp án không thuộc bài nộp',
     CONSULT_NOT_FOUND: 'Tư vấn không tồn tại',
+    CLASS_IS_ONLINE: 'Lớp học đã hỗ trợ học online',
   },
 }

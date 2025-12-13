@@ -9,14 +9,23 @@ import { PaginateClassNotificationDto } from './dtos/paginate-notifications.dto'
 import { UpdateClassNotificationDto } from './dtos/update-notifications.dto'
 import { ClassNotification } from './notifications.entity'
 import { IClassNotification } from './notifications.interface'
+import { Classes } from '../class.entity'
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectRepository(ClassNotification)
     private classNotificationRepository: Repository<ClassNotification>,
+    @InjectRepository(Classes)
+    private classRepository: Repository<Classes>,
   ) {}
 
   async createNotification(createNotificationDto: CreateClassNotificationDto): Promise<IClassNotification> {
+    const existClass = await this.classRepository.findOne({ where: { id: createNotificationDto.class_id } })
+    if (!existClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!existClass.is_online) {
+      throwAppException('CLASS_IS_NOT_ONLINE', ErrorCode.CLASS_IS_NOT_ONLINE, HttpStatus.BAD_REQUEST)
+    }
+
     const notificationMaxIndex = await this.classNotificationRepository
       .createQueryBuilder('notification')
       .select('MAX(notification.index) as maxIndex')
@@ -30,6 +39,7 @@ export class NotificationsService {
     const notification = this.classNotificationRepository.create({
       ...createNotificationDto,
       index: maxIndex,
+      class: existClass,
     })
     const savedNotification = await this.classNotificationRepository.save(notification)
 

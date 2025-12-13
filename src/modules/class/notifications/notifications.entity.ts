@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Classes } from '../class.entity'
 
 @Entity('class_notifications')
 export class ClassNotification {
@@ -25,6 +26,13 @@ export class ClassNotification {
 
   @Column({ type: 'text' })
   content: string
+
+  @ManyToOne(() => Classes, classes => classes.notifications, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'class_id' })
+  class: Classes
+
+  @Column({ nullable: true })
+  class_id: number
 
   @CreateDateColumn()
   created_at: Date

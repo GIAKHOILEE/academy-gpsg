@@ -2,7 +2,6 @@ import { PaginationDto } from '@common/pagination'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator'
-import e from 'express'
 
 export class PaginateDiscussDto extends PaginationDto {
   @IsOptional()

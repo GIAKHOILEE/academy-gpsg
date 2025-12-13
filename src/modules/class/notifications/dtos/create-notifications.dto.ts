@@ -1,8 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsNotEmpty, IsString } from 'class-validator'
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator'
 
 export class CreateClassNotificationDto {
   index?: number
+
+  @IsNotEmpty()
+  @IsNumber()
+  @ApiProperty({ example: 1 })
+  class_id: number
 
   @IsNotEmpty()
   @IsString()
