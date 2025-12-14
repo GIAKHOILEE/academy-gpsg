@@ -30,30 +30,15 @@ export class UpdateEnrollmentsDto {
   @IsOptional()
   payment_method: PaymentMethod
 
-  // @ApiPropertyOptional({ description: 'Trạng thái thanh toán', enum: PaymentStatus, example: PaymentStatus.UNPAID })
-  // @IsEnum(PaymentStatus)
-  // @IsOptional()
-  // payment_status: PaymentStatus
-
   @ApiPropertyOptional({ description: 'Trạng thái đăng ký', enum: StatusEnrollment, example: StatusEnrollment.PENDING })
   @IsEnum(StatusEnrollment)
   @IsOptional()
   status: StatusEnrollment
 
-  // @ApiPropertyOptional({ description: 'Tổng học phí', example: 1000000 })
-  // @IsNumber()
-  // @IsOptional()
-  // total_fee: number
-
   @ApiPropertyOptional({ description: 'Tiền đã đóng', example: 1000000 })
   @IsNumber()
   @IsOptional()
   prepaid: number
-
-  // @ApiPropertyOptional({ description: 'Tiền nợ', example: 1000000 })
-  // @IsNumber()
-  // @IsOptional()
-  // debt: number
 
   @ApiPropertyOptional({ description: 'Ghi chú', example: 'Ghi chú' })
   @IsString()

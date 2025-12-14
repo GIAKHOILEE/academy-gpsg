@@ -8,6 +8,8 @@ import { Scholastic } from './_scholastic/scholastic.entity'
 import { ClassRule } from '@modules/class-rules/_class-rules/class-rules.entity'
 import { Exam } from '@modules/class-rules/exam/_exam/exam.entity'
 import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
+import { Lesson } from '@modules/_online-feature/lesson/lesson.entity'
+import { ClassNotification } from './notifications/notifications.entity'
 
 @Entity({ name: 'classes' })
 export class Classes {
@@ -138,6 +140,12 @@ export class Classes {
 
   @OneToMany(() => AttendanceRule, attendanceRule => attendanceRule.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   attendance_rules: AttendanceRule[]
+
+  @OneToMany(() => Lesson, lesson => lesson.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  lessons: Lesson[]
+
+  @OneToMany(() => ClassNotification, notification => notification.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  notifications: ClassNotification[]
 
   @CreateDateColumn()
   created_at: Date

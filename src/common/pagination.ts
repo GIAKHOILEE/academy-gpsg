@@ -37,25 +37,37 @@ export async function paginate<T>(queryBuilder: SelectQueryBuilder<T>, params: P
 
   Object.keys(filters).forEach(key => {
     const value = filters[key]
+
     if (value !== undefined && value !== null && value !== '') {
-      // Nếu là số thì search chính xác, còn string thì search tương tự (LIKE)
-      if (!isNaN(Number(value)) && typeof value !== 'boolean' && value !== '') {
-        // Nếu là number
+      /** ---- 1. Nếu là boolean string ("true" | "false") ---- */
+      if (value === 'true' || value === 'false') {
+        // convert về 1 hoặc 0 để query DB
+        const boolNumber = value === 'true' ? 1 : 0
+        queryBuilder.andWhere(`${mainTableAlias}.${key} = :${key}`, {
+          [key]: boolNumber,
+        })
+        return
+      }
+
+      /** ---- 2. Nếu là số ---- */
+      if (!isNaN(Number(value)) && typeof value !== 'boolean') {
         queryBuilder.andWhere(`${mainTableAlias}.${key} = :${key}`, {
           [key]: Number(value),
         })
-      } else if (typeof value === 'string') {
-        // Nếu là string
+        return
+      }
+
+      /** ---- 3. Nếu là text ---- */
+      if (typeof value === 'string') {
         const searchValue = removeVietnameseTones(value.toLowerCase().trim())
         queryBuilder.andWhere(`LOWER(${mainTableAlias}.${key}) LIKE :${key}`, {
           [key]: `%${searchValue}%`,
         })
-      } else {
-        // Các kiểu khác (boolean, v.v.)
-        queryBuilder.andWhere(`${mainTableAlias}.${key} = :${key}`, {
-          [key]: value,
-        })
+        return
       }
+
+      /** ---- 4. Các kiểu còn lại ---- */
+      queryBuilder.andWhere(`${mainTableAlias}.${key} = :${key}`, { [key]: value })
     }
   })
 

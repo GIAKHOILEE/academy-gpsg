@@ -1,10 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsOptional } from 'class-validator'
+import { IsBooleanString, IsOptional } from 'class-validator'
 import { PaginationDto } from 'src/common/pagination'
 
 export class PaginateBannerDto extends PaginationDto {
   @IsOptional()
-  @IsBoolean()
-  @ApiPropertyOptional({ description: 'filter theo trạng thái' })
-  isActive: boolean
+  @IsBooleanString()
+  @ApiPropertyOptional({ description: 'filter theo trạng thái', example: true, type: Boolean })
+  isActive: string
 }
