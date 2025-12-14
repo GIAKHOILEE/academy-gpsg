@@ -36,7 +36,7 @@ export async function paginate<T>(queryBuilder: SelectQueryBuilder<T>, params: P
   const mainTableAlias = queryBuilder.alias
 
   Object.keys(filters).forEach(key => {
-    let value = filters[key]
+    const value = filters[key]
 
     if (value !== undefined && value !== null && value !== '') {
       /** ---- 1. Nếu là boolean string ("true" | "false") ---- */

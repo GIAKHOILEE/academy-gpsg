@@ -1,11 +1,10 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, Req } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Query, Req } from '@nestjs/common'
 import { DiscussService } from './discuss.service'
 import { ResponseDto } from '@common/response.dto'
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { CreateDiscussDto } from './dtos/create-discuss.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { UpdateDiscussDto } from './dtos/update-discuss.dto'
 import { PaginateChildDiscussDto, PaginateDiscussDto } from './dtos/paginate-discuss.dto'
 
 @Controller('admin/discuss')

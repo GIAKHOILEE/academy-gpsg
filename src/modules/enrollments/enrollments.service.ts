@@ -850,7 +850,7 @@ export class EnrollmentsService {
     const classesIds = data.flatMap(enrollment => enrollment.class_ids.map(item => item.class_id) || [])
     const uniqueClassesIds = [...new Set(classesIds)] // bỏ trùng id
 
-    let classesMap: Record<number, any> = {}
+    // let classesMap: Record<number, any> = {}
     if (uniqueClassesIds.length > 0) {
       const classes = await this.classRepository
         .createQueryBuilder('class')
@@ -858,7 +858,7 @@ export class EnrollmentsService {
         .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
         .getMany()
 
-      classesMap = arrayToObject(classes, 'id')
+      // classesMap = arrayToObject(classes, 'id')
     }
 
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
