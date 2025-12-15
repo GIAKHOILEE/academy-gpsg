@@ -15,6 +15,12 @@ export class Homeworks {
   description: string
 
   @Column({ nullable: true })
+  deadline_date: string
+
+  @Column({ nullable: true })
+  deadline_time: string
+
+  @Column({ nullable: true })
   total_points: number
 
   @OneToMany(() => HomeworkQuestion, q => q.homework, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

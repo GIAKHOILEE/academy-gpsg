@@ -15,7 +15,7 @@ import { paginate } from '@common/pagination'
 import { IHomework } from './homeworks.interface'
 import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
 import { Student } from '@modules/students/students.entity'
-import { QuestionType, SubmissionStatus } from '@enums/homework.enum'
+import { QuestionTypeHomework, SubmissionStatus } from '@enums/homework.enum'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { GradeSubmissionDto } from './dtos/submission-grade.dto'
 
@@ -55,6 +55,8 @@ export class HomeworkService {
         description: createDto.description,
         lesson: lesson,
         total_points: createDto.questions.reduce((sum, q) => sum + q.points, 0),
+        deadline_date: createDto.deadline_date,
+        deadline_time: createDto.deadline_time,
       })
 
       const savedHw = await hwRepo.save(newHw)
@@ -135,6 +137,8 @@ export class HomeworkService {
         'homework.id',
         'homework.title',
         'homework.description',
+        'homework.deadline_date',
+        'homework.deadline_time',
         'homework.total_points',
         'lesson.id',
         'lesson.title',
@@ -168,6 +172,8 @@ export class HomeworkService {
         id: homework.id,
         title: homework.title,
         description: homework.description,
+        deadline_date: homework.deadline_date,
+        deadline_time: homework.deadline_time,
         total_points: homework.total_points,
         lesson: {
           id: homework.lesson.id,
@@ -208,6 +214,8 @@ export class HomeworkService {
         'homework.id',
         'homework.title',
         'homework.description',
+        'homework.deadline_date',
+        'homework.deadline_time',
         'homework.total_points',
         'lesson.id',
         'lesson.title',
@@ -268,9 +276,13 @@ export class HomeworkService {
       const q = qMap.get(ansPayload.question_id)
       if (!q) throwAppException('QUESTION_NOT_BELONG_TO_HOMEWORK', ErrorCode.QUESTION_NOT_BELONG_TO_HOMEWORK, HttpStatus.BAD_REQUEST)
 
-      if (q.type === QuestionType.ESSAY) {
+      if (q.type === QuestionTypeHomework.ESSAY) {
         if (!ansPayload.answer_text) {
           throwAppException('QUESTION_REQUIRES_ANSWER_TEXT', ErrorCode.QUESTION_REQUIRES_ANSWER_TEXT, HttpStatus.BAD_REQUEST)
+        }
+      } else if (q.type === QuestionTypeHomework.FILE) {
+        if (!ansPayload.file) {
+          throwAppException('QUESTION_REQUIRES_FILE', ErrorCode.QUESTION_REQUIRES_FILE, HttpStatus.BAD_REQUEST)
         }
       } else {
         // MCQ types: yêu cầu mảng selected_option_ids
@@ -279,7 +291,7 @@ export class HomeworkService {
         }
 
         // Nếu là single-select mà chọn nhiều option -> lỗi
-        if (q.type === QuestionType.MCQ_SINGLE && ansPayload.selected_option_ids.length > 1) {
+        if (q.type === QuestionTypeHomework.MCQ_SINGLE && ansPayload.selected_option_ids.length > 1) {
           throwAppException('MCQ_SINGLE_ONLY_ONE_OPTION_ALLOWED', ErrorCode.MCQ_SINGLE_ONLY_ONE_OPTION_ALLOWED, HttpStatus.BAD_REQUEST)
         }
 
@@ -319,6 +331,7 @@ export class HomeworkService {
           question: q,
           selected_option_ids: a.selected_option_ids ?? null,
           answer_text: a.answer_text ?? null,
+          file: a.file ?? null,
           score: 0,
         })
         const savedAns = await ansRepo.save(newAns)
@@ -330,7 +343,7 @@ export class HomeworkService {
       for (const ans of createdAnswers) {
         const q = qMap.get(ans.question.id)
         if (!q) continue
-        if (q.type === QuestionType.ESSAY) {
+        if (q.type === QuestionTypeHomework.ESSAY) {
           // leave score 0 for teacher to grade
           continue
         }
@@ -339,7 +352,7 @@ export class HomeworkService {
         const correctIds = opts.filter(o => o.is_correct).map(o => o.id)
         const selected: number[] = Array.isArray(ans.selected_option_ids) ? ans.selected_option_ids : []
 
-        if (q.type === QuestionType.MCQ_SINGLE) {
+        if (q.type === QuestionTypeHomework.MCQ_SINGLE) {
           const isCorrect = selected.length === 1 && correctIds.includes(selected[0])
           ans.score = isCorrect ? Number(q.points) : 0
         } else {
@@ -353,7 +366,7 @@ export class HomeworkService {
       }
 
       // kiểm tra có câu hỏi essay không -> nếu không có thì đánh dấu AUTO_GRADED
-      const hasEssay = hw.questions.some(q => q.type === QuestionType.ESSAY)
+      const hasEssay = hw.questions.some(q => q.type === QuestionTypeHomework.ESSAY)
       if (!hasEssay) {
         // tất cả đều tự động chấm
         const sumQuestionPoints = hw.total_points ?? (hw.questions.reduce((s, q) => s + Number(q.points || 0), 0) || 1)
@@ -390,6 +403,7 @@ export class HomeworkService {
           'answers.id',
           'answers.score',
           'answers.answer_text',
+          'answers.file',
           'answers.selected_option_ids',
           'question.id',
           'question.content',

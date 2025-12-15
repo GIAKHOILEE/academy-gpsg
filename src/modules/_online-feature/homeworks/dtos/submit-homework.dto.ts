@@ -23,6 +23,12 @@ export class SubmitAnswerDto {
   @IsString()
   @ApiProperty({ description: 'Đáp án của câu hỏi essay', required: false })
   answer_text?: string
+
+  // nếu FILE: file
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ description: 'File của câu hỏi file', required: false })
+  file?: string
 }
 
 export class SubmitHomeworkDto {
@@ -41,6 +47,7 @@ export class SubmitHomeworkDto {
       { question_id: 1, selected_option_ids: [4] },
       { question_id: 2, selected_option_ids: [7, 9] },
       { question_id: 3, answer_text: 'Bài làm tự luận' },
+      { question_id: 4, file: 'file.pdf' },
     ],
   })
   answers: SubmitAnswerDto[]
