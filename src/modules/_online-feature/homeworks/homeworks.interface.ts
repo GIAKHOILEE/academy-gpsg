@@ -1,4 +1,4 @@
-import { QuestionType, SubmissionStatus } from '@enums/homework.enum'
+import { QuestionTypeHomework, SubmissionStatus } from '@enums/homework.enum'
 import { ILesson } from '../lesson/lesson.interface'
 import { IStudent } from '@modules/students/students.interface'
 import { ITeacher } from '@modules/teachers/teachers.interface'
@@ -7,6 +7,8 @@ export interface IHomework {
   id?: number
   title?: string
   description?: string
+  deadline_date?: string
+  deadline_time?: string
   total_points?: number
   questions?: IHomeworkQuestion[]
   submissions?: IHomeworkSubmission[]
@@ -17,7 +19,7 @@ export interface IHomework {
 export interface IHomeworkQuestion {
   id?: number
   content?: string
-  type?: QuestionType // MCQ_SINGLE, MCQ_MULTI, ESSAY
+  type?: QuestionTypeHomework // MCQ_SINGLE, MCQ_MULTI, ESSAY, FILE
   points?: number
   options?: IHomeworkOption[]
   homework_id?: number
@@ -45,7 +47,8 @@ export interface IHomeworkSubmission {
 
 export interface IHomeworkAnswer {
   id?: number
-  answer_text?: string
+  answer_text?: string // tự luận
+  file?: string // file
   selected_option_ids?: number[]
   score?: number
   feedback?: string

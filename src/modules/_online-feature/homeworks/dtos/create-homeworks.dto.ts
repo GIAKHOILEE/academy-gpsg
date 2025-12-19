@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
-import { QuestionType } from '@enums/homework.enum'
+import { QuestionTypeHomework } from '@enums/homework.enum'
 import { Type } from 'class-transformer'
 
 export class CreateHomeworksDto {
@@ -28,6 +28,22 @@ export class CreateHomeworksDto {
   })
   description: string
 
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'Deadline Date',
+    example: '20/12/2024',
+  })
+  deadline_date: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'Deadline Time',
+    example: '10:00',
+  })
+  deadline_time: string
+
   @IsNotEmpty()
   @IsArray()
   @ValidateNested({ each: true })
@@ -37,7 +53,7 @@ export class CreateHomeworksDto {
     example: [
       {
         content: 'Question 1',
-        type: QuestionType.MCQ_SINGLE,
+        type: QuestionTypeHomework.MCQ_SINGLE,
         points: 1,
         options: [
           { content: 'Option A', is_correct: true },
@@ -46,7 +62,7 @@ export class CreateHomeworksDto {
       },
       {
         content: 'Question 2',
-        type: QuestionType.MCQ_MULTI,
+        type: QuestionTypeHomework.MCQ_MULTI,
         points: 1,
         options: [
           { content: 'Option A', is_correct: true },
@@ -57,8 +73,13 @@ export class CreateHomeworksDto {
       },
       {
         content: 'Question 3',
-        type: QuestionType.ESSAY,
+        type: QuestionTypeHomework.ESSAY,
         points: 6,
+      },
+      {
+        content: 'Question 4',
+        type: QuestionTypeHomework.FILE,
+        points: 1,
       },
     ],
     type: () => [CreateHomeworkQuestionDto],
@@ -79,10 +100,10 @@ export class CreateHomeworkQuestionDto {
   @IsNumber()
   @ApiProperty({
     description: 'Question Type',
-    example: QuestionType.MCQ_SINGLE,
-    enum: QuestionType,
+    example: QuestionTypeHomework.MCQ_SINGLE,
+    enum: QuestionTypeHomework,
   })
-  type: QuestionType
+  type: QuestionTypeHomework
 
   @IsNotEmpty()
   @IsNumber()

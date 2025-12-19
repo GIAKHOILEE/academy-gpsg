@@ -23,6 +23,10 @@ export class HomeworkAnswer {
   @Column({ type: 'text', nullable: true })
   answer_text: string
 
+  // nếu FILE: lưu file
+  @Column({ type: 'text', nullable: true })
+  file: string
+
   // điểm cho câu này (do auto hoặc teacher chấm)
   @Column({ type: 'float', default: 0 })
   score: number

@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, UpdateDateColumn, CreateDateColumn } from 'typeorm'
 import { Homeworks } from './homeworks.entity'
 import { HomeworkOption } from './option.entity'
-import { QuestionType } from 'src/enums/homework.enum'
+import { QuestionTypeHomework } from 'src/enums/homework.enum'
 
 @Entity('homework_questions')
 export class HomeworkQuestion {
@@ -15,8 +15,8 @@ export class HomeworkQuestion {
   @Column({ type: 'text' })
   content: string
 
-  @Column({ type: 'enum', enum: QuestionType })
-  type: QuestionType
+  @Column({ type: 'enum', enum: QuestionTypeHomework })
+  type: QuestionTypeHomework
 
   // điểm cho câu hỏi (một số hệ thống: cân bằng theo số câu, nhưng nên lưu tĩnh)
   @Column({ type: 'float', default: 1 })

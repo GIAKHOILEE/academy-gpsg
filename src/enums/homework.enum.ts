@@ -3,10 +3,11 @@
 //   ESSAY = 2,
 // }
 
-export enum QuestionType {
+export enum QuestionTypeHomework {
   MCQ_SINGLE = 1, // 1 đáp án đúng
   MCQ_MULTI = 2, // nhiều đáp án đúng
   ESSAY = 3, // tự luận
+  FILE = 4, // file
 }
 
 export enum SubmissionStatus {
