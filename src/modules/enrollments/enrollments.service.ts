@@ -847,19 +847,19 @@ export class EnrollmentsService {
     const { data, meta } = await paginate(queryBuilder, rest)
 
     // lấy ra các class từ class_ids
-    const classesIds = data.flatMap(enrollment => enrollment.class_ids.map(item => item.class_id) || [])
-    const uniqueClassesIds = [...new Set(classesIds)] // bỏ trùng id
+    // const classesIds = data.flatMap(enrollment => enrollment.class_ids.map(item => item.class_id) || [])
+    // const uniqueClassesIds = [...new Set(classesIds)] // bỏ trùng id
 
     // let classesMap: Record<number, any> = {}
-    if (uniqueClassesIds.length > 0) {
-      const classes = await this.classRepository
-        .createQueryBuilder('class')
-        .select(['class.id', 'class.name', 'class.code'])
-        .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
-        .getMany()
+    // if (uniqueClassesIds.length > 0) {
+    //   const classes = await this.classRepository
+    //     .createQueryBuilder('class')
+    //     .select(['class.id', 'class.name', 'class.code'])
+    //     .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
+    //     .getMany()
 
-      // classesMap = arrayToObject(classes, 'id')
-    }
+    //   // classesMap = arrayToObject(classes, 'id')
+    // }
 
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
