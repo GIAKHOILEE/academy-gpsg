@@ -96,6 +96,9 @@ export class Classes {
   @Column({ default: false })
   is_online: boolean
 
+  @Column({ type: 'text', nullable: true })
+  content: string
+
   // môn học
   @ManyToOne(() => Subject, subject => subject.classes, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'subject_id' })

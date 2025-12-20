@@ -122,6 +122,11 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Học meeting', example: true, default: false })
   learn_meeting: boolean
 
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Nội dung lớp', example: 'Nội dung lớp' })
+  content: string
+
   // @IsNumber()
   // @IsOptional()
   // @ApiPropertyOptional({ description: 'Khoa', example: 1 })

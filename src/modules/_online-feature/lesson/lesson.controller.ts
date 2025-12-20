@@ -12,7 +12,7 @@ import { LessonService } from './lesson.service'
 @Controller('admin/lessons')
 @ApiTags('Admin Lesson')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF)
 export class AdminLessonController {
   constructor(private readonly lessonService: LessonService) {}
 
