@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
+import { Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, Req } from '@nestjs/common'
 import { Body } from '@nestjs/common'
 import { ResponseDto } from '@common/response.dto'
 import { PaginateLessonDto } from './dtos/paginate-lesson.dto'
@@ -29,8 +29,8 @@ export class AdminLessonController {
 
   @Get()
   @ApiOperation({ summary: 'Get all lessons' })
-  async getManyLesson(@Query() paginateLessonDto: PaginateLessonDto): Promise<ResponseDto> {
-    const lessons = await this.lessonService.getManyLesson(paginateLessonDto)
+  async getManyLesson(@Query() paginateLessonDto: PaginateLessonDto, @Req() req): Promise<ResponseDto> {
+    const lessons = await this.lessonService.getManyLesson(paginateLessonDto, req.user.userId)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_GET_MANY_SUCCESSFULLY',
@@ -90,8 +90,8 @@ export class UserLessonController {
 
   @Get()
   @ApiOperation({ summary: 'Get all lessons' })
-  async getManyLesson(@Query() paginateLessonDto: PaginateLessonDto): Promise<ResponseDto> {
-    const lessons = await this.lessonService.getManyLesson(paginateLessonDto)
+  async getManyLesson(@Query() paginateLessonDto: PaginateLessonDto, @Req() req): Promise<ResponseDto> {
+    const lessons = await this.lessonService.getManyLesson(paginateLessonDto, req.user.userId)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_GET_MANY_SUCCESSFULLY',

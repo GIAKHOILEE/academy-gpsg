@@ -96,6 +96,9 @@ export class Classes {
   @Column({ default: false })
   is_online: boolean
 
+  @Column({ default: false })
+  is_free: boolean
+
   @Column({ type: 'text', nullable: true })
   content: string
 
