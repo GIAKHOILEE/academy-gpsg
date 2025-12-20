@@ -1,7 +1,7 @@
 import { PaginationDto } from '@common/pagination'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsBooleanString, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class PaginateClassNotificationDto extends PaginationDto {
   @IsOptional()
@@ -14,4 +14,15 @@ export class PaginateClassNotificationDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Tìm kiếm theo tiêu đề' })
   title?: string
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({ description: 'Tìm kiếm theo lesson_id' })
+  @Type(() => Number)
+  lesson_id?: number
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo urgent', example: true, type: Boolean })
+  @IsBooleanString()
+  urgent: string
 }

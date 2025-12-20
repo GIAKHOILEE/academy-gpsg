@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateClassNotificationDto {
   index?: number
@@ -28,4 +28,14 @@ export class CreateClassNotificationDto {
   @IsString()
   @ApiProperty({ example: 'https://example.com/image.jpg' })
   thumbnail: string
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({ default: null, description: 'ID của bài học', example: 1 })
+  lesson_id?: number
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({ type: Boolean, default: false, description: 'Đánh dấu là thông báo khẩn cấp', example: false })
+  urgent?: boolean
 }
