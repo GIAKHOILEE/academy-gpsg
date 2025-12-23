@@ -60,6 +60,7 @@ export class NotificationsService {
       thumbnail: savedNotification.thumbnail,
       description: savedNotification.description,
       content: savedNotification.content,
+      urgent: savedNotification.urgent,
       created_at: formatStringDate(savedNotification.created_at.toISOString()),
     }
 
@@ -125,6 +126,7 @@ export class NotificationsService {
       thumbnail: notification.thumbnail,
       description: notification.description,
       content: notification.content,
+      urgent: notification.urgent,
       created_at: formatStringDate(notification.created_at.toISOString()),
     }
 
@@ -151,6 +153,7 @@ export class NotificationsService {
       thumbnail: notification.thumbnail,
       description: notification.description,
       content: notification.content,
+      urgent: notification.urgent,
       created_at: formatStringDate(notification.created_at.toISOString()),
       lesson_id: notification.lesson_id,
       class_id: notification.class_id,
