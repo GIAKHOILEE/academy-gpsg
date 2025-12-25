@@ -11,6 +11,10 @@ import { UpdateLessonDto } from './dtos/update-lesson.dto'
 import { PaginateLessonDto } from './dtos/paginate-lesson.dto'
 import { PaginationMeta } from '@common/pagination'
 import { paginate } from '@common/pagination'
+import { User } from '@modules/users/user.entity'
+import { Role } from '@enums/role.enum'
+import { Student } from '@modules/students/students.entity'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 
 @Injectable()
 export class LessonService {
@@ -19,6 +23,12 @@ export class LessonService {
     private lessonRepository: Repository<Lesson>,
     @InjectRepository(Classes)
     private classRepository: Repository<Classes>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Student)
+    private studentRepository: Repository<Student>,
+    @InjectRepository(ClassStudents)
+    private classStudentRepository: Repository<ClassStudents>,
   ) {}
 
   async createLesson(createLessonDto: CreateLessonDto): Promise<ILesson> {
@@ -98,8 +108,25 @@ export class LessonService {
     await this.lessonRepository.delete(id)
   }
 
-  async getManyLesson(paginateLessonDto: PaginateLessonDto): Promise<{ data: ILesson[]; meta: PaginationMeta }> {
+  async getManyLesson(paginateLessonDto: PaginateLessonDto, userId: number): Promise<{ data: ILesson[]; meta: PaginationMeta }> {
     const class_id = paginateLessonDto.class_id
+
+    // lấy user check role là student
+    const user = await this.userRepository.findOne({ where: { id: userId } })
+    if (!user) {
+      throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    // nếu student không trong class thì không thể get
+    if (user.role === Role.STUDENT) {
+      const student = await this.studentRepository.findOne({ where: { user_id: userId } })
+      if (!student) {
+        throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+      const classStudent = await this.classStudentRepository.findOne({ where: { class_id: class_id, student_id: student.id } })
+      if (!classStudent) {
+        throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
+      }
+    }
 
     const queryBuilder = this.lessonRepository
       .createQueryBuilder('lesson')

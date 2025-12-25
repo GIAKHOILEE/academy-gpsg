@@ -10,6 +10,7 @@ import { UpdateClassNotificationDto } from './dtos/update-notifications.dto'
 import { ClassNotification } from './notifications.entity'
 import { IClassNotification } from './notifications.interface'
 import { Classes } from '../class.entity'
+import { Lesson } from '@modules/_online-feature/lesson/lesson.entity'
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -17,6 +18,8 @@ export class NotificationsService {
     private classNotificationRepository: Repository<ClassNotification>,
     @InjectRepository(Classes)
     private classRepository: Repository<Classes>,
+    @InjectRepository(Lesson)
+    private lessonRepository: Repository<Lesson>,
   ) {}
 
   async createNotification(createNotificationDto: CreateClassNotificationDto): Promise<IClassNotification> {
@@ -36,6 +39,11 @@ export class NotificationsService {
       maxIndex = notificationMaxIndex.maxIndex + 100
     }
 
+    if (createNotificationDto.lesson_id) {
+      const existLesson = await this.lessonRepository.findOne({ where: { id: createNotificationDto.lesson_id } })
+      if (!existLesson) throwAppException('LESSON_NOT_FOUND', ErrorCode.LESSON_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
     const notification = this.classNotificationRepository.create({
       ...createNotificationDto,
       index: maxIndex,
@@ -52,6 +60,7 @@ export class NotificationsService {
       thumbnail: savedNotification.thumbnail,
       description: savedNotification.description,
       content: savedNotification.content,
+      urgent: savedNotification.urgent,
       created_at: formatStringDate(savedNotification.created_at.toISOString()),
     }
 
@@ -117,6 +126,7 @@ export class NotificationsService {
       thumbnail: notification.thumbnail,
       description: notification.description,
       content: notification.content,
+      urgent: notification.urgent,
       created_at: formatStringDate(notification.created_at.toISOString()),
     }
 
@@ -143,7 +153,10 @@ export class NotificationsService {
       thumbnail: notification.thumbnail,
       description: notification.description,
       content: notification.content,
+      urgent: notification.urgent,
       created_at: formatStringDate(notification.created_at.toISOString()),
+      lesson_id: notification.lesson_id,
+      class_id: notification.class_id,
     }))
 
     return { data: formattedNotifications, meta }

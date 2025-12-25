@@ -139,6 +139,7 @@ export class ClassService {
       learn_video: savedClass.learn_video,
       learn_meeting: savedClass.learn_meeting,
       is_online: savedClass.is_online,
+      content: savedClass.content,
       subject: {
         id: subject.id,
         code: subject.code,
@@ -304,6 +305,7 @@ export class ClassService {
       learn_video: classEntity.learn_video,
       learn_meeting: classEntity.learn_meeting,
       is_online: classEntity.is_online,
+      content: classEntity.content,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,

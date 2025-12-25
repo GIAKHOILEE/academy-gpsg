@@ -52,14 +52,55 @@ export function convertToSlug(text: string): string {
 }
 
 export function formatStringDate(stringDate: string, noTime: boolean = false): string {
-  const date = new Date(stringDate)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear()
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
+  if (!stringDate) return ''
 
-  return noTime ? `${day}/${month}/${year}` : `${day}/${month}/${year} ${hours}:${minutes}`
+  let date: Date | null = null
+
+  // Case 1: ISO datetime (YYYY-MM-DDTHH:mm:ss.sssZ)
+  if (stringDate.includes('T')) {
+    const d = new Date(stringDate)
+    if (!isNaN(d.getTime())) {
+      date = d
+    }
+  }
+
+  // Case 2: Date string không có time (DD-MM-YYYY | DD/MM/YYYY | YYYY-MM-DD | YYYY/MM/DD)
+  if (!date) {
+    const normalized = stringDate.replace(/\//g, '-')
+    const parts = normalized.split('-')
+
+    if (parts.length !== 3) return ''
+
+    let year: number, month: number, day: number
+
+    // YYYY-MM-DD
+    if (parts[0].length === 4) {
+      year = Number(parts[0])
+      month = Number(parts[1]) - 1
+      day = Number(parts[2])
+    }
+    // DD-MM-YYYY
+    else if (parts[2].length === 4) {
+      day = Number(parts[0])
+      month = Number(parts[1]) - 1
+      year = Number(parts[2])
+    } else {
+      return ''
+    }
+
+    date = new Date(year, month, day)
+  }
+
+  if (!date || isNaN(date.getTime())) return ''
+
+  const d = String(date.getDate()).padStart(2, '0')
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const y = date.getFullYear()
+
+  const h = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+
+  return noTime ? `${d}/${m}/${y}` : `${d}/${m}/${y} ${h}:${min}`
 }
 
 export function formatStringDateUTC7(dateString: string, noTime: boolean = false): string {

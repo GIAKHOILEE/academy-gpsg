@@ -1,3 +1,4 @@
+import { ILesson } from '@modules/_online-feature/lesson/lesson.interface'
 import { IClasses } from '../class.interface'
 
 export interface IClassNotification {
@@ -9,6 +10,9 @@ export interface IClassNotification {
   thumbnail?: string
   description?: string
   content?: string
+  urgent?: boolean
+  lesson_id?: number | null
+  lesson?: ILesson | null
   created_at?: string
   class_id?: number
   class?: IClasses

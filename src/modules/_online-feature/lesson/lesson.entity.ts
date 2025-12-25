@@ -3,6 +3,7 @@ import { UpdateDateColumn } from 'typeorm'
 import { Classes } from '@modules/class/class.entity'
 import { Discuss } from '../discuss/discuss.entity'
 import { Homeworks } from '../homeworks/entities/homeworks.entity'
+import { ClassNotification } from '@modules/class/notifications/notifications.entity'
 
 @Entity('lesson')
 export class Lesson {
@@ -50,6 +51,9 @@ export class Lesson {
 
   @OneToMany(() => Homeworks, homeworks => homeworks.lesson, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   homeworks: Homeworks[]
+
+  @OneToMany(() => ClassNotification, notifications => notifications.lesson, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  class_notifications: ClassNotification[]
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date

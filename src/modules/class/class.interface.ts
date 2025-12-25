@@ -33,6 +33,8 @@ export interface IClasses {
   learn_video?: boolean
   learn_meeting?: boolean
   is_online?: boolean
+  is_free?: boolean
+  content?: string
   scholastic?: IScholastic
   semester?: ISemester
   department?: IDepartment

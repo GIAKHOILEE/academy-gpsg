@@ -60,6 +60,11 @@ export class PaginateClassDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'filter theo học online', example: true, type: Boolean })
   @IsBooleanString()
   is_online: string
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo lớp miễn phí', example: true, type: Boolean })
+  @IsBooleanString()
+  is_free: string
 }
 
 export class GetStudentsOfClassDto extends PaginationDto {
@@ -94,6 +99,11 @@ export class PaginateClassOfStudentDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'filter theo học online', example: true, type: Boolean })
   @IsBooleanString()
   is_online: string
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo lớp miễn phí', example: true, type: Boolean })
+  @IsBooleanString()
+  is_free: string
 
   @IsOptional()
   @ApiPropertyOptional({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })

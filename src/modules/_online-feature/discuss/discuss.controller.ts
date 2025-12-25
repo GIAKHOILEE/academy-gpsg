@@ -10,7 +10,7 @@ import { PaginateChildDiscussDto, PaginateDiscussDto } from './dtos/paginate-dis
 @Controller('admin/discuss')
 @ApiTags('Admin Discuss')
 @ApiBearerAuth()
-@Auth(Role.ADMIN)
+@Auth(Role.ADMIN, Role.STAFF, Role.TEACHER)
 export class AdminDiscussController {
   constructor(private readonly discussService: DiscussService) {}
   @Post()

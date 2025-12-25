@@ -858,7 +858,7 @@ export class EnrollmentsService {
     //     .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
     //     .getMany()
 
-    //   classesMap = arrayToObject(classes, 'id')
+    //   // classesMap = arrayToObject(classes, 'id')
     // }
 
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {

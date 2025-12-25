@@ -204,7 +204,12 @@ export class AttendanceService {
         }
       }
 
-      row.attendance_rate = ((presentCount / lessonDates.length) * 100).toFixed(1) + '%'
+      row.attendance_rate = ((presentCount / lessonDates.length) * 100).toFixed(1)
+      if (isNaN(Number(row.attendance_rate))) {
+        row.attendance_rate = '0.0' // tránh bị NaN
+      } else {
+        row.attendance_rate = Number(row.attendance_rate).toFixed(1) + '%' // tránh bị NaN
+      }
       return row
     })
 
