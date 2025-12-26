@@ -81,6 +81,36 @@ export class AdminLessonController {
   }
 }
 
+@Controller('teacher/lessons')
+@ApiTags('Teacher Lesson')
+@ApiBearerAuth()
+@Auth(Role.TEACHER)
+export class TeacherLessonController {
+  constructor(private readonly lessonService: LessonService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all lessons' })
+  async getManyLesson(@Query() paginateLessonDto: PaginateLessonDto, @Req() req): Promise<ResponseDto> {
+    const lessons = await this.lessonService.getManyLesson(paginateLessonDto, req.user.userId)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'LESSON_GET_MANY_SUCCESSFULLY',
+      data: lessons,
+    })
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a lesson by id' })
+  async getLessonById(@Param('id') id: number): Promise<ResponseDto> {
+    const lesson = await this.lessonService.getLessonById(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'LESSON_GET_BY_ID_SUCCESSFULLY',
+      data: lesson,
+    })
+  }
+}
+
 @Controller('lessons')
 @ApiTags('User Lesson')
 @ApiBearerAuth()
