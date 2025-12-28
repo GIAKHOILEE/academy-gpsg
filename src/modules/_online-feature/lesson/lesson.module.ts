@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { LessonService } from './lesson.service'
-import { AdminLessonController, UserLessonController } from './lesson.controller'
+import { AdminLessonController, TeacherLessonController, UserLessonController } from './lesson.controller'
 import { Lesson } from './lesson.entity'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Classes } from '@modules/class/class.entity'
@@ -10,7 +10,7 @@ import { ClassStudents } from '@modules/class/class-students/class-student.entit
 
 @Module({
   imports: [TypeOrmModule.forFeature([Lesson, Classes, User, Student, ClassStudents])],
-  controllers: [AdminLessonController, UserLessonController],
+  controllers: [AdminLessonController, TeacherLessonController, UserLessonController],
   providers: [LessonService],
   exports: [LessonService],
 })
