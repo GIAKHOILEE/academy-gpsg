@@ -18,9 +18,9 @@ export class CreateLessonDto {
   })
   title: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Ngày bắt đầu học',
     example: '01/01/2025',
   })
@@ -34,17 +34,17 @@ export class CreateLessonDto {
   })
   schedule: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Thời gian bắt đầu',
     example: '10:00',
   })
   start_time: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Thời gian kết thúc',
     example: '10:00',
   })
