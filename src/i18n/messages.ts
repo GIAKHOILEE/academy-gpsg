@@ -142,6 +142,7 @@ export const messages = {
     ANSWER_NOT_BELONG_TO_SUBMISSION: 'Answer not belong to submission',
     CONSULT_NOT_FOUND: 'Consult not found',
     CLASS_IS_ONLINE: 'Class is online',
+    DISCUSS_JUST_ONE_PER_LESSON: 'Just one comment per lesson',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -289,5 +290,6 @@ export const messages = {
     ANSWER_NOT_BELONG_TO_SUBMISSION: 'Đáp án không thuộc bài nộp',
     CONSULT_NOT_FOUND: 'Tư vấn không tồn tại',
     CLASS_IS_ONLINE: 'Lớp học đã hỗ trợ học online',
+    DISCUSS_JUST_ONE_PER_LESSON: 'Chỉ được tạo 1 bình luận cho buổi học',
   },
 }

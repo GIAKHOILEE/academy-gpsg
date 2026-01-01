@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { formatStringDate, throwAppException } from '@common/utils'
+import { formatStringDateUTC7, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { CreateClassNotificationDto } from './dtos/create-notifications.dto'
 import { PaginateClassNotificationDto } from './dtos/paginate-notifications.dto'
@@ -61,7 +61,7 @@ export class NotificationsService {
       description: savedNotification.description,
       content: savedNotification.content,
       urgent: savedNotification.urgent,
-      created_at: formatStringDate(savedNotification.created_at.toISOString()),
+      created_at: formatStringDateUTC7(savedNotification.created_at.toISOString()),
     }
 
     return formattedNotification
@@ -127,7 +127,7 @@ export class NotificationsService {
       description: notification.description,
       content: notification.content,
       urgent: notification.urgent,
-      created_at: formatStringDate(notification.created_at.toISOString()),
+      created_at: formatStringDateUTC7(notification.created_at.toISOString()),
     }
 
     return formattedNotification
@@ -154,7 +154,7 @@ export class NotificationsService {
       description: notification.description,
       content: notification.content,
       urgent: notification.urgent,
-      created_at: formatStringDate(notification.created_at.toISOString()),
+      created_at: formatStringDateUTC7(notification.created_at.toISOString()),
       lesson_id: notification.lesson_id,
       class_id: notification.class_id,
     }))
