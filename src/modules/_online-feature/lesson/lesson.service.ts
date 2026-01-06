@@ -1,11 +1,11 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { Lesson } from './lesson.entity'
 import { CreateLessonDto } from './dtos/create-lesson.dto'
 import { ILesson } from './lesson.interface'
 import { Classes } from '@modules/class/class.entity'
-import { throwAppException } from '@common/utils'
+import { arrayToObject, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { UpdateLessonDto } from './dtos/update-lesson.dto'
 import { PaginateLessonDto } from './dtos/paginate-lesson.dto'
@@ -15,6 +15,7 @@ import { User } from '@modules/users/user.entity'
 import { Role } from '@enums/role.enum'
 import { Student } from '@modules/students/students.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
+import { Discuss } from '../discuss/discuss.entity'
 
 @Injectable()
 export class LessonService {
@@ -29,6 +30,8 @@ export class LessonService {
     private studentRepository: Repository<Student>,
     @InjectRepository(ClassStudents)
     private classStudentRepository: Repository<ClassStudents>,
+    @InjectRepository(Discuss)
+    private discussRepository: Repository<Discuss>,
   ) {}
 
   async createLesson(createLessonDto: CreateLessonDto): Promise<ILesson> {
@@ -157,6 +160,19 @@ export class LessonService {
 
     const { data, meta } = await paginate(queryBuilder, paginateLessonDto)
 
+    // lấy các discuss(admin_responded, user_responded) của lesson
+    // nếu là admin thì lấy tất cả discuss(admin_responded, user_responded)
+    // nếu là student thì lấy discuss của bản thân thôi (logic hiện tại học viên chỉ có 1 discuss mỗi lesson)
+    let discussMap: { [key: number]: Discuss[] } = {}
+    if (user.role === Role.STUDENT) {
+      const discuss = await this.discussRepository.find({ where: { lesson: { id: In(data.map(lesson => lesson.id)) }, user: { id: userId } } })
+      discussMap = arrayToObject(discuss, 'lesson_id')
+    } else {
+      // admin/teacher lấy tất cả discuss(admin_responded, user_responded)
+      const discuss = await this.discussRepository.find({ where: { lesson: { id: In(data.map(lesson => lesson.id)) } } })
+      discussMap = arrayToObject(discuss, 'lesson_id')
+    }
+
     const formattedLessons: ILesson[] = data.map(lesson => {
       return {
         id: lesson.id,
@@ -171,6 +187,7 @@ export class LessonService {
         slide_url: lesson.slide_url,
         document_url: lesson.document_url,
         meeting_url: lesson.meeting_url,
+        discuss: discussMap[lesson.id],
       }
     })
 

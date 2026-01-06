@@ -54,15 +54,23 @@ export class DiscussService {
       } else {
         await this.discussRepository.update(existDiscuss.id, { user_responded: false, admin_responded: true })
       }
+    } else {
+      // nếu là cmt đầu tiên thì đánh dấu là cmt của học viên
+      createDiscussDto.user_responded = existUser.role === Role.STUDENT ? true : false
+      createDiscussDto.admin_responded = existUser.role !== Role.STUDENT ? true : false
+      // nếu học viên đã có cmt đầu tiên thì không được tạo cmt đầu tiên mới
+      const existDiscuss = await this.discussRepository.findOne({ where: { lesson: { id: lesson_id }, parent_id: null } })
+      if (existDiscuss) {
+        throwAppException('DISCUSS_JUST_ONE_PER_LESSON', ErrorCode.DISCUSS_JUST_ONE_PER_LESSON, HttpStatus.FORBIDDEN)
+      }
     }
 
     const discuss = this.discussRepository.create({
       ...createDiscussDto,
       user: existUser,
       lesson: existLesson,
-      // user_responded: !parent_id ? true : false, // nếu là cmt đầu tiên thì đánh dấu là cmt của học viên
-      user_responded: existUser.role === Role.STUDENT ? true : false,
-      admin_responded: existUser.role !== Role.STUDENT ? true : false,
+      user_responded: createDiscussDto.user_responded,
+      admin_responded: createDiscussDto.admin_responded,
     })
     const savedDiscuss = await this.discussRepository.save(discuss)
     return {

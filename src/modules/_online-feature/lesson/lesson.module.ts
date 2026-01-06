@@ -7,9 +7,10 @@ import { Classes } from '@modules/class/class.entity'
 import { User } from '@modules/users/user.entity'
 import { Student } from '@modules/students/students.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
+import { Discuss } from '../discuss/discuss.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Lesson, Classes, User, Student, ClassStudents])],
+  imports: [TypeOrmModule.forFeature([Lesson, Classes, User, Student, ClassStudents, Discuss])],
   controllers: [AdminLessonController, TeacherLessonController, UserLessonController],
   providers: [LessonService],
   exports: [LessonService],
