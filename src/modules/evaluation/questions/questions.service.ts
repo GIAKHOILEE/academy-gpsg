@@ -30,6 +30,18 @@ export class QuestionsService {
         throwAppException('OPTIONS_REQUIRED', ErrorCode.OPTIONS_REQUIRED, HttpStatus.BAD_REQUEST)
       }
     }
+    // type = text thì options là null
+    if (type === QuestionType.TEXT) {
+      if (options) {
+        throwAppException('OPTIONS_NOT_ALLOWED_FOR_TEXT', ErrorCode.OPTIONS_NOT_ALLOWED_FOR_TEXT, HttpStatus.BAD_REQUEST)
+      }
+    }
+    // type = number thì options null
+    if (type === QuestionType.NUMBER) {
+      if (options) {
+        throwAppException('OPTIONS_NOT_ALLOWED_FOR_NUMBER', ErrorCode.OPTIONS_NOT_ALLOWED_FOR_NUMBER, HttpStatus.BAD_REQUEST)
+      }
+    }
 
     const newQuestion = this.questionsRepository.create(question)
     return this.questionsRepository.save(newQuestion)
@@ -58,7 +70,7 @@ export class QuestionsService {
 
   async deleteQuestion(id: number): Promise<void> {
     const exitQuestion = await this.questionsRepository.exists({ where: { id } })
-    if (exitQuestion) {
+    if (!exitQuestion) {
       throwAppException('QUESTION_NOT_FOUND', ErrorCode.QUESTION_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
