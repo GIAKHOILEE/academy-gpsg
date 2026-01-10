@@ -118,6 +118,12 @@ export class EnrollmentsService {
         createEnrollmentDto.deanery = studentEntity.user.deanery
         createEnrollmentDto.diocese = studentEntity.user.diocese
         createEnrollmentDto.congregation = studentEntity.user.congregation
+
+        // nếu student đã có trong lớp thì không cho đăng ký lại
+        const classStudents = await this.classStudentsRepository.find({
+          where: { student_id: studentId, class_id: In(class_ids.map(item => item.class_id)) },
+        })
+        if (classStudents.length > 0) throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
       }
 
       // check class
@@ -429,6 +435,12 @@ export class EnrollmentsService {
           actual_discount: enrollment.discount,
         })
       }
+
+      // nếu student đã có trong lớp thì không cho đăng ký lại
+      const existClassStudents = await classStudentsRepo.find({
+        where: { student_id: enrollment.student_id, class_id: In(newClassIds) },
+      })
+      if (existClassStudents.length > 0) throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
 
       // check lớp có full không
       if (status && status !== StatusEnrollment.PENDING) {
