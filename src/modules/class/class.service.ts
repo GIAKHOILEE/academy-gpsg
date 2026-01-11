@@ -262,6 +262,12 @@ export class ClassService {
       throwAppException('CLASS_HAS_ENROLLMENTS', ErrorCode.CLASS_HAS_ENROLLMENTS, HttpStatus.BAD_REQUEST)
     }
 
+    // học sinh còn trong lớp thì không được xóa
+    const hasStudents = await this.classStudentsRepository.exists({ where: { class_id: id } })
+    if (hasStudents) {
+      throwAppException('CLASS_HAS_STUDENTS', ErrorCode.CLASS_HAS_STUDENTS, HttpStatus.BAD_REQUEST)
+    }
+
     await this.classRepository.delete(id)
   }
 

@@ -143,6 +143,8 @@ export const messages = {
     CONSULT_NOT_FOUND: 'Consult not found',
     CLASS_IS_ONLINE: 'Class is online',
     DISCUSS_JUST_ONE_PER_LESSON: 'Just one comment per lesson',
+    OPTIONS_NOT_ALLOWED_FOR_TEXT: 'Options not allowed for text',
+    OPTIONS_NOT_ALLOWED_FOR_NUMBER: 'Options not allowed for number',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -291,5 +293,7 @@ export const messages = {
     CONSULT_NOT_FOUND: 'Tư vấn không tồn tại',
     CLASS_IS_ONLINE: 'Lớp học đã hỗ trợ học online',
     DISCUSS_JUST_ONE_PER_LESSON: 'Chỉ được tạo 1 bình luận cho buổi học',
+    OPTIONS_NOT_ALLOWED_FOR_TEXT: 'Options không được phép cho loại text',
+    OPTIONS_NOT_ALLOWED_FOR_NUMBER: 'Options không được phép cho loại number',
   },
 }

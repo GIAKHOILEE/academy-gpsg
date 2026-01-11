@@ -9,24 +9,24 @@ export class CreateClassNotificationDto {
   @ApiProperty({ example: 1 })
   class_id: number
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'This is a notification title' })
+  @ApiPropertyOptional({ example: 'This is a notification title' })
   title: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'This is a notification description' })
+  @ApiPropertyOptional({ example: 'This is a notification description' })
   description: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'This is a notification content' })
+  @ApiPropertyOptional({ example: 'This is a notification content' })
   content: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'https://example.com/image.jpg' })
+  @ApiPropertyOptional({ example: 'https://example.com/image.jpg' })
   thumbnail: string
 
   @IsOptional()
