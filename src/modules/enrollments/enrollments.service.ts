@@ -354,9 +354,9 @@ export class EnrollmentsService {
         // await enrollmentsRepo.update(id, { student_id: student.id })
       }
 
-      // lấy class_ids cũ và mới
+      // lấy class_ids cũ và mới - FIX: thêm null check cho class_ids
       const oldClassIds = enrollment.class_ids.map(item => item.class_id)
-      const newClassIds = class_ids.map(item => item.class_id)
+      const newClassIds = class_ids ? class_ids.map(item => item.class_id) : oldClassIds
       // update class_students khi đổi class_ids
       if (status && status !== StatusEnrollment.PENDING) {
         const removedClasses = oldClassIds.filter(id => !newClassIds.includes(id))
@@ -487,8 +487,10 @@ export class EnrollmentsService {
         if (isFromPending && !isToPending) {
           // Từ pending sang trạng thái khác → thêm vào class_students
           // nếu student đã có trong class_students thì không thêm vào
+          // FIX: map đúng class_id từ array of objects
+          const enrollmentClassIds = enrollment.class_ids.map(item => item.class_id)
           const existClassStudents = await classStudentsRepo.find({
-            where: { student_id: enrollment.student_id, class_id: In(enrollment.class_ids) },
+            where: { student_id: enrollment.student_id, class_id: In(enrollmentClassIds) },
           })
           if (existClassStudents.length > 0) throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
           const classStudents = enrollment.class_ids.map(item => ({
@@ -500,8 +502,11 @@ export class EnrollmentsService {
         }
         if (!isFromPending && isToPending) {
           // Từ trạng thái khác về pending → xóa khỏi class_students
+          // FIX: chỉ xóa các class trong enrollment này, không xóa tất cả class của student
+          const classIdsToRemove = enrollment.class_ids.map(item => item.class_id)
           await classStudentsRepo.delete({
             student_id: enrollment.student_id,
+            class_id: In(classIdsToRemove),
           })
         }
       }
@@ -917,8 +922,8 @@ export class EnrollmentsService {
 
       // nếu đơn nằm trong 3 status kia chứng tỏ đã vào lớp, xóa thì xóa trong lớp đi
       if (enrollment.status != StatusEnrollment.PENDING) {
-        // xóa tất cả class_students
-        const classIds = enrollment.class_ids
+        // xóa tất cả class_students - FIX: map đúng class_id từ array of objects
+        const classIds = enrollment.class_ids.map(item => item.class_id)
         await classStudentsRepo.delete({
           class_id: In(classIds),
           student_id: enrollment.student_id,
