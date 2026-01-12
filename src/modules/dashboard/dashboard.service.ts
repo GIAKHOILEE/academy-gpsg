@@ -375,93 +375,81 @@ export class DashboardService {
     }
   }
 
-  private buildConditions(semester_id?: number, scholastic_id?: number, department_id?: number): string {
-    let cond = `e.status = ${StatusEnrollment.DONE}`
-    if (semester_id) cond += ` AND c.semester_id = ${+semester_id}`
-    if (scholastic_id) cond += ` AND c.scholastic_id = ${+scholastic_id}`
-    if (department_id) cond += ` AND s.department_id = ${+department_id}`
-    return cond
-  }
-
+  /**
+   * Optimized version of semesterRevenue
+   * Key optimizations:
+   * 1. Single SQL query instead of 2 separate queries
+   * 2. Reduced CTE complexity
+   * 3. Parameterized queries for security and query plan caching
+   * 4. Included class info (teacher, salary) in main query
+   */
   async semesterRevenue2(semesterRevenueDto: SemesterRevenueDto): Promise<SemesterRevenueSummary> {
     const { semester_id, scholastic_id, department_id } = semesterRevenueDto
 
-    // 1) build conditions
-    const conditions = this.buildConditions(semester_id, scholastic_id, department_id)
+    // Build dynamic conditions with parameterized queries
+    const conditions: string[] = [`e.status = ?`]
+    const params: any[] = [StatusEnrollment.DONE]
 
-    // 2) revenue SQL (CTE) -> trả per-class (chưa trừ lương)
-    const revenueSql = `
-    WITH class_enrollment AS (
+    if (semester_id) {
+      conditions.push(`c.semester_id = ?`)
+      params.push(semester_id)
+    }
+    if (scholastic_id) {
+      conditions.push(`c.scholastic_id = ?`)
+      params.push(scholastic_id)
+    }
+    if (department_id) {
+      conditions.push(`s.department_id = ?`)
+      params.push(department_id)
+    }
+
+    const whereClause = conditions.join(' AND ')
+
+    // Optimized single query: combines revenue calculation with class/teacher info
+    // Uses a more efficient approach:
+    // 1. First, get all matching class_ids from enrollments using JSON_EXTRACT
+    // 2. Aggregate at class level with all needed info in one pass
+    const optimizedSql = `
       SELECT
-        e.id AS enrollment_id,
-        CAST(ec.class_id AS UNSIGNED) AS class_id,
-        c.subject_id,
-        s.department_id,
-        COALESCE(c.price,0) AS price,
-        1 AS student_count,
-        COALESCE(c.price,0) AS class_revenue
+        d.id AS department_id,
+        d.name AS department_name,
+        c.id AS class_id,
+        c.code AS class_code,
+        c.name AS class_name,
+        COALESCE(c.price, 0) AS price,
+        COALESCE(c.number_periods, 0) AS number_periods,
+        COALESCE(c.salary, 0) AS salary_per_period,
+        COALESCE(c.extra_allowance, 0) AS extra_allowance,
+        c.teacher_id,
+        t.special AS teacher_special,
+        COUNT(DISTINCT e.id) AS total_students,
+        COUNT(DISTINCT e.id) * COALESCE(c.price, 0) AS total_revenue,
+        SUM(
+          COALESCE(e.discount, 0) / 
+          GREATEST(JSON_LENGTH(e.class_ids), 1)
+        ) AS total_discount,
+        COUNT(DISTINCT CASE WHEN e.discount > 0 THEN e.id END) AS total_student_discount
       FROM enrollments e
-      CROSS JOIN JSON_TABLE(
+      INNER JOIN JSON_TABLE(
         e.class_ids,
         '$[*]' COLUMNS(
-          class_id INT PATH '$.class_id',
-          learn_type VARCHAR(50) PATH '$.learn_type'
+          class_id INT PATH '$.class_id'
         )
-      ) ec
-      JOIN classes c ON c.id = ec.class_id
-      JOIN subjects s ON s.id = c.subject_id
-      WHERE ${conditions}
-    ),
-    enrollment_totals AS (
-      SELECT
-        ce.enrollment_id,
-        COALESCE(SUM(ce.class_revenue),0) AS total_revenue,
-        COUNT(*) AS total_classes
-      FROM class_enrollment ce
-      GROUP BY ce.enrollment_id
-    ),
-    voucher_alloc AS (
-      SELECT
-        ce.enrollment_id,
-        ce.class_id,
-        ce.subject_id,
-        ce.department_id,
-        ce.price,
-        ce.student_count,
-        ce.class_revenue,
-        COALESCE(e.discount,0) AS enrollment_discount,
-        et.total_revenue,
-        et.total_classes,
-        CASE WHEN et.total_classes > 0
-             THEN (COALESCE(e.discount,0) / et.total_classes)
-             ELSE 0 END AS enrollment_share
-      FROM class_enrollment ce
-      JOIN enrollment_totals et ON et.enrollment_id = ce.enrollment_id
-      JOIN enrollments e ON e.id = ce.enrollment_id
-    )
-    SELECT
-      d.id AS department_id,
-      d.name AS department_name,
-      c.id AS class_id,
-      c.code AS class_code,
-      c.name AS class_name,
-      COALESCE(c.price,0) AS price,
-      COALESCE(SUM(va.student_count),0) AS total_students,
-      COALESCE(SUM(va.class_revenue),0) AS total_revenue,
-      COALESCE(SUM(va.enrollment_share),0) AS total_discount,
-      (COALESCE(SUM(va.class_revenue),0) - COALESCE(SUM(va.enrollment_share),0)) AS total_profit,
-      COALESCE(COUNT(DISTINCT CASE WHEN va.enrollment_share > 0 THEN va.enrollment_id END),0) AS total_student_discount
-    FROM voucher_alloc va
-    JOIN classes c ON c.id = va.class_id
-    JOIN subjects s ON s.id = va.subject_id
-    JOIN departments d ON d.id = va.department_id
-    GROUP BY d.id, d.name, c.id, c.name, c.price
-    ORDER BY d.name, c.name;
-  `
+      ) ec ON TRUE
+      INNER JOIN classes c ON c.id = ec.class_id
+      INNER JOIN subjects s ON s.id = c.subject_id
+      INNER JOIN departments d ON d.id = s.department_id
+      LEFT JOIN teachers t ON t.id = c.teacher_id
+      WHERE ${whereClause}
+      GROUP BY d.id, d.name, c.id, c.code, c.name, c.price, 
+               c.number_periods, c.salary, c.extra_allowance, 
+               c.teacher_id, t.special
+      ORDER BY d.name, c.name
+    `
 
-    const rows: any[] = await this.dataSource.query(revenueSql)
+    const rows: any[] = await this.dataSource.query(optimizedSql, params)
 
-    // Nếu không có rows -> trả đầu ra rỗng
+    // Return empty result if no data
     if (!rows || rows.length === 0) {
       return {
         summary: { total_students: 0, total_revenue: 0, total_discount: 0, total_profit: 0, total_salary: 0 },
@@ -469,104 +457,58 @@ export class DashboardService {
       }
     }
 
-    // 3) Chuẩn hoá rows: convert number, tránh null
-    const classRows = rows.map(r => ({
-      department_id: Number(r.department_id),
-      department_name: r.department_name,
-      class_id: Number(r.class_id),
-      class_code: r.class_code,
-      class_name: r.class_name,
-      price: Number(r.price || 0),
-      total_students: Number(r.total_students || 0),
-      total_revenue: Number(r.total_revenue - r.total_discount || 0),
-      total_discount: Number(r.total_discount || 0),
-      total_profit: Number(r.total_profit || 0), // before subtracting salary
-      total_student_discount: Number(r.total_student_discount || 0),
-    }))
-
-    // 4) Lấy thông tin lớp + giáo viên (để tính lương). Lấy chỉ những class_id có trong classRows
-    const classIds = Array.from(new Set(classRows.map(c => c.class_id)))
-    const classInfoById: Record<number, any> = {}
-    if (classIds.length > 0) {
-      const placeholders = classIds.map(() => '?').join(',')
-      const classInfoSql = `
-      SELECT c.id AS class_id,
-             COALESCE(c.number_periods,0) AS number_periods,
-             COALESCE(c.salary,0) AS salary_per_period,
-             COALESCE(c.extra_allowance,0) AS extra_allowance,
-             c.teacher_id,
-             t.special AS teacher_special
-      FROM classes c
-      LEFT JOIN teachers t ON t.id = c.teacher_id
-      WHERE c.id IN (${placeholders})
-    `
-      const infos: any[] = await this.dataSource.query(classInfoSql, classIds)
-      for (const info of infos) {
-        classInfoById[Number(info.class_id)] = {
-          number_periods: Number(info.number_periods || 0),
-          salary_per_period: Number(info.salary_per_period || 0),
-          extra_allowance: Number(info.extra_allowance || 0),
-          teacher_id: info.teacher_id ? Number(info.teacher_id) : null,
-          teacher_special: info.teacher_special,
-        }
-      }
-    }
-
-    // 5) Tính lương cho từng class dựa vào class_profit (profit before salary)
-    const classSalaryMap: Record<number, number> = {}
-    const deptSalaryMap: Record<number, number> = {}
-    let totalSalaryAll = 0
-
-    for (const cls of classRows) {
-      const info = classInfoById[cls.class_id] || {
-        number_periods: 0,
-        salary_per_period: 0,
-        extra_allowance: 0,
-        teacher_special: null,
-      }
-
-      const number_periods = Number(info.number_periods || 0)
-      const salary_per_period = Number(info.salary_per_period || 0)
-      const extra_allowance = Number(info.extra_allowance || 0)
-      const salaryCap = number_periods * salary_per_period
-
-      // classProfit before salary (đã tính ở CTE)
-      const classProfit = Number(cls.total_profit || 0)
-
-      // teacher_special mapping (theo code bạn dùng trước: LV1 no special, LV2 tick green, LV3 star)
-      let finalSalary = 0
-      if (info.teacher_special === TeacherSpecial.LV2) {
-        // tick xanh: final = cap + extra
-        finalSalary = salaryCap + extra_allowance
-      } else if (info.teacher_special === TeacherSpecial.LV3) {
-        // star: final = classProfit + extra
-        finalSalary = classProfit + extra_allowance
-      } else {
-        // LV1 or default: no special -> final = min(cap, classProfit) + extra
-        finalSalary = (classProfit >= salaryCap ? salaryCap : classProfit) + extra_allowance
-      }
-
-      // clamp to >=0
-      if (!isFinite(finalSalary) || Number.isNaN(finalSalary)) finalSalary = 0
-      finalSalary = Number(finalSalary)
-
-      classSalaryMap[cls.class_id] = finalSalary
-      deptSalaryMap[cls.department_id] = (deptSalaryMap[cls.department_id] || 0) + finalSalary
-      totalSalaryAll += finalSalary
-    }
-
-    // 6) Subtract salary at class level, compute departments and summary
+    // Process rows and calculate salaries in a single pass
     const departmentsMap: Record<number, any> = {}
-    for (const cls of classRows) {
-      const clsSalary = Number(classSalaryMap[cls.class_id] || 0)
+    let totalSalaryAll = 0
+    let summaryTotalStudents = 0
+    let summaryTotalRevenue = 0
+    let summaryTotalDiscount = 0
+    let summaryTotalProfit = 0
 
-      // profit after subtracting teacher salary for this class
-      const profitAfterSalary = Number(cls.total_profit) - clsSalary
+    for (const row of rows) {
+      const departmentId = Number(row.department_id)
+      const classId = Number(row.class_id)
+      const price = Number(row.price || 0)
+      const totalStudents = Number(row.total_students || 0)
+      const totalRevenue = Number(row.total_revenue || 0)
+      const totalDiscount = Number(row.total_discount || 0)
+      const totalStudentDiscount = Number(row.total_student_discount || 0)
 
-      if (!departmentsMap[cls.department_id]) {
-        departmentsMap[cls.department_id] = {
-          department_id: cls.department_id,
-          department_name: cls.department_name,
+      // Calculate profit before salary
+      const totalProfit = totalRevenue - totalDiscount
+
+      // Calculate teacher salary
+      const numberPeriods = Number(row.number_periods || 0)
+      const salaryPerPeriod = Number(row.salary_per_period || 0)
+      const extraAllowance = Number(row.extra_allowance || 0)
+      const salaryCap = numberPeriods * salaryPerPeriod
+      const teacherSpecial = row.teacher_special
+
+      let finalSalary = 0
+      if (teacherSpecial === TeacherSpecial.LV2) {
+        // tick xanh: final = cap + extra
+        finalSalary = salaryCap + extraAllowance
+      } else if (teacherSpecial === TeacherSpecial.LV3) {
+        // star: final = profit + extra
+        finalSalary = totalProfit + extraAllowance
+      } else {
+        // LV1 or default: final = min(cap, profit) + extra
+        finalSalary = Math.min(salaryCap, totalProfit) + extraAllowance
+      }
+
+      // Ensure valid number
+      if (!isFinite(finalSalary) || Number.isNaN(finalSalary)) {
+        finalSalary = 0
+      }
+
+      // Profit after salary
+      const profitAfterSalary = totalProfit - finalSalary
+
+      // Initialize department if needed
+      if (!departmentsMap[departmentId]) {
+        departmentsMap[departmentId] = {
+          department_id: departmentId,
+          department_name: row.department_name,
           total_students: 0,
           total_revenue: 0,
           total_discount: 0,
@@ -576,66 +518,79 @@ export class DashboardService {
         }
       }
 
-      const dep = departmentsMap[cls.department_id]
+      const dept = departmentsMap[departmentId]
 
-      dep.total_students += cls.total_students
-      dep.total_revenue += cls.total_revenue
-      dep.total_discount += cls.total_discount
-      dep.total_salary += clsSalary // accumulate dept salary
-      dep.total_profit += profitAfterSalary // accumulate profit after salary
+      // Update department totals
+      dept.total_students += totalStudents
+      dept.total_revenue += totalRevenue - totalDiscount
+      dept.total_discount += totalDiscount
+      dept.total_salary += finalSalary
+      dept.total_profit += profitAfterSalary
 
-      dep.classes.push({
-        class_id: cls.class_id,
-        class_code: cls.class_code,
-        class_name: cls.class_name,
-        price: cls.price,
-        total_students: cls.total_students,
-        total_revenue: cls.total_revenue,
-        total_discount: cls.total_discount,
-        // **total_profit at class-level after subtracting its teacher salary**
+      // Add class to department
+      dept.classes.push({
+        class_id: classId,
+        class_code: row.class_code,
+        class_name: row.class_name,
+        price: price,
+        total_students: totalStudents,
+        total_revenue: totalRevenue - totalDiscount,
+        total_discount: totalDiscount,
         total_profit: profitAfterSalary,
-        total_student_discount: cls.total_student_discount,
-        // include teacher salary for transparency
-        teacher_salary: clsSalary,
+        total_student_discount: totalStudentDiscount,
+        teacher_salary: finalSalary,
       })
-    }
 
-    // 7) Build summary (sums after subtracting all teacher salaries)
-    const summary = {
-      total_students: Object.values(departmentsMap).reduce((acc: number, d: any) => acc + d.total_students, 0),
-      total_revenue: Object.values(departmentsMap).reduce((acc: number, d: any) => acc + d.total_revenue, 0),
-      total_discount: Object.values(departmentsMap).reduce((acc: number, d: any) => acc + d.total_discount, 0),
-      total_salary: totalSalaryAll,
-      total_profit: Object.values(departmentsMap).reduce((acc: number, d: any) => acc + d.total_profit, 0),
+      // Update summary totals
+      totalSalaryAll += finalSalary
+      summaryTotalStudents += totalStudents
+      summaryTotalRevenue += totalRevenue - totalDiscount
+      summaryTotalDiscount += totalDiscount
+      summaryTotalProfit += profitAfterSalary
     }
 
     return {
-      summary,
+      summary: {
+        total_students: summaryTotalStudents,
+        total_revenue: summaryTotalRevenue,
+        total_discount: summaryTotalDiscount,
+        total_salary: totalSalaryAll,
+        total_profit: summaryTotalProfit,
+      },
       departments: Object.values(departmentsMap),
     }
   }
 
+  /**
+   * Optimized teacherSalary method
+   * Key optimizations:
+   * 1. Fully parameterized queries for security and query plan caching
+   * 2. Fixed discount calculation - properly distributed per class
+   * 3. Single loop for data processing instead of map() + for loop
+   */
   async teacherSalary(teacherRevenueDto: TeacherRevenueDto): Promise<any> {
     const { semester_id, scholastic_id, department_id } = teacherRevenueDto
 
-    // 1. Build conditions động
-    let conditions = `e.status = ${StatusEnrollment.DONE}`
-    const params: any[] = []
+    // Build parameterized conditions
+    const conditions: string[] = ['e.status = ?']
+    const params: any[] = [StatusEnrollment.DONE]
 
     if (semester_id) {
-      conditions += ` AND c.semester_id = ?`
+      conditions.push('c.semester_id = ?')
       params.push(semester_id)
     }
     if (scholastic_id) {
-      conditions += ` AND c.scholastic_id = ?`
+      conditions.push('c.scholastic_id = ?')
       params.push(scholastic_id)
     }
     if (department_id) {
-      conditions += ` AND s.department_id = ?`
+      conditions.push('s.department_id = ?')
       params.push(department_id)
     }
 
-    // 2. Query raw data
+    const whereClause = conditions.join(' AND ')
+
+    // Optimized SQL with proper discount distribution
     const sql = `
       SELECT
         t.id AS teacher_id,
@@ -647,106 +602,110 @@ export class DashboardService {
         c.id AS class_id,
         c.code AS class_code,
         c.name AS class_name,
-        c.number_periods,
-        c.salary AS salary_per_period,
-        c.extra_allowance,
+        COALESCE(c.number_periods, 0) AS number_periods,
+        COALESCE(c.salary, 0) AS salary_per_period,
+        COALESCE(c.extra_allowance, 0) AS extra_allowance,
         t.special AS teacher_special,
-        COUNT(e.id) AS total_students,
-        SUM(c.price) AS total_revenue,
-        SUM(e.discount) AS discount
+        COUNT(DISTINCT e.id) AS total_students,
+        COUNT(DISTINCT e.id) * COALESCE(c.price, 0) AS total_revenue,
+        SUM(COALESCE(e.discount, 0) / GREATEST(JSON_LENGTH(e.class_ids), 1)) AS discount
       FROM enrollments e
-      JOIN JSON_TABLE(
+      INNER JOIN JSON_TABLE(
         e.class_ids,
         '$[*]' COLUMNS (
-          class_id INT PATH '$.class_id',
-          learn_type VARCHAR(50) PATH '$.learn_type'
+          class_id INT PATH '$.class_id'
         )
       ) jt ON TRUE
-      JOIN classes c ON c.id = jt.class_id
-      JOIN subjects s ON s.id = c.subject_id
-      JOIN departments d ON d.id = s.department_id
-      JOIN teachers t ON t.id = c.teacher_id
-      JOIN user u ON u.id = t.user_id
-      WHERE ${conditions}
-      GROUP BY t.id, u.full_name, d.id, d.name, c.id, c.name,
+      INNER JOIN classes c ON c.id = jt.class_id
+      INNER JOIN subjects s ON s.id = c.subject_id
+      INNER JOIN departments d ON d.id = s.department_id
+      INNER JOIN teachers t ON t.id = c.teacher_id
+      INNER JOIN user u ON u.id = t.user_id
+      WHERE ${whereClause}
+      GROUP BY t.id, t.other_name, u.full_name, u.saint_name,
+               d.id, d.name, c.id, c.code, c.name,
                c.number_periods, c.salary, c.extra_allowance, t.special
       ORDER BY d.name, c.name
     `
+
     const rawData: any[] = await this.dataSource.query(sql, params)
 
-    // 3. Tính toán từng lớp
-    const classRows = rawData.map(row => {
-      const totalDiscount = Number(row.discount || 0)
-      const totalProfit = Number(row.total_revenue) - totalDiscount
+    // Return empty result if no data
+    if (!rawData || rawData.length === 0) {
+      return {
+        summary: { total_salary: 0 },
+        departments: [],
+      }
+    }
 
-      const salaryCap = Number(row.number_periods) * Number(row.salary_per_period)
+    // Process data in single loop
+    const departmentsMap: Record<number, any> = {}
+    let totalSalary = 0
+
+    for (const row of rawData) {
+      const departmentId = Number(row.department_id)
+
+      // Calculate salary
+      const totalRevenue = Number(row.total_revenue || 0)
+      const totalDiscount = Number(row.discount || 0)
+      const totalProfit = totalRevenue - totalDiscount
+
+      const numberPeriods = Number(row.number_periods || 0)
+      const salaryPerPeriod = Number(row.salary_per_period || 0)
       const extraAllowance = Number(row.extra_allowance || 0)
+      const salaryCap = numberPeriods * salaryPerPeriod
 
       let finalSalary = 0
       if (row.teacher_special === TeacherSpecial.LV1) {
         // không đặc cách
-        finalSalary = (totalProfit >= salaryCap ? salaryCap : totalProfit) + extraAllowance
+        finalSalary = Math.min(totalProfit, salaryCap) + extraAllowance
       } else if (row.teacher_special === TeacherSpecial.LV2) {
         // tích xanh
         finalSalary = salaryCap + extraAllowance
       } else if (row.teacher_special === TeacherSpecial.LV3) {
         // ngôi sao vàng
         finalSalary = totalProfit + extraAllowance
+      } else {
+        // default: same as LV1
+        finalSalary = Math.min(totalProfit, salaryCap) + extraAllowance
       }
 
-      return {
-        class_id: row.class_id,
-        class_code: row.class_code,
-        class_name: row.class_name,
-        teacher_id: row.teacher_id,
-        teacher_name: row.teacher_name,
-        teacher_other_name: row.teacher_other_name,
-        teacher_saint_name: row.teacher_saint_name,
-        number_periods: Number(row.number_periods),
-        salary: Number(row.salary_per_period), // lương gốc
-        extra_allowance: extraAllowance,
-        salary_cap: salaryCap, // lương mỗi tiết * số tiết
-        teacher_special: row.teacher_special,
-        final_salary: finalSalary,
-        department_id: row.department_id,
-        department_name: row.department_name,
+      // Ensure valid number
+      if (!isFinite(finalSalary) || Number.isNaN(finalSalary)) {
+        finalSalary = 0
       }
-    })
 
-    // 4. Nhóm theo department
-    const departmentsMap: Record<number, any> = {}
-    let totalSalary = 0
-
-    for (const cls of classRows) {
-      if (!departmentsMap[cls.department_id]) {
-        departmentsMap[cls.department_id] = {
-          department_id: cls.department_id,
-          department_name: cls.department_name,
+      // Initialize department if needed
+      if (!departmentsMap[departmentId]) {
+        departmentsMap[departmentId] = {
+          department_id: departmentId,
+          department_name: row.department_name,
           total_salary: 0,
           classes: [],
         }
       }
-      departmentsMap[cls.department_id].classes.push({
-        class_id: cls.class_id,
-        class_code: cls.class_code,
-        class_name: cls.class_name,
-        teacher_id: cls.teacher_id,
-        teacher_name: cls.teacher_name,
-        teacher_other_name: cls.teacher_other_name,
-        teacher_saint_name: cls.teacher_saint_name,
-        number_periods: cls.number_periods,
-        salary: cls.salary,
-        extra_allowance: cls.extra_allowance,
-        salary_cap: cls.salary_cap,
-        teacher_special: cls.teacher_special,
-        final_salary: cls.final_salary,
+
+      // Add class to department
+      departmentsMap[departmentId].classes.push({
+        class_id: Number(row.class_id),
+        class_code: row.class_code,
+        class_name: row.class_name,
+        teacher_id: Number(row.teacher_id),
+        teacher_name: row.teacher_name,
+        teacher_other_name: row.teacher_other_name,
+        teacher_saint_name: row.teacher_saint_name,
+        number_periods: numberPeriods,
+        salary: salaryPerPeriod,
+        extra_allowance: extraAllowance,
+        salary_cap: salaryCap,
+        teacher_special: row.teacher_special,
+        final_salary: finalSalary,
       })
 
-      departmentsMap[cls.department_id].total_salary += cls.final_salary
-      totalSalary += cls.final_salary
+      departmentsMap[departmentId].total_salary += finalSalary
+      totalSalary += finalSalary
     }
 
-    // 5. Build final result
     return {
       summary: {
         total_salary: totalSalary,
