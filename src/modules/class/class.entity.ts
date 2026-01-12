@@ -1,7 +1,7 @@
 import { ClassStatus, Schedule } from '@enums/class.enum'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { ClassStudents } from './class-students/class-student.entity'
 import { Semester } from './_semester/semester.entity'
 import { Scholastic } from './_scholastic/scholastic.entity'
@@ -12,6 +12,9 @@ import { Lesson } from '@modules/_online-feature/lesson/lesson.entity'
 import { ClassNotification } from './notifications/notifications.entity'
 
 @Entity({ name: 'classes' })
+@Index('idx_classes_semester_scholastic', ['semester_id', 'scholastic_id']) // Composite index for revenue queries
+@Index('idx_classes_subject', ['subject_id']) // Index for subject JOIN
+@Index('idx_classes_teacher', ['teacher_id']) // Index for teacher JOIN
 export class Classes {
   @PrimaryGeneratedColumn()
   id: number

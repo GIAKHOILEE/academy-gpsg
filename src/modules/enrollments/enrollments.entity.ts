@@ -1,8 +1,10 @@
 import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { Student } from '@modules/students/students.entity'
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity('enrollments')
+@Index('idx_enrollments_status', ['status']) // Index for status filtering (revenue queries)
+@Index('idx_enrollments_payment_status', ['payment_status']) // Index for payment status filtering
 export class Enrollments {
   @PrimaryGeneratedColumn()
   id: number
