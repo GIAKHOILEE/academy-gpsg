@@ -6,7 +6,7 @@ import { CreateConsultDto } from './dtos/create-consult.dto'
 import { IConsult } from './consult.interface'
 import { PaginateConsultDto } from './dtos/paginate-consult.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { throwAppException } from '@common/utils'
+import { formatStringDateUTC7, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { UpdateConsultDto } from './dtos/update-consult.dto'
 
@@ -22,7 +22,17 @@ export class ConsultService {
       ...createConsultDto,
       is_read: false,
     })
-    return this.consultRepository.save(consult)
+    const savedConsult = await this.consultRepository.save(consult)
+    return {
+      id: savedConsult.id,
+      saint_name: savedConsult.saint_name,
+      full_name: savedConsult.full_name,
+      email: savedConsult.email,
+      phone_number: savedConsult.phone_number,
+      content: savedConsult.content,
+      is_read: savedConsult.is_read,
+      created_at: formatStringDateUTC7(savedConsult.created_at.toISOString()),
+    }
   }
 
   async getAll(pagination: PaginateConsultDto): Promise<{ data: IConsult[]; meta: PaginationMeta }> {
@@ -38,6 +48,7 @@ export class ConsultService {
       phone_number: consult.phone_number,
       content: consult.content,
       is_read: consult.is_read,
+      created_at: formatStringDateUTC7(consult.created_at.toISOString()),
     }))
 
     return { data: formattedData, meta }
@@ -56,6 +67,7 @@ export class ConsultService {
       phone_number: consult.phone_number,
       content: consult.content,
       is_read: consult.is_read,
+      created_at: formatStringDateUTC7(consult.created_at.toISOString()),
     }
   }
 

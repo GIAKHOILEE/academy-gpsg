@@ -6,4 +6,5 @@ export interface IConsult {
   phone_number?: string
   content?: string
   is_read?: boolean
+  created_at?: string
 }

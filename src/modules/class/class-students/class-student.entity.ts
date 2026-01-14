@@ -1,5 +1,5 @@
 import { Student } from '@modules/students/students.entity'
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm'
 import { Classes } from '../class.entity'
 import { ExamScore } from '@modules/class-rules/exam/exam-scores/exam-scores.entity'
 import { Attendance } from '@modules/class-rules/attendance/attendance.entity'
@@ -7,6 +7,7 @@ import { TeacherEvaluation } from '@modules/class-rules/teacher-evaluations/teac
 import { LearnType } from '@enums/class.enum'
 
 @Entity({ name: 'class_students' })
+@Unique('uniq_class_student', ['class_id', 'student_id']) // unique constraint cho cặp class_id và student_id
 export class ClassStudents {
   @PrimaryGeneratedColumn()
   id: number
