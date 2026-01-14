@@ -9,7 +9,7 @@ import { User } from '@modules/users/user.entity'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
 import { CreateTeachersDto } from './dtos/create-teachers.dto'
-import { PaginateTeachersDto } from './dtos/paginate-teachers.dto'
+import { PaginateTeacherClassesDto, PaginateTeachersDto } from './dtos/paginate-teachers.dto'
 import { UpdateTeachersDto } from './dtos/update-teachers.dto'
 import { Teacher } from './teachers.entity'
 import { Classes } from '../class/class.entity'
@@ -376,7 +376,8 @@ export class TeachersService {
   }
 
   // lấy danh sách lớp của giáo viên
-  async getAllClassesOfTeacher(userId: number, paginateClassDto: PaginationDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
+  async getAllClassesOfTeacher(userId: number, paginateClassDto: PaginateTeacherClassesDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
+    const { classroom, is_online, is_free, status, ...rest } = paginateClassDto
     const query = this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
@@ -388,7 +389,23 @@ export class TeachersService {
 
     query.andWhere('teacher.user_id = :userId', { userId })
 
-    const { data, meta } = await paginate(query, paginateClassDto)
+    if (classroom) {
+      query.andWhere('classes.classroom = :classroom', { classroom })
+    }
+
+    if (is_online) {
+      query.andWhere('classes.is_online = :is_online', { is_online })
+    }
+
+    if (is_free) {
+      query.andWhere('classes.is_free = :is_free', { is_free })
+    }
+
+    if (status) {
+      query.andWhere('classes.status = :status', { status })
+    }
+
+    const { data, meta } = await paginate(query, rest)
     const classIds = data.map(classEntity => classEntity.id)
     let current_students_object = {}
     if (classIds.length > 0) {
