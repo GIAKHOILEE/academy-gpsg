@@ -436,6 +436,12 @@ export class EnrollmentsService {
         })
       }
 
+      // nếu student đã có trong lớp thì không cho đăng ký lại
+      const existClassStudents = await classStudentsRepo.find({
+        where: { student_id: enrollment.student_id, class_id: In(newClassIds) },
+      })
+      if (existClassStudents.length > 0) throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
+
       // check lớp có full không
       if (status && status !== StatusEnrollment.PENDING) {
         const classEntities = await classRepo
