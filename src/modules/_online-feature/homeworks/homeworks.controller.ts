@@ -5,7 +5,7 @@ import { Role } from '@enums/role.enum'
 import { ResponseDto } from '@common/response.dto'
 import { HomeworkService } from './homeworks.service'
 import { CreateHomeworksDto } from './dtos/create-homeworks.dto'
-import { PaginateHomeworksDto } from './dtos/paginate-homeworks.dto'
+import { PaginateHomeworksDto, PaginateSubmissionsDto } from './dtos/paginate-homeworks.dto'
 import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
 
 @Controller('admin/homeworks')
@@ -157,6 +157,88 @@ export class StudentHomeworkController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_SUBMITTED_SUCCESSFULLY',
+      data: submission,
+    })
+  }
+}
+
+@Controller('admin/homeworks')
+@ApiTags('Admin Homework Submission')
+@ApiBearerAuth()
+@Auth(Role.ADMIN)
+export class AdminHomeworkSubmissionController {
+  constructor(private readonly homeworkService: HomeworkService) {}
+
+  @Get('submissions/:id')
+  @ApiOperation({ summary: 'Get a homework submission' })
+  async getHomeworkSubmissionById(@Param('id') id: number): Promise<ResponseDto> {
+    const submission = await this.homeworkService.getSubmissionDetail(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSION_FETCHED_SUCCESSFULLY',
+      data: submission,
+    })
+  }
+
+  @Get(':id-homework/submissions')
+  @ApiOperation({ summary: 'lấy tất cả bài nộp của 1 homework' })
+  async getSubmissionsByHomework(@Param('id-homework') id: number, @Query() paginateSubmissionsDto: PaginateSubmissionsDto): Promise<ResponseDto> {
+    const submissions = await this.homeworkService.getSubmissionsByHomework(id, paginateSubmissionsDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSIONS_FETCHED_SUCCESSFULLY',
+      data: submissions,
+    })
+  }
+}
+
+@Controller('teacher/homeworks')
+@ApiTags('Teacher Homework Submission')
+@ApiBearerAuth()
+@Auth(Role.TEACHER)
+export class TeacherHomeworkSubmissionController {
+  constructor(private readonly homeworkService: HomeworkService) {}
+
+  @Get('submissions/:id')
+  @ApiOperation({ summary: 'Get a homework submission' })
+  async getHomeworkSubmissionById(@Param('id') id: number): Promise<ResponseDto> {
+    const submission = await this.homeworkService.getSubmissionDetail(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSION_FETCHED_SUCCESSFULLY',
+      data: submission,
+    })
+  }
+
+  @Get(':id-homework/submissions')
+  @ApiOperation({ summary: 'Get all submissions of a homework' })
+  async getSubmissionsByHomework(@Param('id-homework') id: number, @Query() paginateSubmissionsDto: PaginateSubmissionsDto): Promise<ResponseDto> {
+    const submissions = await this.homeworkService.getSubmissionsByHomework(id, paginateSubmissionsDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSIONS_FETCHED_SUCCESSFULLY',
+      data: submissions,
+    })
+  }
+
+
+}
+
+@Controller('student/homeworks')
+@ApiTags('Student Homework Submission')
+@ApiBearerAuth()
+@Auth(Role.STUDENT)
+export class StudentHomeworkSubmissionController {
+  constructor(private readonly homeworkService: HomeworkService) {}
+ 
+  
+  @Get(':id-homework/submissions')
+  @ApiOperation({ summary: 'Get my submission of a homework' })
+  async getMySubmission(@Param('id-homework') id: number, @Req() req): Promise<ResponseDto> {
+    const submission = await this.homeworkService.getMySubmission(req.user.userId, id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSION_FETCHED_SUCCESSFULLY',
       data: submission,
     })
   }
