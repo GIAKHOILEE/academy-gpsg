@@ -16,6 +16,7 @@ import { Role } from '@enums/role.enum'
 import { Student } from '@modules/students/students.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Discuss } from '../discuss/discuss.entity'
+import { IDiscuss } from '../discuss/discuss.interface'
 
 @Injectable()
 export class LessonService {
@@ -163,15 +164,23 @@ export class LessonService {
     // lấy các discuss(admin_responded, user_responded) của lesson
     // nếu là admin thì lấy tất cả discuss(admin_responded, user_responded)
     // nếu là student thì lấy discuss của bản thân thôi (logic hiện tại học viên chỉ có 1 discuss mỗi lesson)
-    let discussMap: { [key: number]: Discuss[] } = {}
+    const lessonIds = data.map(lesson => lesson.id)
+    let discussMap: IDiscuss[] = []
     if (user.role === Role.STUDENT) {
-      const discuss = await this.discussRepository.find({ where: { lesson: { id: In(data.map(lesson => lesson.id)) }, user: { id: userId } } })
+      const discuss = await this.discussRepository.find({ where: { lesson: { id: In(lessonIds) }, user: { id: userId } } })
       discussMap = arrayToObject(discuss, 'lesson_id')
     } else {
       // admin/teacher lấy tất cả discuss(admin_responded, user_responded)
-      const discuss = await this.discussRepository.find({ where: { lesson: { id: In(data.map(lesson => lesson.id)) } } })
+      const discuss = await this.discussRepository
+        .createQueryBuilder('discuss')
+        .select(['discuss.id', 'lesson.id', 'discuss.content', 'discuss.admin_responded', 'discuss.user_responded', 'discuss.parent_id'])
+        .leftJoin('discuss.lesson', 'lesson')
+        .where('lesson.id IN (:...lessonIds)', { lessonIds })
+        .andWhere('discuss.parent_id IS NULL')
+        .getRawMany()
       discussMap = arrayToObject(discuss, 'lesson_id')
     }
+    // check list discussMap admin_responded, user_responded, ưu tiên lấy true
 
     const formattedLessons: ILesson[] = data.map(lesson => {
       return {
@@ -187,7 +196,10 @@ export class LessonService {
         slide_url: lesson.slide_url,
         document_url: lesson.document_url,
         meeting_url: lesson.meeting_url,
-        discuss: discussMap[lesson.id],
+        discuss: {
+          admin_responded: discussMap[lesson.id]?.admin_responded,
+          user_responded: discussMap[lesson.id]?.user_responded,
+        },
       }
     })
 

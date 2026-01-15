@@ -34,7 +34,8 @@ export class AdminLessonController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_GET_MANY_SUCCESSFULLY',
-      data: lessons,
+      data: lessons.data,
+      meta: lessons.meta,
     })
   }
 
@@ -106,7 +107,8 @@ export class TeacherLessonController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_GET_MANY_SUCCESSFULLY',
-      data: lessons,
+      data: lessons.data,
+      meta: lessons.meta,
     })
   }
 
@@ -167,7 +169,8 @@ export class UserLessonController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_GET_MANY_SUCCESSFULLY',
-      data: lessons,
+      data: lessons.data,
+      meta: lessons.meta,
     })
   }
 

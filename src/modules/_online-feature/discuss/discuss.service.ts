@@ -124,7 +124,7 @@ export class DiscussService {
         'discuss.content',
         'discuss.user_responded',
         'discuss.admin_responded',
-        'discuss.createdAt',
+        'discuss.created_at',
         'discuss.parent_id',
         'user.id',
         'user.full_name',
@@ -192,7 +192,7 @@ export class DiscussService {
         },
         number_comment: numberCommentByDiscuss[discuss.id] || 0,
         // lesson: discuss.lesson,
-        created_at: formatStringDate(discuss.createdAt.toISOString()),
+        created_at: formatStringDate(discuss.created_at.toISOString()),
       }
     })
     return { data: formattedDiscusses, meta }
@@ -205,7 +205,7 @@ export class DiscussService {
       .select([
         'discuss.id',
         'discuss.content',
-        'discuss.createdAt',
+        'discuss.created_at',
         'discuss.parent_id',
         'user.id',
         'user.full_name',
@@ -236,7 +236,7 @@ export class DiscussService {
           saint_name: discuss.user.saint_name,
           avatar: discuss.user.avatar,
         },
-        created_at: formatStringDate(discuss.createdAt.toISOString()),
+        created_at: formatStringDate(discuss.created_at.toISOString()),
       }
     })
     return { data: formattedDiscusses, meta }

@@ -1,4 +1,5 @@
 import { IClasses } from '@modules/class/class.interface'
+import { IDiscuss } from '../discuss/discuss.interface'
 
 export interface ILesson {
   id?: number
@@ -15,4 +16,5 @@ export interface ILesson {
   meeting_url?: string
   class_id?: number
   class?: IClasses
+  discussion?: IDiscuss[]
 }
