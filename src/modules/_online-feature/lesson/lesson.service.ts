@@ -161,26 +161,41 @@ export class LessonService {
 
     const { data, meta } = await paginate(queryBuilder, paginateLessonDto)
 
-    // lấy các discuss(admin_responded, user_responded) của lesson
-    // nếu là admin thì lấy tất cả discuss(admin_responded, user_responded)
-    // nếu là student thì lấy discuss của bản thân thôi (logic hiện tại học viên chỉ có 1 discuss mỗi lesson)
+    const discussStatusMap: Record<number, { admin_responded: boolean; user_responded: boolean }> = {}
     const lessonIds = data.map(lesson => lesson.id)
-    let discussMap: IDiscuss[] = []
+    let discuss = []
     if (user.role === Role.STUDENT) {
-      const discuss = await this.discussRepository.find({ where: { lesson: { id: In(lessonIds) }, user: { id: userId } } })
-      discussMap = arrayToObject(discuss, 'lesson_id')
+      discuss = await this.discussRepository.find({ where: { lesson: { id: In(lessonIds) }, user: { id: userId } } })
     } else {
       // admin/teacher lấy tất cả discuss(admin_responded, user_responded)
-      const discuss = await this.discussRepository
+      discuss = await this.discussRepository
         .createQueryBuilder('discuss')
         .select(['discuss.id', 'lesson.id', 'discuss.content', 'discuss.admin_responded', 'discuss.user_responded', 'discuss.parent_id'])
         .leftJoin('discuss.lesson', 'lesson')
         .where('lesson.id IN (:...lessonIds)', { lessonIds })
         .andWhere('discuss.parent_id IS NULL')
-        .getRawMany()
-      discussMap = arrayToObject(discuss, 'lesson_id')
+        .getMany()
+      console.log(discuss)
     }
-    // check list discussMap admin_responded, user_responded, ưu tiên lấy true
+
+    for (const d of discuss) {
+      const lessonId = d.lesson_id ?? d.lesson?.id
+
+      if (!discussStatusMap[lessonId]) {
+        discussStatusMap[lessonId] = {
+          admin_responded: false,
+          user_responded: false,
+        }
+      }
+
+      if (d.admin_responded) {
+        discussStatusMap[lessonId].admin_responded = true
+      }
+
+      if (d.user_responded) {
+        discussStatusMap[lessonId].user_responded = true
+      }
+    }
 
     const formattedLessons: ILesson[] = data.map(lesson => {
       return {
@@ -197,8 +212,8 @@ export class LessonService {
         document_url: lesson.document_url,
         meeting_url: lesson.meeting_url,
         discuss: {
-          admin_responded: discussMap[lesson.id]?.admin_responded,
-          user_responded: discussMap[lesson.id]?.user_responded,
+          admin_responded: discussStatusMap[lesson.id]?.admin_responded,
+          user_responded: discussStatusMap[lesson.id]?.user_responded,
         },
       }
     })

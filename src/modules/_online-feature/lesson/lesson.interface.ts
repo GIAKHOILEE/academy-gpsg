@@ -16,5 +16,5 @@ export interface ILesson {
   meeting_url?: string
   class_id?: number
   class?: IClasses
-  discussion?: IDiscuss[]
+  // discussion?: IDiscuss[]
 }
