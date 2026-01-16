@@ -168,14 +168,19 @@ export class LessonService {
       discuss = await this.discussRepository.find({ where: { lesson: { id: In(lessonIds) }, user: { id: userId } } })
     } else {
       // admin/teacher lấy tất cả discuss(admin_responded, user_responded)
-      discuss = await this.discussRepository
+      const qb = this.discussRepository
         .createQueryBuilder('discuss')
         .select(['discuss.id', 'lesson.id', 'discuss.content', 'discuss.admin_responded', 'discuss.user_responded', 'discuss.parent_id'])
         .leftJoin('discuss.lesson', 'lesson')
-        .where('lesson.id IN (:...lessonIds)', { lessonIds })
         .andWhere('discuss.parent_id IS NULL')
-        .getMany()
-      console.log(discuss)
+
+      if (lessonIds.length) {
+        qb.andWhere('lesson.id IN (:...lessonIds)', { lessonIds })
+      } else {
+        qb.andWhere('1 = 0') // đảm bảo không trả dữ liệu
+      }
+
+      discuss = await qb.getMany()
     }
 
     for (const d of discuss) {
