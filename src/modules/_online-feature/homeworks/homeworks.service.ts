@@ -256,7 +256,6 @@ export class HomeworkService {
       .where('homework.id = :id', { id: submitDto.homework_id })
       .getOne()
 
-    console.log(hw)
     // kiểm tra student có trong lớp không
     const classStudent = await this.classStudentRepo.findOne({ where: { student: { user: { id: userId } }, class: { id: hw.lesson.class.id } } })
     if (!classStudent) throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)

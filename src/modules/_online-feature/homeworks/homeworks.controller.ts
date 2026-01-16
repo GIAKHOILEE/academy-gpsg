@@ -43,7 +43,8 @@ export class AdminHomeworkController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORKS_FETCHED_SUCCESSFULLY',
-      data: homeworks,
+      data: homeworks.data,
+      meta: homeworks.meta,
     })
   }
 
@@ -95,7 +96,8 @@ export class TeacherHomeworkController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORKS_FETCHED_SUCCESSFULLY',
-      data: homeworks,
+      data: homeworks.data,
+      meta: homeworks.meta,
     })
   }
 
@@ -135,7 +137,8 @@ export class StudentHomeworkController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORKS_FETCHED_SUCCESSFULLY',
-      data: homeworks,
+      data: homeworks.data,
+      meta: homeworks.meta,
     })
   }
 
@@ -187,7 +190,8 @@ export class AdminHomeworkSubmissionController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_SUBMISSIONS_FETCHED_SUCCESSFULLY',
-      data: submissions,
+      data: submissions.data,
+      meta: submissions.meta,
     })
   }
 }
@@ -217,11 +221,10 @@ export class TeacherHomeworkSubmissionController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_SUBMISSIONS_FETCHED_SUCCESSFULLY',
-      data: submissions,
+      data: submissions.data,
+      meta: submissions.meta,
     })
   }
-
-
 }
 
 @Controller('student/homeworks')
@@ -230,8 +233,7 @@ export class TeacherHomeworkSubmissionController {
 @Auth(Role.STUDENT)
 export class StudentHomeworkSubmissionController {
   constructor(private readonly homeworkService: HomeworkService) {}
- 
-  
+
   @Get(':id-homework/submissions')
   @ApiOperation({ summary: 'Get my submission of a homework' })
   async getMySubmission(@Param('id-homework') id: number, @Req() req): Promise<ResponseDto> {
