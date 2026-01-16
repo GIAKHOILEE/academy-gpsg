@@ -16,6 +16,7 @@ import { Role } from '@enums/role.enum'
 import { Student } from '@modules/students/students.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Discuss } from '../discuss/discuss.entity'
+import { IDiscuss } from '../discuss/discuss.interface'
 
 @Injectable()
 export class LessonService {
@@ -160,17 +161,45 @@ export class LessonService {
 
     const { data, meta } = await paginate(queryBuilder, paginateLessonDto)
 
-    // lấy các discuss(admin_responded, user_responded) của lesson
-    // nếu là admin thì lấy tất cả discuss(admin_responded, user_responded)
-    // nếu là student thì lấy discuss của bản thân thôi (logic hiện tại học viên chỉ có 1 discuss mỗi lesson)
-    let discussMap: { [key: number]: Discuss[] } = {}
+    const discussStatusMap: Record<number, { admin_responded: boolean; user_responded: boolean }> = {}
+    const lessonIds = data.map(lesson => lesson.id)
+    let discuss = []
     if (user.role === Role.STUDENT) {
-      const discuss = await this.discussRepository.find({ where: { lesson: { id: In(data.map(lesson => lesson.id)) }, user: { id: userId } } })
-      discussMap = arrayToObject(discuss, 'lesson_id')
+      discuss = await this.discussRepository.find({ where: { lesson: { id: In(lessonIds) }, user: { id: userId } } })
     } else {
       // admin/teacher lấy tất cả discuss(admin_responded, user_responded)
-      const discuss = await this.discussRepository.find({ where: { lesson: { id: In(data.map(lesson => lesson.id)) } } })
-      discussMap = arrayToObject(discuss, 'lesson_id')
+      const qb = this.discussRepository
+        .createQueryBuilder('discuss')
+        .select(['discuss.id', 'lesson.id', 'discuss.content', 'discuss.admin_responded', 'discuss.user_responded', 'discuss.parent_id'])
+        .leftJoin('discuss.lesson', 'lesson')
+        .andWhere('discuss.parent_id IS NULL')
+
+      if (lessonIds.length) {
+        qb.andWhere('lesson.id IN (:...lessonIds)', { lessonIds })
+      } else {
+        qb.andWhere('1 = 0') // đảm bảo không trả dữ liệu
+      }
+
+      discuss = await qb.getMany()
+    }
+
+    for (const d of discuss) {
+      const lessonId = d.lesson_id ?? d.lesson?.id
+
+      if (!discussStatusMap[lessonId]) {
+        discussStatusMap[lessonId] = {
+          admin_responded: false,
+          user_responded: false,
+        }
+      }
+
+      if (d.admin_responded) {
+        discussStatusMap[lessonId].admin_responded = true
+      }
+
+      if (d.user_responded) {
+        discussStatusMap[lessonId].user_responded = true
+      }
     }
 
     const formattedLessons: ILesson[] = data.map(lesson => {
@@ -187,7 +216,10 @@ export class LessonService {
         slide_url: lesson.slide_url,
         document_url: lesson.document_url,
         meeting_url: lesson.meeting_url,
-        discuss: discussMap[lesson.id],
+        discuss: {
+          admin_responded: discussStatusMap[lesson.id]?.admin_responded,
+          user_responded: discussStatusMap[lesson.id]?.user_responded,
+        },
       }
     })
 

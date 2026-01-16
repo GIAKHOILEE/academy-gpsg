@@ -5,9 +5,8 @@ import { ResponseDto } from '@common/response.dto'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { PaginateTeachersDto } from './dtos/paginate-teachers.dto'
+import { PaginateTeacherClassesDto, PaginateTeachersDto } from './dtos/paginate-teachers.dto'
 import { UpdateTeachersDto } from './dtos/update-teachers.dto'
-import { PaginationDto } from '@common/pagination'
 
 @ApiBearerAuth()
 @Auth(Role.ADMIN, Role.STAFF, Role.TEACHER)
@@ -82,7 +81,7 @@ export class TeacherController {
 
   @Get('classes')
   @ApiOperation({ summary: 'Lấy danh sách lớp của giáo viên' })
-  async getClassesByTeacherId(@Query() paginateClassDto: PaginationDto, @Request() req): Promise<ResponseDto> {
+  async getClassesByTeacherId(@Query() paginateClassDto: PaginateTeacherClassesDto, @Request() req): Promise<ResponseDto> {
     const classes = await this.teachersService.getAllClassesOfTeacher(req.user.userId, paginateClassDto)
     return {
       statusCode: 200,

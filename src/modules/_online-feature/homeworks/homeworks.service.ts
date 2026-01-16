@@ -10,9 +10,9 @@ import { ErrorCode } from '@enums/error-codes.enum'
 import { throwAppException } from '@common/utils'
 import { HomeworkSubmission } from './entities/submission.entity'
 import { HomeworkAnswer } from './entities/answer.entity'
-import { PaginateHomeworksDto } from './dtos/paginate-homeworks.dto'
-import { paginate } from '@common/pagination'
-import { IHomework } from './homeworks.interface'
+import { PaginateHomeworksDto, PaginateSubmissionsDto } from './dtos/paginate-homeworks.dto'
+import { paginate, PaginationMeta } from '@common/pagination'
+import { IHomework, IHomeworkSubmission } from './homeworks.interface'
 import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
 import { Student } from '@modules/students/students.entity'
 import { QuestionTypeHomework, SubmissionStatus } from '@enums/homework.enum'
@@ -542,6 +542,151 @@ export class HomeworkService {
         /* ignore */
       }
       throw err
+    }
+  }
+
+  /* =====================================================
+  ====================== Submission=======================
+  ===================================================== */
+
+  //Student xem bài mình đã nộp (answers + điểm)
+  async getMySubmission(userId: number, homeworkId: number) {
+    const student = await this.studentRepo.findOne({
+      where: { user: { id: userId } },
+    })
+    if (!student) {
+      throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const submission = await this.submissionRepo
+      .createQueryBuilder('submission')
+      .leftJoinAndSelect('submission.homework', 'homework')
+      .leftJoinAndSelect('submission.answers', 'answers')
+      .leftJoinAndSelect('answers.question', 'question')
+      .leftJoinAndSelect('question.options', 'options')
+      .where('submission.student_id = :studentId', { studentId: student.id })
+      .andWhere('homework.id = :homeworkId', { homeworkId })
+      .getOne()
+
+    if (!submission) {
+      throwAppException('SUBMISSION_NOT_FOUND', ErrorCode.SUBMISSION_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    return {
+      id: submission.id,
+      score: submission.score,
+      status: submission.status,
+      homework: {
+        id: submission.homework.id,
+        title: submission.homework.title,
+        total_points: submission.homework.total_points,
+      },
+      answers: submission.answers.map(a => ({
+        id: a.id,
+        question: {
+          id: a.question.id,
+          content: a.question.content,
+          type: a.question.type,
+          points: a.question.points,
+          options: a.question.options,
+        },
+        selected_option_ids: a.selected_option_ids,
+        answer_text: a.answer_text,
+        file: a.file,
+        score: a.score,
+        feedback: a.feedback,
+      })),
+    }
+  }
+
+  //Teacher/admin xem tất cả bài nộp của 1 homework
+  async getSubmissionsByHomework(
+    homeworkId: number,
+    paginateSubmissionsDto: PaginateSubmissionsDto,
+  ): Promise<{ data: IHomeworkSubmission[]; meta: PaginationMeta }> {
+    const { homework_id, ...rest } = paginateSubmissionsDto
+    const homework = await this.hwRepo.findOne({ where: { id: homework_id } })
+    if (!homework) {
+      throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const query = this.submissionRepo
+      .createQueryBuilder('submission')
+      .leftJoinAndSelect('submission.student', 'student')
+      .leftJoinAndSelect('student.user', 'user')
+      .leftJoinAndSelect('submission.answers', 'answers')
+    if (homework_id) {
+      query.andWhere('submission.homework_id = :homeworkId', { homeworkId: homework_id })
+    }
+
+    const { data, meta } = await paginate(query, rest)
+
+    const formattedSubmissions = data.map(s => ({
+      id: s.id,
+      score: s.score,
+      status: s.status,
+      student: {
+        id: s.student.id,
+        name: s.student.user.full_name,
+        email: s.student.user.email,
+        code: s.student.user.code,
+      },
+      answer_count: s.answers.length,
+      submitted_at: s.createdAt,
+    }))
+
+    return {
+      data: formattedSubmissions,
+      meta,
+    }
+  }
+
+  //Teacher/admin xem chi tiết bài nộp của 1 student
+  async getSubmissionDetail(submissionId: number) {
+    const submission = await this.submissionRepo
+      .createQueryBuilder('submission')
+      .leftJoinAndSelect('submission.homework', 'homework')
+      .leftJoinAndSelect('submission.student', 'student')
+      .leftJoinAndSelect('student.user', 'user')
+      .leftJoinAndSelect('submission.answers', 'answers')
+      .leftJoinAndSelect('answers.question', 'question')
+      .leftJoinAndSelect('question.options', 'options')
+      .where('submission.id = :id', { id: submissionId })
+      .getOne()
+
+    if (!submission) {
+      throwAppException('SUBMISSION_NOT_FOUND', ErrorCode.SUBMISSION_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    return {
+      id: submission.id,
+      score: submission.score,
+      status: submission.status,
+      homework: {
+        id: submission.homework.id,
+        title: submission.homework.title,
+        total_points: submission.homework.total_points,
+      },
+      student: {
+        id: submission.student.id,
+        name: submission.student.user.full_name,
+        email: submission.student.user.email,
+      },
+      answers: submission.answers.map(a => ({
+        id: a.id,
+        question: {
+          id: a.question.id,
+          content: a.question.content,
+          type: a.question.type,
+          points: a.question.points,
+          options: a.question.options,
+        },
+        selected_option_ids: a.selected_option_ids,
+        answer_text: a.answer_text,
+        file: a.file,
+        score: a.score,
+        feedback: a.feedback,
+      })),
     }
   }
 }
