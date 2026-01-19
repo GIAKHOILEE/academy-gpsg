@@ -557,8 +557,6 @@ export class HomeworkService {
       throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
-    console.log(homeworkId)
-    console.log(student.id)
     const submission = await this.submissionRepo
       .createQueryBuilder('submission')
       .leftJoinAndSelect('submission.homework', 'homework')
@@ -567,6 +565,7 @@ export class HomeworkService {
       .leftJoinAndSelect('question.options', 'options')
       .where('submission.student_id = :studentId', { studentId: student.id })
       .andWhere('homework.id = :homeworkId', { homeworkId })
+      .orderBy('question.id', 'ASC')
       .getOne()
 
     if (!submission) {

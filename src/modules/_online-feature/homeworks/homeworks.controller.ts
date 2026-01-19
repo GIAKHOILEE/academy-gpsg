@@ -237,8 +237,6 @@ export class StudentHomeworkSubmissionController {
   @Get(':homeworkId/submissions')
   @ApiOperation({ summary: 'Get my submission of a homework' })
   async getMySubmission(@Param('homeworkId') id: number, @Req() req): Promise<ResponseDto> {
-    console.log(id)
-    console.log(req.user.userId)
     const submission = await this.homeworkService.getMySubmission(req.user.userId, Number(id))
     return new ResponseDto({
       statusCode: HttpStatus.OK,

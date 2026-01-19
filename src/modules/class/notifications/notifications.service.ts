@@ -134,7 +134,6 @@ export class NotificationsService {
       .where('notification.id = :id', { id })
       .leftJoin('notification.lesson', 'lesson')
       .getOne()
-    console.log(notification)
     if (!notification) throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedNotification: IClassNotification = {
