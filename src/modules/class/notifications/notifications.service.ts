@@ -114,7 +114,27 @@ export class NotificationsService {
   }
 
   async getNotificationById(id: number): Promise<IClassNotification> {
-    const notification = await this.classNotificationRepository.findOne({ where: { id } })
+    const notification = await this.classNotificationRepository
+      .createQueryBuilder('notification')
+      .select([
+        'notification.id',
+        'notification.index',
+        'notification.is_active',
+        'notification.is_online',
+        'notification.title',
+        'notification.thumbnail',
+        'notification.description',
+        'notification.content',
+        'notification.urgent',
+        'notification.lesson_id',
+        'notification.created_at',
+        'lesson.id',
+        'lesson.title',
+      ])
+      .where('notification.id = :id', { id })
+      .leftJoin('notification.lesson', 'lesson')
+      .getOne()
+    console.log(notification)
     if (!notification) throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     const formattedNotification: IClassNotification = {
@@ -127,6 +147,11 @@ export class NotificationsService {
       description: notification.description,
       content: notification.content,
       urgent: notification.urgent,
+      lesson_id: notification?.lesson_id || null,
+      lesson: {
+        id: notification.lesson?.id || null,
+        title: notification.lesson?.title || null,
+      },
       created_at: formatStringDateUTC7(notification.created_at.toISOString()),
     }
 
