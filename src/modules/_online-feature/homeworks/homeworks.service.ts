@@ -557,6 +557,8 @@ export class HomeworkService {
       throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
+    console.log(homeworkId)
+    console.log(student.id)
     const submission = await this.submissionRepo
       .createQueryBuilder('submission')
       .leftJoinAndSelect('submission.homework', 'homework')
@@ -603,8 +605,8 @@ export class HomeworkService {
     homeworkId: number,
     paginateSubmissionsDto: PaginateSubmissionsDto,
   ): Promise<{ data: IHomeworkSubmission[]; meta: PaginationMeta }> {
-    const { homework_id, ...rest } = paginateSubmissionsDto
-    const homework = await this.hwRepo.findOne({ where: { id: homework_id } })
+    const { ...rest } = paginateSubmissionsDto
+    const homework = await this.hwRepo.findOne({ where: { id: homeworkId } })
     if (!homework) {
       throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
@@ -614,8 +616,8 @@ export class HomeworkService {
       .leftJoinAndSelect('submission.student', 'student')
       .leftJoinAndSelect('student.user', 'user')
       .leftJoinAndSelect('submission.answers', 'answers')
-    if (homework_id) {
-      query.andWhere('submission.homework_id = :homeworkId', { homeworkId: homework_id })
+    if (homeworkId) {
+      query.andWhere('submission.homework_id = :homeworkId', { homeworkId })
     }
 
     const { data, meta } = await paginate(query, rest)

@@ -183,9 +183,9 @@ export class AdminHomeworkSubmissionController {
     })
   }
 
-  @Get(':id-homework/submissions')
+  @Get(':homeworkId/submissions')
   @ApiOperation({ summary: 'lấy tất cả bài nộp của 1 homework' })
-  async getSubmissionsByHomework(@Param('id-homework') id: number, @Query() paginateSubmissionsDto: PaginateSubmissionsDto): Promise<ResponseDto> {
+  async getSubmissionsByHomework(@Param('homeworkId') id: number, @Query() paginateSubmissionsDto: PaginateSubmissionsDto): Promise<ResponseDto> {
     const submissions = await this.homeworkService.getSubmissionsByHomework(id, paginateSubmissionsDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
@@ -214,9 +214,9 @@ export class TeacherHomeworkSubmissionController {
     })
   }
 
-  @Get(':id-homework/submissions')
+  @Get(':homeworkId/submissions')
   @ApiOperation({ summary: 'Get all submissions of a homework' })
-  async getSubmissionsByHomework(@Param('id-homework') id: number, @Query() paginateSubmissionsDto: PaginateSubmissionsDto): Promise<ResponseDto> {
+  async getSubmissionsByHomework(@Param('homeworkId') id: number, @Query() paginateSubmissionsDto: PaginateSubmissionsDto): Promise<ResponseDto> {
     const submissions = await this.homeworkService.getSubmissionsByHomework(id, paginateSubmissionsDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
@@ -234,10 +234,12 @@ export class TeacherHomeworkSubmissionController {
 export class StudentHomeworkSubmissionController {
   constructor(private readonly homeworkService: HomeworkService) {}
 
-  @Get(':id-homework/submissions')
+  @Get(':homeworkId/submissions')
   @ApiOperation({ summary: 'Get my submission of a homework' })
-  async getMySubmission(@Param('id-homework') id: number, @Req() req): Promise<ResponseDto> {
-    const submission = await this.homeworkService.getMySubmission(req.user.userId, id)
+  async getMySubmission(@Param('homeworkId') id: number, @Req() req): Promise<ResponseDto> {
+    console.log(id)
+    console.log(req.user.userId)
+    const submission = await this.homeworkService.getMySubmission(req.user.userId, Number(id))
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_SUBMISSION_FETCHED_SUCCESSFULLY',

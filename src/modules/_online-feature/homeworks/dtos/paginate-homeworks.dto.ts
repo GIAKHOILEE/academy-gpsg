@@ -12,10 +12,10 @@ export class PaginateHomeworksDto extends PaginationDto {
 }
 
 export class PaginateSubmissionsDto extends PaginationDto {
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({
-    description: 'The homework id of the submission',
-  })
-  homework_id: number
+  // @IsOptional()
+  // @IsString()
+  // @ApiPropertyOptional({
+  //   description: 'The homework id of the submission',
+  // })
+  // homework_id: number
 }
