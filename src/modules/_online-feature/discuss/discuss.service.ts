@@ -216,6 +216,7 @@ export class DiscussService {
         'user.full_name',
         'user.saint_name',
         'user.avatar',
+        'user.role',
       ])
       .leftJoin('discuss.user', 'user')
       .leftJoin('discuss.lesson', 'lesson')
@@ -240,6 +241,7 @@ export class DiscussService {
           full_name: discuss.user.full_name,
           saint_name: discuss.user.saint_name,
           avatar: discuss.user.avatar,
+          role: discuss.user.role,
         },
         created_at: formatStringDate(discuss.created_at.toISOString()),
       }
