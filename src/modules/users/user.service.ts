@@ -195,4 +195,30 @@ export class UserService {
 
     await this.usersRepository.save(user)
   }
+
+  async generateUserCode(): Promise<string> {
+    const year = new Date().getFullYear() // 2026
+
+    const [result] = await this.usersRepository.query(
+      `
+    SELECT code
+    FROM hvm.user
+    WHERE code LIKE ?
+    ORDER BY CAST(SUBSTRING_INDEX(code, '-', -1) AS UNSIGNED) DESC
+    LIMIT 1
+    `,
+      [`${year}-%`],
+    )
+
+    let nextNumber = 1
+
+    if (result?.code) {
+      const lastNumber = parseInt(result.code.split('-')[1], 10)
+      nextNumber = lastNumber + 1
+    }
+
+    const paddedNumber = String(nextNumber).padStart(3, '0')
+
+    return `${year}-${paddedNumber}`
+  }
 }
