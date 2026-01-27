@@ -454,8 +454,8 @@ export class HomeworkService {
     }
   }
 
-  // grade one submission
-  async teacherGradeSubmission(graderId: number, gradeDto: GradeSubmissionDto) {
+  // grade one submission (teacher or admin)
+  async gradeSubmission(graderId: number, gradeDto: GradeSubmissionDto) {
     const { submission_id, answers: answersPayload } = gradeDto
 
     // start transaction
@@ -473,7 +473,7 @@ export class HomeworkService {
       })
       if (!submission) throwAppException('SUBMISSION_NOT_FOUND', ErrorCode.SUBMISSION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-      // optionally: check permission: graderId is teacher of this class/homework (not implemented here)
+      // optionally: check permission: graderId is teacher or admin (handled by controller decorators)
       // validate payload answers belong to submission
       const ansMap = new Map<number, HomeworkAnswer>()
       for (const a of submission.answers || []) ansMap.set(a.id, a)
@@ -515,7 +515,7 @@ export class HomeworkService {
 
       // update submission
       submission.score = Number(totalScore)
-      ;(submission as any).percent = percent // nếu có cột percent, map tương ứng hoặc add column
+      ;(submission as any).percent = percent
       submission.status = SubmissionStatus.GRADED
       submission.graded_by = { id: graderId } as any
       submission.graded_at = new Date()

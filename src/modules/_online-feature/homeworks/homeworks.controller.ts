@@ -7,6 +7,7 @@ import { HomeworkService } from './homeworks.service'
 import { CreateHomeworksDto } from './dtos/create-homeworks.dto'
 import { PaginateHomeworksDto, PaginateSubmissionsDto } from './dtos/paginate-homeworks.dto'
 import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
+import { GradeSubmissionDto } from './dtos/submission-grade.dto'
 
 @Controller('admin/homeworks')
 @ApiTags('Admin Homework')
@@ -194,6 +195,17 @@ export class AdminHomeworkSubmissionController {
       meta: submissions.meta,
     })
   }
+
+  @Post('grade')
+  @ApiOperation({ summary: 'Admin chấm điểm bài tập' })
+  async gradeSubmission(@Body() gradeSubmissionDto: GradeSubmissionDto, @Req() req): Promise<ResponseDto> {
+    const submission = await this.homeworkService.gradeSubmission(req.user.userId, gradeSubmissionDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSION_GRADED_SUCCESSFULLY',
+      data: submission,
+    })
+  }
 }
 
 @Controller('teacher/homeworks')
@@ -223,6 +235,17 @@ export class TeacherHomeworkSubmissionController {
       messageCode: 'HOMEWORK_SUBMISSIONS_FETCHED_SUCCESSFULLY',
       data: submissions.data,
       meta: submissions.meta,
+    })
+  }
+
+  @Post('grade')
+  @ApiOperation({ summary: 'Teacher chấm điểm bài tập' })
+  async gradeSubmission(@Body() gradeSubmissionDto: GradeSubmissionDto, @Req() req): Promise<ResponseDto> {
+    const submission = await this.homeworkService.gradeSubmission(req.user.userId, gradeSubmissionDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSION_GRADED_SUCCESSFULLY',
+      data: submission,
     })
   }
 }
