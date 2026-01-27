@@ -100,16 +100,25 @@ export class ClassService {
     }
 
     // so sánh các ngày với ngày hiên tại để chỉnh status
-    const today = new Date()
+    const today = new Date().toISOString().split('T')[0]
     let status = ClassStatus.ENROLLING
-    if (rest.opening_day && new Date(rest.opening_day) < today) {
-      status = ClassStatus.HAS_BEGUN
-    }
-    if (rest.closing_day && new Date(rest.closing_day) < today) {
+
+    const registrationStartDate = rest.registration_start_date || today
+    rest.registration_start_date = registrationStartDate
+    const endEnrollmentDay = rest.end_enrollment_day
+    const openingDay = rest.opening_day
+    const closingDay = rest.closing_day
+
+    if (closingDay && closingDay < today) {
       status = ClassStatus.END_CLASS
-    }
-    if (rest.end_enrollment_day && new Date(rest.end_enrollment_day) < today) {
+    } else if (openingDay && openingDay <= today) {
+      status = ClassStatus.HAS_BEGUN
+    } else if (endEnrollmentDay && endEnrollmentDay < today) {
       status = ClassStatus.END_ENROLLING
+    } else if (today < registrationStartDate) {
+      status = ClassStatus.COMMING
+    } else {
+      status = ClassStatus.ENROLLING
     }
 
     const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status, is_online })
@@ -130,6 +139,7 @@ export class ClassService {
       price: savedClass.price,
       current_students: 0,
       schedule: savedClass.schedule,
+      registration_start_date: savedClass.registration_start_date,
       end_enrollment_day: savedClass.end_enrollment_day,
       start_time: savedClass.start_time,
       end_time: savedClass.end_time,
@@ -205,28 +215,24 @@ export class ClassService {
     }
 
     // so sánh các ngày với ngày hiện tại để chỉnh status
-    const openingDay = rest.opening_day ? new Date(rest.opening_day) : existingClass.opening_day
-    const endEnrollmentDay = rest.end_enrollment_day ? new Date(rest.end_enrollment_day) : existingClass.end_enrollment_day
-    const closingDay = rest.closing_day ? new Date(rest.closing_day) : existingClass.closing_day
+    const registrationStartDate = rest.registration_start_date ?? existingClass.registration_start_date
+    const openingDay = rest.opening_day ?? existingClass.opening_day
+    const endEnrollmentDay = rest.end_enrollment_day ?? existingClass.end_enrollment_day
+    const closingDay = rest.closing_day ?? existingClass.closing_day
 
-    const today = new Date()
+    const today = new Date().toISOString().split('T')[0]
     let status = existingClass.status
 
-    // 1. Nếu đã kết thúc
     if (closingDay && closingDay < today) {
       status = ClassStatus.END_CLASS
-    }
-    // 2. Nếu đã mở học rồi (ưu tiên hơn ENROLLING)
-    else if (openingDay && openingDay <= today) {
+    } else if (openingDay && openingDay <= today) {
       status = ClassStatus.HAS_BEGUN
-    }
-    // 3. Nếu đang trong giai đoạn tuyển sinh
-    else if (openingDay && endEnrollmentDay && openingDay > today && endEnrollmentDay > today) {
-      status = ClassStatus.ENROLLING
-    }
-    // 4. Nếu hết hạn tuyển sinh
-    else if (openingDay && endEnrollmentDay && openingDay < today && endEnrollmentDay < today) {
+    } else if (endEnrollmentDay && endEnrollmentDay < today) {
       status = ClassStatus.END_ENROLLING
+    } else if (registrationStartDate && today < registrationStartDate) {
+      status = ClassStatus.COMMING
+    } else {
+      status = ClassStatus.ENROLLING
     }
 
     // chỉ cần có 1 trong 2 là true thì mới được tạo lớp online
@@ -301,6 +307,7 @@ export class ClassService {
       price: classEntity.price,
       current_students: current_students,
       condition: classEntity.condition,
+      registration_start_date: classEntity.registration_start_date,
       end_enrollment_day: classEntity.end_enrollment_day,
       schedule: classEntity.schedule,
       start_time: classEntity.start_time,
@@ -427,6 +434,7 @@ export class ClassService {
       current_students: Number(current_students_object[classEntity.id]?.count || 0),
       schedule: classEntity.schedule,
       condition: classEntity.condition,
+      registration_start_date: classEntity.registration_start_date,
       end_enrollment_day: classEntity.end_enrollment_day,
       start_time: classEntity.start_time,
       end_time: classEntity.end_time,
@@ -561,6 +569,7 @@ export class ClassService {
         'class.number_lessons',
         'class.classroom',
         'class.max_students',
+        'class.registration_start_date',
         'class.end_enrollment_day',
         'class.price',
         'class.schedule',
@@ -632,6 +641,7 @@ export class ClassService {
       max_students: classStudent.class.max_students,
       price: classStudent.class.price,
       current_students: Number(current_students_object[classStudent.class.id]?.count || 0),
+      registration_start_date: classStudent.class.registration_start_date,
       end_enrollment_day: classStudent.class.end_enrollment_day,
       schedule: classStudent.class.schedule,
       start_time: classStudent.class.start_time,
@@ -736,32 +746,46 @@ export class ClassService {
   async cronjobUpdateClassStatus(): Promise<void> {
     const classes = await this.classRepository
       .createQueryBuilder('classes')
-      .select(['classes.id', 'classes.opening_day', 'classes.end_enrollment_day', 'classes.closing_day', 'classes.status'])
+      .select([
+        'classes.id',
+        'classes.opening_day',
+        'classes.registration_start_date',
+        'classes.end_enrollment_day',
+        'classes.closing_day',
+        'classes.status',
+      ])
       .getMany()
 
     const today = new Date()
 
+    const todayStr = today.toISOString().split('T')[0]
+
     for (const classEntity of classes) {
-      const openingDay = classEntity.opening_day ? new Date(classEntity.opening_day) : null
-      const endEnrollmentDay = classEntity.end_enrollment_day ? new Date(classEntity.end_enrollment_day) : null
-      const closingDay = classEntity.closing_day ? new Date(classEntity.closing_day) : null
+      const openingDayStr = classEntity.opening_day
+      const endEnrollmentDayStr = classEntity.end_enrollment_day
+      const closingDayStr = classEntity.closing_day
+      const registrationStartDateStr = classEntity.registration_start_date
 
       let newStatus = classEntity.status
 
       // 1. Ưu tiên: Đã kết thúc
-      if (closingDay && closingDay < today) {
+      if (closingDayStr && closingDayStr < todayStr) {
         newStatus = ClassStatus.END_CLASS
       }
       // 2. Ưu tiên: Đã bắt đầu học
-      else if (openingDay && openingDay <= today) {
+      else if (openingDayStr && openingDayStr <= todayStr) {
         newStatus = ClassStatus.HAS_BEGUN
       }
       // 3. Ưu tiên: Hết hạn tuyển sinh
-      else if (endEnrollmentDay && endEnrollmentDay < today) {
+      else if (endEnrollmentDayStr && endEnrollmentDayStr < todayStr) {
         newStatus = ClassStatus.END_ENROLLING
       }
-      // 4. Nếu vẫn trong giai đoạn tuyển sinh
-      else if (openingDay && endEnrollmentDay && openingDay > today && endEnrollmentDay > today) {
+      // 4. Ưu tiên: Sắp diễn ra (chưa tới ngày ghi danh)
+      else if (registrationStartDateStr && todayStr < registrationStartDateStr) {
+        newStatus = ClassStatus.COMMING
+      }
+      // 5. Nếu vẫn trong giai đoạn tuyển sinh
+      else {
         newStatus = ClassStatus.ENROLLING
       }
 

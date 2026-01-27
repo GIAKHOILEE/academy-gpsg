@@ -9,8 +9,8 @@ export class CreateClassDto {
   code: string
 
   @IsEnum(ClassStatus)
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
   status: ClassStatus
 
   @IsNumber()
@@ -62,6 +62,11 @@ export class CreateClassDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Điều kiện vào lớp', example: 'có bằng sơ cấp' })
   condition: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Ngày bắt đầu ghi danh', example: '2025-01-01' })
+  registration_start_date: string
 
   @IsString()
   @IsOptional()

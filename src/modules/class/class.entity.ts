@@ -1,7 +1,18 @@
 import { ClassStatus, Schedule } from '@enums/class.enum'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm'
 import { ClassStudents } from './class-students/class-student.entity'
 import { Semester } from './_semester/semester.entity'
 import { Scholastic } from './_scholastic/scholastic.entity'
@@ -56,12 +67,16 @@ export class Classes {
   @Column({ type: 'text', nullable: true })
   condition: string
 
-  //lịch học
+  // lịch học
   @Column({
     type: 'json',
     nullable: true,
   })
   schedule: Schedule[]
+
+  // ngày bắt đầu ghi danh
+  @Column({ nullable: true })
+  registration_start_date: string
 
   // ngày kết thúc ghi danh
   @Column({ nullable: true })

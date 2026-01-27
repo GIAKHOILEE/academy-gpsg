@@ -9,7 +9,7 @@ import {
   renderPdfFromTemplate,
   throwAppException,
 } from '@common/utils'
-import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { ClassStatus, LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -138,6 +138,9 @@ export class EnrollmentsService {
       // check lớp có type học không
       const classMap = arrayToObject(classEntities, 'id')
       for (const item of class_ids) {
+        if (classMap[item.class_id].status !== ClassStatus.ENROLLING) {
+          throwAppException('CLASS_NOT_ENROLLING', ErrorCode.CLASS_NOT_ENROLLING, HttpStatus.BAD_REQUEST)
+        }
         if (item.learn_type === LearnType.OFFLINE) {
           // OFFLINE mặc định luôn được chấp nhận (theo yêu cầu)
           continue
