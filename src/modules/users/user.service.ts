@@ -217,7 +217,7 @@ export class UserService {
       nextNumber = lastNumber + 1
     }
 
-    const paddedNumber = String(nextNumber).padStart(3, '0')
+    const paddedNumber = String(nextNumber).padStart(4, '0')
 
     return `${year}-${paddedNumber}`
   }
