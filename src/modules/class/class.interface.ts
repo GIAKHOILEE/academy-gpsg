@@ -23,6 +23,7 @@ export interface IClasses {
   current_students?: number
   schedule?: Schedule[]
   condition?: string
+  registration_start_date?: string
   end_enrollment_day: string
   start_time?: string
   end_time?: string

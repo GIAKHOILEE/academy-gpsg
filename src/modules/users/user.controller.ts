@@ -23,6 +23,17 @@ export class AdminUsersController {
     return 'Hello World'
   }
 
+  @Get('generate-code')
+  @Auth(Role.ADMIN)
+  async generateCode(): Promise<ResponseDto> {
+    const code = await this.userService.generateUserCode()
+    return new ResponseDto({
+      messageCode: 'CODE_GENERATED_SUCCESS',
+      statusCode: 200,
+      data: code,
+    })
+  }
+
   // tạo tài khoản cho admin
   @ApiOperation({ summary: 'Tạo tài khoản mới cho Admin' })
   @Post('register-admin')

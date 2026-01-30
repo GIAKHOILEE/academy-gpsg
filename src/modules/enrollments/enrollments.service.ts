@@ -130,14 +130,31 @@ export class EnrollmentsService {
       const classIds = class_ids.map(item => item.class_id)
       const classEntities = await this.classRepository
         .createQueryBuilder('class')
-        .select(['class.id', 'class.name', 'class.price', 'class.status', 'class.learn_video', 'class.learn_meeting'])
+        .select([
+          'class.id',
+          'class.name',
+          'class.price',
+          'class.status',
+          'class.learn_video',
+          'class.learn_meeting',
+          'class.registration_start_date',
+          'class.end_enrollment_day',
+        ])
         .where('class.id IN (:...class_ids)', { class_ids: classIds })
         // .andWhere('class.end_enrollment_day >= :today', { today: new Date().toISOString().split('T')[0] })
         .getMany()
       if (classEntities.length !== class_ids.length) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
       // check lớp có type học không
       const classMap = arrayToObject(classEntities, 'id')
+      const today = new Date().toISOString().split('T')[0]
       for (const item of class_ids) {
+        const cls = classMap[item.class_id]
+        if (cls.registration_start_date && today < cls.registration_start_date) {
+          throwAppException('CLASS_NOT_ENROLLING', ErrorCode.CLASS_NOT_ENROLLING, HttpStatus.BAD_REQUEST)
+        }
+        if (cls.end_enrollment_day && today > cls.end_enrollment_day) {
+          throwAppException('CLASS_END_ENROLLING', ErrorCode.CLASS_END_ENROLLING, HttpStatus.BAD_REQUEST)
+        }
         if (item.learn_type === LearnType.OFFLINE) {
           // OFFLINE mặc định luôn được chấp nhận (theo yêu cầu)
           continue

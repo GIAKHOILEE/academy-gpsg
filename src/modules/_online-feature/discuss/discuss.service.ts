@@ -58,10 +58,10 @@ export class DiscussService {
       // nếu là cmt đầu tiên thì đánh dấu là cmt của học viên
       createDiscussDto.user_responded = existUser.role === Role.STUDENT ? true : false
       createDiscussDto.admin_responded = existUser.role !== Role.STUDENT ? true : false
-      // nếu học viên đã có cmt đầu tiên thì không được tạo cmt đầu tiên mới
-      const existDiscuss = await this.discussRepository.findOne({ where: { lesson: { id: lesson_id }, parent_id: null } })
+      // nếu học viên đã có cmt đầu tiên trong buổi này thì không được tạo cmt đầu tiên mới
+      const existDiscuss = await this.discussRepository.findOne({ where: { lesson: { id: lesson_id }, parent_id: null, user: { id: userId } } })
       if (existDiscuss) {
-        throwAppException('DISCUSS_JUST_ONE_PER_LESSON', ErrorCode.DISCUSS_JUST_ONE_PER_LESSON, HttpStatus.FORBIDDEN)
+        throwAppException('DISCUSS_JUST_ONE_PER_LESSON', ErrorCode.DISCUSS_JUST_ONE_PER_LESSON, HttpStatus.BAD_REQUEST)
       }
     }
 
@@ -137,7 +137,12 @@ export class DiscussService {
       .where('discuss.parent_id IS NULL')
 
     // học viên chỉ thấy cmt gốc của mình
-    if (userId === Role.STUDENT) {
+    const userInfo = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.role'])
+      .where('user.id = :userId', { userId })
+      .getOne()
+    if (userInfo.role === Role.STUDENT) {
       queryBuilder.andWhere('user.id = :userId', { userId })
     }
 
@@ -211,6 +216,7 @@ export class DiscussService {
         'user.full_name',
         'user.saint_name',
         'user.avatar',
+        'user.role',
       ])
       .leftJoin('discuss.user', 'user')
       .leftJoin('discuss.lesson', 'lesson')
@@ -235,6 +241,7 @@ export class DiscussService {
           full_name: discuss.user.full_name,
           saint_name: discuss.user.saint_name,
           avatar: discuss.user.avatar,
+          role: discuss.user.role,
         },
         created_at: formatStringDate(discuss.created_at.toISOString()),
       }

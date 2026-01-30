@@ -3,6 +3,7 @@ export enum ClassStatus {
   END_ENROLLING = 2, // Đã kết thúc tuyển sinh
   HAS_BEGUN = 3, // Đã bắt đầu
   END_CLASS = 4, // Đã kết thúc
+  COMMING = 5, // sắp diễn ra
 }
 
 export enum LearnType {

@@ -2,8 +2,8 @@ import { PaginationDto } from '@common/pagination'
 import { ClassStatus } from '@enums/class.enum'
 import { UserStatus } from '@enums/status.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { Type } from 'class-transformer'
-import { IsBooleanString, IsEnum, IsOptional, IsString } from 'class-validator'
+import { Transform, Type } from 'class-transformer'
+import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class PaginateTeachersDto extends PaginationDto {
   @IsOptional()
@@ -71,17 +71,17 @@ export class PaginateTeacherClassesDto extends PaginationDto {
   classroom: string
 
   @IsOptional()
-  @ApiPropertyOptional({ description: 'filter theo học online', example: true, type: Boolean })
-  @IsBooleanString()
-  is_online: string
+  @Transform(({ value }) => value === 'true')
+  @ApiPropertyOptional({ description: 'filter theo học online', type: Boolean })
+  is_online?: boolean
 
   @IsOptional()
-  @ApiPropertyOptional({ description: 'filter theo lớp miễn phí', example: true, type: Boolean })
-  @IsBooleanString()
-  is_free: string
+  @Transform(({ value }) => value === 'true')
+  @ApiPropertyOptional({ description: 'filter theo lớp miễn phí', type: Boolean })
+  is_free?: boolean
 
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
+  @ApiPropertyOptional({ description: 'Trạng thái lớp', enum: ClassStatus })
   @IsEnum(ClassStatus)
   @Type(() => Number)
   status: ClassStatus

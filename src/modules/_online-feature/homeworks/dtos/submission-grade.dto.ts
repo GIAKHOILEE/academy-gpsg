@@ -1,15 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { Type } from 'class-transformer'
 
 export class GradeAnswerDto {
   @IsNotEmpty()
   @IsNumber()
-  @ApiProperty({ description: 'ID của câu hỏi' })
+  @ApiProperty({ description: 'ID của câu trả lời' })
   answer_id: number
 
   @IsNotEmpty()
   @IsNumber()
-  @ApiProperty({ description: 'Điểm của câu hỏi' })
+  @ApiProperty({ description: 'Điểm của câu trả lời' })
   score: number
 
   @IsOptional()
@@ -27,5 +28,8 @@ export class GradeSubmissionDto {
   submission_id: number
 
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GradeAnswerDto)
+  @ApiProperty({ type: [GradeAnswerDto], description: 'Danh sách câu trả lời' })
   answers: GradeAnswerDto[]
 }

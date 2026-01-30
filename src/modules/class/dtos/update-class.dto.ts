@@ -64,6 +64,11 @@ export class UpdateClassDto {
 
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Ngày bắt đầu ghi danh', example: '2025-01-01' })
+  registration_start_date: string
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Ngày kết thúc ghi danh', example: '2025-01-01' })
   end_enrollment_day: string
 

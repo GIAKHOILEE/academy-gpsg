@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 
-import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
+import { paginate, PaginationMeta } from '@common/pagination'
 import { arrayToObject, hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
@@ -378,6 +378,7 @@ export class TeachersService {
   // lấy danh sách lớp của giáo viên
   async getAllClassesOfTeacher(userId: number, paginateClassDto: PaginateTeacherClassesDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
     const { classroom, is_online, is_free, status, ...rest } = paginateClassDto
+    console.log(classroom, is_online, is_free, status, rest)
     const query = this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
@@ -393,11 +394,13 @@ export class TeachersService {
       query.andWhere('classes.classroom = :classroom', { classroom })
     }
 
-    if (is_online) {
+    if (is_online !== undefined) {
+      console.log(is_online)
+      console.log(typeof is_online)
       query.andWhere('classes.is_online = :is_online', { is_online })
     }
 
-    if (is_free) {
+    if (is_free !== undefined) {
       query.andWhere('classes.is_free = :is_free', { is_free })
     }
 
@@ -406,6 +409,7 @@ export class TeachersService {
     }
 
     const { data, meta } = await paginate(query, rest)
+    console.log(data, meta)
     const classIds = data.map(classEntity => classEntity.id)
     let current_students_object = {}
     if (classIds.length > 0) {
@@ -438,6 +442,8 @@ export class TeachersService {
       end_time: classEntity.end_time,
       opening_day: classEntity.opening_day,
       closing_day: classEntity.closing_day,
+      is_online: classEntity.is_online,
+      is_free: classEntity.is_free,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,

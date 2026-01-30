@@ -256,7 +256,6 @@ export class HomeworkService {
       .where('homework.id = :id', { id: submitDto.homework_id })
       .getOne()
 
-    console.log(hw)
     // kiểm tra student có trong lớp không
     const classStudent = await this.classStudentRepo.findOne({ where: { student: { user: { id: userId } }, class: { id: hw.lesson.class.id } } })
     if (!classStudent) throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
@@ -455,8 +454,8 @@ export class HomeworkService {
     }
   }
 
-  // grade one submission
-  async teacherGradeSubmission(graderId: number, gradeDto: GradeSubmissionDto) {
+  // grade one submission (teacher or admin)
+  async gradeSubmission(graderId: number, gradeDto: GradeSubmissionDto) {
     const { submission_id, answers: answersPayload } = gradeDto
 
     // start transaction
@@ -474,7 +473,7 @@ export class HomeworkService {
       })
       if (!submission) throwAppException('SUBMISSION_NOT_FOUND', ErrorCode.SUBMISSION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-      // optionally: check permission: graderId is teacher of this class/homework (not implemented here)
+      // optionally: check permission: graderId is teacher or admin (handled by controller decorators)
       // validate payload answers belong to submission
       const ansMap = new Map<number, HomeworkAnswer>()
       for (const a of submission.answers || []) ansMap.set(a.id, a)
@@ -516,7 +515,7 @@ export class HomeworkService {
 
       // update submission
       submission.score = Number(totalScore)
-      ;(submission as any).percent = percent // nếu có cột percent, map tương ứng hoặc add column
+      ;(submission as any).percent = percent
       submission.status = SubmissionStatus.GRADED
       submission.graded_by = { id: graderId } as any
       submission.graded_at = new Date()
@@ -566,6 +565,7 @@ export class HomeworkService {
       .leftJoinAndSelect('question.options', 'options')
       .where('submission.student_id = :studentId', { studentId: student.id })
       .andWhere('homework.id = :homeworkId', { homeworkId })
+      .orderBy('question.id', 'ASC')
       .getOne()
 
     if (!submission) {
@@ -604,8 +604,8 @@ export class HomeworkService {
     homeworkId: number,
     paginateSubmissionsDto: PaginateSubmissionsDto,
   ): Promise<{ data: IHomeworkSubmission[]; meta: PaginationMeta }> {
-    const { homework_id, ...rest } = paginateSubmissionsDto
-    const homework = await this.hwRepo.findOne({ where: { id: homework_id } })
+    const { ...rest } = paginateSubmissionsDto
+    const homework = await this.hwRepo.findOne({ where: { id: homeworkId } })
     if (!homework) {
       throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
@@ -615,8 +615,8 @@ export class HomeworkService {
       .leftJoinAndSelect('submission.student', 'student')
       .leftJoinAndSelect('student.user', 'user')
       .leftJoinAndSelect('submission.answers', 'answers')
-    if (homework_id) {
-      query.andWhere('submission.homework_id = :homeworkId', { homeworkId: homework_id })
+    if (homeworkId) {
+      query.andWhere('submission.homework_id = :homeworkId', { homeworkId })
     }
 
     const { data, meta } = await paginate(query, rest)

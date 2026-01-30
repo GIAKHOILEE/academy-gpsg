@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm'
 import { Homeworks } from './homeworks.entity'
 import { Student } from '@modules/students/students.entity'
-import { Teacher } from '@modules/teachers/teachers.entity'
+import { User } from '@modules/users/user.entity'
 import { SubmissionStatus } from 'src/enums/homework.enum'
 import { HomeworkAnswer } from './answer.entity'
 
@@ -27,10 +27,10 @@ export class HomeworkSubmission {
   @Column({ type: 'enum', enum: SubmissionStatus, default: SubmissionStatus.PENDING })
   status: SubmissionStatus
 
-  // ai chấm (teacher id) nếu chấm tay
-  @ManyToOne(() => Teacher, { nullable: true })
+  // ai chấm (user id) nếu chấm tay
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'graded_by' })
-  graded_by: Teacher
+  graded_by: User
 
   @Column({ nullable: true })
   graded_at: Date
