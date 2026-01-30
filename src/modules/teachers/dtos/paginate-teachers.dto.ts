@@ -3,7 +3,7 @@ import { ClassStatus } from '@enums/class.enum'
 import { UserStatus } from '@enums/status.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform, Type } from 'class-transformer'
-import { IsBooleanString, IsEnum, IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class PaginateTeachersDto extends PaginationDto {
   @IsOptional()
