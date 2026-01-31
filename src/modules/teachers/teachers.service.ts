@@ -260,6 +260,7 @@ export class TeachersService {
       specialized: teacher.specialized,
       professional_certificate: teacher.professional_certificate,
       teacher_certificate: teacher.teacher_certificate,
+      other_certificate: teacher?.other_certificate,
       subject_teaching: teacher.subject_teaching,
       boarding: teacher.boarding,
       start_date: teacher.start_date,

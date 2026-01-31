@@ -50,6 +50,10 @@ export class Teacher {
   @Column({ nullable: true })
   teacher_certificate: string
 
+  // chứng chỉ khác
+  @Column({ nullable: true, type: 'json' })
+  other_certificate: string[]
+
   // môn đã và đang giảng dạy
   @Column({ nullable: true, type: 'json' })
   subject_teaching: string[]
