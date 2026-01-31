@@ -9,7 +9,12 @@ export interface IFinances {
   total_amount: number
   statement: boolean
   payment_method: FinancesPaymentMethod
-  day: string
+  day?: number
+  month?: number
+  year?: number
+  note?: string
+  scholastic_id?: number
+  semester_id?: number
   created_at: string
   updated_at: string
 }

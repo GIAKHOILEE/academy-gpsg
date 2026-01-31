@@ -28,8 +28,23 @@ export class FinancesEntity {
   @Column()
   payment_method: FinancesPaymentMethod
 
-  @Column()
-  day: string
+  @Column({ nullable: true })
+  day: number
+
+  @Column({ nullable: true })
+  month: number
+
+  @Column({ nullable: true })
+  year: number
+
+  @Column({ nullable: true })
+  note: string
+
+  @Column({ nullable: true })
+  scholastic_id: number
+
+  @Column({ nullable: true })
+  semester_id: number
 
   @CreateDateColumn()
   created_at: Date
