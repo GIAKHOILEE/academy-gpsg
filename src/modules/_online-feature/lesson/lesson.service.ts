@@ -165,7 +165,14 @@ export class LessonService {
     const lessonIds = data.map(lesson => lesson.id)
     let discuss = []
     if (user.role === Role.STUDENT) {
-      discuss = await this.discussRepository.find({ where: { lesson: { id: In(lessonIds) }, user: { id: userId } } })
+      discuss = await this.discussRepository
+        .createQueryBuilder('discuss')
+        .select(['discuss.id', 'lesson.id', 'discuss.content', 'discuss.admin_responded', 'discuss.user_responded', 'discuss.parent_id'])
+        .leftJoin('discuss.lesson', 'lesson')
+        .where('lesson.id IN (:...lessonIds)', { lessonIds })
+        .andWhere('discuss.user_id = :userId', { userId })
+        .andWhere('discuss.parent_id IS NULL')
+        .getMany()
     } else {
       // admin/teacher lấy tất cả discuss(admin_responded, user_responded)
       const qb = this.discussRepository

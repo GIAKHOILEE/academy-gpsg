@@ -498,6 +498,7 @@ export class ClassService {
       .createQueryBuilder('class_students')
       .select([
         'class_students.id',
+        'class_students.score',
         'class_students.learn_type',
         'student.id',
         'user.code',
@@ -530,6 +531,7 @@ export class ClassService {
     const formattedStudents: IStudent[] = data.map(classStudent => ({
       id: classStudent.student.id,
       learn_type: classStudent.learn_type,
+      score: classStudent.score,
       code: classStudent.student.user.code,
       gender: classStudent.student.user.gender,
       avatar: classStudent.student.user.avatar,
@@ -681,7 +683,16 @@ export class ClassService {
 
     const classStudents = await this.classStudentsRepository
       .createQueryBuilder('class_students')
-      .select(['class_students.id', 'class_students.learn_type', 'student.id', 'user.gender', 'user.avatar', 'user.full_name', 'user.saint_name'])
+      .select([
+        'class_students.id',
+        'class_students.learn_type',
+        'class_students.score',
+        'student.id',
+        'user.gender',
+        'user.avatar',
+        'user.full_name',
+        'user.saint_name',
+      ])
       .leftJoin('class_students.student', 'student')
       .leftJoin('student.user', 'user')
       .where('class_students.class_id = :class_id', { class_id })
@@ -697,6 +708,7 @@ export class ClassService {
     const formattedStudents: IStudent[] = data.map(classStudent => ({
       id: classStudent.student.id,
       learn_type: classStudent.learn_type,
+      score: classStudent.score,
       gender: classStudent.student.user.gender,
       avatar: classStudent.student.user.avatar,
       full_name: classStudent.student.user.full_name,
