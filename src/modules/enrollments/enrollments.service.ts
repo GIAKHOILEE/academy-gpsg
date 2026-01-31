@@ -9,7 +9,7 @@ import {
   renderPdfFromTemplate,
   throwAppException,
 } from '@common/utils'
-import { ClassStatus, LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'

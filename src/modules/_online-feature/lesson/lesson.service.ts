@@ -1,11 +1,11 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { In, Repository } from 'typeorm'
+import { Repository } from 'typeorm'
 import { Lesson } from './lesson.entity'
 import { CreateLessonDto } from './dtos/create-lesson.dto'
 import { ILesson } from './lesson.interface'
 import { Classes } from '@modules/class/class.entity'
-import { arrayToObject, throwAppException } from '@common/utils'
+import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { UpdateLessonDto } from './dtos/update-lesson.dto'
 import { PaginateLessonDto } from './dtos/paginate-lesson.dto'
@@ -16,7 +16,6 @@ import { Role } from '@enums/role.enum'
 import { Student } from '@modules/students/students.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Discuss } from '../discuss/discuss.entity'
-import { IDiscuss } from '../discuss/discuss.interface'
 
 @Injectable()
 export class LessonService {
