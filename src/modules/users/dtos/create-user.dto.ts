@@ -50,7 +50,6 @@ export class CreateUserDto {
   @ApiPropertyOptional({
     description: 'Gender of the user (1: MALE, 2: FEMALE)',
     enum: Gender,
-    default: Gender.MALE,
   })
   @IsEnum(Gender)
   @IsOptional()
