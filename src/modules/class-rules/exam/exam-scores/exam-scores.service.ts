@@ -1,6 +1,6 @@
 import { Injectable, HttpStatus } from '@nestjs/common'
-import { DataSource, In } from 'typeorm'
-import { BulkExamScoreByStudentDto } from './dtos/create-exam-scores.dto'
+import { DataSource, In, Repository } from 'typeorm'
+import { BulkExamScoreByStudentDto, CreateClassStudentScoreDto } from './dtos/create-exam-scores.dto'
 import { ExamScore } from './exam-scores.entity'
 import { Exam } from '../_exam/exam.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
@@ -9,6 +9,9 @@ import { Student } from '@modules/students/students.entity'
 import { PaginateExamScoresDto } from './dtos/paginate-exam-scores.dto'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { UpdateClassStudentScoreDto } from './dtos/update-class-student-score.dto'
+import { InjectRepository } from '@nestjs/typeorm'
+import { paginate } from '@common/pagination'
 
 @Injectable()
 export class ExamScoreService {
@@ -215,5 +218,81 @@ export class ExamScoreService {
     // convert to array
     const result = Array.from(map.values())
     return result
+  }
+}
+/* =============================================
+================= SCORE V2 =====================
+================================================*/
+export class ExamScoreServiceV2 {
+  @InjectRepository(Classes)
+  private classRepo: Repository<Classes>
+
+  @InjectRepository(ClassStudents)
+  private classStudentRepo: Repository<ClassStudents>
+
+  // create  score
+  async createClassStudentScores(dto: CreateClassStudentScoreDto): Promise<void> {
+    const { class_id, scores } = dto
+    if (!scores || scores.length === 0) return
+
+    const classEntity = await this.classRepo.findOne({ where: { id: class_id } })
+    if (!classEntity) throw throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const updateData = scores.map(s => ({
+      class_id,
+      student_id: s.student_id,
+      score: s.score,
+    }))
+    await this.classStudentRepo.upsert(updateData, ['class_id', 'student_id'])
+  }
+
+  // update score
+  async updateClassStudentScores(dto: UpdateClassStudentScoreDto): Promise<void> {
+    const { class_id, scores } = dto
+    if (!scores || scores.length === 0) return
+
+    try {
+      const updateData = scores.map(s => ({
+        class_id,
+        student_id: s.student_id,
+        score: s.score,
+      }))
+      await this.classStudentRepo.upsert(updateData, ['class_id', 'student_id'])
+    } catch (err) {
+      throw err
+    }
+  }
+
+  async getClassStudentScores(dto: PaginateExamScoresDto): Promise<{ data: any[]; meta: any }> {
+    const queryBuilder = this.classStudentRepo
+      .createQueryBuilder('class_student')
+      .leftJoin('class_student.student', 'student')
+      .leftJoin('student.user', 'user')
+      .leftJoin('class_student.class', 'class')
+      .select([
+        'class_student.id',
+        'class_student.score',
+        'class_student.learn_type',
+        'student.id',
+        'user.code',
+        'user.saint_name',
+        'user.full_name',
+        'user.email',
+        'class.id',
+      ])
+
+    const { data, meta } = await paginate(queryBuilder, dto)
+    const result = data.map((row: any) => ({
+      student_id: Number(row.student.id),
+      code: row?.student?.user?.code ?? '',
+      saint_name: row?.student?.user?.saint_name ?? '',
+      full_name: row?.student?.user?.full_name ?? '',
+      email: row?.student?.user?.email ?? '',
+      score: row.score !== null ? Number(row.score) : null,
+      learn_type: row?.learn_type,
+      class_id: Number(row.class.id),
+    }))
+
+    return { data: result, meta }
   }
 }

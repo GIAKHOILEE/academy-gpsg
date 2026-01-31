@@ -46,8 +46,8 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
 
   // môn đã và đang giảng dạy
   @IsOptional()
-  @IsString()
   @IsArray()
+  @IsString({ each: true })
   @ApiPropertyOptional({ description: 'Môn đã và đang giảng dạy', example: ['Toán', 'Văn'] })
   subject_teaching: string[]
 
