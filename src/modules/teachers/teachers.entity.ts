@@ -51,8 +51,8 @@ export class Teacher {
   teacher_certificate: string
 
   // môn đã và đang giảng dạy
-  @Column({ nullable: true })
-  subject_teaching: string
+  @Column({ nullable: true, type: 'json' })
+  subject_teaching: string[]
 
   // GV nội trú hay ngoại trú (true: nội trú, false: ngoại trú)
   @Column({ nullable: true, default: false })
@@ -60,7 +60,7 @@ export class Teacher {
 
   // ngày bắt đầu làm việc
   @Column({ nullable: true })
-  start_date: Date
+  start_date: string
 
   // CV
   @Column({ nullable: true })

@@ -1,6 +1,6 @@
 import { CreateUserDtoV2 } from '@modules/users/dtos/create-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
 import { TeacherSpecial } from '@enums/user.enum'
 
 export class CreateTeachersDto extends CreateUserDtoV2 {
@@ -41,9 +41,10 @@ export class CreateTeachersDto extends CreateUserDtoV2 {
 
   // môn đã và đang giảng dạy
   @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ description: 'Môn đã và đang giảng dạy' })
-  subject_teaching: string
+  @IsArray()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'Môn đã và đang giảng dạy', example: ['Toán', 'Văn'] })
+  subject_teaching: string[]
 
   // GV nội trú hay ngoại trú (true: nội trú, false: ngoại trú)
   @IsOptional()
