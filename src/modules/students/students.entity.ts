@@ -23,6 +23,10 @@ export class Student {
   @Column({ nullable: true })
   image_4x6: string
 
+  // đã lấy thẻ
+  @Column({ nullable: true, default: false })
+  is_card_taken: boolean
+
   // học bạ
   @Column({ nullable: true })
   diploma_image: string
