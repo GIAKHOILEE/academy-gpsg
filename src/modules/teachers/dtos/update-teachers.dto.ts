@@ -4,6 +4,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class UpdateTeachersDto extends UpdateUserDtoV2 {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Mã giáo viên', example: 'GV001' })
+  code: string
+
   // đặc cách giáo viên
   @IsOptional()
   @IsEnum(TeacherSpecial)

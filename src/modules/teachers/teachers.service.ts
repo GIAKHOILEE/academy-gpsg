@@ -130,6 +130,7 @@ export class TeachersService {
 
     try {
       const {
+        code,
         other_name,
         degree,
         specialized,
@@ -164,8 +165,20 @@ export class TeachersService {
         if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
+      // Check duplicate code
+      if (code) {
+        const existingUser = await queryRunner.manager
+          .getRepository(User)
+          .createQueryBuilder('users')
+          .where('users.code = :code', { code })
+          .andWhere('users.id != :id', { id: user.id })
+          .getOne()
+        if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
+      }
+
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
         email: email ?? user.email,
+        code: code ?? user.code,
         ...rest,
       })
       await queryRunner.manager.save(User, updatedUser)
