@@ -6,7 +6,7 @@ export interface ITeacher extends IUser {
   specialized?: string
   professional_certificate?: string
   teacher_certificate?: string
-  subject_teaching?: string
+  subject_teaching?: string[]
   boarding?: boolean
   start_date?: string
   cv?: string

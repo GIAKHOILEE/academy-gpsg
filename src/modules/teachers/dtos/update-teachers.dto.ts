@@ -1,9 +1,14 @@
 import { TeacherSpecial } from '@enums/user.enum'
 import { UpdateUserDtoV2 } from '@modules/users/dtos/update-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class UpdateTeachersDto extends UpdateUserDtoV2 {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Mã giáo viên', example: 'GV001' })
+  code: string
+
   // đặc cách giáo viên
   @IsOptional()
   @IsEnum(TeacherSpecial)
@@ -41,9 +46,10 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
 
   // môn đã và đang giảng dạy
   @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ description: 'Môn đã và đang giảng dạy' })
-  subject_teaching: string
+  @IsArray()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'Môn đã và đang giảng dạy', example: ['Toán', 'Văn'] })
+  subject_teaching: string[]
 
   // GV nội trú hay ngoại trú (true: nội trú, false: ngoại trú)
   @IsOptional()

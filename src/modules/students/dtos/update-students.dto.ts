@@ -37,6 +37,11 @@ export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @IsNumber()
   @IsOptional()
   graduate_year: number
+
+  @ApiPropertyOptional({ description: 'Đã lấy thẻ', default: false })
+  @IsBoolean()
+  @IsOptional()
+  is_card_taken: boolean
 }
 
 // cập nhật mã thẻ của học viên

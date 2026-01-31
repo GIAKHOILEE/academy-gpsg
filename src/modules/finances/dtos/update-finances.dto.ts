@@ -33,8 +33,33 @@ export class UpdateFinancesDto {
   @ApiPropertyOptional({ description: 'Payment method', example: FinancesPaymentMethod.CASH, enum: FinancesPaymentMethod })
   payment_method: FinancesPaymentMethod
 
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Day', example: 1 })
+  day: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Month', example: 1 })
+  month: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Year', example: 2025 })
+  year: number
+
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Day', example: '2025-01-01' })
-  day: string
+  @ApiPropertyOptional({ description: 'Note', example: 'Note' })
+  note: string
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Scholastic ID', example: 1 })
+  scholastic_id: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Semester ID', example: 1 })
+  semester_id: number
 }

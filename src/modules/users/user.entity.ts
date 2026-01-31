@@ -27,7 +27,7 @@ export class User {
   @Column({ nullable: true })
   saint_name: string
 
-  @Column({ nullable: true, default: Gender.OTHER })
+  @Column({ nullable: true })
   gender: Gender
 
   @Column({ nullable: true })

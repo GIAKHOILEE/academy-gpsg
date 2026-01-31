@@ -3,7 +3,7 @@ import { ClassStatus } from '@enums/class.enum'
 import { UserStatus } from '@enums/status.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsEnum, IsOptional, IsString } from 'class-validator'
+import { IsBooleanString, IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class PaginateStudentsDto extends PaginationDto {
   @IsOptional()
@@ -71,4 +71,9 @@ export class PaginateStudentsDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'ID niên khóa' })
   scholastic_id?: number
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Đã lấy thẻ', example: true, type: Boolean })
+  @IsBooleanString()
+  is_card_taken?: boolean
 }

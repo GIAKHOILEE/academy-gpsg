@@ -1,6 +1,6 @@
 import { CreateUserDtoV2 } from '@modules/users/dtos/create-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateStudentsDto extends CreateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Mã thẻ của học viên' })
@@ -27,6 +27,11 @@ export class CreateStudentsDto extends CreateUserDtoV2 {
   @IsString()
   @IsOptional()
   other_document: string
+
+  @ApiPropertyOptional({ description: 'Đã lấy thẻ', default: false })
+  @IsBoolean()
+  @IsOptional()
+  is_card_taken: boolean
 }
 
 export class CreateStudentWithEnrollmentDto extends CreateStudentsDto {}
