@@ -3,7 +3,7 @@ import { IClasses } from '../class.interface'
 
 export interface IClassStudent {
   id: number
-  score?: number
+  score?: string
   class?: IClasses
   student?: IStudent
 }

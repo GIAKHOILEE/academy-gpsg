@@ -281,6 +281,10 @@ export class ExamScoreServiceV2 {
         'class.id',
       ])
 
+    if (dto.orderBy === 'first_name') {
+      dto.anotherOrderBy = 'user.first_name'
+    }
+
     const { data, meta } = await paginate(queryBuilder, dto)
     const result = data.map((row: any) => ({
       student_id: Number(row.student.id),
