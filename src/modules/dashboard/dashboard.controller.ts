@@ -37,6 +37,17 @@ export class DashboardControllerUser {
     })
   }
 
+  @Get('/student/ranking')
+  @ApiOperation({ summary: 'Lấy thống kê xếp loại học viên' })
+  async studentRanking(@Query() filter: FilterDashboardBySemesterDto): Promise<ResponseDto> {
+    const studentRanking = await this.dashboardService.studentRanking(filter)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_STUDENT_RANKING_SUCCESS',
+      data: studentRanking,
+    })
+  }
+
   @Get('/analytics')
   async getDashboardData(): Promise<ResponseDto> {
     const currentOnline = await this.visitorService.countCurrentlyOnline()

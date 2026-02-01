@@ -16,6 +16,7 @@ import { UpdateTeacherSalaryDto } from './dtos/update.dto'
 import { Gender, Role } from '@enums/role.enum'
 import { User } from '@modules/users/user.entity'
 import { Department } from '@modules/departments/departments.entity'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 @Injectable()
 export class DashboardService {
   constructor(
@@ -33,9 +34,83 @@ export class DashboardService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Department)
     private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(ClassStudents)
+    private readonly classStudentRepository: Repository<ClassStudents>,
     private readonly dataSource: DataSource,
   ) {}
 
+  // xếp loại học viên
+  async studentRanking(filter: FilterDashboardBySemesterDto): Promise<any> {
+    const { semester_id, scholastic_id } = filter
+
+    const queryBuilder = this.classStudentRepository
+      .createQueryBuilder('cs')
+      .innerJoin('cs.class', 'c')
+      .select([
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 1 AND CAST(cs.score AS DECIMAL(10,2)) < 5 THEN 1 ELSE 0 END) AS fail`,
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 5 AND CAST(cs.score AS DECIMAL(10,2)) < 6 THEN 1 ELSE 0 END) AS average`,
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 6 AND CAST(cs.score AS DECIMAL(10,2)) < 8 THEN 1 ELSE 0 END) AS good`,
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 8 AND CAST(cs.score AS DECIMAL(10,2)) < 9 THEN 1 ELSE 0 END) AS very_good`,
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 9 THEN 1 ELSE 0 END) AS excellent`,
+        `COUNT(CASE WHEN cs.score IS NOT NULL AND cs.score != '' THEN 1 END) AS has_score`,
+        `COUNT(CASE WHEN cs.score IS NULL OR cs.score = '' THEN 1 END) AS no_score`,
+        `COUNT(*) AS total`,
+      ])
+
+    if (semester_id) {
+      queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
+    }
+    if (scholastic_id) {
+      queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+
+    const result = await queryBuilder.getRawOne()
+
+    const total = Number(result.total) || 0
+    const hasScore = Number(result.has_score) || 0
+    const noScore = Number(result.no_score) || 0
+
+    const calculatePercentage = (count: number, totalCount: number) => {
+      if (totalCount === 0) return 0
+      return parseFloat(((count / totalCount) * 100).toFixed(2))
+    }
+
+    return {
+      ranking: {
+        fail: {
+          count: Number(result.fail) || 0,
+          percentage: calculatePercentage(Number(result.fail), hasScore),
+        },
+        average: {
+          count: Number(result.average) || 0,
+          percentage: calculatePercentage(Number(result.average), hasScore),
+        },
+        good: {
+          count: Number(result.good) || 0,
+          percentage: calculatePercentage(Number(result.good), hasScore),
+        },
+        veryGood: {
+          count: Number(result.very_good) || 0,
+          percentage: calculatePercentage(Number(result.very_good), hasScore),
+        },
+        excellent: {
+          count: Number(result.excellent) || 0,
+          percentage: calculatePercentage(Number(result.excellent), hasScore),
+        },
+      },
+      scoreStatistics: {
+        hasScore: {
+          count: hasScore,
+          percentage: calculatePercentage(hasScore, total),
+        },
+        noScore: {
+          count: noScore,
+          percentage: calculatePercentage(noScore, total),
+        },
+      },
+      total,
+    }
+  }
   // thống kê dân số học viên
   async studentStatistics(filter: FilterDashboardBySemesterDto): Promise<any> {
     const { semester_id, scholastic_id } = filter
