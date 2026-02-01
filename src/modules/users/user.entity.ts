@@ -12,6 +12,9 @@ export class User {
   @Column({ nullable: true })
   full_name: string
 
+  @Column({ nullable: true })
+  first_name: string
+
   @Column({ unique: true, nullable: true })
   username: string
 

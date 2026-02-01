@@ -489,7 +489,7 @@ export class ClassService {
 
   //lấy danh sách học sinh của lớp
   async getStudentsOfClass(class_id: number, getStudentsOfClassDto: GetStudentsOfClassDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { name, code, ...rest } = getStudentsOfClassDto
+    const { name, code, first_name, ...rest } = getStudentsOfClassDto
 
     const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -505,6 +505,7 @@ export class ClassService {
         'user.gender',
         'user.avatar',
         'user.full_name',
+        'user.first_name',
         'user.email',
         'user.saint_name',
         'user.phone_number',
@@ -526,6 +527,13 @@ export class ClassService {
     if (code) {
       classStudents.andWhere('user.code = :code', { code })
     }
+    if (first_name) {
+      classStudents.andWhere('user.first_name LIKE :first_name', { first_name: `%${first_name}%` })
+    }
+
+    if (rest.orderBy === 'first_name') {
+      rest.anotherOrderBy = 'user.first_name'
+    }
 
     const { data, meta } = await paginate(classStudents, rest)
     const formattedStudents: IStudent[] = data.map(classStudent => ({
@@ -536,6 +544,7 @@ export class ClassService {
       gender: classStudent.student.user.gender,
       avatar: classStudent.student.user.avatar,
       full_name: classStudent.student.user.full_name,
+      first_name: classStudent.student.user.first_name,
       email: classStudent.student.user.email,
       saint_name: classStudent.student.user.saint_name,
       phone_number: classStudent.student.user.phone_number,
@@ -676,7 +685,7 @@ export class ClassService {
     class_id: number,
     getStudentsOfClassDto: GetStudentsOfClassDto,
   ): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { name, code, ...rest } = getStudentsOfClassDto
+    const { name, code, first_name, ...rest } = getStudentsOfClassDto
 
     const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -691,6 +700,7 @@ export class ClassService {
         'user.gender',
         'user.avatar',
         'user.full_name',
+        'user.first_name',
         'user.saint_name',
       ])
       .leftJoin('class_students.student', 'student')
@@ -702,6 +712,13 @@ export class ClassService {
     }
     if (code) {
       classStudents.andWhere('user.code = :code', { code })
+    }
+    if (first_name) {
+      classStudents.andWhere('user.first_name LIKE :first_name', { first_name: `%${first_name}%` })
+    }
+
+    if (rest.orderBy === 'first_name') {
+      rest.anotherOrderBy = 'user.first_name'
     }
 
     const { data, meta } = await paginate(classStudents, rest)

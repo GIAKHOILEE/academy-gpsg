@@ -11,6 +11,11 @@ export class PaginateUserDto extends PaginationDto {
 
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({ description: 'Tên' })
+  first_name?: string
+
+  @IsOptional()
+  @IsString()
   @ApiPropertyOptional({ description: 'Email' })
   email?: string
 

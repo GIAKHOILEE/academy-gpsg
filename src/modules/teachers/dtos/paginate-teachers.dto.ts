@@ -62,6 +62,11 @@ export class PaginateTeachersDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'ID niên khóa' })
   scholastic_id?: number
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Tên giáo viên' })
+  first_name?: string
 }
 
 export class PaginateTeacherClassesDto extends PaginationDto {

@@ -77,6 +77,11 @@ export class GetStudentsOfClassDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Mã học sinh' })
   code: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Họ tên học sinh' })
+  first_name: string
 }
 
 export class PaginateClassOfStudentDto extends PaginationDto {

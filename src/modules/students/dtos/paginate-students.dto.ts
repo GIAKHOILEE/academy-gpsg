@@ -13,6 +13,11 @@ export class PaginateStudentsDto extends PaginationDto {
 
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({ description: 'Họ sinh viên' })
+  first_name?: string
+
+  @IsOptional()
+  @IsString()
   @ApiPropertyOptional({ description: 'Mã sinh viên' })
   code?: string
 
