@@ -306,7 +306,7 @@ export class ExamScoreServiceV2 {
       saint_name: row?.student?.user?.saint_name ?? '',
       full_name: row?.student?.user?.full_name ?? '',
       email: row?.student?.user?.email ?? '',
-      score: row.score !== null ? Number(row.score) : null,
+      score: row.score,
       learn_type: row?.learn_type,
       class_id: Number(row.class.id),
     }))
