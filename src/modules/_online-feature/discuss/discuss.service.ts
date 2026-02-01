@@ -194,6 +194,7 @@ export class DiscussService {
           full_name: discuss.user.full_name,
           saint_name: discuss.user.saint_name,
           avatar: discuss.user.avatar,
+          role: discuss.user.role,
         },
         number_comment: numberCommentByDiscuss[discuss.id] || 0,
         // lesson: discuss.lesson,
