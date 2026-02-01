@@ -13,7 +13,7 @@ export class ClassStudents {
   id: number
 
   // Điểm số
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   score: string
 
   @ManyToOne(() => Classes, classes => classes.class_students, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
