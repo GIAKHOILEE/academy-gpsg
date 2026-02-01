@@ -44,6 +44,13 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Chứng chỉ giáo viên' })
   teacher_certificate: string
 
+  // chứng chỉ khác
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'Chứng chỉ khác', example: ['Chứng chỉ 1', 'Chứng chỉ 2'] })
+  other_certificate: string[]
+
   // môn đã và đang giảng dạy
   @IsOptional()
   @IsArray()

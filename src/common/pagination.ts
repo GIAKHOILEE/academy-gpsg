@@ -21,6 +21,8 @@ export class PaginationDto {
   @ApiPropertyOptional({ description: 'Chiều sắp xếp', enum: ['ASC', 'DESC'] })
   @IsOptional()
   orderDirection?: 'ASC' | 'DESC'
+
+  anotherOrderBy?: string // example: getAll Teacher => orderBy: 'first_name', anotherOrderBy: 'user.first_name'
 }
 
 export interface PaginationMeta {
@@ -31,7 +33,7 @@ export interface PaginationMeta {
 }
 
 export async function paginate<T>(queryBuilder: SelectQueryBuilder<T>, params: PaginationDto) {
-  const { page = 1, limit = 10, orderBy, orderDirection = 'DESC', ...filters } = params
+  const { page = 1, limit = 10, orderBy, orderDirection = 'DESC', anotherOrderBy, ...filters } = params
 
   const mainTableAlias = queryBuilder.alias
 
@@ -72,7 +74,11 @@ export async function paginate<T>(queryBuilder: SelectQueryBuilder<T>, params: P
   })
 
   if (orderBy) {
-    queryBuilder.orderBy(`${mainTableAlias}.${orderBy}`, orderDirection)
+    if (anotherOrderBy) {
+      queryBuilder.orderBy(`${anotherOrderBy}`, orderDirection)
+    } else {
+      queryBuilder.orderBy(`${mainTableAlias}.${orderBy}`, orderDirection)
+    }
   }
 
   const [data, total] = await queryBuilder

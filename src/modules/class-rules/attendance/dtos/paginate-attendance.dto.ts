@@ -1,11 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
 export class PaginateAttendanceDto {
   @ApiPropertyOptional({ description: 'ID user của học viên' })
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  user_id?: number
+  user_id?: string
 
   @ApiPropertyOptional({ description: 'Tên học viên' })
   @IsString()

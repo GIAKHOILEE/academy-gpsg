@@ -1,6 +1,6 @@
 import { Role } from '@enums/role.enum'
-import { ApiProperty } from '@nestjs/swagger'
-import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class AnnouncementDto {
   @IsString()
@@ -12,16 +12,21 @@ export class AnnouncementDto {
   title: string
 
   @IsString()
-  @IsNotEmpty()
-  @ApiProperty({
+  @IsOptional()
+  @ApiPropertyOptional({
     description: 'Nội dung',
     example: 'Thông báo',
   })
   content: string
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @ApiProperty({ description: 'URL của các file', example: ['https://example.com/file1.pdf', 'https://example.com/file2.pdf'], type: [String] })
+  @ApiPropertyOptional({
+    description: 'URL của các file',
+    example: ['https://example.com/file1.pdf', 'https://example.com/file2.pdf'],
+    type: [String],
+  })
   file_url: string[]
 
   @IsEnum(Role)

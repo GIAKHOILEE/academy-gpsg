@@ -52,7 +52,7 @@ export class TeachersService {
         bank_branch,
         ...userData
       } = createTeacherDto
-      const { password, email, code, ...rest } = userData
+      const { password, email, code, full_name, ...rest } = userData
 
       // Kiểm tra email đã tồn tại
       if (email) {
@@ -73,6 +73,9 @@ export class TeachersService {
         if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
+      // từ full name tách ra first name
+      const first_name = full_name.split(' ')[0]
+
       const hashedPassword = await hashPassword(password ?? code)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
@@ -80,6 +83,8 @@ export class TeachersService {
         status: UserStatus.ACTIVE,
         email,
         code,
+        full_name,
+        first_name,
         ...rest,
       })
 
@@ -136,6 +141,7 @@ export class TeachersService {
         specialized,
         professional_certificate,
         teacher_certificate,
+        other_certificate,
         subject_teaching,
         boarding,
         start_date,
@@ -146,7 +152,7 @@ export class TeachersService {
         bank_branch,
         ...userData
       } = updateTeacherDto
-      const { email, ...rest } = userData
+      const { email, full_name, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -176,9 +182,14 @@ export class TeachersService {
         if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
+      // từ full name tách ra first name
+      const first_name = full_name.split(' ')[0]
+
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
         email: email ?? user.email,
         code: code ?? user.code,
+        full_name: full_name ?? user.full_name,
+        first_name: first_name ?? user.first_name,
         ...rest,
       })
       await queryRunner.manager.save(User, updatedUser)
@@ -189,6 +200,7 @@ export class TeachersService {
         specialized: specialized,
         professional_certificate: professional_certificate,
         teacher_certificate: teacher_certificate,
+        other_certificate: other_certificate,
         subject_teaching: subject_teaching,
         boarding: boarding,
         start_date: start_date,
@@ -242,6 +254,7 @@ export class TeachersService {
       id: teacher.id,
       code: teacher.user.code,
       full_name: teacher.user.full_name,
+      first_name: teacher.user.first_name,
       email: teacher.user.email,
       gender: teacher.user.gender,
       phone_number: teacher.user.phone_number,
@@ -260,6 +273,7 @@ export class TeachersService {
       specialized: teacher.specialized,
       professional_certificate: teacher.professional_certificate,
       teacher_certificate: teacher.teacher_certificate,
+      other_certificate: teacher?.other_certificate,
       subject_teaching: teacher.subject_teaching,
       boarding: teacher.boarding,
       start_date: teacher.start_date,
@@ -285,6 +299,7 @@ export class TeachersService {
       semester_id,
       department_id,
       scholastic_id,
+      first_name,
       ...rest
     } = paginateTeachersDto
     const query = this.teacherRepository.createQueryBuilder('teachers').leftJoinAndSelect('teachers.user', 'user')
@@ -302,6 +317,10 @@ export class TeachersService {
 
     if (full_name) {
       query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })
+    }
+
+    if (first_name) {
+      query.andWhere('user.first_name LIKE :first_name', { first_name: `%${first_name}%` })
     }
 
     if (email) {
@@ -346,6 +365,10 @@ export class TeachersService {
       query.andWhere('subject.department_id = :department_id', { department_id })
     }
 
+    if (rest.orderBy === 'first_name') {
+      rest.anotherOrderBy = 'user.first_name'
+    }
+
     query.distinct(true)
 
     const { data, meta } = await paginate(query, rest)
@@ -354,6 +377,7 @@ export class TeachersService {
       id: teacher.id,
       code: teacher.user.code,
       full_name: teacher.user.full_name,
+      first_name: teacher.user.first_name,
       email: teacher.user.email,
       gender: teacher.user.gender,
       phone_number: teacher.user.phone_number,

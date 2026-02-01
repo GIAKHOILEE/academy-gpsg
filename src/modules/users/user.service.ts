@@ -3,7 +3,7 @@ import { hashPassword, throwAppException, validateHash } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
-import { ConflictException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common'
+import { ConflictException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { CreateUserDto } from './dtos/create-user.dto'
@@ -26,10 +26,14 @@ export class UserService {
       throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
 
+    // từ full name tách ra first name
+    const first_name = full_name.split(' ')[0]
+
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
       username,
       full_name,
+      first_name,
       password: hashedPassword,
       role,
       status: UserStatus.ACTIVE,
@@ -45,10 +49,14 @@ export class UserService {
     if (existingUser) {
       throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
+    // từ full name tách ra first name
+    const first_name = full_name.split(' ')[0]
+
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
       username,
       full_name,
+      first_name,
       password: hashedPassword,
       role: Role.STAFF,
       status: UserStatus.ACTIVE,
@@ -139,7 +147,7 @@ export class UserService {
   }
 
   async updateUser(userId: number, updateUserDto: UpdateUserDto): Promise<void> {
-    const { username, ...dto } = updateUserDto
+    const { username, full_name, ...dto } = updateUserDto
     const user = await this.usersRepository.findOne({ where: { id: userId } })
     if (!user) {
       throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -155,6 +163,10 @@ export class UserService {
       }
       user.username = username
     }
+    if (full_name) {
+      user.full_name = full_name
+      user.first_name = full_name.split(' ')[0]
+    }
     Object.assign(user, dto)
     await this.usersRepository.save(user)
   }
@@ -162,7 +174,7 @@ export class UserService {
   async updateStatus(userId: number, status: UserStatus): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id: userId } })
     if (!user) {
-      throw new UnauthorizedException('User not found')
+      throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
     user.status = status
     await this.usersRepository.save(user)

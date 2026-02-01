@@ -4,6 +4,7 @@ import { UserStatus } from '@enums/status.enum'
 export interface IUser {
   id: number
   full_name?: string
+  first_name?: string
   username?: string
   code?: string
   email?: string

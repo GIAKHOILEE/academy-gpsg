@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsNumber } from 'class-validator'
+import { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
 export class ClassStudentScoreDto {
@@ -8,9 +8,9 @@ export class ClassStudentScoreDto {
   student_id: number
 
   @IsNotEmpty()
-  @IsNumber()
+  @IsString()
   @ApiProperty({ description: 'Score', example: 8.5 })
-  score: number
+  score: string
 }
 
 export class UpdateClassStudentScoreDto {

@@ -588,7 +588,7 @@ export class EnrollmentsService {
         if (learn_type === LearnType.VIDEO) {
           learn_type = 'Học qua video'
         } else if (learn_type === LearnType.MEETING) {
-          learn_type = 'Học qua meeting'
+          learn_type = 'Học online'
         } else {
           learn_type = 'Học trực tiếp'
         }

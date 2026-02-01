@@ -5,7 +5,7 @@ import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger'
 import { ResponseDto } from 'src/common/response.dto'
 import { VisitorService } from '../visitor/visitor.service'
 import { DashboardService } from './dashboard.service'
-import { RevenueStatisticsDto, SemesterRevenueDto, TeacherRevenueDto } from './dtos/dashboard.dto'
+import { FilterDashboardBySemesterDto, RevenueStatisticsDto, SemesterRevenueDto, TeacherRevenueDto } from './dtos/dashboard.dto'
 import { UpdateTeacherSalaryDto } from './dtos/update.dto'
 
 @Controller('dashboard')
@@ -17,8 +17,8 @@ export class DashboardControllerUser {
 
   @Get('/student/age')
   @ApiOperation({ summary: 'Lấy thống kê tuổi học viên' })
-  async studentAgeStatistics(): Promise<ResponseDto> {
-    const studentAgeStatistics = await this.dashboardService.studentAgeStatistics()
+  async studentAgeStatistics(@Query() filter: FilterDashboardBySemesterDto): Promise<ResponseDto> {
+    const studentAgeStatistics = await this.dashboardService.studentAgeStatistics(filter)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'DASHBOARD_GET_STUDENT_AGE_SUCCESS',
@@ -28,12 +28,23 @@ export class DashboardControllerUser {
 
   @Get('/student/statistics')
   @ApiOperation({ summary: 'Lấy thống kê dân số học viên' })
-  async studentStatistics(): Promise<ResponseDto> {
-    const studentStatistics = await this.dashboardService.studentStatistics()
+  async studentStatistics(@Query() filter: FilterDashboardBySemesterDto): Promise<ResponseDto> {
+    const studentStatistics = await this.dashboardService.studentStatistics(filter)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'DASHBOARD_GET_STUDENT_SUCCESS',
       data: studentStatistics,
+    })
+  }
+
+  @Get('/student/ranking')
+  @ApiOperation({ summary: 'Lấy thống kê xếp loại học viên' })
+  async studentRanking(@Query() filter: FilterDashboardBySemesterDto): Promise<ResponseDto> {
+    const studentRanking = await this.dashboardService.studentRanking(filter)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'DASHBOARD_GET_STUDENT_RANKING_SUCCESS',
+      data: studentRanking,
     })
   }
 

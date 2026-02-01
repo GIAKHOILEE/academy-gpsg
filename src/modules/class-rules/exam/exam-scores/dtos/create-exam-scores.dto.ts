@@ -12,11 +12,11 @@ export class CreateClassStudentScoreDto {
   @ApiProperty({
     description: 'Scores',
     example: [
-      { student_id: 1, score: 10 },
-      { student_id: 2, score: 20 },
+      { student_id: 1, score: '10' },
+      { student_id: 2, score: '20' },
     ],
   })
-  scores: { student_id: number; score: number }[]
+  scores: { student_id: number; score: string }[]
 }
 
 export class BulkExamScoreByStudentDto {

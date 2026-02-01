@@ -32,7 +32,7 @@ export class StudentsService {
 
     try {
       const { image_4x6, diploma_image, transcript_image, other_document, card_code, ...userData } = createStudentDto
-      const { password, email, code, ...rest } = userData
+      const { password, email, code, full_name, ...rest } = userData
 
       // Kiểm tra email đã tồn tại
       // if (email) {
@@ -54,12 +54,15 @@ export class StudentsService {
       }
 
       const hashedPassword = await hashPassword(password ?? code)
+      const first_name = full_name.split(' ')[0]
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
         role: Role.STUDENT,
         status: UserStatus.ACTIVE,
         email,
         code,
+        full_name,
+        first_name,
         ...rest,
       })
 
@@ -121,7 +124,7 @@ export class StudentsService {
     await queryRunner.startTransaction()
 
     const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, ...userData } = updateStudentDto
-    const { email, ...rest } = userData
+    const { email, full_name, ...rest } = userData
 
     try {
       const studentRepo = queryRunner.manager.getRepository(Student)
@@ -145,8 +148,12 @@ export class StudentsService {
       // }
 
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
+      // tách full_name thành first_name và last_name
+      const first_name = full_name.split(' ')[0]
       const updatedUser = userRepo.merge(user, {
         email: email ?? user.email,
+        full_name: full_name ?? user.full_name,
+        first_name: first_name ?? user.first_name,
         ...rest,
       })
       await userRepo.save(updatedUser)
@@ -298,6 +305,7 @@ export class StudentsService {
   async getAllStudents(paginateStudentsDto: PaginateStudentsDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
     const {
       full_name,
+      first_name,
       email,
       phone_number,
       status,
@@ -383,9 +391,16 @@ export class StudentsService {
       // or if you joined department entity: `department.id = :department_id`
     }
 
+    if (first_name) {
+      query.andWhere('user.first_name LIKE :first_name', { first_name: `%${first_name}%` })
+    }
+
     // ensure soft-delete filter
     query.andWhere('students.deleted_at IS NULL')
 
+    if (rest.orderBy === 'first_name') {
+      rest.anotherOrderBy = 'user.first_name'
+    }
     // pagination (reuse your paginate util)
     const { data, meta } = await paginate(query, rest)
 
@@ -394,6 +409,7 @@ export class StudentsService {
       id: student.id,
       code: student.user?.code,
       full_name: student.user?.full_name,
+      first_name: student.user?.first_name,
       email: student.user?.email,
       gender: student.user?.gender,
       phone_number: student.user?.phone_number,

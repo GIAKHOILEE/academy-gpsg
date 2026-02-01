@@ -238,6 +238,12 @@ export class ExamScoreServiceV2 {
     const classEntity = await this.classRepo.findOne({ where: { id: class_id } })
     if (!classEntity) throw throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
+    // validate score từ 0-10
+    scores.forEach(s => {
+      if (Number(s.score) < 0 || Number(s.score) > 10) {
+        throw throwAppException('SCORE_INVALID', ErrorCode.SCORE_INVALID, HttpStatus.BAD_REQUEST)
+      }
+    })
     const updateData = scores.map(s => ({
       class_id,
       student_id: s.student_id,
@@ -250,6 +256,13 @@ export class ExamScoreServiceV2 {
   async updateClassStudentScores(dto: UpdateClassStudentScoreDto): Promise<void> {
     const { class_id, scores } = dto
     if (!scores || scores.length === 0) return
+
+    // validate score từ 0-10
+    scores.forEach(s => {
+      if (Number(s.score) < 0 || Number(s.score) > 10) {
+        throw throwAppException('SCORE_INVALID', ErrorCode.SCORE_INVALID, HttpStatus.BAD_REQUEST)
+      }
+    })
 
     try {
       const updateData = scores.map(s => ({
@@ -280,6 +293,10 @@ export class ExamScoreServiceV2 {
         'user.email',
         'class.id',
       ])
+
+    if (dto.orderBy === 'first_name') {
+      dto.anotherOrderBy = 'user.first_name'
+    }
 
     const { data, meta } = await paginate(queryBuilder, dto)
     const result = data.map((row: any) => ({

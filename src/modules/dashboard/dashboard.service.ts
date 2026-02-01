@@ -9,12 +9,14 @@ import { Teacher } from '@modules/teachers/teachers.entity'
 import { Voucher } from '@modules/voucher/voucher.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, Raw, Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { SemesterRevenueSummary } from './dashboard.interface'
-import { RevenueStatisticsDto, SemesterRevenueDto, TeacherRevenueDto } from './dtos/dashboard.dto'
+import { FilterDashboardBySemesterDto, RevenueStatisticsDto, SemesterRevenueDto, TeacherRevenueDto } from './dtos/dashboard.dto'
 import { UpdateTeacherSalaryDto } from './dtos/update.dto'
 import { Gender, Role } from '@enums/role.enum'
 import { User } from '@modules/users/user.entity'
+import { Department } from '@modules/departments/departments.entity'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 @Injectable()
 export class DashboardService {
   constructor(
@@ -30,12 +32,90 @@ export class DashboardService {
     private readonly teacherRepository: Repository<Teacher>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Department)
+    private readonly departmentRepository: Repository<Department>,
+    @InjectRepository(ClassStudents)
+    private readonly classStudentRepository: Repository<ClassStudents>,
     private readonly dataSource: DataSource,
   ) {}
 
+  // xếp loại học viên
+  async studentRanking(filter: FilterDashboardBySemesterDto): Promise<any> {
+    const { semester_id, scholastic_id } = filter
+
+    const queryBuilder = this.classStudentRepository
+      .createQueryBuilder('cs')
+      .innerJoin('cs.class', 'c')
+      .select([
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 1 AND CAST(cs.score AS DECIMAL(10,2)) < 5 THEN 1 ELSE 0 END) AS fail`,
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 5 AND CAST(cs.score AS DECIMAL(10,2)) < 6 THEN 1 ELSE 0 END) AS average`,
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 6 AND CAST(cs.score AS DECIMAL(10,2)) < 8 THEN 1 ELSE 0 END) AS good`,
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 8 AND CAST(cs.score AS DECIMAL(10,2)) < 9 THEN 1 ELSE 0 END) AS very_good`,
+        `SUM(CASE WHEN CAST(cs.score AS DECIMAL(10,2)) >= 9 THEN 1 ELSE 0 END) AS excellent`,
+        `COUNT(CASE WHEN cs.score IS NOT NULL AND cs.score != '' THEN 1 END) AS has_score`,
+        `COUNT(CASE WHEN cs.score IS NULL OR cs.score = '' THEN 1 END) AS no_score`,
+        `COUNT(*) AS total`,
+      ])
+
+    if (semester_id) {
+      queryBuilder.andWhere('c.semester_id = :semester_id', { semester_id })
+    }
+    if (scholastic_id) {
+      queryBuilder.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+
+    const result = await queryBuilder.getRawOne()
+
+    const total = Number(result.total) || 0
+    const hasScore = Number(result.has_score) || 0
+    const noScore = Number(result.no_score) || 0
+
+    const calculatePercentage = (count: number, totalCount: number) => {
+      if (totalCount === 0) return 0
+      return parseFloat(((count / totalCount) * 100).toFixed(2))
+    }
+
+    return {
+      ranking: {
+        fail: {
+          count: Number(result.fail) || 0,
+          percentage: calculatePercentage(Number(result.fail), hasScore),
+        },
+        average: {
+          count: Number(result.average) || 0,
+          percentage: calculatePercentage(Number(result.average), hasScore),
+        },
+        good: {
+          count: Number(result.good) || 0,
+          percentage: calculatePercentage(Number(result.good), hasScore),
+        },
+        veryGood: {
+          count: Number(result.very_good) || 0,
+          percentage: calculatePercentage(Number(result.very_good), hasScore),
+        },
+        excellent: {
+          count: Number(result.excellent) || 0,
+          percentage: calculatePercentage(Number(result.excellent), hasScore),
+        },
+      },
+      scoreStatistics: {
+        hasScore: {
+          count: hasScore,
+          percentage: calculatePercentage(hasScore, total),
+        },
+        noScore: {
+          count: noScore,
+          percentage: calculatePercentage(noScore, total),
+        },
+      },
+      total,
+    }
+  }
   // thống kê dân số học viên
-  async studentStatistics(): Promise<any> {
-    const result = await this.userRepository
+  async studentStatistics(filter: FilterDashboardBySemesterDto): Promise<any> {
+    const { semester_id, scholastic_id } = filter
+
+    const queryBuilder = this.userRepository
       .createQueryBuilder('u')
       .select([
         // Nam
@@ -54,7 +134,29 @@ export class DashboardService {
         `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND u.saint_name IS NULL THEN 1 ELSE 0 END) AS other_daokhac`,
       ])
       .where('u.role = :role', { role: Role.STUDENT })
-      .getRawOne()
+
+    if (semester_id || scholastic_id) {
+      let filterSql = `EXISTS (
+        SELECT 1
+        FROM students s
+        INNER JOIN enrollments e ON e.student_id = s.id
+        INNER JOIN JSON_TABLE(e.class_ids, "$[*]" COLUMNS (class_id INT PATH "$.class_id")) ec ON 1=1
+        INNER JOIN classes c ON c.id = ec.class_id
+        WHERE s.user_id = u.id`
+
+      if (semester_id) {
+        filterSql += ` AND c.semester_id = :semester_id`
+      }
+      if (scholastic_id) {
+        filterSql += ` AND c.scholastic_id = :scholastic_id`
+      }
+      filterSql += ')'
+
+      queryBuilder.andWhere(filterSql)
+    }
+
+    const result = await queryBuilder.setParameters({ semester_id, scholastic_id, role: Role.STUDENT }).getRawOne()
+
     const data = {
       male: {
         parishioners: +result.male_giaodan,
@@ -92,19 +194,52 @@ export class DashboardService {
     }
 
     // tổng số lớp
-    const totalClass = await this.classRepository.count()
+    const classQb = this.classRepository.createQueryBuilder('c')
+    if (semester_id) classQb.andWhere('c.semester_id = :semester_id', { semester_id })
+    if (scholastic_id) classQb.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+    const totalClass = await classQb.getCount()
+
     // tổng số giảng viên
-    const totalTeacher = await this.teacherRepository.count()
+    let totalTeacher: number
+    if (semester_id || scholastic_id) {
+      const teacherQb = this.teacherRepository.createQueryBuilder('t').innerJoin('classes', 'c', 'c.teacher_id = t.id')
+      if (semester_id) teacherQb.andWhere('c.semester_id = :semester_id', { semester_id })
+      if (scholastic_id) teacherQb.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+
+      const teacherRes = await teacherQb.select('COUNT(DISTINCT t.id)', 'count').getRawOne()
+      totalTeacher = Number(teacherRes.count)
+    } else {
+      totalTeacher = await this.teacherRepository.count()
+    }
+
+    // tổng số khoa
+    let totalDepartment: number
+    if (semester_id || scholastic_id) {
+      const departmentQb = this.departmentRepository
+        .createQueryBuilder('d')
+        .innerJoin('subjects', 's', 's.department_id = d.id')
+        .innerJoin('classes', 'c', 'c.subject_id = s.id')
+
+      if (semester_id) departmentQb.andWhere('c.semester_id = :semester_id', { semester_id })
+      if (scholastic_id) departmentQb.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+
+      const departmentRes = await departmentQb.select('COUNT(DISTINCT d.id)', 'count').getRawOne()
+      totalDepartment = Number(departmentRes.count)
+    } else {
+      totalDepartment = await this.departmentRepository.count()
+    }
 
     return {
       totalClass,
       totalTeacher,
+      totalDepartment,
       ...data,
     }
   }
 
   // thông kê tuổi học viên
-  async studentAgeStatistics(): Promise<any> {
+  async studentAgeStatistics(filter: FilterDashboardBySemesterDto): Promise<any> {
+    const { semester_id, scholastic_id } = filter
     const today = new Date()
 
     const ageGroups = [
@@ -118,67 +253,55 @@ export class DashboardService {
       { label: 'Trên 70', min: 70, max: 200 },
     ]
 
-    const results = []
+    const queryBuilder = this.userRepository.createQueryBuilder('u').select([]).where('u.role = :role', { role: Role.STUDENT })
 
-    for (const group of ageGroups) {
-      const minYear = today.getFullYear() - group.max
-      const maxYear = today.getFullYear() - group.min
+    if (semester_id || scholastic_id) {
+      let filterSql = `EXISTS (
+        SELECT 1
+        FROM students s
+        INNER JOIN enrollments e ON e.student_id = s.id
+        INNER JOIN JSON_TABLE(e.class_ids, "$[*]" COLUMNS (class_id INT PATH "$.class_id")) ec ON 1=1
+        INNER JOIN classes c ON c.id = ec.class_id
+        WHERE s.user_id = u.id`
 
-      const male = await this.userRepository.count({
-        where: {
-          role: Role.STUDENT,
-          gender: Gender.MALE,
-          birth_date: Raw(
-            alias => `
-            (
-              STR_TO_DATE(${alias}, '%Y-%m-%d') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
-              OR STR_TO_DATE(${alias}, '%d-%m-%Y') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
-            )
-          `,
-          ),
-        },
-      })
+      if (semester_id) {
+        filterSql += ` AND c.semester_id = :semester_id`
+      }
+      if (scholastic_id) {
+        filterSql += ` AND c.scholastic_id = :scholastic_id`
+      }
+      filterSql += ')'
 
-      const female = await this.userRepository.count({
-        where: {
-          role: Role.STUDENT,
-          gender: Gender.FEMALE,
-          birth_date: Raw(
-            alias => `
-            (
-              STR_TO_DATE(${alias}, '%Y-%m-%d') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
-              OR STR_TO_DATE(${alias}, '%d-%m-%Y') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
-            )
-          `,
-          ),
-        },
-      })
-
-      const other = await this.userRepository.count({
-        where: {
-          role: Role.STUDENT,
-          gender: Raw(alias => `(${alias} = ${Gender.OTHER} OR ${alias} IS NULL)`),
-          birth_date: Raw(
-            alias => `
-            (
-              STR_TO_DATE(${alias}, '%Y-%m-%d') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
-              OR STR_TO_DATE(${alias}, '%d-%m-%Y') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
-            )
-          `,
-          ),
-        },
-      })
-
-      results.push({
-        ageGroup: group.label,
-        male: male,
-        female: female,
-        other: other,
-        total: male + female + other,
-      })
+      queryBuilder.andWhere(filterSql)
     }
 
-    return results
+    ageGroups.forEach((group, index) => {
+      const minYear = today.getFullYear() - group.max
+      const maxYear = today.getFullYear() - group.min
+      const condition = `(
+        STR_TO_DATE(u.birth_date, '%Y-%m-%d') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
+        OR STR_TO_DATE(u.birth_date, '%d-%m-%Y') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
+      )`
+
+      queryBuilder.addSelect(`SUM(CASE WHEN ${condition} AND u.gender = ${Gender.MALE} THEN 1 ELSE 0 END)`, `male_${index}`)
+      queryBuilder.addSelect(`SUM(CASE WHEN ${condition} AND u.gender = ${Gender.FEMALE} THEN 1 ELSE 0 END)`, `female_${index}`)
+      queryBuilder.addSelect(`SUM(CASE WHEN ${condition} AND (u.gender = ${Gender.OTHER} OR u.gender IS NULL) THEN 1 ELSE 0 END)`, `other_${index}`)
+    })
+
+    const res = await queryBuilder.setParameters({ semester_id, scholastic_id, role: Role.STUDENT }).getRawOne()
+
+    return ageGroups.map((group, index) => {
+      const male = Number(res[`male_${index}`]) || 0
+      const female = Number(res[`female_${index}`]) || 0
+      const other = Number(res[`other_${index}`]) || 0
+      return {
+        ageGroup: group.label,
+        male,
+        female,
+        other,
+        total: male + female + other,
+      }
+    })
   }
 
   // Tổng doanh thu
