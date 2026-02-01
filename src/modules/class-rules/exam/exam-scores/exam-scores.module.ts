@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common'
-import { ExamScoreController, TeacherExamScoreController } from './exam-scores.controller'
 import { ExamScoreService } from './exam-scores.service'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ExamScore } from './exam-scores.entity'

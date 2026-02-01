@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 
-import { paginate, PaginationDto, PaginationMeta } from '@common/pagination'
+import { paginate, PaginationMeta } from '@common/pagination'
 import { arrayToObject, hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
