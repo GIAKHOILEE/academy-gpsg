@@ -91,3 +91,26 @@ export class PaginateTeacherClassesDto extends PaginationDto {
   @Type(() => Number)
   status: ClassStatus
 }
+
+export class PaginateTeacherClassesDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Phòng học' })
+  classroom: string
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @ApiPropertyOptional({ description: 'filter theo học online', type: Boolean })
+  is_online?: boolean
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @ApiPropertyOptional({ description: 'filter theo lớp miễn phí', type: Boolean })
+  is_free?: boolean
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Trạng thái lớp', enum: ClassStatus })
+  @IsEnum(ClassStatus)
+  @Type(() => Number)
+  status: ClassStatus
+}
