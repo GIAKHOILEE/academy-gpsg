@@ -290,6 +290,7 @@ export class ExamScoreServiceV2 {
         'user.code',
         'user.saint_name',
         'user.full_name',
+        'user.first_name',
         'user.email',
         'class.id',
       ])
