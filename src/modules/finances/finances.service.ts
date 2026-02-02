@@ -56,18 +56,32 @@ export class FinancesService {
     // }
   }
 
-  async getFinances(paginateDto: PaginateFinancesDto): Promise<{ data: IFinances[]; meta: PaginationMeta }> {
+  async getFinances(
+    paginateDto: PaginateFinancesDto,
+  ): Promise<{ data: IFinances[]; meta: PaginationMeta; total_amount_received: number; total_amount_spent: number; total_total_amount: number }> {
     const query = this.financesRepository.createQueryBuilder('finances')
 
     const { data, meta } = await paginate(query, paginateDto)
-    const formattedFinances: IFinances[] = data.map((finance: FinancesEntity) => ({
-      ...finance,
-      created_at: formatStringDate(finance.created_at.toISOString()),
-      updated_at: formatStringDate(finance.updated_at.toISOString()),
-    }))
+
+    let total_amount_received = 0
+    let total_amount_spent = 0
+    let total_total_amount = 0
+    const formattedFinances: IFinances[] = data.map((finance: FinancesEntity) => {
+      total_amount_received += Number(finance.amount_received)
+      total_amount_spent += Number(finance.amount_spent)
+      total_total_amount += Number(finance.total_amount)
+      return {
+        ...finance,
+        created_at: formatStringDate(finance.created_at.toISOString()),
+        updated_at: formatStringDate(finance.updated_at.toISOString()),
+      }
+    })
     return {
       data: formattedFinances,
       meta,
+      total_amount_received,
+      total_amount_spent,
+      total_total_amount,
     }
   }
 
