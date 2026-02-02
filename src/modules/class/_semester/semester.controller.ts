@@ -83,3 +83,33 @@ export class AdminSemesterController {
     })
   }
 }
+
+@ApiTags('Semester')
+@Controller('semester')
+export class SemesterController {
+  constructor(private readonly semesterService: SemesterService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all semesters' })
+  async getSemesters(@Query() paginateSemesterDto: PaginateSemesterDto): Promise<ResponseDto> {
+    const semesters = await this.semesterService.findAll(paginateSemesterDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'SEMESTERS_FETCHED_SUCCESSFULLY',
+      data: semesters.data,
+      meta: semesters.meta,
+    })
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a semester by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the semester to get' })
+  async getSemesterById(@Param('id') id: number): Promise<ResponseDto> {
+    const semester = await this.semesterService.findOne(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'SEMESTER_FETCHED_SUCCESSFULLY',
+      data: semester,
+    })
+  }
+}
