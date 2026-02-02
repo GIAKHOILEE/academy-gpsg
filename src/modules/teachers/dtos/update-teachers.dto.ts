@@ -34,15 +34,17 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
 
   // chứng chỉ chuyên môn
   @IsOptional()
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @ApiPropertyOptional({ description: 'Chứng chỉ chuyên môn' })
-  professional_certificate: string
+  professional_certificate: string[]
 
   // chứng chỉ giáo viên
   @IsOptional()
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @ApiPropertyOptional({ description: 'Chứng chỉ giáo viên' })
-  teacher_certificate: string
+  teacher_certificate: string[]
 
   // chứng chỉ khác
   @IsOptional()
@@ -72,9 +74,10 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
 
   // CV
   @IsOptional()
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @ApiPropertyOptional({ description: 'pdf file CV' })
-  cv: string
+  cv: string[]
 
   // banking
   @IsOptional()

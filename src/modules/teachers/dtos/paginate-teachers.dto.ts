@@ -39,29 +39,27 @@ export class PaginateTeachersDto extends PaginationDto {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'ID lớp' })
-  class_id?: number
+  class_id?: string
 
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'Trạng thái lớp', example: ClassStatus.ENROLLING, enum: ClassStatus })
-  @IsEnum(ClassStatus)
-  @Type(() => Number)
   class_status?: ClassStatus
 
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'ID học kỳ' })
-  semester_id?: number
+  semester_id?: string
 
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'ID khoa' })
-  department_id?: number
+  department_id?: string
 
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'ID niên khóa' })
-  scholastic_id?: number
+  scholastic_id?: string
 
   @IsOptional()
   @IsString()

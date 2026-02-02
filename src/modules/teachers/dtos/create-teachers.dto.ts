@@ -29,15 +29,17 @@ export class CreateTeachersDto extends CreateUserDtoV2 {
 
   // chứng chỉ chuyên môn
   @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ description: 'Chứng chỉ chuyên môn' })
-  professional_certificate: string
+  @IsArray()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'Chứng chỉ chuyên môn', example: ['Chứng chỉ 1', 'Chứng chỉ 2'] })
+  professional_certificate: string[]
 
   // chứng chỉ giáo viên
   @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ description: 'Chứng chỉ giáo viên' })
-  teacher_certificate: string
+  @IsArray()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'Chứng chỉ giáo viên', example: ['Chứng chỉ 1', 'Chứng chỉ 2'] })
+  teacher_certificate: string[]
 
   // chứng chỉ khác
   @IsOptional()
@@ -67,9 +69,10 @@ export class CreateTeachersDto extends CreateUserDtoV2 {
 
   // CV
   @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ description: 'pdf file CV' })
-  cv: string
+  @IsArray()
+  @IsString({ each: true })
+  @ApiPropertyOptional({ description: 'pdf file CV', example: ['cv1.pdf', 'cv2.pdf'] })
+  cv: string[]
 
   // banking
   @IsOptional()
