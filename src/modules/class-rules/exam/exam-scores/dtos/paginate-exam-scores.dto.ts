@@ -19,4 +19,30 @@ export class PaginateExamScoresDto extends PaginationDto {
   })
   @Type(() => Number)
   student_id?: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Học kỳ', example: 1 })
+  @Type(() => Number)
+  semester_id: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Niên khóa', example: 1 })
+  @Type(() => Number)
+  scholastic_id: number
+}
+
+export class PaginateMyExamScoresDto extends PaginationDto {
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Học kỳ', example: 1 })
+  @Type(() => Number)
+  semester_id: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Niên khóa', example: 1 })
+  @Type(() => Number)
+  scholastic_id: number
 }
