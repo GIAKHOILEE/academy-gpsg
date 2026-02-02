@@ -12,13 +12,13 @@ export class FinancesEntity {
   @Column()
   type: FinancesType
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'bigint', default: 0 })
   amount_received: number
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'bigint', default: 0 })
   amount_spent: number
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'bigint', default: 0 })
   total_amount: number
 
   //sao kê
