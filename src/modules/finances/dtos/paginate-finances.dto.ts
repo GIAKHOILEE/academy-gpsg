@@ -1,7 +1,7 @@
 import { PaginationDto } from '@common/pagination'
 import { FinancesPaymentMethod, FinancesType } from '@enums/finances.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsOptional, IsString } from 'class-validator'
+import { IsBooleanString, IsOptional, IsString } from 'class-validator'
 
 export class PaginateFinancesDto extends PaginationDto {
   @IsOptional()
@@ -18,6 +18,11 @@ export class PaginateFinancesDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Payment method', enum: FinancesPaymentMethod })
   payment_method?: string
+
+  @IsOptional()
+  @IsBooleanString()
+  @ApiPropertyOptional({ description: 'filter theo sao kê', example: true, type: Boolean })
+  statement?: string
 
   @IsOptional()
   @IsString()
