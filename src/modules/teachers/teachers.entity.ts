@@ -43,12 +43,12 @@ export class Teacher {
   specialized: string
 
   // chứng chỉ chuyên môn
-  @Column({ nullable: true })
-  professional_certificate: string
+  @Column({ nullable: true, type: 'json' })
+  professional_certificate: string[]
 
   // chứng chỉ giáo viên
-  @Column({ nullable: true })
-  teacher_certificate: string
+  @Column({ nullable: true, type: 'json' })
+  teacher_certificate: string[]
 
   // chứng chỉ khác
   @Column({ nullable: true, type: 'json' })
@@ -67,8 +67,8 @@ export class Teacher {
   start_date: string
 
   // CV
-  @Column({ nullable: true })
-  cv: string
+  @Column({ nullable: true, type: 'json' })
+  cv: string[]
 
   @OneToMany(() => Classes, classes => classes.teacher, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   classes: Classes[]

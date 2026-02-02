@@ -35,17 +35,17 @@ export class CreateFinancesDto {
 
   @IsNumber()
   @IsNotEmpty()
-  @ApiProperty({ description: 'Day', example: '01' })
+  @ApiProperty({ description: 'Day', example: 1 })
   day: number
 
   @IsNumber()
   @IsNotEmpty()
-  @ApiProperty({ description: 'Month', example: '01' })
+  @ApiProperty({ description: 'Month', example: 1 })
   month: number
 
   @IsNumber()
   @IsNotEmpty()
-  @ApiProperty({ description: 'Year', example: '2025' })
+  @ApiProperty({ description: 'Year', example: 2025 })
   year: number
 
   @IsString()
