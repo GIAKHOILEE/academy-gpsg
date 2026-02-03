@@ -4,6 +4,7 @@ import { User } from '../users/user.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { Answers } from '@modules/evaluation/answers/answers.entity'
+import { IFile } from '@common/file'
 
 @Entity({ name: 'students' })
 export class Student {
@@ -28,16 +29,16 @@ export class Student {
   is_card_taken: boolean
 
   // học bạ
-  @Column({ nullable: true })
-  diploma_image: string
+  @Column({ nullable: true, type: 'json' })
+  diploma_image: IFile[]
 
   // bằng tốt nghiệp
-  @Column({ nullable: true })
-  transcript_image: string
+  @Column({ nullable: true, type: 'json' })
+  transcript_image: IFile[]
 
   // tài liệu khác
-  @Column({ nullable: true })
-  other_document: string
+  @Column({ nullable: true, type: 'json' })
+  other_document: IFile[]
 
   // tốt nghiệp
   @Column({ nullable: true, default: false })

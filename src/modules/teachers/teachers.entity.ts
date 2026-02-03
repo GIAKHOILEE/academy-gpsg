@@ -13,6 +13,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm'
 import { ClassActivitiesEntity } from '@modules/class-activities/class-activities/class-activities.entity'
+import { IFile } from '@common/file'
 
 @Entity({ name: 'teachers' })
 export class Teacher {
@@ -44,11 +45,11 @@ export class Teacher {
 
   // chứng chỉ chuyên môn
   @Column({ nullable: true, type: 'json' })
-  professional_certificate: string[]
+  professional_certificate: IFile[]
 
   // chứng chỉ giáo viên
   @Column({ nullable: true, type: 'json' })
-  teacher_certificate: string[]
+  teacher_certificate: IFile[]
 
   // chứng chỉ khác
   @Column({ nullable: true, type: 'json' })
@@ -68,7 +69,7 @@ export class Teacher {
 
   // CV
   @Column({ nullable: true, type: 'json' })
-  cv: string[]
+  cv: IFile[]
 
   @OneToMany(() => Classes, classes => classes.teacher, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   classes: Classes[]
