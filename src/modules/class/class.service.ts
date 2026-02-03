@@ -561,7 +561,7 @@ export class ClassService {
 
   // lấy list class của 1 học sinh
   async getClassesOfStudent(userId: number, paginateClassDto: PaginateClassOfStudentDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
-    const { name, code, classroom, is_online, status, ...rest } = paginateClassDto
+    const { name, code, classroom, is_online, status, scholastic_id, semester_id, ...rest } = paginateClassDto
     const student = await this.studentRepository.findOne({ where: { user_id: userId }, select: ['id'] })
     if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     const student_id = student.id
@@ -623,6 +623,12 @@ export class ClassService {
     }
     if (status) {
       classEntities.andWhere('class.status = :status', { status })
+    }
+    if (scholastic_id) {
+      classEntities.andWhere('class.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+    if (semester_id) {
+      classEntities.andWhere('class.semester_id = :semester_id', { semester_id })
     }
     const { data, meta } = await paginate(classEntities, rest)
 

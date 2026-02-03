@@ -115,4 +115,16 @@ export class PaginateClassOfStudentDto extends PaginationDto {
   @IsEnum(ClassStatus)
   @Type(() => Number)
   status: ClassStatus
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo niên khóa' })
+  @IsNumber()
+  @Type(() => Number)
+  scholastic_id: number
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'filter theo học kỳ' })
+  @IsNumber()
+  @Type(() => Number)
+  semester_id: number
 }
