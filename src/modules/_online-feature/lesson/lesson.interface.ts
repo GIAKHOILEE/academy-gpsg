@@ -1,3 +1,4 @@
+import { IFile } from '@common/file'
 import { IClasses } from '@modules/class/class.interface'
 
 export interface ILesson {
@@ -10,8 +11,8 @@ export interface ILesson {
   end_time?: string
   description?: string
   video_url?: string[]
-  slide_url?: string[]
-  document_url?: string[]
+  slide_url?: IFile[]
+  document_url?: IFile[]
   meeting_url?: string
   class_id?: number
   class?: IClasses
