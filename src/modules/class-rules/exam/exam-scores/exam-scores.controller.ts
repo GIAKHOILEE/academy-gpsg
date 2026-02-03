@@ -133,7 +133,7 @@ export class StudentExamScoreController {
 
   @Get('me')
   async getScores(@Query() dto: PaginateMyExamScoresDto, @Req() req): Promise<ResponseDto> {
-    const result = await this.scoreService.getMyScores(dto, req.user.id)
+    const result = await this.scoreService.getMyScores(dto, req.user.userId)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'SCORES_RETRIEVED_SUCCESS',
