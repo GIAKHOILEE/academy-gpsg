@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Get, Post, Put, Query, Req, Res } from '@nestjs/common'
 import { ExamScoreService, ExamScoreServiceV2 } from './exam-scores.service'
 import { BulkExamScoreByStudentDto, CreateClassStudentScoreDto } from './dtos/create-exam-scores.dto'
 import { UpdateClassStudentScoreDto } from './dtos/update-class-student-score.dto'
 import { ResponseDto } from '@common/response.dto'
-import { PaginateExamScoresDto } from './dtos/paginate-exam-scores.dto'
+import { PaginateExamScoresDto, PaginateMyExamScoresDto } from './dtos/paginate-exam-scores.dto'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
@@ -115,6 +115,25 @@ export class TeacherExamScoreControllerV2 {
   @Get()
   async getScores(@Query() dto: PaginateExamScoresDto): Promise<ResponseDto> {
     const result = await this.examScoreService.getClassStudentScores(dto)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'SCORES_RETRIEVED_SUCCESS',
+      data: result.data,
+      meta: result.meta,
+    })
+  }
+}
+
+@ApiTags('Student Exam Scores')
+@ApiBearerAuth()
+@Auth(Role.STUDENT)
+@Controller('student/exam/scores')
+export class StudentExamScoreController {
+  constructor(private readonly scoreService: ExamScoreServiceV2) {}
+
+  @Get('me')
+  async getScores(@Query() dto: PaginateMyExamScoresDto, @Req() req): Promise<ResponseDto> {
+    const result = await this.scoreService.getMyScores(dto, req.user.id)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'SCORES_RETRIEVED_SUCCESS',

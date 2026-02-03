@@ -6,13 +6,12 @@ import { Exam } from '../_exam/exam.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
-import { PaginateExamScoresDto } from './dtos/paginate-exam-scores.dto'
+import { PaginateExamScoresDto, PaginateMyExamScoresDto } from './dtos/paginate-exam-scores.dto'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { UpdateClassStudentScoreDto } from './dtos/update-class-student-score.dto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { paginate } from '@common/pagination'
-
 @Injectable()
 export class ExamScoreService {
   constructor(private dataSource: DataSource) {}
@@ -230,6 +229,8 @@ export class ExamScoreServiceV2 {
   @InjectRepository(ClassStudents)
   private classStudentRepo: Repository<ClassStudents>
 
+  @InjectRepository(Student)
+  private studentRepo: Repository<Student>
   // create  score
   async createClassStudentScores(dto: CreateClassStudentScoreDto): Promise<void> {
     const { class_id, scores } = dto
@@ -277,6 +278,7 @@ export class ExamScoreServiceV2 {
   }
 
   async getClassStudentScores(dto: PaginateExamScoresDto): Promise<{ data: any[]; meta: any }> {
+    const { semester_id, scholastic_id, ...rest } = dto
     const queryBuilder = this.classStudentRepo
       .createQueryBuilder('class_student')
       .leftJoin('class_student.student', 'student')
@@ -293,13 +295,15 @@ export class ExamScoreServiceV2 {
         'user.first_name',
         'user.email',
         'class.id',
+        'class.name',
+        'class.code',
       ])
 
-    if (dto.orderBy === 'first_name') {
-      dto.anotherOrderBy = 'user.first_name'
+    if (rest.orderBy === 'first_name') {
+      rest.anotherOrderBy = 'user.first_name'
     }
 
-    const { data, meta } = await paginate(queryBuilder, dto)
+    const { data, meta } = await paginate(queryBuilder, rest)
     const result = data.map((row: any) => ({
       student_id: Number(row.student.id),
       code: row?.student?.user?.code ?? '',
@@ -309,6 +313,66 @@ export class ExamScoreServiceV2 {
       score: row.score,
       learn_type: row?.learn_type,
       class_id: Number(row.class.id),
+      class: {
+        id: Number(row.class.id),
+        name: row?.class?.name ?? '',
+        code: row?.class?.code ?? '',
+      },
+    }))
+
+    return { data: result, meta }
+  }
+
+  async getMyScores(dto: PaginateMyExamScoresDto, userId: number): Promise<{ data: any[]; meta: any }> {
+    const { scholastic_id, semester_id, ...rest } = dto
+
+    const student = await this.studentRepo.findOne({ where: { user_id: userId } })
+    if (!student) throw throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const queryBuilder = this.classStudentRepo
+      .createQueryBuilder('class_student')
+      .leftJoin('class_student.student', 'student')
+      .leftJoin('student.user', 'user')
+      .leftJoin('class_student.class', 'class')
+      .select([
+        'class_student.id',
+        'class_student.score',
+        'class_student.learn_type',
+        'student.id',
+        'user.code',
+        'user.saint_name',
+        'user.full_name',
+        'user.first_name',
+        'user.email',
+        'class.id',
+        'class.name',
+        'class.code',
+      ])
+      .andWhere('class_student.student_id = :student_id', { student_id: student.id })
+
+    if (scholastic_id) {
+      queryBuilder.andWhere('class.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+
+    if (semester_id) {
+      queryBuilder.andWhere('class.semester_id = :semester_id', { semester_id })
+    }
+
+    const { data, meta } = await paginate(queryBuilder, rest)
+    const result = data.map((row: any) => ({
+      student_id: Number(row.student.id),
+      code: row?.student?.user?.code ?? '',
+      saint_name: row?.student?.user?.saint_name ?? '',
+      full_name: row?.student?.user?.full_name ?? '',
+      email: row?.student?.user?.email ?? '',
+      score: row.score,
+      learn_type: row?.learn_type,
+      class_id: Number(row.class.id),
+      class: {
+        id: Number(row.class.id),
+        name: row?.class?.name ?? '',
+        code: row?.class?.code ?? '',
+      },
     }))
 
     return { data: result, meta }

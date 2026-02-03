@@ -83,3 +83,33 @@ export class AdminScholasticController {
     })
   }
 }
+
+@ApiTags('Scholastic')
+@Controller('scholastic')
+export class ScholasticController {
+  constructor(private readonly scholasticService: ScholasticService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all scholastics' })
+  async getScholastics(@Query() paginateScholasticDto: PaginateScholasticDto): Promise<ResponseDto> {
+    const scholastics = await this.scholasticService.findAll(paginateScholasticDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'SCHOLASTICS_FETCHED_SUCCESSFULLY',
+      data: scholastics.data,
+      meta: scholastics.meta,
+    })
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a scholastic by id' })
+  @ApiParam({ name: 'id', type: Number, description: 'The id of the scholastic to get' })
+  async getScholasticById(@Param('id') id: number): Promise<ResponseDto> {
+    const scholastic = await this.scholasticService.findOne(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'SCHOLASTIC_FETCHED_SUCCESSFULLY',
+      data: scholastic,
+    })
+  }
+}

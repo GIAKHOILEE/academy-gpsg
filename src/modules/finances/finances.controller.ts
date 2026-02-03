@@ -44,7 +44,12 @@ export class AdminFinancesController {
       statusCode: HttpStatus.OK,
       messageCode: 'FINANCES_FETCHED_SUCCESSFULLY',
       data: finances.data,
-      meta: finances.meta,
+      meta: {
+        ...finances.meta,
+        total_amount_received: finances.total_amount_received,
+        total_amount_spent: finances.total_amount_spent,
+        total_total_amount: finances.total_total_amount,
+      },
     })
   }
 
