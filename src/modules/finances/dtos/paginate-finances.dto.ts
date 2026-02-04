@@ -26,21 +26,6 @@ export class PaginateFinancesDto extends PaginationDto {
 
   @IsOptional()
   @IsString()
-  @ApiPropertyOptional({ description: 'Day' })
-  day?: string
-
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ description: 'Month' })
-  month?: string
-
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({ description: 'Year' })
-  year?: string
-
-  @IsOptional()
-  @IsString()
   @ApiPropertyOptional({ description: 'Note' })
   note?: string
 
@@ -53,4 +38,14 @@ export class PaginateFinancesDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Semester ID' })
   semester_id?: number
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Start day (YYYY-MM-DD)' })
+  start_day?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'End day (YYYY-MM-DD)' })
+  end_day?: string
 }
