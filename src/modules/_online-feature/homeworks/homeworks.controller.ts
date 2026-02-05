@@ -60,6 +60,16 @@ export class AdminHomeworkController {
     })
   }
 
+  @Put('is-active/:id')
+  @ApiOperation({ summary: 'Update a homework' })
+  async updateActiveHomework(@Param('id') id: number): Promise<ResponseDto> {
+    await this.homeworkService.updateActiveHomework(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_UPDATED_IS_ACTIVE_SUCCESSFULLY',
+    })
+  }
+
   @Put(':id')
   @ApiOperation({ summary: 'Update a homework' })
   async updateHomework(@Param('id') id: number, @Body() updateHomeworkDto: CreateHomeworksDto): Promise<ResponseDto> {
@@ -110,6 +120,16 @@ export class TeacherHomeworkController {
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_FETCHED_SUCCESSFULLY',
       data: homework,
+    })
+  }
+
+  @Put('is-active/:id')
+  @ApiOperation({ summary: 'Update a homework' })
+  async updateActiveHomework(@Param('id') id: number): Promise<ResponseDto> {
+    await this.homeworkService.updateActiveHomework(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_UPDATED_IS_ACTIVE_SUCCESSFULLY',
     })
   }
 

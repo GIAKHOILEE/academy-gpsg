@@ -49,6 +49,9 @@ export class HomeworkService {
       const questionRepo = queryRunner.manager.getRepository(HomeworkQuestion)
       const optionRepo = queryRunner.manager.getRepository(HomeworkOption)
 
+      // check mỗi lesson chỉ 1 homework được active
+      const activeHw = await hwRepo.findOne({ where: { lesson: { id: createDto.lesson_id }, is_active: true } })
+      if (activeHw) throwAppException('ACTIVE_HOMEWORK_EXISTS', ErrorCode.ACTIVE_HOMEWORK_EXISTS, HttpStatus.BAD_REQUEST)
       // tạo bài
       const newHw = hwRepo.create({
         title: createDto.title,
@@ -92,6 +95,64 @@ export class HomeworkService {
       })
 
       return result
+    } catch (err) {
+      await queryRunner.rollbackTransaction()
+      throw err
+    } finally {
+      await queryRunner.release()
+    }
+  }
+
+  // update active
+  async updateActiveHomework(homeworkId: number): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+    try {
+      const hwRepo = queryRunner.manager.getRepository(Homeworks)
+      const submissionRepo = queryRunner.manager.getRepository(HomeworkSubmission)
+      const classStudentRepo = queryRunner.manager.getRepository(ClassStudents)
+
+      const hw = await hwRepo.findOne({
+        where: { id: homeworkId },
+        relations: ['lesson', 'lesson.class'],
+      })
+      if (!hw) throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      const becomingActive = !hw.is_active
+
+      // nếu homework mà đã có submission thì không thể chuyển từ true thành false
+      const hasSubmissions = await submissionRepo.exists({ where: { homework: { id: hw.id } } })
+      if (hasSubmissions && hw.is_active) {
+        throwAppException('HOMEWORK_HAS_SUBMISSIONS', ErrorCode.HOMEWORK_HAS_SUBMISSIONS, HttpStatus.BAD_REQUEST)
+      }
+
+      // mỗi lesson chỉ có 1 homework được active
+      if (becomingActive) {
+        const activeHw = await hwRepo.findOne({
+          where: { lesson: { id: hw.lesson.id }, is_active: true },
+        })
+        if (activeHw) throwAppException('ACTIVE_HOMEWORK_EXISTS', ErrorCode.ACTIVE_HOMEWORK_EXISTS, HttpStatus.BAD_REQUEST)
+      }
+
+      await hwRepo.update({ id: homeworkId }, { is_active: becomingActive })
+
+      // nếu homework active thành công thì cập nhật điểm của học sinh vào bảng class_student
+      if (becomingActive) {
+        const submissions = await submissionRepo.find({
+          where: { homework: { id: homeworkId } },
+          relations: ['student'],
+        })
+
+        const classId = hw.lesson?.class?.id
+        if (classId) {
+          for (const sub of submissions) {
+            await classStudentRepo.update({ student: { id: sub.student.id }, class: { id: classId } }, { score: String(sub.score) })
+          }
+        }
+      }
+
+      await queryRunner.commitTransaction()
     } catch (err) {
       await queryRunner.rollbackTransaction()
       throw err
@@ -466,6 +527,7 @@ export class HomeworkService {
       const subRepo = queryRunner.manager.getRepository(HomeworkSubmission)
       const ansRepo = queryRunner.manager.getRepository(HomeworkAnswer)
       const hwRepo = queryRunner.manager.getRepository(Homeworks)
+      const classStudentRepo = queryRunner.manager.getRepository(ClassStudents)
 
       const submission = await subRepo.findOne({
         where: { id: submission_id },
@@ -520,6 +582,21 @@ export class HomeworkService {
       submission.graded_by = { id: graderId } as any
       submission.graded_at = new Date()
       await subRepo.save(submission)
+
+      // nếu homework có is_active là true thì cho điểm vào bảng điểm
+      if (hw?.is_active) {
+        const studentId = submission.student.id
+        const homeworkId = submission.homework.id
+        const homework = await hwRepo
+          .createQueryBuilder('hw')
+          .select(['hw.id', 'lesson.id', 'class.id'])
+          .leftJoin('hw.lesson', 'lesson')
+          .leftJoin('lesson.class', 'class')
+          .where('hw.id = :id', { id: homeworkId })
+          .getOne()
+        const classId = homework?.lesson?.class?.id
+        await classStudentRepo.update({ student: { id: studentId }, class: { id: classId } }, { score: String(submission.score) })
+      }
 
       await queryRunner.commitTransaction()
       await queryRunner.release()

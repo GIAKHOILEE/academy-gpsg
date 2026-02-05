@@ -12,6 +12,15 @@ export class CreateHomeworksDto {
   })
   lesson_id: number
 
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({
+    description: 'Is Active',
+    example: true,
+    enum: [true, false],
+  })
+  is_active?: boolean
+
   @IsNotEmpty()
   @IsString()
   @ApiProperty({
