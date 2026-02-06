@@ -705,6 +705,7 @@ export class HomeworkService {
       student: {
         id: s.student.id,
         name: s.student.user.full_name,
+        saint_name: s.student.user.saint_name,
         email: s.student.user.email,
         code: s.student.user.code,
       },

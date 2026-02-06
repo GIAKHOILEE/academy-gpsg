@@ -12,6 +12,7 @@ export interface IContact {
   time_work: string
   map: string
   facebook: string
+  viber: string
   instagram: string
   twitter: string
   youtube: string
