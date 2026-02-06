@@ -172,6 +172,7 @@ export class TeachersService {
       }
 
       // Check duplicate code
+      let hashedPassword = user.password
       if (code) {
         const existingUser = await queryRunner.manager
           .getRepository(User)
@@ -180,11 +181,19 @@ export class TeachersService {
           .andWhere('users.id != :id', { id: user.id })
           .getOne()
         if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        // nếu code mới khác code cũ thì password cũng phải thay đổi
+        if (code !== user.code) {
+          hashedPassword = await hashPassword(code)
+        }
+      }
+
+      // nếu password mà thay đổi thì password cũng phải thay đổi
+      if (password) {
+        hashedPassword = await hashPassword(password)
       }
 
       // từ full name tách ra first name
       const first_name = full_name.split(' ')[0]
-      const hashedPassword = password ? await hashPassword(password) : user.password
 
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
         email: email ?? user.email,
