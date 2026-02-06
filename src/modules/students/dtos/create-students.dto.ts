@@ -17,8 +17,8 @@ export class CreateStudentsDto extends CreateUserDtoV2 {
   @ApiPropertyOptional({
     description: 'Tài liệu bằng tốt nghiệp',
     example: [
-      { name: 'bằng tốt nghiệp 1', path: 'path/to/file' },
-      { name: 'bằng tốt nghiệp 2', path: 'path/to/file' },
+      { id: 1, name: 'bằng tốt nghiệp 1', path: 'path/to/file' },
+      { id: 2, name: 'bằng tốt nghiệp 2', path: 'path/to/file' },
     ],
   })
   @IsArray()
@@ -28,8 +28,8 @@ export class CreateStudentsDto extends CreateUserDtoV2 {
   @ApiPropertyOptional({
     description: 'Tài liệu bảng điểm',
     example: [
-      { name: 'bảng điểm 1', path: 'path/to/file' },
-      { name: 'bảng điểm 2', path: 'path/to/file' },
+      { id: 1, name: 'bảng điểm 1', path: 'path/to/file' },
+      { id: 2, name: 'bảng điểm 2', path: 'path/to/file' },
     ],
   })
   @IsArray()
@@ -39,8 +39,8 @@ export class CreateStudentsDto extends CreateUserDtoV2 {
   @ApiPropertyOptional({
     description: 'Tài liệu khác',
     example: [
-      { name: 'tài liệu 1', path: 'path/to/file' },
-      { name: 'tài liệu 2', path: 'path/to/file' },
+      { id: 1, name: 'tài liệu 1', path: 'path/to/file' },
+      { id: 2, name: 'tài liệu 2', path: 'path/to/file' },
     ],
   })
   @IsArray()

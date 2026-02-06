@@ -64,8 +64,8 @@ export class UpdateLessonDto {
   @ApiPropertyOptional({
     description: 'URL của slide',
     example: [
-      { name: 'slide1.pdf', path: 'https://www.google.com' },
-      { name: 'slide2.pdf', path: 'https://www.google.com' },
+      { id: 1, name: 'slide1.pdf', path: 'https://www.google.com' },
+      { id: 2, name: 'slide2.pdf', path: 'https://www.google.com' },
     ],
   })
   slide_url?: IFile[]
@@ -75,8 +75,8 @@ export class UpdateLessonDto {
   @ApiPropertyOptional({
     description: 'URL của tài liệu',
     example: [
-      { name: 'document1.pdf', path: 'https://www.google.com' },
-      { name: 'document2.pdf', path: 'https://www.google.com' },
+      { id: 1, name: 'document1.pdf', path: 'https://www.google.com' },
+      { id: 2, name: 'document2.pdf', path: 'https://www.google.com' },
     ],
   })
   document_url?: IFile[]

@@ -71,7 +71,7 @@ export class CreateLessonDto {
   @IsArray()
   @ApiPropertyOptional({
     description: 'URL của slide',
-    example: [{ name: 'slide1.pdf', path: 'https://www.google.com' }],
+    example: [{ id: 1, name: 'slide1.pdf', path: 'https://www.google.com' }],
   })
   slide_url: IFile[]
 
@@ -79,7 +79,7 @@ export class CreateLessonDto {
   @IsArray()
   @ApiPropertyOptional({
     description: 'URL của tài liệu',
-    example: [{ name: 'document1.pdf', path: 'https://www.google.com' }],
+    example: [{ id: 1, name: 'document1.pdf', path: 'https://www.google.com' }],
   })
   document_url: IFile[]
 

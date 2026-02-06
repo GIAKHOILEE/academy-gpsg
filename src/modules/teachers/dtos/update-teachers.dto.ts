@@ -39,8 +39,8 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({
     description: 'Chứng chỉ chuyên môn',
     example: [
-      { name: 'Chứng chỉ 1', path: 'path/to/file' },
-      { name: 'Chứng chỉ 2', path: 'path/to/file' },
+      { id: 1, name: 'Chứng chỉ 1', path: 'path/to/file' },
+      { id: 2, name: 'Chứng chỉ 2', path: 'path/to/file' },
     ],
   })
   professional_certificate: IFile[]
@@ -51,8 +51,8 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({
     description: 'Chứng chỉ giáo viên',
     example: [
-      { name: 'Chứng chỉ 1', path: 'path/to/file' },
-      { name: 'Chứng chỉ 2', path: 'path/to/file' },
+      { id: 1, name: 'Chứng chỉ 1', path: 'path/to/file' },
+      { id: 2, name: 'Chứng chỉ 2', path: 'path/to/file' },
     ],
   })
   teacher_certificate: IFile[]
@@ -89,8 +89,8 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({
     description: 'pdf file CV',
     example: [
-      { name: 'cv1.pdf', path: 'path/to/file' },
-      { name: 'cv2.pdf', path: 'path/to/file' },
+      { id: 1, name: 'cv1.pdf', path: 'path/to/file' },
+      { id: 2, name: 'cv2.pdf', path: 'path/to/file' },
     ],
   })
   cv: IFile[]
