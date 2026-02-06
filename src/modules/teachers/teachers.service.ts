@@ -152,7 +152,7 @@ export class TeachersService {
         bank_branch,
         ...userData
       } = updateTeacherDto
-      const { email, full_name, ...rest } = userData
+      const { email, full_name, password, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -184,12 +184,14 @@ export class TeachersService {
 
       // từ full name tách ra first name
       const first_name = full_name.split(' ')[0]
+      const hashedPassword = password ? await hashPassword(password) : user.password
 
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
         email: email ?? user.email,
         code: code ?? user.code,
         full_name: full_name ?? user.full_name,
         first_name: first_name ?? user.first_name,
+        password: hashedPassword,
         ...rest,
       })
       await queryRunner.manager.save(User, updatedUser)
