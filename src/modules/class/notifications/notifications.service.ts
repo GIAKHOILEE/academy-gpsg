@@ -11,6 +11,11 @@ import { ClassNotification } from './notifications.entity'
 import { IClassNotification } from './notifications.interface'
 import { Classes } from '../class.entity'
 import { Lesson } from '@modules/_online-feature/lesson/lesson.entity'
+import { Student } from '@modules/students/students.entity'
+import { ClassStudents } from '../class-students/class-student.entity'
+import { User } from '@modules/users/user.entity'
+import { Role } from '@enums/role.enum'
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -20,6 +25,12 @@ export class NotificationsService {
     private classRepository: Repository<Classes>,
     @InjectRepository(Lesson)
     private lessonRepository: Repository<Lesson>,
+    @InjectRepository(Student)
+    private studentRepository: Repository<Student>,
+    @InjectRepository(ClassStudents)
+    private classStudentRepository: Repository<ClassStudents>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async createNotification(createNotificationDto: CreateClassNotificationDto): Promise<IClassNotification> {
@@ -65,6 +76,54 @@ export class NotificationsService {
     }
 
     return formattedNotification
+  }
+
+  // đánh dấu đã đọc thông báo
+  async markAsRead(id: number, userId: number): Promise<void> {
+    const notification = await this.classNotificationRepository
+      .createQueryBuilder('notification')
+      .select(['notification.id', 'notification.user_read_ids', 'class.id'])
+      .leftJoin('notification.class', 'class')
+      .where('notification.id = :id', { id })
+      .getOne()
+    if (!notification) throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
+    if (!notification.class.id) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    // user
+    const existUser = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.role'])
+      .where('user.id = :userId', { userId })
+      .getOne()
+    if (!existUser) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    // nếu role là student check student có trong class không
+    if (existUser.role === Role.STUDENT) {
+      const existStudent = await this.studentRepository.createQueryBuilder('student').where('student.user_id = :userId', { userId }).getOne()
+      if (!existStudent) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      const classStudent = await this.classStudentRepository
+        .createQueryBuilder('classStudent')
+        .where('classStudent.student_id = :studentId', { studentId: existStudent.id })
+        .andWhere('classStudent.class_id = :classId', { classId: notification.class.id })
+        .getOne()
+      if (!classStudent) throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
+    }
+
+    // nếu role là teacher thì check có dạy class không
+    if (existUser.role === Role.TEACHER) {
+      const classTeacher = await this.classRepository
+        .createQueryBuilder('class')
+        .select('class.id')
+        .where('class.teacher_id = :userId', { userId })
+        .andWhere('class.id = :classId', { classId: notification.class.id })
+        .getOne()
+      if (!classTeacher) throwAppException('TEACHER_NOT_IN_CLASS', ErrorCode.TEACHER_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
+    }
+
+    const userReadIds = notification.user_read_ids || []
+    if (userReadIds.includes(userId)) return
+    userReadIds.push(userId)
+    await this.classNotificationRepository.update(id, { user_read_ids: userReadIds })
   }
 
   async updateNotification(id: number, updateNotificationDto: UpdateClassNotificationDto): Promise<void> {
@@ -113,7 +172,7 @@ export class NotificationsService {
     await this.classNotificationRepository.delete(id)
   }
 
-  async getNotificationById(id: number): Promise<IClassNotification> {
+  async getNotificationById(id: number, userId?: number): Promise<IClassNotification> {
     const notification = await this.classNotificationRepository
       .createQueryBuilder('notification')
       .select([
@@ -126,6 +185,7 @@ export class NotificationsService {
         'notification.description',
         'notification.content',
         'notification.urgent',
+        'notification.user_read_ids',
         'notification.lesson_id',
         'notification.created_at',
         'lesson.id',
@@ -136,6 +196,7 @@ export class NotificationsService {
       .getOne()
     if (!notification) throwAppException('NOTIFICATION_NOT_FOUND', ErrorCode.NOTIFICATION_NOT_FOUND, HttpStatus.NOT_FOUND)
 
+    const isRead = !!userId && notification.user_read_ids.includes(userId)
     const formattedNotification: IClassNotification = {
       id: notification.id,
       index: notification.index,
@@ -151,6 +212,7 @@ export class NotificationsService {
         id: notification.lesson?.id || null,
         title: notification.lesson?.title || null,
       },
+      is_read: isRead,
       created_at: formatStringDateUTC7(notification.created_at.toISOString()),
     }
 
@@ -160,28 +222,35 @@ export class NotificationsService {
   async getNotifications(
     paginateNotificationDto: PaginateClassNotificationDto,
     isAdmin: boolean,
+    userId?: number,
   ): Promise<{ data: IClassNotification[]; meta: PaginationMeta }> {
     const query = this.classNotificationRepository.createQueryBuilder('notification')
+
     if (!isAdmin) {
       query.where('notification.is_active = :isActive', { isActive: true })
     }
 
     const { data, meta } = await paginate(query, paginateNotificationDto)
 
-    const formattedNotifications: IClassNotification[] = data.map(notification => ({
-      id: notification.id,
-      index: notification.index,
-      is_active: notification.is_active,
-      is_online: notification.is_online,
-      title: notification.title,
-      thumbnail: notification.thumbnail,
-      description: notification.description,
-      content: notification.content,
-      urgent: notification.urgent,
-      created_at: formatStringDateUTC7(notification.created_at.toISOString()),
-      lesson_id: notification.lesson_id,
-      class_id: notification.class_id,
-    }))
+    const formattedNotifications: IClassNotification[] = data.map(notification => {
+      const isRead = !!userId && Array.isArray(notification.user_read_ids) && notification.user_read_ids.includes(userId)
+
+      return {
+        id: notification.id,
+        index: notification.index,
+        is_active: notification.is_active,
+        is_online: notification.is_online,
+        title: notification.title,
+        thumbnail: notification.thumbnail,
+        description: notification.description,
+        content: notification.content,
+        urgent: notification.urgent,
+        created_at: formatStringDateUTC7(notification.created_at.toISOString()),
+        lesson_id: notification.lesson_id,
+        class_id: notification.class_id,
+        is_read: isRead,
+      }
+    })
 
     return { data: formattedNotifications, meta }
   }

@@ -32,6 +32,9 @@ export class ClassNotification {
   @Column({ type: 'boolean', default: false })
   urgent: boolean
 
+  @Column({ type: 'json', nullable: true })
+  user_read_ids: number[]
+
   @Column({ nullable: true })
   lesson_id: number
 
