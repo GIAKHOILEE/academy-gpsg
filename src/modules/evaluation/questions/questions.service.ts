@@ -97,3 +97,108 @@ export class QuestionsService {
     return question
   }
 }
+
+// thống kê
+export class QuestionsStatisticsService {
+  constructor(
+    @InjectRepository(Questions)
+    private readonly questionsRepository: Repository<Questions>,
+    @InjectRepository(Answers)
+    private readonly answersRepository: Repository<Answers>,
+  ) {}
+
+  async statisticQuestion(questionId: number) {
+    const question = await this.questionsRepository.findOne({
+      where: { id: questionId },
+    })
+
+    if (!question) {
+      throwAppException('QUESTION_NOT_FOUND', ErrorCode.QUESTION_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    switch (question.type) {
+      case QuestionType.SINGLE_CHOICE:
+        return this.statisticSingleChoice(questionId)
+
+      case QuestionType.MULTIPLE_CHOICE:
+        return this.statisticMultipleChoice(questionId)
+
+      case QuestionType.NUMBER:
+        return this.statisticNumber(questionId)
+
+      case QuestionType.TEXT:
+        return this.statisticText(questionId)
+    }
+  }
+
+  // thống kê Single Choice
+  async statisticSingleChoice(questionId: number) {
+    const raw = await this.answersRepository
+      .createQueryBuilder('answer')
+      .select('answer.answer_single_choice', 'value')
+      .addSelect('COUNT(*)', 'total')
+      .where('answer.question_id = :questionId', { questionId })
+      .andWhere('answer.answer_single_choice IS NOT NULL')
+      .groupBy('answer.answer_single_choice')
+      .getRawMany()
+
+    const totalAll = raw.reduce((sum, r) => sum + Number(r.total), 0)
+
+    return raw.map(r => ({
+      optionIndex: Number(r.value),
+      total: Number(r.total),
+      percent: Number(((r.total / totalAll) * 100).toFixed(2)),
+    }))
+  }
+
+  // thống kê Multiple Choice
+  async statisticMultipleChoice(questionId: number) {
+    const raw = await this.answersRepository.query(
+      `
+    SELECT jt.value as value, COUNT(*) as total
+    FROM answers a,
+    JSON_TABLE(a.answer_multiple_choice, '$[*]' 
+      COLUMNS (value INT PATH '$')
+    ) as jt
+    WHERE a.question_id = ?
+    GROUP BY jt.value
+  `,
+      [questionId],
+    )
+
+    const totalAll = raw.reduce((sum, r) => sum + Number(r.total), 0)
+
+    return raw.map(r => ({
+      optionIndex: Number(r.value),
+      total: Number(r.total),
+      percent: Number(((r.total / totalAll) * 100).toFixed(2)),
+    }))
+  }
+
+  // thống kê Number
+  async statisticNumber(questionId: number) {
+    const raw = await this.answersRepository
+      .createQueryBuilder('a')
+      .select('a.answer_number', 'value')
+      .addSelect('COUNT(*)', 'total')
+      .where('a.question_id = :questionId', { questionId })
+      .groupBy('a.answer_number')
+      .getRawMany()
+
+    const totalAll = raw.reduce((sum, r) => sum + Number(r.total), 0)
+
+    return raw.map(r => ({
+      value: Number(r.value),
+      total: Number(r.total),
+      percent: Number(((r.total / totalAll) * 100).toFixed(2)),
+    }))
+  }
+
+  // thống kê Text
+  async statisticText(questionId: number) {
+    return this.answersRepository.find({
+      where: { question_id: questionId },
+      select: ['answer_text'],
+    })
+  }
+}
