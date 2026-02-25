@@ -1,11 +1,11 @@
 # Multi-stage
-FROM node:21-alpine AS dependencies
+FROM node:22-alpine AS dependencies
 WORKDIR /usr/app
 COPY package*.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 # Build stage
-FROM node:21-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /usr/app
 COPY --from=dependencies /usr/app/node_modules ./node_modules
 COPY package*.json yarn.lock ./
@@ -13,7 +13,7 @@ COPY . .
 RUN yarn build
 
 # Production stage
-FROM node:21-alpine AS production
+FROM node:22-alpine AS production
 ENV NODE_ENV=production
 ENV TZ=Asia/Ho_Chi_Minh
 ARG PORT
@@ -21,7 +21,7 @@ ENV PORT=$PORT
 WORKDIR /usr/app
 
 # KHÔNG TẠO USER MỚI - Dùng node user có sẵn (UID 1000)
-# node:21-alpine đã có sẵn user 'node' với UID/GID 1000
+# node:22-alpine đã có sẵn user 'node' với UID/GID 1000
 
 RUN apk add --no-cache \
     chromium \
