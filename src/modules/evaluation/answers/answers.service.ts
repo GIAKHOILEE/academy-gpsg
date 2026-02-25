@@ -43,9 +43,19 @@ export class AnswersService {
       throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
+    // mỗi câu hỏi chỉ được trả lời 1 lần
+    const answersExist = await this.answersRepository
+      .createQueryBuilder('answers')
+      .where('answers.class_id = :class_id', { class_id })
+      .andWhere('answers.student_id = :student_id', { student_id: student.id })
+      .andWhere('answers.question_id IN (:...questionIds)', { questionIds: answersDto.answers.map(answer => answer.question_id) })
+      .getMany()
+    if (answersExist.length > 0) {
+      throwAppException('JUST_ONE_ANSWER_PER_QUESTION', ErrorCode.JUST_ONE_ANSWER_PER_QUESTION, HttpStatus.BAD_REQUEST)
+    }
+
     // get question_id in answers
     const questionIds = answersDto.answers.map(answer => answer.question_id)
-    console.log(questionIds)
     const questions = await this.questionsRepository.count({ where: { id: In(questionIds) } })
     if (questions !== questionIds.length) {
       throwAppException('QUESTION_NOT_FOUND', ErrorCode.QUESTION_NOT_FOUND, HttpStatus.NOT_FOUND)
