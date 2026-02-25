@@ -61,10 +61,13 @@ export async function paginate<T>(queryBuilder: SelectQueryBuilder<T>, params: P
 
       /** ---- 3. Nếu là text ---- */
       if (typeof value === 'string') {
+        console.log(value)
         const searchValue = removeVietnameseTones(value.toLowerCase().trim())
+        console.log(searchValue)
         queryBuilder.andWhere(`LOWER(${mainTableAlias}.${key}) LIKE :${key}`, {
           [key]: `%${searchValue}%`,
         })
+        console.log(queryBuilder.getSql())
         return
       }
 

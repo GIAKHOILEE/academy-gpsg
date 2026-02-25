@@ -46,6 +46,8 @@ export class CreateEnrollmentsDto {
   @IsOptional()
   full_name: string
 
+  full_name_normalized: string
+
   @ApiPropertyOptional({ description: 'Email', example: 'Email' })
   @IsString()
   @IsOptional()

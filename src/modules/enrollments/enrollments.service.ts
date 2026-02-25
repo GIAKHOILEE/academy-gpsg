@@ -6,6 +6,7 @@ import {
   generateRandomString,
   hashPassword,
   mapScheduleToVietnamese,
+  removeVietnameseTones,
   renderPdfFromTemplate,
   throwAppException,
 } from '@common/utils'
@@ -109,6 +110,7 @@ export class EnrollmentsService {
 
         createEnrollmentDto.saint_name = studentEntity.user.saint_name
         createEnrollmentDto.full_name = studentEntity.user.full_name
+        createEnrollmentDto.full_name_normalized = removeVietnameseTones(studentEntity.user.full_name).toLowerCase()
         createEnrollmentDto.email = studentEntity.user.email
         createEnrollmentDto.phone_number = studentEntity.user.phone_number
         createEnrollmentDto.address = studentEntity.user.address
@@ -525,6 +527,7 @@ export class EnrollmentsService {
       const updatedEnrollment = this.enrollmentsRepository.create({
         ...enrollment,
         status: status || enrollment.status,
+        full_name_normalized: rest.full_name ? removeVietnameseTones(rest.full_name).toLowerCase() : enrollment.full_name_normalized,
         ...rest,
       })
       await enrollmentsRepo.save(updatedEnrollment)
@@ -813,7 +816,7 @@ export class EnrollmentsService {
     data: IEnrollments[]
     meta: PaginateEnrollmentsDto
   }> {
-    const { semester_id, scholastic_id, ...rest } = paginateEnrollmentsDto
+    const { semester_id, scholastic_id, full_name, ...rest } = paginateEnrollmentsDto
     const queryBuilder = this.enrollmentsRepository.createQueryBuilder('enrollment')
     queryBuilder
       .select([
@@ -833,6 +836,7 @@ export class EnrollmentsService {
         'enrollment.is_logged',
         'enrollment.saint_name',
         'enrollment.full_name',
+        'enrollment.full_name_normalized',
         'enrollment.email',
         'enrollment.phone_number',
         'enrollment.address',
@@ -843,6 +847,13 @@ export class EnrollmentsService {
       ])
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
+
+    if (full_name) {
+      queryBuilder.andWhere(`enrollment.full_name_normalized LIKE :full_name`, {
+        full_name: `%${removeVietnameseTones(full_name).toLowerCase().trim()}%`,
+      })
+    }
+
     if (semester_id || scholastic_id) {
       queryBuilder
         .addSelect(qb => {
