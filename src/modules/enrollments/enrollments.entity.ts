@@ -68,6 +68,9 @@ export class Enrollments {
   full_name: string
 
   @Column({ nullable: true })
+  full_name_normalized: string
+
+  @Column({ nullable: true })
   email: string
 
   @Column({ nullable: true })
