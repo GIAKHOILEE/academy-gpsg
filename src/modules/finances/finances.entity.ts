@@ -1,6 +1,7 @@
 import { FinancesPaymentMethod, FinancesType } from '@enums/finances.enum'
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
+@Index('idx_trading_day', ['trading_day'])
 @Entity('finances')
 export class FinancesEntity {
   @PrimaryGeneratedColumn()
@@ -36,6 +37,9 @@ export class FinancesEntity {
 
   @Column({ nullable: true })
   year: number
+
+  @Column({ nullable: true })
+  trading_day: number
 
   @Column({ nullable: true })
   note: string

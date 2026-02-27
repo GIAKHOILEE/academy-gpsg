@@ -101,6 +101,14 @@ export class UpdateContactDto {
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({
+    description: 'Viber',
+    example: 'https://www.viber.com/example',
+  })
+  viber: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({
     description: 'Instagram',
     example: 'https://www.instagram.com/example',
   })

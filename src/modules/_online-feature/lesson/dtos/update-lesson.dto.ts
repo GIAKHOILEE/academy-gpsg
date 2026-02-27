@@ -1,5 +1,6 @@
 import { IsArray, IsOptional, IsString } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
+import { IFile } from '@common/file'
 
 export class UpdateLessonDto {
   @IsOptional()
@@ -62,17 +63,23 @@ export class UpdateLessonDto {
   @IsArray()
   @ApiPropertyOptional({
     description: 'URL của slide',
-    example: ['https://www.google.com', 'https://www.google.com'],
+    example: [
+      { id: 1, name: 'slide1.pdf', path: 'https://www.google.com' },
+      { id: 2, name: 'slide2.pdf', path: 'https://www.google.com' },
+    ],
   })
-  slide_url?: string[]
+  slide_url?: IFile[]
 
   @IsOptional()
   @IsArray()
   @ApiPropertyOptional({
     description: 'URL của tài liệu',
-    example: ['https://www.google.com', 'https://www.google.com'],
+    example: [
+      { id: 1, name: 'document1.pdf', path: 'https://www.google.com' },
+      { id: 2, name: 'document2.pdf', path: 'https://www.google.com' },
+    ],
   })
-  document_url?: string[]
+  document_url?: IFile[]
 
   @IsOptional()
   @IsString()

@@ -87,6 +87,11 @@ export class UpdatePasswordDto {
 }
 
 export class UpdateUserDtoV2 {
+  @ApiPropertyOptional({ description: 'Mật khẩu' })
+  @IsString()
+  @IsOptional()
+  password: string
+
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên đầy đủ', example: 'John Doe' })

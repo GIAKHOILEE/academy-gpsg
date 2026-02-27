@@ -42,6 +42,9 @@ export class Contact {
   facebook: string
 
   @Column({ type: 'varchar', length: 255, nullable: true })
+  viber: string
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
   instagram: string
 
   @Column({ type: 'varchar', length: 255, nullable: true })

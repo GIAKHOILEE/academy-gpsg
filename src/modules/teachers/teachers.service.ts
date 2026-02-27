@@ -152,7 +152,7 @@ export class TeachersService {
         bank_branch,
         ...userData
       } = updateTeacherDto
-      const { email, full_name, ...rest } = userData
+      const { email, full_name, password, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -172,6 +172,7 @@ export class TeachersService {
       }
 
       // Check duplicate code
+      let hashedPassword = user.password
       if (code) {
         const existingUser = await queryRunner.manager
           .getRepository(User)
@@ -180,6 +181,15 @@ export class TeachersService {
           .andWhere('users.id != :id', { id: user.id })
           .getOne()
         if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        // nếu code mới khác code cũ thì password cũng phải thay đổi
+        if (code !== user.code) {
+          hashedPassword = await hashPassword(code)
+        }
+      }
+
+      // nếu password mà thay đổi thì password cũng phải thay đổi
+      if (password) {
+        hashedPassword = await hashPassword(password)
       }
 
       // từ full name tách ra first name
@@ -190,6 +200,7 @@ export class TeachersService {
         code: code ?? user.code,
         full_name: full_name ?? user.full_name,
         first_name: first_name ?? user.first_name,
+        password: hashedPassword,
         ...rest,
       })
       await queryRunner.manager.save(User, updatedUser)

@@ -23,6 +23,9 @@ export class Homeworks {
   @Column({ nullable: true })
   total_points: number
 
+  @Column({ default: false })
+  is_active: boolean
+
   @OneToMany(() => HomeworkQuestion, q => q.homework, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   questions: HomeworkQuestion[]
 

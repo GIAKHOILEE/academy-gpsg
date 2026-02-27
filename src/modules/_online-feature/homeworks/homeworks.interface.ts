@@ -10,6 +10,7 @@ export interface IHomework {
   deadline_date?: string
   deadline_time?: string
   total_points?: number
+  is_active?: boolean
   questions?: IHomeworkQuestion[]
   submissions?: IHomeworkSubmission[]
   lesson_id?: number

@@ -124,7 +124,7 @@ export class StudentsService {
     await queryRunner.startTransaction()
 
     const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, ...userData } = updateStudentDto
-    const { email, full_name, ...rest } = userData
+    const { email, full_name, password, ...rest } = userData
 
     try {
       const studentRepo = queryRunner.manager.getRepository(Student)
@@ -149,11 +149,14 @@ export class StudentsService {
 
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
       // tách full_name thành first_name và last_name
+
+      const hashedPassword = password ? await hashPassword(password) : user.password
       const first_name = full_name.split(' ')[0]
       const updatedUser = userRepo.merge(user, {
         email: email ?? user.email,
         full_name: full_name ?? user.full_name,
         first_name: first_name ?? user.first_name,
+        password: hashedPassword,
         ...rest,
       })
       await userRepo.save(updatedUser)

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
-import { QuestionsService } from './questions.service'
+import { QuestionsService, QuestionsStatisticsService } from './questions.service'
 import { PaginateQuestionsDto } from './dtos/pagiante-questions.dto'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from '@common/response.dto'
@@ -117,6 +117,25 @@ export class TeacherQuestionsController {
       statusCode: HttpStatus.OK,
       messageCode: 'QUESTION_FETCHED_SUCCESSFULLY',
       data: question,
+    })
+  }
+}
+
+// thống kê câu hỏi
+@ApiTags('Admin Questions Statistics')
+@ApiBearerAuth()
+@Auth(Role.ADMIN, Role.STAFF)
+@Controller('admin/evaluation/questions/statistics')
+export class AdminQuestionsStatisticsController {
+  constructor(private readonly questionsStatisticsService: QuestionsStatisticsService) {}
+
+  @Get(':id')
+  async statisticQuestion(@Param('id') id: number): Promise<ResponseDto> {
+    const statistics = await this.questionsStatisticsService.statisticQuestion(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'QUESTION_STATISTICS_FETCHED_SUCCESSFULLY',
+      data: statistics,
     })
   }
 }

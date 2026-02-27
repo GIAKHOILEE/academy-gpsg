@@ -11,6 +11,7 @@ export interface IClassNotification {
   description?: string
   content?: string
   urgent?: boolean
+  is_read?: boolean
   lesson_id?: number | null
   lesson?: ILesson | null
   created_at?: string

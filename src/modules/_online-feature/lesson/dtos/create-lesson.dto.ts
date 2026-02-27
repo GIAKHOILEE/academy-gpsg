@@ -1,3 +1,4 @@
+import { IFile } from '@common/file'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
@@ -70,17 +71,17 @@ export class CreateLessonDto {
   @IsArray()
   @ApiPropertyOptional({
     description: 'URL của slide',
-    example: ['https://www.google.com', 'https://www.google.com'],
+    example: [{ id: 1, name: 'slide1.pdf', path: 'https://www.google.com' }],
   })
-  slide_url: string[]
+  slide_url: IFile[]
 
   @IsOptional()
   @IsArray()
   @ApiPropertyOptional({
     description: 'URL của tài liệu',
-    example: ['https://www.google.com', 'https://www.google.com'],
+    example: [{ id: 1, name: 'document1.pdf', path: 'https://www.google.com' }],
   })
-  document_url: string[]
+  document_url: IFile[]
 
   @IsOptional()
   @IsString()

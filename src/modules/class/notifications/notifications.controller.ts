@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req } from '@nestjs/common'
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
@@ -129,8 +129,8 @@ export class TeacherNotificationsOnlineController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a notification by id' })
   @ApiParam({ name: 'id', type: Number })
-  async getNotificationById(@Param('id') id: number): Promise<ResponseDto> {
-    const notification = await this.notificationsService.getNotificationById(id)
+  async getNotificationById(@Param('id') id: number, @Req() req): Promise<ResponseDto> {
+    const notification = await this.notificationsService.getNotificationById(id, req.user.userId)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'NOTIFICATION_FETCHED',
@@ -171,6 +171,18 @@ export class TeacherNotificationsOnlineController {
     })
   }
 
+  // markAsRead
+  @Put('is-read/:id')
+  @ApiOperation({ summary: 'Đánh dấu đã đọc' })
+  @ApiParam({ name: 'id', type: Number })
+  async markAsRead(@Param('id') id: number, @Req() req): Promise<ResponseDto> {
+    await this.notificationsService.markAsRead(id, req.user.userId)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'NOTIFICATION_MARKED_AS_READ',
+    })
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a notification by id' })
   @ApiParam({ name: 'id', type: Number })
@@ -185,13 +197,15 @@ export class TeacherNotificationsOnlineController {
 
 @ApiTags('User Class Notifications Online')
 @Controller('class/notifications/online')
+@ApiBearerAuth()
+@Auth()
 export class UserNotificationsOnlineController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all notifications' })
-  async getNotifications(@Query() paginateNotificationDto: PaginateClassNotificationDto): Promise<ResponseDto> {
-    const notifications = await this.notificationsService.getNotifications(paginateNotificationDto, false)
+  async getNotifications(@Query() paginateNotificationDto: PaginateClassNotificationDto, @Req() req): Promise<ResponseDto> {
+    const notifications = await this.notificationsService.getNotifications(paginateNotificationDto, false, req.user.userId)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'NOTIFICATIONS_FETCHED',
@@ -203,12 +217,24 @@ export class UserNotificationsOnlineController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a notification by id' })
   @ApiParam({ name: 'id', type: Number })
-  async getNotificationById(@Param('id') id: number): Promise<ResponseDto> {
-    const notification = await this.notificationsService.getNotificationById(id)
+  async getNotificationById(@Param('id') id: number, @Req() req): Promise<ResponseDto> {
+    const notification = await this.notificationsService.getNotificationById(id, req.user.userId)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'NOTIFICATION_FETCHED',
       data: notification,
+    })
+  }
+
+  // markAsRead
+  @Put('is-read/:id')
+  @ApiOperation({ summary: 'Đánh dấu đã đọc thông báo' })
+  @ApiParam({ name: 'id', type: Number })
+  async markAsRead(@Param('id') id: number, @Req() req): Promise<ResponseDto> {
+    await this.notificationsService.markAsRead(id, req.user.userId)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'NOTIFICATION_MARKED_AS_READ',
     })
   }
 }

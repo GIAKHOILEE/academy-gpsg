@@ -29,8 +29,8 @@ export class CreateFinancesDto {
   statement: boolean
 
   @IsEnum(FinancesPaymentMethod)
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Payment method', example: FinancesPaymentMethod.CASH, enum: FinancesPaymentMethod })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Payment method', example: FinancesPaymentMethod.CASH, enum: FinancesPaymentMethod })
   payment_method: FinancesPaymentMethod
 
   @IsNumber()

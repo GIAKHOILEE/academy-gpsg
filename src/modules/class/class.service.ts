@@ -318,6 +318,7 @@ export class ClassService {
       learn_video: classEntity.learn_video,
       learn_meeting: classEntity.learn_meeting,
       is_online: classEntity.is_online,
+      is_free: classEntity.is_free,
       content: classEntity.content,
       subject: classEntity?.subject
         ? {
@@ -444,6 +445,7 @@ export class ClassService {
       learn_video: classEntity.learn_video,
       learn_meeting: classEntity.learn_meeting,
       is_online: classEntity.is_online,
+      is_free: classEntity.is_free,
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -561,7 +563,7 @@ export class ClassService {
 
   // lấy list class của 1 học sinh
   async getClassesOfStudent(userId: number, paginateClassDto: PaginateClassOfStudentDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
-    const { name, code, classroom, is_online, status, ...rest } = paginateClassDto
+    const { name, code, classroom, is_online, status, scholastic_id, semester_id, ...rest } = paginateClassDto
     const student = await this.studentRepository.findOne({ where: { user_id: userId }, select: ['id'] })
     if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     const student_id = student.id
@@ -590,6 +592,7 @@ export class ClassService {
         'class.closing_day',
         'class.is_evaluate',
         'class.learn_video',
+        'class.is_free',
         'class.learn_meeting',
         'subject.id',
         'subject.image',
@@ -623,6 +626,12 @@ export class ClassService {
     }
     if (status) {
       classEntities.andWhere('class.status = :status', { status })
+    }
+    if (scholastic_id) {
+      classEntities.andWhere('class.scholastic_id = :scholastic_id', { scholastic_id })
+    }
+    if (semester_id) {
+      classEntities.andWhere('class.semester_id = :semester_id', { semester_id })
     }
     const { data, meta } = await paginate(classEntities, rest)
 
@@ -665,6 +674,7 @@ export class ClassService {
       is_evaluate: classStudent.class.is_evaluate,
       learn_video: classStudent.class.learn_video,
       learn_meeting: classStudent.class.learn_meeting,
+      is_free: classStudent.class.is_free,
       subject: {
         id: classStudent.class.subject.id,
         code: classStudent.class.subject.code,

@@ -4,6 +4,7 @@ import { Classes } from '@modules/class/class.entity'
 import { Discuss } from '../discuss/discuss.entity'
 import { Homeworks } from '../homeworks/entities/homeworks.entity'
 import { ClassNotification } from '@modules/class/notifications/notifications.entity'
+import { IFile } from '@common/file'
 
 @Entity('lesson')
 export class Lesson {
@@ -34,10 +35,10 @@ export class Lesson {
   video_url: string[]
 
   @Column({ nullable: true, type: 'json' })
-  slide_url: string[]
+  slide_url: IFile[]
 
   @Column({ nullable: true, type: 'json' })
-  document_url: string[]
+  document_url: IFile[]
 
   @Column({ nullable: true })
   meeting_url: string

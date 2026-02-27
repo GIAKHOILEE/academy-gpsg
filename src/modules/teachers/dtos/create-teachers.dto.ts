@@ -2,6 +2,7 @@ import { CreateUserDtoV2 } from '@modules/users/dtos/create-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
 import { TeacherSpecial } from '@enums/user.enum'
+import { IFile } from '@common/file'
 
 export class CreateTeachersDto extends CreateUserDtoV2 {
   // đặc cách giáo viên
@@ -30,16 +31,26 @@ export class CreateTeachersDto extends CreateUserDtoV2 {
   // chứng chỉ chuyên môn
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  @ApiPropertyOptional({ description: 'Chứng chỉ chuyên môn', example: ['Chứng chỉ 1', 'Chứng chỉ 2'] })
-  professional_certificate: string[]
+  @ApiPropertyOptional({
+    description: 'Chứng chỉ chuyên môn',
+    example: [
+      { id: 1, name: 'Chứng chỉ 1', path: 'path/to/file' },
+      { id: 2, name: 'Chứng chỉ 2', path: 'path/to/file' },
+    ],
+  })
+  professional_certificate: IFile[]
 
   // chứng chỉ giáo viên
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  @ApiPropertyOptional({ description: 'Chứng chỉ giáo viên', example: ['Chứng chỉ 1', 'Chứng chỉ 2'] })
-  teacher_certificate: string[]
+  @ApiPropertyOptional({
+    description: 'Chứng chỉ giáo viên',
+    example: [
+      { id: 1, name: 'Chứng chỉ 1', path: 'path/to/file' },
+      { id: 2, name: 'Chứng chỉ 2', path: 'path/to/file' },
+    ],
+  })
+  teacher_certificate: IFile[]
 
   // chứng chỉ khác
   @IsOptional()
@@ -70,9 +81,14 @@ export class CreateTeachersDto extends CreateUserDtoV2 {
   // CV
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  @ApiPropertyOptional({ description: 'pdf file CV', example: ['cv1.pdf', 'cv2.pdf'] })
-  cv: string[]
+  @ApiPropertyOptional({
+    description: 'pdf file CV',
+    example: [
+      { id: 1, name: 'cv1.pdf', path: 'path/to/file' },
+      { id: 2, name: 'cv2.pdf', path: 'path/to/file' },
+    ],
+  })
+  cv: IFile[]
 
   // banking
   @IsOptional()

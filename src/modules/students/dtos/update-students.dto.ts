@@ -1,6 +1,7 @@
+import { IFile } from '@common/file'
 import { UpdateUserDtoV2 } from '@modules/users/dtos/update-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Mã thẻ của học viên' })
@@ -13,20 +14,38 @@ export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @IsOptional()
   image_4x6: string
 
-  @ApiPropertyOptional({ description: 'Tài liệu bằng tốt nghiệp' })
-  @IsString()
+  @ApiPropertyOptional({
+    description: 'Tài liệu bằng tốt nghiệp',
+    example: [
+      { id: 1, name: 'bằng tốt nghiệp 1', path: 'pa  th/to/file' },
+      { id: 2, name: 'bằng tốt nghiệp 2', path: 'path/to/file' },
+    ],
+  })
+  @IsArray()
   @IsOptional()
-  diploma_image: string
+  diploma_image: IFile[]
 
-  @ApiPropertyOptional({ description: 'Tài liệu bảng điểm' })
-  @IsString()
+  @ApiPropertyOptional({
+    description: 'Tài liệu bảng điểm',
+    example: [
+      { id: 1, name: 'bảng điểm 1', path: 'path/to/file' },
+      { id: 2, name: 'bảng điểm 2', path: 'path/to/file' },
+    ],
+  })
+  @IsArray()
   @IsOptional()
-  transcript_image: string
+  transcript_image: IFile[]
 
-  @ApiPropertyOptional({ description: 'Tài liệu khác' })
-  @IsString()
+  @ApiPropertyOptional({
+    description: 'Tài liệu khác',
+    example: [
+      { id: 1, name: 'tài liệu 1', path: 'path/to/file' },
+      { id: 2, name: 'tài liệu 2', path: 'path/to/file' },
+    ],
+  })
+  @IsArray()
   @IsOptional()
-  other_document: string
+  other_document: IFile[]
 
   @ApiPropertyOptional({ description: 'Tốt nghiệp' })
   @IsBoolean()

@@ -44,9 +44,12 @@ jobs:
             host: ${{ secrets.SERVER_HOST }}
             username: ${{ secrets.SERVER_USER }}
             password: ${{ secrets.SERVER_PASSWORD }}
+            script_stop: true
             script: |
+              set -e
               cd /var/server/prod/hvm-be
               docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_ACCESS_TOKEN }}
               docker pull ${{ secrets.DOCKER_USERNAME }}/hvm-be:latest
               docker compose -p hvm-be-prod down
               docker compose -p hvm-be-prod up -d
+              docker image prune -f
