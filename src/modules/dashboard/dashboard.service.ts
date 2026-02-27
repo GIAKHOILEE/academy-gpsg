@@ -75,27 +75,33 @@ export class DashboardService {
       return parseFloat(((count / totalCount) * 100).toFixed(2))
     }
 
+    const percentAverage = calculatePercentage(Number(result.average), hasScore)
+    const percentGood = calculatePercentage(Number(result.good), hasScore)
+    const percentVeryGood = calculatePercentage(Number(result.very_good), hasScore)
+    const percentExcellent = calculatePercentage(Number(result.excellent), hasScore)
+    const percentFail = 100 - (percentAverage + percentGood + percentVeryGood + percentExcellent)
+
     return {
       ranking: {
         fail: {
           count: Number(result.fail) || 0,
-          percentage: calculatePercentage(Number(result.fail), hasScore),
+          percentage: percentFail,
         },
         average: {
           count: Number(result.average) || 0,
-          percentage: calculatePercentage(Number(result.average), hasScore),
+          percentage: percentAverage,
         },
         good: {
           count: Number(result.good) || 0,
-          percentage: calculatePercentage(Number(result.good), hasScore),
+          percentage: percentGood,
         },
         veryGood: {
           count: Number(result.very_good) || 0,
-          percentage: calculatePercentage(Number(result.very_good), hasScore),
+          percentage: percentVeryGood,
         },
         excellent: {
           count: Number(result.excellent) || 0,
-          percentage: calculatePercentage(Number(result.excellent), hasScore),
+          percentage: percentExcellent,
         },
       },
       scoreStatistics: {

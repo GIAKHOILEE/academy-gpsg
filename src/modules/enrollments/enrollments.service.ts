@@ -206,6 +206,7 @@ export class EnrollmentsService {
         prepaid,
         debt,
         student_id: studentId,
+        full_name_normalized: removeVietnameseTones(createEnrollmentDto.full_name).toLowerCase().trim(),
         is_read_note: createEnrollmentDto.user_note ? false : null,
       })
 
