@@ -15,7 +15,7 @@ export interface IUser {
   address?: string
   avatar?: string
   birth_place?: string
-  birth_date?: string
+  birth_date?: Date
   parish?: string
   deanery?: string
   diocese?: string

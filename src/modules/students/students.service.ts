@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { hashPassword, throwAppException } from '@common/utils'
+import { formatStringToDate, hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -63,6 +63,7 @@ export class StudentsService {
         code,
         full_name,
         first_name,
+        birth_date: formatStringToDate(userData.birth_date),
         ...rest,
       })
 
@@ -157,6 +158,7 @@ export class StudentsService {
         full_name: full_name ?? user.full_name,
         first_name: first_name ?? user.first_name,
         password: hashedPassword,
+        birth_date: rest.birth_date ? formatStringToDate(rest.birth_date) : user.birth_date,
         ...rest,
       })
       await userRepo.save(updatedUser)
@@ -170,7 +172,7 @@ export class StudentsService {
             full_name: user.full_name ?? enrollment.full_name,
             saint_name: user.saint_name ?? enrollment.saint_name,
             phone_number: user.phone_number ?? enrollment.phone_number,
-            birth_date: user.birth_date ?? enrollment.birth_date,
+            birth_date: rest.birth_date ? formatStringToDate(rest.birth_date) : enrollment.birth_date,
             address: user.address ?? enrollment.address,
             birth_place: user.birth_place ?? enrollment.birth_place,
             parish: user.parish ?? enrollment.parish,

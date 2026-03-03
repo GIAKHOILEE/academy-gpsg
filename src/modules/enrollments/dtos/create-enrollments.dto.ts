@@ -61,7 +61,7 @@ export class CreateEnrollmentsDto {
   @ApiPropertyOptional({ description: 'Ngày sinh', example: '2025-11-11T00:00:00.000Z' })
   @IsString()
   @IsOptional()
-  birth_date: string
+  birth_date: Date
 
   @ApiPropertyOptional({ description: 'Địa chỉ', example: 'Địa chỉ' })
   @IsString()

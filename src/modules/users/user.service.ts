@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { hashPassword, throwAppException, validateHash } from '@common/utils'
+import { formatStringToDate, hashPassword, throwAppException, validateHash } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -60,6 +60,7 @@ export class UserService {
       password: hashedPassword,
       role: Role.STAFF,
       status: UserStatus.ACTIVE,
+      birth_date: formatStringToDate(rest.birth_date),
       ...rest,
     })
     return this.usersRepository.save(user)
@@ -78,6 +79,7 @@ export class UserService {
       password: hashedPassword,
       role: Role.FINANCE,
       status: UserStatus.ACTIVE,
+      birth_date: formatStringToDate(rest.birth_date),
       ...rest,
     })
     return this.usersRepository.save(user)

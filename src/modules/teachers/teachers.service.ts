@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 
 import { paginate, PaginationMeta } from '@common/pagination'
-import { arrayToObject, hashPassword, throwAppException } from '@common/utils'
+import { arrayToObject, formatStringToDate, hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -85,6 +85,7 @@ export class TeachersService {
         code,
         full_name,
         first_name,
+        birth_date: rest.birth_date ? formatStringToDate(rest.birth_date) : null,
         ...rest,
       })
 

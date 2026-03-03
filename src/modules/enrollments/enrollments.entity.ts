@@ -77,8 +77,8 @@ export class Enrollments {
   phone_number: string
 
   // ngày sinh
-  @Column({ nullable: true })
-  birth_date: string
+  @Column({ type: 'date', nullable: true })
+  birth_date: Date
 
   @Column({ nullable: true })
   address: string
