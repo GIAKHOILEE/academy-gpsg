@@ -248,14 +248,14 @@ export class DashboardService {
     const { semester_id, scholastic_id } = filter
 
     const ageGroups = [
-      { label: 'Từ 1-9', min: 1, max: 9 },
+      { label: 'Từ 0-9', min: -99999, max: 9 },
       { label: 'Từ 10-19', min: 10, max: 19 },
       { label: 'Từ 20-29', min: 20, max: 29 },
       { label: 'Từ 30-39', min: 30, max: 39 },
       { label: 'Từ 40-49', min: 40, max: 49 },
       { label: 'Từ 50-59', min: 50, max: 59 },
       { label: 'Từ 60-69', min: 60, max: 69 },
-      { label: 'Trên 70', min: 70, max: 200 },
+      { label: 'Trên 70', min: 70, max: 99999 },
     ]
 
     const queryBuilder = this.userRepository
@@ -287,6 +287,7 @@ export class DashboardService {
 
     queryBuilder.groupBy('age').addGroupBy('u.gender')
 
+    console.log(queryBuilder.getQuery())
     const raw = await queryBuilder.setParameters({ semester_id, scholastic_id }).getRawMany()
 
     // ===== map sang ageGroups =====
