@@ -115,6 +115,11 @@ export class CreateClassDto {
 
   @IsBoolean()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Học trực tiếp', example: true, default: true })
+  learn_offline: boolean
+
+  @IsBoolean()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Học video', example: true, default: false })
   learn_video: boolean
 

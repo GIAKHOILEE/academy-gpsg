@@ -105,6 +105,10 @@ export class Classes {
   @Column({ default: false })
   is_evaluate: boolean
 
+  // trực tiếp
+  @Column({ default: true })
+  learn_offline: boolean
+
   @Column({ default: false })
   learn_video: boolean
 
