@@ -3,7 +3,7 @@ import { HttpStatus, Injectable } from '@nestjs/common'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { arrayToObject, formatStringToDate, hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { Role } from '@enums/role.enum'
+import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { User } from '@modules/users/user.entity'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -312,6 +312,7 @@ export class TeachersService {
       department_id,
       scholastic_id,
       first_name,
+      gender,
       ...rest
     } = paginateTeachersDto
     const query = this.teacherRepository.createQueryBuilder('teachers').leftJoinAndSelect('teachers.user', 'user')
@@ -326,6 +327,19 @@ export class TeachersService {
 
     // luôn chỉ lấy teachers chưa bị xóa
     query.where('teachers.deleted_at IS NULL')
+
+    if (gender !== undefined) {
+      if (gender === Gender.MALE) {
+        query.andWhere('user.gender = :gender', { gender: Gender.MALE })
+      } else if (gender === Gender.FEMALE) {
+        query.andWhere('user.gender = :gender', { gender: Gender.FEMALE })
+      } else {
+        query.andWhere('(user.gender != :gender1 AND user.gender != :gender2) OR user.gender IS NULL', {
+          gender1: Gender.MALE,
+          gender2: Gender.FEMALE,
+        })
+      }
+    }
 
     if (full_name) {
       query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })

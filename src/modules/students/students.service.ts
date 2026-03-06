@@ -1,7 +1,7 @@
 import { paginate, PaginationMeta } from '@common/pagination'
 import { formatStringToDate, hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { Role } from '@enums/role.enum'
+import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -273,6 +273,7 @@ export class StudentsService {
         'user.status',
         'students.graduate',
         'students.graduate_year',
+        'students.is_card_taken',
       ])
       .where('students.id = :id', { id })
       .getOne()
@@ -303,6 +304,7 @@ export class StudentsService {
       other_document: student.other_document,
       graduate: student.graduate,
       graduate_year: student.graduate_year,
+      is_card_taken: student.is_card_taken,
     }
     return formattedStudent
   }
@@ -322,6 +324,7 @@ export class StudentsService {
       semester_id,
       department_id,
       scholastic_id,
+      gender,
       ...rest
     } = paginateStudentsDto
 
@@ -344,6 +347,19 @@ export class StudentsService {
       query.leftJoin('subject.department', 'department')
     }
 
+    // gender theo male và female, còn tại rỗng null hay gì là tính vào other hết
+    if (gender !== undefined) {
+      if (gender === Gender.MALE) {
+        query.andWhere('user.gender = :gender', { gender: Gender.MALE })
+      } else if (gender === Gender.FEMALE) {
+        query.andWhere('user.gender = :gender', { gender: Gender.FEMALE })
+      } else {
+        query.andWhere('(user.gender != :gender1 AND user.gender != :gender2) OR user.gender IS NULL', {
+          gender1: Gender.MALE,
+          gender2: Gender.FEMALE,
+        })
+      }
+    }
     // Filters on user fields
     if (full_name) {
       query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })
@@ -435,6 +451,7 @@ export class StudentsService {
       other_document: student.other_document,
       graduate: student.graduate,
       graduate_year: student.graduate_year,
+      is_card_taken: student.is_card_taken,
     }))
     return {
       data: formattedStudents,
