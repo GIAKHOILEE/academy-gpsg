@@ -1,13 +1,13 @@
 import { Injectable, HttpStatus } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository, DataSource } from 'typeorm'
+import { Repository, DataSource, In } from 'typeorm'
 import { Homeworks } from './entities/homeworks.entity'
 import { HomeworkQuestion } from './entities/question.entity'
 import { HomeworkOption } from './entities/option.entity'
 import { CreateHomeworksDto } from './dtos/create-homeworks.dto'
 import { Lesson } from '../lesson/lesson.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { throwAppException } from '@common/utils'
+import { arrayToObject, throwAppException } from '@common/utils'
 import { HomeworkSubmission } from './entities/submission.entity'
 import { HomeworkAnswer } from './entities/answer.entity'
 import { PaginateHomeworksDto, PaginateSubmissionsDto } from './dtos/paginate-homeworks.dto'
@@ -682,7 +682,13 @@ export class HomeworkService {
     paginateSubmissionsDto: PaginateSubmissionsDto,
   ): Promise<{ data: IHomeworkSubmission[]; meta: PaginationMeta }> {
     const { ...rest } = paginateSubmissionsDto
-    const homework = await this.hwRepo.findOne({ where: { id: homeworkId } })
+    const homework = await this.hwRepo
+      .createQueryBuilder('hw')
+      .select(['hw.id', 'lesson.id', 'class.id'])
+      .leftJoin('hw.lesson', 'lesson')
+      .leftJoin('lesson.class', 'class')
+      .where('hw.id = :id', { id: homeworkId })
+      .getOne()
     if (!homework) {
       throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
@@ -698,10 +704,22 @@ export class HomeworkService {
 
     const { data, meta } = await paginate(query, rest)
 
+    // lấy thông tin class của homework
+    const classId = homework.lesson.class.id
+    // lấy list student
+    const studentIds = data.map(s => s.student.id)
+    // lấy list class_student
+    const classStudent = await this.classStudentRepo.find({
+      where: { class: { id: classId }, student: { id: In(studentIds) } },
+    })
+
+    const classStudentMap = arrayToObject(classStudent, 'student_id')
+
     const formattedSubmissions = data.map(s => ({
       id: s.id,
       score: s.score,
       status: s.status,
+      learn_type: classStudentMap[s.student.id]?.learn_type,
       student: {
         id: s.student.id,
         name: s.student.user.full_name,
@@ -736,10 +754,25 @@ export class HomeworkService {
       throwAppException('SUBMISSION_NOT_FOUND', ErrorCode.SUBMISSION_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
+    // thêm learn_type
+    const homework = await this.hwRepo
+      .createQueryBuilder('hw')
+      .select(['hw.id', 'lesson.id', 'class.id'])
+      .leftJoin('hw.lesson', 'lesson')
+      .leftJoin('lesson.class', 'class')
+      .where('hw.id = :id', { id: submission.homework.id })
+      .getOne()
+    const classId = homework?.lesson?.class?.id
+    const studentId = submission.student.id
+    const classStudent = await this.classStudentRepo.findOne({
+      where: { class: { id: classId }, student: { id: studentId } },
+    })
+
     return {
       id: submission.id,
       score: submission.score,
       status: submission.status,
+      learn_type: classStudent?.learn_type,
       homework: {
         id: submission.homework.id,
         title: submission.homework.title,
@@ -747,6 +780,7 @@ export class HomeworkService {
       },
       student: {
         id: submission.student.id,
+        saint_name: submission.student.user.saint_name,
         name: submission.student.user.full_name,
         email: submission.student.user.email,
       },
