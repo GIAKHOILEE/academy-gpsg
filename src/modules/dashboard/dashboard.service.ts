@@ -246,21 +246,25 @@ export class DashboardService {
   // thông kê tuổi học viên
   async studentAgeStatistics(filter: FilterDashboardBySemesterDto): Promise<any> {
     const { semester_id, scholastic_id } = filter
-    const today = new Date()
 
     const ageGroups = [
-      { label: 'Từ 1-9', min: 1, max: 9 },
+      { label: 'Từ 0-9', min: -99999, max: 9 },
       { label: 'Từ 10-19', min: 10, max: 19 },
       { label: 'Từ 20-29', min: 20, max: 29 },
       { label: 'Từ 30-39', min: 30, max: 39 },
       { label: 'Từ 40-49', min: 40, max: 49 },
       { label: 'Từ 50-59', min: 50, max: 59 },
       { label: 'Từ 60-69', min: 60, max: 69 },
-      { label: 'Trên 70', min: 70, max: 200 },
+      { label: 'Trên 70', min: 70, max: 99999 },
     ]
 
-    const queryBuilder = this.userRepository.createQueryBuilder('u').select([]).where('u.role = :role', { role: Role.STUDENT })
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('u')
+      .select([`TIMESTAMPDIFF(YEAR, u.birth_date, CURDATE()) as age`, `u.gender as gender`, `COUNT(*) as total`])
+      .where('u.role = :role', { role: Role.STUDENT })
+      .andWhere('u.birth_date IS NOT NULL')
 
+    // filter semester / scholastic
     if (semester_id || scholastic_id) {
       let filterSql = `EXISTS (
         SELECT 1
@@ -276,30 +280,35 @@ export class DashboardService {
       if (scholastic_id) {
         filterSql += ` AND c.scholastic_id = :scholastic_id`
       }
-      filterSql += ')'
 
+      filterSql += ')'
       queryBuilder.andWhere(filterSql)
     }
 
-    ageGroups.forEach((group, index) => {
-      const minYear = today.getFullYear() - group.max
-      const maxYear = today.getFullYear() - group.min
-      const condition = `(
-        STR_TO_DATE(u.birth_date, '%Y-%m-%d') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
-        OR STR_TO_DATE(u.birth_date, '%d-%m-%Y') BETWEEN '${minYear}-01-01' AND '${maxYear}-12-31'
-      )`
+    queryBuilder.groupBy('age').addGroupBy('u.gender')
 
-      queryBuilder.addSelect(`SUM(CASE WHEN ${condition} AND u.gender = ${Gender.MALE} THEN 1 ELSE 0 END)`, `male_${index}`)
-      queryBuilder.addSelect(`SUM(CASE WHEN ${condition} AND u.gender = ${Gender.FEMALE} THEN 1 ELSE 0 END)`, `female_${index}`)
-      queryBuilder.addSelect(`SUM(CASE WHEN ${condition} AND (u.gender = ${Gender.OTHER} OR u.gender IS NULL) THEN 1 ELSE 0 END)`, `other_${index}`)
-    })
+    console.log(queryBuilder.getQuery())
+    const raw = await queryBuilder.setParameters({ semester_id, scholastic_id }).getRawMany()
 
-    const res = await queryBuilder.setParameters({ semester_id, scholastic_id, role: Role.STUDENT }).getRawOne()
+    // ===== map sang ageGroups =====
 
-    return ageGroups.map((group, index) => {
-      const male = Number(res[`male_${index}`]) || 0
-      const female = Number(res[`female_${index}`]) || 0
-      const other = Number(res[`other_${index}`]) || 0
+    const result = ageGroups.map(group => {
+      let male = 0
+      let female = 0
+      let other = 0
+
+      raw.forEach(row => {
+        const age = Number(row.age)
+        const gender = Number(row.gender)
+        const total = Number(row.total)
+
+        if (age >= group.min && age <= group.max) {
+          if (gender === Gender.MALE) male += total
+          else if (gender === Gender.FEMALE) female += total
+          else other += total
+        }
+      })
+
       return {
         ageGroup: group.label,
         male,
@@ -308,6 +317,8 @@ export class DashboardService {
         total: male + female + other,
       }
     })
+
+    return result
   }
 
   // Tổng doanh thu

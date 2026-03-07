@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateWitnessFaithDto {
   @IsNotEmpty()
@@ -18,25 +18,25 @@ export class CreateWitnessFaithDto {
   })
   name: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'The image of the witness faith',
     example: 'https://example.com/image.jpg',
   })
   image: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'The description of the witness faith',
     example: 'John Doe is a witness of faith',
   })
   description: string
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'The content of the witness faith',
     example: 'John Doe is a witness of faith',
   })

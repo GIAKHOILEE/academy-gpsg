@@ -18,8 +18,8 @@ export class CreatePostDto {
   content: string
 
   @IsString()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Ảnh bài viết', example: 'https://example.com/image.jpg' })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Ảnh bài viết', example: 'https://example.com/image.jpg' })
   image: string
 
   slug: string

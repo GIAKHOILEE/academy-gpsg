@@ -43,7 +43,8 @@ export class CreateDocumentsDto {
   sell_price: number
 
   @IsString()
-  @ApiProperty({
+  @IsOptional()
+  @ApiPropertyOptional({
     description: 'The image of the document',
     example: 'https://example.com/image.jpg',
   })

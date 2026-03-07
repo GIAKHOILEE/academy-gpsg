@@ -46,8 +46,8 @@ export class User {
   @Column({ nullable: true })
   birth_place: string
 
-  @Column({ nullable: true })
-  birth_date: string
+  @Column({ type: 'date', nullable: true })
+  birth_date: Date
 
   // giáo xứ
   @Column({ nullable: true })

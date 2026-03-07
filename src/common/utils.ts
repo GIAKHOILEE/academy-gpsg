@@ -51,6 +51,50 @@ export function convertToSlug(text: string): string {
     .trim()
 }
 
+// convert string date to date object
+export function formatStringToDate(stringDate: string | any): Date | null {
+  if (!stringDate) return null
+
+  let date: Date | null = null
+
+  // Case 1: ISO datetime (YYYY-MM-DDTHH:mm:ss.sssZ)
+  if (stringDate.includes('T')) {
+    const d = new Date(stringDate)
+    if (!isNaN(d.getTime())) {
+      date = d
+    }
+  }
+
+  // Case 2: Date string không có time (DD-MM-YYYY | DD/MM/YYYY | YYYY-MM-DD | YYYY/MM/DD)
+  if (!date) {
+    const normalized = stringDate.replace(/\//g, '-')
+    const parts = normalized.split('-')
+
+    if (parts.length !== 3) return null
+
+    let year: number, month: number, day: number
+
+    // YYYY-MM-DD
+    if (parts[0].length === 4) {
+      year = Number(parts[0])
+      month = Number(parts[1]) - 1
+      day = Number(parts[2])
+    }
+    // DD-MM-YYYY
+    else if (parts[2].length === 4) {
+      day = Number(parts[0])
+      month = Number(parts[1]) - 1
+      year = Number(parts[2])
+    } else {
+      return null
+    }
+
+    date = new Date(year, month, day)
+  }
+
+  return date
+}
+
 export function formatStringDate(stringDate: string, noTime: boolean = false): string {
   if (!stringDate) return ''
 

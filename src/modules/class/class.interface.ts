@@ -31,6 +31,7 @@ export interface IClasses {
   closing_day?: string
   is_active?: boolean
   is_evaluate?: boolean
+  learn_offline?: boolean
   learn_video?: boolean
   learn_meeting?: boolean
   is_online?: boolean

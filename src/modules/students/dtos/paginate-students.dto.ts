@@ -1,5 +1,6 @@
 import { PaginationDto } from '@common/pagination'
 import { ClassStatus } from '@enums/class.enum'
+import { Gender } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
@@ -15,6 +16,12 @@ export class PaginateStudentsDto extends PaginationDto {
   @IsString()
   @ApiPropertyOptional({ description: 'Họ sinh viên' })
   first_name?: string
+
+  @IsOptional()
+  @IsEnum(Gender)
+  @ApiPropertyOptional({ description: 'Giới tính:: 0: other, 1: male, 2: female', enum: Gender })
+  @Type(() => Number)
+  gender?: Gender
 
   @IsOptional()
   @IsString()

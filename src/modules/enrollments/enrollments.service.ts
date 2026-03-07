@@ -3,6 +3,7 @@ import {
   arrayToObject,
   formatCurrency,
   formatStringDate,
+  formatStringToDate,
   generateRandomString,
   hashPassword,
   mapScheduleToVietnamese,
@@ -114,7 +115,7 @@ export class EnrollmentsService {
         createEnrollmentDto.email = studentEntity.user.email
         createEnrollmentDto.phone_number = studentEntity.user.phone_number
         createEnrollmentDto.address = studentEntity.user.address
-        createEnrollmentDto.birth_date = studentEntity.user.birth_date
+        createEnrollmentDto.birth_date = formatStringToDate(studentEntity.user.birth_date)
         createEnrollmentDto.birth_place = studentEntity.user.birth_place
         createEnrollmentDto.parish = studentEntity.user.parish
         createEnrollmentDto.deanery = studentEntity.user.deanery
@@ -243,7 +244,7 @@ export class EnrollmentsService {
         email: createEnrollmentDto.email,
         phone_number: createEnrollmentDto.phone_number,
         address: createEnrollmentDto.address,
-        birth_date: createEnrollmentDto.birth_date,
+        birth_date: formatStringToDate(createEnrollmentDto.birth_date),
         birth_place: createEnrollmentDto.birth_place,
         parish: createEnrollmentDto.parish,
         deanery: createEnrollmentDto.deanery,
@@ -615,7 +616,7 @@ export class EnrollmentsService {
         code: enrollment?.code,
         saint_name: enrollment?.saint_name,
         full_name: enrollment?.full_name,
-        birth_date: formatStringDate(enrollment?.birth_date, true),
+        birth_date: formatStringDate(enrollment?.birth_date + '', true),
         birth_place: enrollment?.birth_place,
         phone: enrollment?.phone_number,
         email: enrollment?.email,
@@ -733,6 +734,7 @@ export class EnrollmentsService {
         'class.code',
         'class.schedule',
         'class.start_time',
+        'class.learn_offline',
         'class.learn_video',
         'class.learn_meeting',
         'class.end_enrollment_day',
@@ -781,6 +783,7 @@ export class EnrollmentsService {
           name: classEntity.name,
           code: classEntity.code,
           price: classEntity.price,
+          learn_offline: classEntity.learn_offline,
           learn_video: classEntity.learn_video,
           learn_meeting: classEntity.learn_meeting,
           end_enrollment_day: classEntity.end_enrollment_day,

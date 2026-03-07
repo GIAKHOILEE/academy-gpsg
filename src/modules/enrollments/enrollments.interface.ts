@@ -28,7 +28,7 @@ export interface IEnrollments {
   full_name?: string
   email?: string
   phone_number?: string
-  birth_date?: string
+  birth_date?: Date
   address?: string
   birth_place?: string
   parish?: string
