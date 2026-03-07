@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, Query, Req, Res } from '@nestjs/common'
+import { Body, Controller, Get, Post, Put, Query, Req } from '@nestjs/common'
 import { ExamScoreService, ExamScoreServiceV2 } from './exam-scores.service'
 import { BulkExamScoreByStudentDto, CreateClassStudentScoreDto } from './dtos/create-exam-scores.dto'
 import { UpdateClassStudentScoreDto } from './dtos/update-class-student-score.dto'
