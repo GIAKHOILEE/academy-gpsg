@@ -2,7 +2,7 @@ import { IFile } from '@common/file'
 import { StudentCardStatus } from '@enums/user.enum'
 import { CreateUserDtoV2 } from '@modules/users/dtos/create-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateStudentsDto extends CreateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Mã thẻ của học viên' })

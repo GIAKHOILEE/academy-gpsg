@@ -5,7 +5,7 @@ import { UserStatus } from '@enums/status.enum'
 import { StudentCardStatus } from '@enums/user.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsBooleanString, IsEnum, IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class PaginateStudentsDto extends PaginationDto {
   @IsOptional()
