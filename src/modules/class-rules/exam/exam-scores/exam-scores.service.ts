@@ -278,7 +278,7 @@ export class ExamScoreServiceV2 {
   }
 
   async getClassStudentScores(dto: PaginateExamScoresDto): Promise<{ data: any[]; meta: any }> {
-    const { semester_id, scholastic_id, ...rest } = dto
+    const { ...rest } = dto
     const queryBuilder = this.classStudentRepo
       .createQueryBuilder('class_student')
       .leftJoin('class_student.student', 'student')
