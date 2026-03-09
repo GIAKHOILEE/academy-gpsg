@@ -50,7 +50,6 @@ export class LessonService {
     if (!classExists) {
       throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
-    console.log(classExists)
     if (!classExists.is_online) {
       throwAppException('CLASS_IS_NOT_ONLINE', ErrorCode.CLASS_IS_NOT_ONLINE, HttpStatus.BAD_REQUEST)
     }

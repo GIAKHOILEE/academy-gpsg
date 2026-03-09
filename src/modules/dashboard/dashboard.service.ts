@@ -287,7 +287,6 @@ export class DashboardService {
 
     queryBuilder.groupBy('age').addGroupBy('u.gender')
 
-    console.log(queryBuilder.getQuery())
     const raw = await queryBuilder.setParameters({ semester_id, scholastic_id }).getRawMany()
 
     // ===== map sang ageGroups =====
@@ -856,7 +855,6 @@ export class DashboardService {
 
   async updateTeacherSalary(teacherSalaryDto: UpdateTeacherSalaryDto): Promise<void> {
     const { class_id, teacher_id, salary, extra_allowance, teacher_special } = teacherSalaryDto
-    console.log(teacherSalaryDto)
     const classEntity = await this.classRepository.exists({ where: { id: class_id } })
     if (!classEntity) {
       throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.BAD_REQUEST)

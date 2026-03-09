@@ -232,7 +232,6 @@ export class DocumentsService {
         },
       }
     })
-    console.log(totalProfit)
     return { data: formattedData, meta, total_profit: totalProfit }
   }
 

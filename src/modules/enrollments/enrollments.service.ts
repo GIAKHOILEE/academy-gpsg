@@ -115,7 +115,7 @@ export class EnrollmentsService {
         createEnrollmentDto.email = studentEntity.user.email
         createEnrollmentDto.phone_number = studentEntity.user.phone_number
         createEnrollmentDto.address = studentEntity.user.address
-        createEnrollmentDto.birth_date = formatStringToDate(studentEntity.user.birth_date)
+        createEnrollmentDto.birth_date = studentEntity.user.birth_date
         createEnrollmentDto.birth_place = studentEntity.user.birth_place
         createEnrollmentDto.parish = studentEntity.user.parish
         createEnrollmentDto.deanery = studentEntity.user.deanery
@@ -876,7 +876,6 @@ export class EnrollmentsService {
           return subQuery
         }, 'classes')
         .groupBy('enrollment.id')
-      console.log(queryBuilder.getSql())
     }
 
     queryBuilder.withDeleted()
