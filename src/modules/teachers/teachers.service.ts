@@ -153,7 +153,7 @@ export class TeachersService {
         bank_branch,
         ...userData
       } = updateTeacherDto
-      const { email, full_name, password, ...rest } = userData
+      const { email, full_name, password, birth_date, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -202,6 +202,7 @@ export class TeachersService {
         full_name: full_name ?? user.full_name,
         first_name: first_name ?? user.first_name,
         password: hashedPassword,
+        birth_date: birth_date ? formatStringToDate(birth_date) : user.birth_date,
         ...rest,
       })
       await queryRunner.manager.save(User, updatedUser)
