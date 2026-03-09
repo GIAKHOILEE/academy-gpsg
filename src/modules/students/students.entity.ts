@@ -28,6 +28,9 @@ export class Student {
   @Column({ nullable: true, default: StudentCardStatus.NOT_PRINTED })
   card_status: StudentCardStatus
 
+  @Column({ nullable: true, type: 'text' })
+  note: string
+
   // học bạ
   @Column({ nullable: true, type: 'json' })
   diploma_image: IFile[]

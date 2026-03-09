@@ -52,6 +52,11 @@ export class CreateStudentsDto extends CreateUserDtoV2 {
   @IsEnum(StudentCardStatus)
   @IsOptional()
   card_status: StudentCardStatus
+
+  @ApiPropertyOptional({ description: 'Ghi chú' })
+  @IsString()
+  @IsOptional()
+  note: string
 }
 
 export class CreateStudentWithEnrollmentDto extends CreateStudentsDto {}

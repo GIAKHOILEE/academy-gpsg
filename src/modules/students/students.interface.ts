@@ -6,6 +6,7 @@ export interface IStudent extends IUser {
   card_code?: string
   image_4x6?: string
   card_status?: StudentCardStatus
+  note?: string
   diploma_image?: IFile[]
   transcript_image?: IFile[]
   other_document?: IFile[]

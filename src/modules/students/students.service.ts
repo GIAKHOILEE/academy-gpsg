@@ -256,6 +256,7 @@ export class StudentsService {
         'students.transcript_image',
         'students.other_document',
         'students.card_status',
+        'students.note',
         'user.id',
         'user.code',
         'user.full_name',
@@ -305,6 +306,7 @@ export class StudentsService {
       graduate: student.graduate,
       graduate_year: student.graduate_year,
       card_status: student.card_status,
+      note: student.note,
     }
     return formattedStudent
   }
@@ -452,6 +454,7 @@ export class StudentsService {
       graduate: student.graduate,
       graduate_year: student.graduate_year,
       card_status: student.card_status,
+      note: student.note,
     }))
     return {
       data: formattedStudents,

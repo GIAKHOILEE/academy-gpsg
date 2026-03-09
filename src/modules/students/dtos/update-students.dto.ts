@@ -62,6 +62,11 @@ export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @IsEnum(StudentCardStatus)
   @IsOptional()
   card_status: StudentCardStatus
+
+  @ApiPropertyOptional({ description: 'Ghi chú' })
+  @IsString()
+  @IsOptional()
+  note: string
 }
 
 // cập nhật mã thẻ của học viên
