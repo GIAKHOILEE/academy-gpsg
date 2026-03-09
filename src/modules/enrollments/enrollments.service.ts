@@ -876,7 +876,6 @@ export class EnrollmentsService {
           return subQuery
         }, 'classes')
         .groupBy('enrollment.id')
-      console.log(queryBuilder.getSql())
     }
 
     queryBuilder.withDeleted()

@@ -153,7 +153,7 @@ export class TeachersService {
         bank_branch,
         ...userData
       } = updateTeacherDto
-      const { email, full_name, password, ...rest } = userData
+      const { email, full_name, password, birth_date, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -202,6 +202,7 @@ export class TeachersService {
         full_name: full_name ?? user.full_name,
         first_name: first_name ?? user.first_name,
         password: hashedPassword,
+        birth_date: birth_date ? formatStringToDate(birth_date) : user.birth_date,
         ...rest,
       })
       await queryRunner.manager.save(User, updatedUser)
@@ -441,7 +442,6 @@ export class TeachersService {
   // lấy danh sách lớp của giáo viên
   async getAllClassesOfTeacher(userId: number, paginateClassDto: PaginateTeacherClassesDto): Promise<{ data: IClasses[]; meta: PaginationMeta }> {
     const { classroom, is_online, is_free, status, ...rest } = paginateClassDto
-    console.log(classroom, is_online, is_free, status, rest)
     const query = this.classRepository
       .createQueryBuilder('classes')
       .leftJoinAndSelect('classes.subject', 'subject')
@@ -458,8 +458,6 @@ export class TeachersService {
     }
 
     if (is_online !== undefined) {
-      console.log(is_online)
-      console.log(typeof is_online)
       query.andWhere('classes.is_online = :is_online', { is_online })
     }
 
@@ -472,7 +470,6 @@ export class TeachersService {
     }
 
     const { data, meta } = await paginate(query, rest)
-    console.log(data, meta)
     const classIds = data.map(classEntity => classEntity.id)
     let current_students_object = {}
     if (classIds.length > 0) {

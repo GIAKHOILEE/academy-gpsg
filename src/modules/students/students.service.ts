@@ -125,7 +125,7 @@ export class StudentsService {
     await queryRunner.startTransaction()
 
     const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, ...userData } = updateStudentDto
-    const { email, full_name, password, ...rest } = userData
+    const { email, full_name, password, birth_date, ...rest } = userData
 
     try {
       const studentRepo = queryRunner.manager.getRepository(Student)
@@ -158,7 +158,7 @@ export class StudentsService {
         full_name: full_name ?? user.full_name,
         first_name: first_name ?? user.first_name,
         password: hashedPassword,
-        birth_date: rest.birth_date ? formatStringToDate(rest.birth_date) : user.birth_date,
+        birth_date: birth_date ? formatStringToDate(birth_date) : user.birth_date,
         ...rest,
       })
       await userRepo.save(updatedUser)
@@ -172,7 +172,7 @@ export class StudentsService {
             full_name: user.full_name ?? enrollment.full_name,
             saint_name: user.saint_name ?? enrollment.saint_name,
             phone_number: user.phone_number ?? enrollment.phone_number,
-            birth_date: rest.birth_date ? formatStringToDate(rest.birth_date) : enrollment.birth_date,
+            birth_date: birth_date ? formatStringToDate(birth_date) : enrollment.birth_date,
             address: user.address ?? enrollment.address,
             birth_place: user.birth_place ?? enrollment.birth_place,
             parish: user.parish ?? enrollment.parish,
@@ -255,6 +255,8 @@ export class StudentsService {
         'students.diploma_image',
         'students.transcript_image',
         'students.other_document',
+        'students.card_status',
+        'students.note',
         'user.id',
         'user.code',
         'user.full_name',
@@ -273,7 +275,6 @@ export class StudentsService {
         'user.status',
         'students.graduate',
         'students.graduate_year',
-        'students.is_card_taken',
       ])
       .where('students.id = :id', { id })
       .getOne()
@@ -304,7 +305,8 @@ export class StudentsService {
       other_document: student.other_document,
       graduate: student.graduate,
       graduate_year: student.graduate_year,
-      is_card_taken: student.is_card_taken,
+      card_status: student.card_status,
+      note: student.note,
     }
     return formattedStudent
   }
@@ -451,7 +453,8 @@ export class StudentsService {
       other_document: student.other_document,
       graduate: student.graduate,
       graduate_year: student.graduate_year,
-      is_card_taken: student.is_card_taken,
+      card_status: student.card_status,
+      note: student.note,
     }))
     return {
       data: formattedStudents,
