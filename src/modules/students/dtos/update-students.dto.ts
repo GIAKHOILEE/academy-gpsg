@@ -1,7 +1,8 @@
 import { IFile } from '@common/file'
+import { StudentCardStatus } from '@enums/user.enum'
 import { UpdateUserDtoV2 } from '@modules/users/dtos/update-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Mã thẻ của học viên' })
@@ -57,10 +58,10 @@ export class UpdateStudentsDto extends UpdateUserDtoV2 {
   @IsOptional()
   graduate_year: number
 
-  @ApiPropertyOptional({ description: 'Đã lấy thẻ', default: false })
-  @IsBoolean()
+  @ApiPropertyOptional({ description: 'Trạng thái thẻ', enum: StudentCardStatus, example: StudentCardStatus.NOT_PRINTED })
+  @IsEnum(StudentCardStatus)
   @IsOptional()
-  is_card_taken: boolean
+  card_status: StudentCardStatus
 }
 
 // cập nhật mã thẻ của học viên

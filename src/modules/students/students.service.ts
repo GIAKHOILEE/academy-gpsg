@@ -255,6 +255,7 @@ export class StudentsService {
         'students.diploma_image',
         'students.transcript_image',
         'students.other_document',
+        'students.card_status',
         'user.id',
         'user.code',
         'user.full_name',
@@ -273,7 +274,6 @@ export class StudentsService {
         'user.status',
         'students.graduate',
         'students.graduate_year',
-        'students.is_card_taken',
       ])
       .where('students.id = :id', { id })
       .getOne()
@@ -304,7 +304,7 @@ export class StudentsService {
       other_document: student.other_document,
       graduate: student.graduate,
       graduate_year: student.graduate_year,
-      is_card_taken: student.is_card_taken,
+      card_status: student.card_status,
     }
     return formattedStudent
   }
@@ -451,7 +451,7 @@ export class StudentsService {
       other_document: student.other_document,
       graduate: student.graduate,
       graduate_year: student.graduate_year,
-      is_card_taken: student.is_card_taken,
+      card_status: student.card_status,
     }))
     return {
       data: formattedStudents,

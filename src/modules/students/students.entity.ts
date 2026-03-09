@@ -5,6 +5,7 @@ import { ClassStudents } from '@modules/class/class-students/class-student.entit
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { Answers } from '@modules/evaluation/answers/answers.entity'
 import { IFile } from '@common/file'
+import { StudentCardStatus } from '@enums/user.enum'
 
 @Entity({ name: 'students' })
 export class Student {
@@ -24,9 +25,8 @@ export class Student {
   @Column({ nullable: true })
   image_4x6: string
 
-  // đã lấy thẻ
-  @Column({ nullable: true, default: false })
-  is_card_taken: boolean
+  @Column({ nullable: true, default: StudentCardStatus.NOT_PRINTED })
+  card_status: StudentCardStatus
 
   // học bạ
   @Column({ nullable: true, type: 'json' })

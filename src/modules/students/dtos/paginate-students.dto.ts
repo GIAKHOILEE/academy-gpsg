@@ -2,6 +2,7 @@ import { PaginationDto } from '@common/pagination'
 import { ClassStatus } from '@enums/class.enum'
 import { Gender } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
+import { StudentCardStatus } from '@enums/user.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsBooleanString, IsEnum, IsOptional, IsString } from 'class-validator'
@@ -85,7 +86,8 @@ export class PaginateStudentsDto extends PaginationDto {
   scholastic_id?: number
 
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Đã lấy thẻ', example: true, type: Boolean })
-  @IsBooleanString()
-  is_card_taken?: boolean
+  @IsEnum(StudentCardStatus)
+  @ApiPropertyOptional({ description: 'Trạng thái thẻ', enum: StudentCardStatus, example: StudentCardStatus.NOT_PRINTED })
+  @Type(() => Number)
+  card_status?: StudentCardStatus
 }
