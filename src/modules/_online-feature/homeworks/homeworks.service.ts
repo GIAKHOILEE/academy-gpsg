@@ -85,6 +85,37 @@ export class HomeworkService {
           }
         }
       }
+      // kiểm tra điểm của các question có đúng với total_points(homework) không
+      const totalPoints = createDto.questions.reduce((sum, q) => sum + q.points, 0)
+      if (totalPoints !== savedHw.total_points) {
+        throwAppException('TOTAL_POINTS_MISMATCH', ErrorCode.TOTAL_POINTS_MISMATCH, HttpStatus.BAD_REQUEST)
+      }
+      // kiểm tra nếu là multiple choice thì phải có ít nhất 1 đáp án đúng
+      for (const qDto of createDto.questions) {
+        if (qDto.type === QuestionTypeHomework.MCQ_MULTI) {
+          const hasCorrectOption = qDto.options.some(o => o.is_correct)
+          if (!hasCorrectOption) {
+            throwAppException(
+              'MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_ONE_CORRECT_OPTION',
+              ErrorCode.MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_ONE_CORRECT_OPTION,
+              HttpStatus.BAD_REQUEST,
+            )
+          }
+        }
+      }
+      // kiểm tra nếu là multiple choice thì phải có ít nhất 2 đáp án
+      for (const qDto of createDto.questions) {
+        if (qDto.type === QuestionTypeHomework.MCQ_MULTI) {
+          const hasAtLeastTwoOptions = qDto.options.length >= 2
+          if (!hasAtLeastTwoOptions) {
+            throwAppException(
+              'MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_TWO_OPTIONS',
+              ErrorCode.MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_TWO_OPTIONS,
+              HttpStatus.BAD_REQUEST,
+            )
+          }
+        }
+      }
 
       await queryRunner.commitTransaction()
 
