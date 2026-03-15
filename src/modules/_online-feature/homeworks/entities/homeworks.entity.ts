@@ -23,8 +23,12 @@ export class Homeworks {
   @Column({ nullable: true })
   total_points: number
 
+  // @Column({ default: false })
+  // is_active: boolean
+
+  // bài cuối kì, mỗi class chỉ có 1 bài, nếu is_final = true điểm sẽ được cho vào điểm trong class_students luôn
   @Column({ default: false })
-  is_active: boolean
+  is_final: boolean
 
   @OneToMany(() => HomeworkQuestion, q => q.homework, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   questions: HomeworkQuestion[]
