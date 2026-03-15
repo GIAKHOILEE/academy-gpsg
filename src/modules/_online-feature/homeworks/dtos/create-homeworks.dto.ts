@@ -47,6 +47,15 @@ export class CreateHomeworksDto {
   description: string
 
   @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({
+    description: 'Total Points',
+    example: 10,
+    default: 10,
+  })
+  total_points: number
+
+  @IsOptional()
   @IsString()
   @ApiPropertyOptional({
     description: 'Deadline Date',

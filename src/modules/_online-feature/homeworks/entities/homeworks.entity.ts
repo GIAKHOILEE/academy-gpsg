@@ -20,7 +20,7 @@ export class Homeworks {
   @Column({ nullable: true })
   deadline_time: string
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: 10 })
   total_points: number
 
   // @Column({ default: false })
