@@ -124,7 +124,8 @@ export class StudentsService {
     await queryRunner.connect()
     await queryRunner.startTransaction()
 
-    const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, ...userData } = updateStudentDto
+    const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, card_status, ...userData } =
+      updateStudentDto
     const { email, full_name, password, birth_date, ...rest } = userData
 
     try {
@@ -198,6 +199,7 @@ export class StudentsService {
         graduate: graduate ?? student.graduate,
         graduate_year: graduate_year ?? student.graduate_year,
         card_code: card_code ?? student.card_code,
+        card_status: card_status ?? student.card_status,
       })
       await studentRepo.save(updatedStudent)
 
