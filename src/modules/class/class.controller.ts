@@ -2,9 +2,9 @@ import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Query, Request } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ClassService } from './class.service'
-import { CreateClassDto } from './dtos/create-class.dto'
+import { AddStudentToClassDto, CreateClassDto, RemoveStudentFromClassDto } from './dtos/create-class.dto'
 import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
 
@@ -14,6 +14,28 @@ import { UpdateClassDto } from './dtos/update-class.dto'
 @Controller('admin/classes')
 export class AdminClassController {
   constructor(private readonly classService: ClassService) {}
+
+  @Post('students/add')
+  @ApiOperation({ summary: 'Add students to a class' })
+  @ApiBody({ type: [AddStudentToClassDto] })
+  async addStudentsToClass(@Body() addStudentToClassDto: AddStudentToClassDto[]): Promise<ResponseDto> {
+    await this.classService.addStudentToClass(addStudentToClassDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'STUDENTS_ADDED_TO_CLASS_SUCCESSFULLY',
+    })
+  }
+
+  @Post('students/remove')
+  @ApiOperation({ summary: 'Remove students from a class' })
+  @ApiBody({ type: [RemoveStudentFromClassDto] })
+  async removeStudentsFromClass(@Body() removeStudentFromClassDto: RemoveStudentFromClassDto[]): Promise<ResponseDto> {
+    await this.classService.removeStudentFromClass(removeStudentFromClassDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'STUDENTS_REMOVED_FROM_CLASS_SUCCESSFULLY',
+    })
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new class' })

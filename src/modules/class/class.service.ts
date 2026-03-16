@@ -5,12 +5,12 @@ import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { Semester } from './_semester/semester.entity'
 import { Classes } from './class.entity'
 import { IClasses } from './class.interface'
-import { CreateClassDto } from './dtos/create-class.dto'
+import { AddStudentToClassDto, CreateClassDto, RemoveStudentFromClassDto } from './dtos/create-class.dto'
 import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
 import { IStudent } from '@modules/students/students.interface'
@@ -752,6 +752,97 @@ export class ClassService {
     return { data: formattedStudents, meta }
   }
 
+  // thêm user thẳng vào lớp
+  async addStudentToClass(addStudentToClassDto: AddStudentToClassDto[]): Promise<void> {
+    const classIds = [...new Set(addStudentToClassDto.map(item => item.class_id))]
+    const userIds = [...new Set(addStudentToClassDto.map(item => item.user_id))]
+
+    // 1. Tìm student theo user_id
+    const students = await this.studentRepository
+      .createQueryBuilder('student')
+      .select(['student.id as id', 'student.user_id as user_id'])
+      .where('student.user_id IN (:...userIds)', { userIds })
+      .getRawMany()
+
+    if (students.length !== userIds.length) {
+      throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    // 2. Kiểm tra class tồn tại đầy đủ
+    const classes = await this.classRepository.find({
+      select: ['id'],
+      where: { id: In(classIds) },
+    })
+
+    if (classes.length !== classIds.length) {
+      throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    // 3. map user_id -> student_id
+    const studentMap = Object.fromEntries(students.map(student => [student.user_id, student.id]))
+
+    // 4. tạo dữ liệu insert
+    const classStudents = addStudentToClassDto.map(item => ({
+      class_id: item.class_id,
+      student_id: studentMap[item.user_id],
+      score: item.score,
+    }))
+
+    // 5. check duplicate trong class
+    const existing = await this.classStudentsRepository.find({
+      select: ['class_id', 'student_id'],
+      where: classStudents.map(item => ({
+        class_id: item.class_id,
+        student_id: item.student_id,
+      })),
+    })
+
+    if (existing.length > 0) {
+      throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
+    }
+
+    // 6. save
+    await this.classStudentsRepository.save(classStudents)
+  }
+
+  // xóa user thẳng ra khỏi lớp
+  async removeStudentFromClass(removeStudentFromClassDto: RemoveStudentFromClassDto[]): Promise<void> {
+    const classIds = [...new Set(removeStudentFromClassDto.map(item => item.class_id))]
+    const userIds = [...new Set(removeStudentFromClassDto.map(item => item.user_id))]
+
+    // 1. Tìm student theo user_id
+    const students = await this.studentRepository
+      .createQueryBuilder('student')
+      .select(['student.id as id', 'student.user_id as user_id'])
+      .where('student.user_id IN (:...userIds)', { userIds })
+      .getRawMany()
+
+    if (students.length !== userIds.length) {
+      throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    // 2. Kiểm tra class tồn tại
+    const classes = await this.classRepository.find({
+      select: ['id'],
+      where: { id: In(classIds) },
+    })
+
+    if (classes.length !== classIds.length) {
+      throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    // 3. map user_id -> student_id
+    const studentMap = Object.fromEntries(students.map(student => [student.user_id, student.id]))
+
+    // 4. build conditions
+    const deleteConditions = removeStudentFromClassDto.map(item => ({
+      class_id: item.class_id,
+      student_id: studentMap[item.user_id],
+    }))
+
+    // 5. delete
+    await this.classStudentsRepository.delete(deleteConditions)
+  }
   // // cronjob cuối ngày closing_day chuyển status qua END_CLASS
   // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   // async cronjobUpdateClassStatus(): Promise<void> {

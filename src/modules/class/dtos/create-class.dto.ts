@@ -143,3 +143,34 @@ export class CreateClassDto {
   // @ApiPropertyOptional({ description: 'Khoa', example: 1 })
   // department_id: number
 }
+
+// add student to class
+export class AddStudentToClassDto {
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Mã học sinh', example: 1 })
+  user_id: number
+
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Mã lớp', example: 1 })
+  class_id: number
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Điểm', example: '10' })
+  score: string
+}
+
+// remove student from class
+export class RemoveStudentFromClassDto {
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Mã học sinh', example: 1 })
+  user_id: number
+
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Mã lớp', example: 1 })
+  class_id: number
+}
