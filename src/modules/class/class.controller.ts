@@ -1,10 +1,10 @@
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Query, Request } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpStatus, Param, ParseArrayPipe, Patch, Post, Put, Query, Request } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ClassService } from './class.service'
-import { AddStudentToClassDto, CreateClassDto, RemoveStudentFromClassDto } from './dtos/create-class.dto'
+import { AddStudentToClassDto, CreateClassDto } from './dtos/create-class.dto'
 import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
 
@@ -15,22 +15,27 @@ import { UpdateClassDto } from './dtos/update-class.dto'
 export class AdminClassController {
   constructor(private readonly classService: ClassService) {}
 
-  @Post('students/add')
+  @Post(':classId/students/add')
   @ApiOperation({ summary: 'Add students to a class' })
+  @ApiParam({ name: 'classId', type: Number, description: 'The id of the class to add students' })
   @ApiBody({ type: [AddStudentToClassDto] })
-  async addStudentsToClass(@Body() addStudentToClassDto: AddStudentToClassDto[]): Promise<ResponseDto> {
-    await this.classService.addStudentToClass(addStudentToClassDto)
+  async addStudentsToClass(@Param('classId') classId: number, @Body() addStudentToClassDto: AddStudentToClassDto[]): Promise<ResponseDto> {
+    await this.classService.addStudentToClass(Number(classId), addStudentToClassDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'STUDENTS_ADDED_TO_CLASS_SUCCESSFULLY',
     })
   }
 
-  @Post('students/remove')
+  @Patch(':classId/students/remove')
   @ApiOperation({ summary: 'Remove students from a class' })
-  @ApiBody({ type: [RemoveStudentFromClassDto] })
-  async removeStudentsFromClass(@Body() removeStudentFromClassDto: RemoveStudentFromClassDto[]): Promise<ResponseDto> {
-    await this.classService.removeStudentFromClass(removeStudentFromClassDto)
+  @ApiParam({ name: 'classId', type: Number, description: 'The id of the class to remove students' })
+  @ApiBody({ type: [Number] })
+  async removeStudentsFromClass(
+    @Param('classId') classId: number,
+    @Body(new ParseArrayPipe({ items: Number })) studentIds: number[],
+  ): Promise<ResponseDto> {
+    await this.classService.removeStudentFromClass(Number(classId), studentIds)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'STUDENTS_REMOVED_FROM_CLASS_SUCCESSFULLY',
