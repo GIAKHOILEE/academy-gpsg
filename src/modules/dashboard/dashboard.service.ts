@@ -127,17 +127,17 @@ export class DashboardService {
         // Nam
         `SUM(CASE WHEN u.gender = 1 AND u.saint_name IS NOT NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS male_giaodan`,
         `SUM(CASE WHEN u.gender = 1 AND u.congregation IS NOT NULL THEN 1 ELSE 0 END) AS male_tusi`,
-        `SUM(CASE WHEN u.gender = 1 AND u.saint_name IS NULL THEN 1 ELSE 0 END) AS male_daokhac`,
+        `SUM(CASE WHEN u.gender = 1 AND u.saint_name IS NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS male_daokhac`,
 
         // Nữ
         `SUM(CASE WHEN u.gender = 2 AND u.saint_name IS NOT NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS female_giaodan`,
         `SUM(CASE WHEN u.gender = 2 AND u.congregation IS NOT NULL THEN 1 ELSE 0 END) AS female_tusi`,
-        `SUM(CASE WHEN u.gender = 2 AND u.saint_name IS NULL THEN 1 ELSE 0 END) AS female_daokhac`,
+        `SUM(CASE WHEN u.gender = 2 AND u.saint_name IS NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS female_daokhac`,
 
         // Khác / không xác định
         `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND u.saint_name IS NOT NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS other_giaodan`,
         `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND u.congregation IS NOT NULL THEN 1 ELSE 0 END) AS other_tusi`,
-        `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND u.saint_name IS NULL THEN 1 ELSE 0 END) AS other_daokhac`,
+        `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND u.saint_name IS NULL AND u.congregation IS NULL THEN 1 ELSE 0 END) AS other_daokhac`,
       ])
       .where('u.role = :role', { role: Role.STUDENT })
 

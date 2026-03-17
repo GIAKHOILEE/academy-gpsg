@@ -21,6 +21,15 @@ export class CreateHomeworksDto {
   })
   is_active?: boolean
 
+  @IsOptional()
+  @IsBoolean()
+  @ApiPropertyOptional({
+    description: 'Is Final',
+    example: false,
+    enum: [true, false],
+  })
+  is_final?: boolean
+
   @IsNotEmpty()
   @IsString()
   @ApiProperty({
@@ -36,6 +45,15 @@ export class CreateHomeworksDto {
     example: 'Homework 1 description',
   })
   description: string
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({
+    description: 'Total Points',
+    example: 10,
+    default: 10,
+  })
+  total_points: number
 
   @IsOptional()
   @IsString()

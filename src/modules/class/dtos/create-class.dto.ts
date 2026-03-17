@@ -143,3 +143,16 @@ export class CreateClassDto {
   // @ApiPropertyOptional({ description: 'Khoa', example: 1 })
   // department_id: number
 }
+
+// add student to class
+export class AddStudentToClassDto {
+  @IsNumber()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Mã học sinh', example: 1 })
+  student_id: number
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Điểm', example: '7' })
+  score?: string
+}

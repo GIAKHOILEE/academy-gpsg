@@ -50,8 +50,20 @@ export class HomeworkService {
       const optionRepo = queryRunner.manager.getRepository(HomeworkOption)
 
       // check mỗi lesson chỉ 1 homework được active
-      const activeHw = await hwRepo.findOne({ where: { lesson: { id: createDto.lesson_id }, is_active: true } })
-      if (activeHw) throwAppException('ACTIVE_HOMEWORK_EXISTS', ErrorCode.ACTIVE_HOMEWORK_EXISTS, HttpStatus.BAD_REQUEST)
+      // const activeHw = await hwRepo.findOne({ where: { lesson: { id: createDto.lesson_id }, is_active: true } })
+      // if (activeHw) throwAppException('ACTIVE_HOMEWORK_EXISTS', ErrorCode.ACTIVE_HOMEWORK_EXISTS, HttpStatus.BAD_REQUEST)
+
+      // check lớp đã có bài final chưa
+      const finalHw = await hwRepo
+        .createQueryBuilder('hw')
+        .select(['hw.id', 'hw.is_final', 'lesson.id', 'class.id'])
+        .leftJoin('hw.lesson', 'lesson')
+        .leftJoin('lesson.class', 'class')
+        .where('lesson.id = :lessonId', { lessonId: createDto.lesson_id })
+        .andWhere('hw.is_final = :isFinal', { isFinal: true })
+        .getOne()
+      if (finalHw) throwAppException('FINAL_HOMEWORK_EXISTS_IN_CLASS', ErrorCode.FINAL_HOMEWORK_EXISTS_IN_CLASS, HttpStatus.BAD_REQUEST)
+
       // tạo bài
       const newHw = hwRepo.create({
         title: createDto.title,
@@ -60,6 +72,8 @@ export class HomeworkService {
         total_points: createDto.questions.reduce((sum, q) => sum + q.points, 0),
         deadline_date: createDto.deadline_date,
         deadline_time: createDto.deadline_time,
+        // is_active: createDto.is_active,
+        is_final: createDto.is_final,
       })
 
       const savedHw = await hwRepo.save(newHw)
@@ -85,6 +99,37 @@ export class HomeworkService {
           }
         }
       }
+      // kiểm tra điểm của các question có đúng với total_points(homework) không
+      const totalPoints = createDto.questions.reduce((sum, q) => sum + q.points, 0)
+      if (totalPoints !== savedHw.total_points) {
+        throwAppException('TOTAL_POINTS_MISMATCH', ErrorCode.TOTAL_POINTS_MISMATCH, HttpStatus.BAD_REQUEST)
+      }
+      // kiểm tra nếu là multiple choice thì phải có ít nhất 1 đáp án đúng
+      for (const qDto of createDto.questions) {
+        if (qDto.type === QuestionTypeHomework.MCQ_MULTI) {
+          const hasCorrectOption = qDto.options.some(o => o.is_correct)
+          if (!hasCorrectOption) {
+            throwAppException(
+              'MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_ONE_CORRECT_OPTION',
+              ErrorCode.MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_ONE_CORRECT_OPTION,
+              HttpStatus.BAD_REQUEST,
+            )
+          }
+        }
+      }
+      // kiểm tra nếu là multiple choice thì phải có ít nhất 2 đáp án
+      for (const qDto of createDto.questions) {
+        if (qDto.type === QuestionTypeHomework.MCQ_MULTI) {
+          const hasAtLeastTwoOptions = qDto.options.length >= 2
+          if (!hasAtLeastTwoOptions) {
+            throwAppException(
+              'MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_TWO_OPTIONS',
+              ErrorCode.MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_TWO_OPTIONS,
+              HttpStatus.BAD_REQUEST,
+            )
+          }
+        }
+      }
 
       await queryRunner.commitTransaction()
 
@@ -104,62 +149,62 @@ export class HomeworkService {
   }
 
   // update active
-  async updateActiveHomework(homeworkId: number): Promise<void> {
-    const queryRunner = this.dataSource.createQueryRunner()
-    await queryRunner.connect()
-    await queryRunner.startTransaction()
-    try {
-      const hwRepo = queryRunner.manager.getRepository(Homeworks)
-      const submissionRepo = queryRunner.manager.getRepository(HomeworkSubmission)
-      const classStudentRepo = queryRunner.manager.getRepository(ClassStudents)
+  // async updateActiveHomework(homeworkId: number): Promise<void> {
+  //   const queryRunner = this.dataSource.createQueryRunner()
+  //   await queryRunner.connect()
+  //   await queryRunner.startTransaction()
+  //   try {
+  //     const hwRepo = queryRunner.manager.getRepository(Homeworks)
+  //     const submissionRepo = queryRunner.manager.getRepository(HomeworkSubmission)
+  //     const classStudentRepo = queryRunner.manager.getRepository(ClassStudents)
 
-      const hw = await hwRepo.findOne({
-        where: { id: homeworkId },
-        relations: ['lesson', 'lesson.class'],
-      })
-      if (!hw) throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
+  //     const hw = await hwRepo.findOne({
+  //       where: { id: homeworkId },
+  //       relations: ['lesson', 'lesson.class'],
+  //     })
+  //     if (!hw) throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-      const becomingActive = !hw.is_active
+  //     const becomingActive = !hw.is_active
 
-      // nếu homework mà đã có submission thì không thể chuyển từ true thành false
-      const hasSubmissions = await submissionRepo.exists({ where: { homework: { id: hw.id } } })
-      if (hasSubmissions && hw.is_active) {
-        throwAppException('HOMEWORK_HAS_SUBMISSIONS', ErrorCode.HOMEWORK_HAS_SUBMISSIONS, HttpStatus.BAD_REQUEST)
-      }
+  //     // nếu homework mà đã có submission thì không thể chuyển từ true thành false
+  //     const hasSubmissions = await submissionRepo.exists({ where: { homework: { id: hw.id } } })
+  //     if (hasSubmissions && hw.is_active) {
+  //       throwAppException('HOMEWORK_HAS_SUBMISSIONS', ErrorCode.HOMEWORK_HAS_SUBMISSIONS, HttpStatus.BAD_REQUEST)
+  //     }
 
-      // mỗi lesson chỉ có 1 homework được active
-      if (becomingActive) {
-        const activeHw = await hwRepo.findOne({
-          where: { lesson: { id: hw.lesson.id }, is_active: true },
-        })
-        if (activeHw) throwAppException('ACTIVE_HOMEWORK_EXISTS', ErrorCode.ACTIVE_HOMEWORK_EXISTS, HttpStatus.BAD_REQUEST)
-      }
+  //     // mỗi lesson chỉ có 1 homework được active
+  //     if (becomingActive) {
+  //       const activeHw = await hwRepo.findOne({
+  //         where: { lesson: { id: hw.lesson.id }, is_active: true },
+  //       })
+  //       if (activeHw) throwAppException('ACTIVE_HOMEWORK_EXISTS', ErrorCode.ACTIVE_HOMEWORK_EXISTS, HttpStatus.BAD_REQUEST)
+  //     }
 
-      await hwRepo.update({ id: homeworkId }, { is_active: becomingActive })
+  //     await hwRepo.update({ id: homeworkId }, { is_active: becomingActive })
 
-      // nếu homework active thành công thì cập nhật điểm của học sinh vào bảng class_student
-      if (becomingActive) {
-        const submissions = await submissionRepo.find({
-          where: { homework: { id: homeworkId } },
-          relations: ['student'],
-        })
+  //     // nếu homework active thành công thì cập nhật điểm của học sinh vào bảng class_student
+  //     if (becomingActive) {
+  //       const submissions = await submissionRepo.find({
+  //         where: { homework: { id: homeworkId } },
+  //         relations: ['student'],
+  //       })
 
-        const classId = hw.lesson?.class?.id
-        if (classId) {
-          for (const sub of submissions) {
-            await classStudentRepo.update({ student: { id: sub.student.id }, class: { id: classId } }, { score: String(sub.score) })
-          }
-        }
-      }
+  //       const classId = hw.lesson?.class?.id
+  //       if (classId) {
+  //         for (const sub of submissions) {
+  //           await classStudentRepo.update({ student: { id: sub.student.id }, class: { id: classId } }, { score: String(sub.score) })
+  //         }
+  //       }
+  //     }
 
-      await queryRunner.commitTransaction()
-    } catch (err) {
-      await queryRunner.rollbackTransaction()
-      throw err
-    } finally {
-      await queryRunner.release()
-    }
-  }
+  //     await queryRunner.commitTransaction()
+  //   } catch (err) {
+  //     await queryRunner.rollbackTransaction()
+  //     throw err
+  //   } finally {
+  //     await queryRunner.release()
+  //   }
+  // }
 
   async updateHomework(homeworkId: number, updateDto: CreateHomeworksDto) {
     const hw = await this.hwRepo.findOne({ where: { id: homeworkId }, relations: ['questions', 'questions.options', 'lesson'] })
@@ -201,6 +246,8 @@ export class HomeworkService {
         'homework.deadline_date',
         'homework.deadline_time',
         'homework.total_points',
+        // 'homework.is_active',
+        'homework.is_final',
         'lesson.id',
         'lesson.title',
         'lesson.schedule',
@@ -236,6 +283,8 @@ export class HomeworkService {
         deadline_date: homework.deadline_date,
         deadline_time: homework.deadline_time,
         total_points: homework.total_points,
+        // is_active: homework.is_active,
+        is_final: homework.is_final,
         lesson: {
           id: homework.lesson.id,
           title: homework.lesson.title,
@@ -278,6 +327,8 @@ export class HomeworkService {
         'homework.deadline_date',
         'homework.deadline_time',
         'homework.total_points',
+        // 'homework.is_active',
+        'homework.is_final',
         'lesson.id',
         'lesson.title',
         'lesson.schedule',
@@ -583,8 +634,8 @@ export class HomeworkService {
       submission.graded_at = new Date()
       await subRepo.save(submission)
 
-      // nếu homework có is_active là true thì cho điểm vào bảng điểm
-      if (hw?.is_active) {
+      // nếu homework có is_final là true thì cho điểm vào bảng điểm
+      if (hw?.is_final) {
         const studentId = submission.student.id
         const homeworkId = submission.homework.id
         const homework = await hwRepo

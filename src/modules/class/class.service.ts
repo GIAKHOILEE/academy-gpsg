@@ -5,12 +5,12 @@ import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { Scholastic } from './_scholastic/scholastic.entity'
 import { Semester } from './_semester/semester.entity'
 import { Classes } from './class.entity'
 import { IClasses } from './class.interface'
-import { CreateClassDto } from './dtos/create-class.dto'
+import { AddStudentToClassDto, CreateClassDto } from './dtos/create-class.dto'
 import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
 import { IStudent } from '@modules/students/students.interface'
@@ -752,6 +752,66 @@ export class ClassService {
     return { data: formattedStudents, meta }
   }
 
+  // thêm user thẳng vào lớp
+  async addStudentToClass(classId: number, addStudentToClassDto: AddStudentToClassDto[]): Promise<void> {
+    const studentIds = [...new Set(addStudentToClassDto.map(item => item.student_id))]
+    if (studentIds.length === 0) return
+
+    const classExists = await this.classRepository.exists({ where: { id: classId } })
+    if (!classExists) {
+      throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const students = await this.studentRepository.find({
+      select: ['id'],
+      where: { id: In(studentIds) },
+    })
+    if (students.length !== studentIds.length) {
+      throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const classStudents = addStudentToClassDto.map(item => ({
+      class_id: classId,
+      student_id: item.student_id,
+      score: item.score,
+    }))
+
+    const existing = await this.classStudentsRepository.find({
+      select: ['class_id', 'student_id'],
+      where: classStudents.map(item => ({
+        class_id: item.class_id,
+        student_id: item.student_id,
+      })),
+    })
+
+    if (existing.length > 0) {
+      throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
+    }
+
+    await this.classStudentsRepository.save(classStudents)
+  }
+  async removeStudentFromClass(classId: number, studentIds: number[]): Promise<void> {
+    const uniqueStudentIds = [...new Set(studentIds)]
+    if (uniqueStudentIds.length === 0) return
+
+    const classExists = await this.classRepository.exists({ where: { id: classId } })
+    if (!classExists) {
+      throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const students = await this.studentRepository.find({
+      select: ['id'],
+      where: { id: In(uniqueStudentIds) },
+    })
+    if (students.length !== uniqueStudentIds.length) {
+      throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    await this.classStudentsRepository.delete({
+      class_id: classId,
+      student_id: In(uniqueStudentIds),
+    })
+  }
   // // cronjob cuối ngày closing_day chuyển status qua END_CLASS
   // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   // async cronjobUpdateClassStatus(): Promise<void> {
