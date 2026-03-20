@@ -149,28 +149,10 @@ export class AddStudentToClassDto {
   @IsNumber()
   @IsNotEmpty()
   @ApiProperty({ description: 'Mã học sinh', example: 1 })
-  user_id: number
-
-  @IsNumber()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Mã lớp', example: 1 })
-  class_id: number
+  student_id: number
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Điểm', example: '10' })
-  score: string
-}
-
-// remove student from class
-export class RemoveStudentFromClassDto {
-  @IsNumber()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Mã học sinh', example: 1 })
-  user_id: number
-
-  @IsNumber()
-  @IsNotEmpty()
-  @ApiProperty({ description: 'Mã lớp', example: 1 })
-  class_id: number
+  @ApiPropertyOptional({ description: 'Điểm', example: '7' })
+  score?: string
 }
