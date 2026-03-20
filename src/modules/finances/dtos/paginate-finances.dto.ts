@@ -16,6 +16,21 @@ export class PaginateFinancesDto extends PaginationDto {
 
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({ description: 'Day of the finances', example: '20' })
+  day?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Month of the finances', example: '03' })
+  month?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Year of the finances', example: '2026' })
+  year?: string
+
+  @IsOptional()
+  @IsString()
   @ApiPropertyOptional({ description: 'Payment method', enum: FinancesPaymentMethod })
   payment_method?: string
 
