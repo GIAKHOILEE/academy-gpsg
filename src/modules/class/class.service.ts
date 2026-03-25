@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { arrayToObject, throwAppException } from '@common/utils'
+import { arrayToObject, removeVietnameseTones, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
@@ -494,7 +494,7 @@ export class ClassService {
 
   //lấy danh sách học sinh của lớp
   async getStudentsOfClass(class_id: number, getStudentsOfClassDto: GetStudentsOfClassDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { name, code, first_name, ...rest } = getStudentsOfClassDto
+    const { full_name, code, first_name, ...rest } = getStudentsOfClassDto
 
     const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -526,8 +526,9 @@ export class ClassService {
       .leftJoin('student.user', 'user')
       .where('class_students.class_id = :class_id', { class_id })
 
-    if (name) {
-      classStudents.andWhere('user.full_name LIKE :name', { name: `%${name}%` })
+    if (full_name) {
+      const name = removeVietnameseTones(full_name.toLowerCase().trim())
+      classStudents.andWhere('LOWER(user.full_name) LIKE :full_name', { full_name: `%${name}%` })
     }
     if (code) {
       classStudents.andWhere('user.code = :code', { code })
@@ -703,7 +704,7 @@ export class ClassService {
     class_id: number,
     getStudentsOfClassDto: GetStudentsOfClassDto,
   ): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { name, code, first_name, ...rest } = getStudentsOfClassDto
+    const { full_name, code, first_name, ...rest } = getStudentsOfClassDto
 
     const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -725,8 +726,9 @@ export class ClassService {
       .leftJoin('student.user', 'user')
       .where('class_students.class_id = :class_id', { class_id })
 
-    if (name) {
-      classStudents.andWhere('user.full_name LIKE :name', { name: `%${name}%` })
+    if (full_name) {
+      const name = removeVietnameseTones(full_name.toLowerCase().trim())
+      classStudents.andWhere('LOWER(user.full_name) LIKE :full_name', { full_name: `%${name}%` })
     }
     if (code) {
       classStudents.andWhere('user.code = :code', { code })
