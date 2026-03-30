@@ -8,7 +8,7 @@ import { UpdateQuestionsDto } from './dtos/update-questions.dto'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Answers } from '../answers/answers.entity'
-import { PaginateQuestionsDto } from './dtos/pagiante-questions.dto'
+import { PaginateQuestionsDto, PaginateQuestionsStatisticsDto } from './dtos/pagiante-questions.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { QuestionType } from '@enums/evaluation.enum'
 
@@ -107,98 +107,175 @@ export class QuestionsStatisticsService {
     private readonly answersRepository: Repository<Answers>,
   ) {}
 
-  async statisticQuestion(questionId: number) {
-    const question = await this.questionsRepository.findOne({
-      where: { id: questionId },
-    })
+  async statisticQuestion(dto: PaginateQuestionsStatisticsDto) {
+    const { class_id, page = 1, limit = 10 } = dto
 
-    if (!question) {
-      throwAppException('QUESTION_NOT_FOUND', ErrorCode.QUESTION_NOT_FOUND, HttpStatus.NOT_FOUND)
-    }
-
-    switch (question.type) {
-      case QuestionType.SINGLE_CHOICE:
-        return this.statisticSingleChoice(questionId)
-
-      case QuestionType.MULTIPLE_CHOICE:
-        return this.statisticMultipleChoice(questionId)
-
-      case QuestionType.NUMBER:
-        return this.statisticNumber(questionId)
-
-      case QuestionType.TEXT:
-        return this.statisticText(questionId)
-    }
-  }
-
-  // thống kê Single Choice
-  async statisticSingleChoice(questionId: number) {
-    const raw = await this.answersRepository
-      .createQueryBuilder('answer')
-      .select('answer.answer_single_choice', 'value')
-      .addSelect('COUNT(*)', 'total')
-      .where('answer.question_id = :questionId', { questionId })
-      .andWhere('answer.answer_single_choice IS NOT NULL')
-      .groupBy('answer.answer_single_choice')
-      .getRawMany()
-
-    const totalAll = raw.reduce((sum, r) => sum + Number(r.total), 0)
-
-    return raw.map(r => ({
-      optionIndex: Number(r.value),
-      total: Number(r.total),
-      percent: Number(((r.total / totalAll) * 100).toFixed(2)),
-    }))
-  }
-
-  // thống kê Multiple Choice
-  async statisticMultipleChoice(questionId: number) {
-    const raw = await this.answersRepository.query(
-      `
-    SELECT jt.value as value, COUNT(*) as total
-    FROM answers a,
-    JSON_TABLE(a.answer_multiple_choice, '$[*]' 
-      COLUMNS (value INT PATH '$')
-    ) as jt
-    WHERE a.question_id = ?
-    GROUP BY jt.value
-  `,
-      [questionId],
-    )
-
-    const totalAll = raw.reduce((sum, r) => sum + Number(r.total), 0)
-
-    return raw.map(r => ({
-      optionIndex: Number(r.value),
-      total: Number(r.total),
-      percent: Number(((r.total / totalAll) * 100).toFixed(2)),
-    }))
-  }
-
-  // thống kê Number
-  async statisticNumber(questionId: number) {
-    const raw = await this.answersRepository
+    // Pagination for classes
+    const classQuery = this.answersRepository
       .createQueryBuilder('a')
-      .select('a.answer_number', 'value')
+      .select('a.class_id', 'class_id')
+      .distinct(true)
+
+    if (class_id) {
+      classQuery.where('a.class_id = :class_id', { class_id })
+    }
+
+    const rawClasses = await classQuery.getRawMany()
+    const total = rawClasses.length
+    const totalPages = Math.ceil(total / Number(limit))
+    const paginatedClasses = rawClasses.slice((Number(page) - 1) * Number(limit), Number(page) * Number(limit))
+    const targetClassIds = paginatedClasses.map(c => Number(c.class_id))
+
+    const meta: PaginationMeta = {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages,
+    }
+
+    if (targetClassIds.length === 0) {
+      return { data: [], meta }
+    }
+
+    // Prepare query for Single Choice
+    const qSingle = this.answersRepository
+      .createQueryBuilder('a')
+      .select('a.class_id', 'class_id')
+      .addSelect('a.question_id', 'question_id')
+      .addSelect('a.answer_single_choice', 'value')
       .addSelect('COUNT(*)', 'total')
-      .where('a.question_id = :questionId', { questionId })
-      .groupBy('a.answer_number')
-      .getRawMany()
+      .where('a.answer_single_choice IS NOT NULL')
+      .andWhere('a.class_id IN (:...targetClassIds)', { targetClassIds })
 
-    const totalAll = raw.reduce((sum, r) => sum + Number(r.total), 0)
+    qSingle.groupBy('a.class_id').addGroupBy('a.question_id').addGroupBy('a.answer_single_choice')
+    const rawSingle = await qSingle.getRawMany()
 
-    return raw.map(r => ({
-      value: Number(r.value),
-      total: Number(r.total),
-      percent: Number(((r.total / totalAll) * 100).toFixed(2)),
-    }))
-  }
+    // Prepare query for Multiple Choice
+    const placeholders = targetClassIds.map(() => '?').join(',')
+    let mcQuery = `
+      SELECT a.class_id as class_id, a.question_id as question_id, jt.value as value, COUNT(*) as total
+      FROM answers a,
+      JSON_TABLE(a.answer_multiple_choice, '$[*]' COLUMNS (value INT PATH '$')) as jt
+      WHERE a.class_id IN (${placeholders})
+      GROUP BY a.class_id, a.question_id, jt.value
+    `
+    const mcParams = [...targetClassIds]
+    const rawMultiple = await this.answersRepository.query(mcQuery, mcParams)
 
-  // thống kê Text
-  async statisticText(questionId: number) {
-    return this.answersRepository.find({
-      where: { question_id: questionId },
-      select: ['answer_text'],
+    // Prepare query for Number
+    const qNumber = this.answersRepository
+      .createQueryBuilder('a')
+      .select('a.class_id', 'class_id')
+      .addSelect('a.question_id', 'question_id')
+      .addSelect('a.answer_number', 'value')
+      .addSelect('COUNT(*)', 'total')
+      .where('a.answer_number IS NOT NULL')
+      .andWhere('a.class_id IN (:...targetClassIds)', { targetClassIds })
+
+    qNumber.groupBy('a.class_id').addGroupBy('a.question_id').addGroupBy('a.answer_number')
+    const rawNumber = await qNumber.getRawMany()
+
+    // Prepare query for Text
+    const qText = this.answersRepository
+      .createQueryBuilder('a')
+      .select('a.class_id', 'class_id')
+      .addSelect('a.question_id', 'question_id')
+      .addSelect('a.answer_text', 'value')
+      .where('a.answer_text IS NOT NULL')
+      .andWhere('a.class_id IN (:...targetClassIds)', { targetClassIds })
+
+    const rawText = await qText.getRawMany()
+
+    // Retrieve active questions to know their type
+    const questionsList = await this.questionsRepository.find({ select: ['id', 'type'] })
+    const questionTypeMap = new Map<number, QuestionType>(questionsList.map(q => [q.id, q.type]))
+
+    // Data structure to hold everything
+    // resultByClass: class_id -> Map<question_id, any[]>
+    const resultByClass = new Map<number, Map<number, any>>()
+
+    const getGroup = (cId: number, qId: number) => {
+      if (!resultByClass.has(cId)) resultByClass.set(cId, new Map())
+      const qMap = resultByClass.get(cId)!
+      if (!qMap.has(qId)) qMap.set(qId, { questionId: qId, totalAll: 0, options: [] })
+      return qMap.get(qId)
+    }
+
+    // Process Single Choice
+    rawSingle.forEach(r => {
+      const qId = Number(r.question_id)
+      const group = getGroup(Number(r.class_id), qId)
+      group.type = questionTypeMap.get(qId) || QuestionType.SINGLE_CHOICE
+      const total = Number(r.total)
+      group.totalAll += total
+      group.options.push({ value: r.value, total })
     })
+
+    // Process Multiple Choice
+    rawMultiple.forEach(r => {
+      const qId = Number(r.question_id)
+      const group = getGroup(Number(r.class_id), qId)
+      group.type = questionTypeMap.get(qId) || QuestionType.MULTIPLE_CHOICE
+      const total = Number(r.total)
+      group.totalAll += total
+      group.options.push({ value: r.value, total })
+    })
+
+    // Process Number
+    rawNumber.forEach(r => {
+      const qId = Number(r.question_id)
+      const group = getGroup(Number(r.class_id), qId)
+      group.type = questionTypeMap.get(qId) || QuestionType.NUMBER
+      const total = Number(r.total)
+      group.totalAll += total
+      group.options.push({ value: r.value, total })
+    })
+
+    // Process Text
+    rawText.forEach(r => {
+      const cId = Number(r.class_id)
+      const qId = Number(r.question_id)
+      if (!resultByClass.has(cId)) resultByClass.set(cId, new Map())
+      const qMap = resultByClass.get(cId)!
+      if (!qMap.has(qId)) qMap.set(qId, { questionId: qId, answers: [], type: questionTypeMap.get(qId) || QuestionType.TEXT })
+      qMap.get(qId).answers.push(r.value)
+    })
+
+    // Format final response
+    const finalResult = []
+
+    for (const [cId, qMap] of resultByClass.entries()) {
+      const questionsData = []
+      for (const [qId, data] of qMap.entries()) {
+        let stats = []
+        if (data.type === QuestionType.SINGLE_CHOICE || data.type === QuestionType.MULTIPLE_CHOICE) {
+          stats = data.options.map(opt => ({
+            optionIndex: Number(opt.value),
+            total: opt.total,
+            percent: Number(((opt.total / data.totalAll) * 100).toFixed(2)),
+          }))
+        } else if (data.type === QuestionType.NUMBER) {
+          stats = data.options.map(opt => ({
+            value: Number(opt.value),
+            total: opt.total,
+            percent: Number(((opt.total / data.totalAll) * 100).toFixed(2)),
+          }))
+        } else if (data.type === QuestionType.TEXT) {
+          stats = data.answers
+        }
+
+        questionsData.push({
+          questionId: qId,
+          type: data.type,
+          statistics: stats,
+        })
+      }
+      finalResult.push({
+        class_id: cId,
+        questions: questionsData,
+      })
+    }
+
+    return { data: finalResult, meta }
   }
 }
