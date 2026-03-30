@@ -427,12 +427,14 @@ export class HomeworkService {
       const subRepo = queryRunner.manager.getRepository(HomeworkSubmission)
       const ansRepo = queryRunner.manager.getRepository(HomeworkAnswer)
 
+      // nếu full trắc nghiệm thì AUTO_GRADED, còn không thì PENDING
+      const isAllMCQ = hw.questions.every(q => q.type === QuestionTypeHomework.MCQ_SINGLE || q.type === QuestionTypeHomework.MCQ_MULTI)
       // create submission
       const submission = subRepo.create({
         homework: hw,
         student,
         score: 0,
-        status: SubmissionStatus.PENDING,
+        status: isAllMCQ ? SubmissionStatus.AUTO_GRADED : SubmissionStatus.PENDING,
       })
       const savedSub = await subRepo.save(submission)
 
