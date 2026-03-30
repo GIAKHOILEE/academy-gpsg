@@ -62,14 +62,17 @@ export class HomeworkService {
         .where('lesson.id = :lessonId', { lessonId: createDto.lesson_id })
         .andWhere('hw.is_final = :isFinal', { isFinal: true })
         .getOne()
-      if (finalHw) throwAppException('FINAL_HOMEWORK_EXISTS_IN_CLASS', ErrorCode.FINAL_HOMEWORK_EXISTS_IN_CLASS, HttpStatus.BAD_REQUEST)
+
+      if (createDto.is_final === true && finalHw)
+        throwAppException('FINAL_HOMEWORK_EXISTS_IN_CLASS', ErrorCode.FINAL_HOMEWORK_EXISTS_IN_CLASS, HttpStatus.BAD_REQUEST)
 
       // tạo bài
       const newHw = hwRepo.create({
         title: createDto.title,
         description: createDto.description,
         lesson: lesson,
-        total_points: createDto.questions.reduce((sum, q) => sum + q.points, 0),
+        // total_points: createDto.questions.reduce((sum, q) => sum + q.points, 0),
+        total_points: 10, // mặc định 10 điểm
         deadline_date: createDto.deadline_date,
         deadline_time: createDto.deadline_time,
         // is_active: createDto.is_active,
@@ -101,7 +104,7 @@ export class HomeworkService {
       }
       // kiểm tra điểm của các question có đúng với total_points(homework) không
       const totalPoints = createDto.questions.reduce((sum, q) => sum + q.points, 0)
-      if (totalPoints !== savedHw.total_points) {
+      if (totalPoints !== 10) {
         throwAppException('TOTAL_POINTS_MISMATCH', ErrorCode.TOTAL_POINTS_MISMATCH, HttpStatus.BAD_REQUEST)
       }
       // kiểm tra nếu là multiple choice thì phải có ít nhất 1 đáp án đúng
