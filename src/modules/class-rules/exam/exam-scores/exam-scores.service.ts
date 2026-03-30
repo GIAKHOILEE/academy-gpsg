@@ -7,7 +7,7 @@ import { ClassStudents } from '@modules/class/class-students/class-student.entit
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { PaginateExamScoresDto, PaginateMyExamScoresDto } from './dtos/paginate-exam-scores.dto'
-import { throwAppException } from '@common/utils'
+import { removeVietnameseTones, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { UpdateClassStudentScoreDto } from './dtos/update-class-student-score.dto'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -324,7 +324,7 @@ export class ExamScoreServiceV2 {
   }
 
   async getMyScores(dto: PaginateMyExamScoresDto, userId: number): Promise<{ data: any[]; meta: any }> {
-    const { scholastic_id, semester_id, ...rest } = dto
+    const { scholastic_id, semester_id, class_id, class_name, class_code, ...rest } = dto
 
     const student = await this.studentRepo.findOne({ where: { user_id: userId } })
     if (!student) throw throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -356,6 +356,19 @@ export class ExamScoreServiceV2 {
 
     if (semester_id) {
       queryBuilder.andWhere('class.semester_id = :semester_id', { semester_id })
+    }
+
+    if (class_id) {
+      queryBuilder.andWhere('class.id = :class_id', { class_id })
+    }
+
+    if (class_name) {
+      const className = removeVietnameseTones(class_name.toLowerCase().trim())
+      queryBuilder.andWhere('class.name COLLATE utf8mb4_unicode_ci LIKE :class_name', { class_name: `%${className}%` })
+    }
+
+    if (class_code) {
+      queryBuilder.andWhere('class.code LIKE :class_code', { class_code: `%${class_code}%` })
     }
 
     const { data, meta } = await paginate(queryBuilder, rest)
