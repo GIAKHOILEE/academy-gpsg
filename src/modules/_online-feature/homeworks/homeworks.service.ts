@@ -53,19 +53,19 @@ export class HomeworkService {
       // const activeHw = await hwRepo.findOne({ where: { lesson: { id: createDto.lesson_id }, is_active: true } })
       // if (activeHw) throwAppException('ACTIVE_HOMEWORK_EXISTS', ErrorCode.ACTIVE_HOMEWORK_EXISTS, HttpStatus.BAD_REQUEST)
 
-      // check lớp đã có bài final chưa
+      // check class đã có bài final chưa
       const finalHw = await hwRepo
         .createQueryBuilder('hw')
         .select(['hw.id', 'hw.is_final', 'lesson.id', 'class.id'])
         .leftJoin('hw.lesson', 'lesson')
         .leftJoin('lesson.class', 'class')
-        .where('lesson.id = :lessonId', { lessonId: createDto.lesson_id })
+        .where('class.id = (SELECT l.class_id FROM lesson l WHERE l.id = :lessonId)', { lessonId: createDto.lesson_id })
         .andWhere('hw.is_final = :isFinal', { isFinal: true })
         .getOne()
 
-      if (createDto.is_final === true && finalHw)
+      if (createDto.is_final === true && finalHw) {
         throwAppException('FINAL_HOMEWORK_EXISTS_IN_CLASS', ErrorCode.FINAL_HOMEWORK_EXISTS_IN_CLASS, HttpStatus.BAD_REQUEST)
-
+      }
       // tạo bài
       const newHw = hwRepo.create({
         title: createDto.title,
@@ -228,6 +228,27 @@ export class HomeworkService {
         return this.createHomework(updateDto)
       } else {
         // nếu có submission và answer thì không được cập nhật
+        throwAppException('HOMEWORK_HAS_SUBMISSIONS', ErrorCode.HOMEWORK_HAS_SUBMISSIONS, HttpStatus.BAD_REQUEST)
+      }
+    } catch (err) {
+      throw err
+    }
+  }
+
+  async deleteHomework(homeworkId: number): Promise<void> {
+    const hw = await this.hwRepo.findOne({ where: { id: homeworkId } })
+    if (!hw) throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    try {
+      // kiểm tra có submission và answer nào không
+      const hasSubmissions = await this.submissionRepo.exists({ where: { homework: { id: hw.id } } })
+      const hasAnswers = await this.answerRepo.exists({ where: { submission: { homework: { id: hw.id } } } })
+
+      // nếu không có submission và answer thì xóa toàn bộ homework
+      if (!hasSubmissions && !hasAnswers) {
+        await this.hwRepo.delete(hw.id)
+      } else {
+        // nếu có submission và answer thì không được xóa
         throwAppException('HOMEWORK_HAS_SUBMISSIONS', ErrorCode.HOMEWORK_HAS_SUBMISSIONS, HttpStatus.BAD_REQUEST)
       }
     } catch (err) {
