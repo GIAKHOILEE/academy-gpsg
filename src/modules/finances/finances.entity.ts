@@ -23,10 +23,10 @@ export class FinancesEntity {
   total_amount: number
 
   //sao kê
-  @Column()
+  @Column({ nullable: true })
   statement: boolean
 
-  @Column()
+  @Column({ nullable: true })
   payment_method: FinancesPaymentMethod
 
   @Column({ nullable: true })
