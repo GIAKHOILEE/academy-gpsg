@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { QuestionsService, QuestionsStatisticsService } from './questions.service'
-import { PaginateQuestionsDto } from './dtos/pagiante-questions.dto'
+import { PaginateQuestionsDto, PaginateQuestionsStatisticsDto } from './dtos/pagiante-questions.dto'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from '@common/response.dto'
 import { Role } from '@enums/role.enum'
@@ -129,13 +129,14 @@ export class TeacherQuestionsController {
 export class AdminQuestionsStatisticsController {
   constructor(private readonly questionsStatisticsService: QuestionsStatisticsService) {}
 
-  @Get(':id')
-  async statisticQuestion(@Param('id') id: number): Promise<ResponseDto> {
-    const statistics = await this.questionsStatisticsService.statisticQuestion(id)
+  @Get()
+  async statisticQuestion(@Query() paginateQuestionsStatisticsDto: PaginateQuestionsStatisticsDto): Promise<ResponseDto> {
+    const result = await this.questionsStatisticsService.statisticQuestion(paginateQuestionsStatisticsDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
-      messageCode: 'QUESTION_STATISTICS_FETCHED_SUCCESSFULLY',
-      data: statistics,
+      messageCode: 'QUESTIONS_STATISTICS_FETCHED_SUCCESSFULLY',
+      data: result.data,
+      meta: result.meta,
     })
   }
 }

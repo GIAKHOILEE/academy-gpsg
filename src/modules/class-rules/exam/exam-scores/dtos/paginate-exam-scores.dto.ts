@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsNumber, IsOptional } from 'class-validator'
+import { IsNumber, IsOptional, IsString } from 'class-validator'
 import { PaginationDto } from '@common/pagination'
 
 export class PaginateExamScoresDto extends PaginationDto {
@@ -45,4 +45,20 @@ export class PaginateMyExamScoresDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Niên khóa', example: 1 })
   @Type(() => Number)
   scholastic_id: number
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'ID của lớp', example: 1 })
+  @Type(() => Number)
+  class_id: number
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Tên lớp', example: '10A1' })
+  class_name: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Mã lớp', example: '10A1' })
+  class_code: string
 }

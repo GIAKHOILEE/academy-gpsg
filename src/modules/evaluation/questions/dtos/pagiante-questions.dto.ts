@@ -8,3 +8,10 @@ export class PaginateQuestionsDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Question of the question' })
   question?: string
 }
+
+export class PaginateQuestionsStatisticsDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Class id of the question', example: '1' })
+  class_id?: string
+}

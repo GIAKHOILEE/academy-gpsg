@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, Req } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, Req } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
@@ -78,6 +78,16 @@ export class AdminHomeworkController {
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_UPDATED_SUCCESSFULLY',
       data: homework,
+    })
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a homework' })
+  async deleteHomework(@Param('id') id: number): Promise<ResponseDto> {
+    await this.homeworkService.deleteHomework(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_DELETED_SUCCESSFULLY',
     })
   }
 }
