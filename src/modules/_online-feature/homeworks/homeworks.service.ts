@@ -7,7 +7,7 @@ import { HomeworkOption } from './entities/option.entity'
 import { CreateHomeworksDto } from './dtos/create-homeworks.dto'
 import { Lesson } from '../lesson/lesson.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { arrayToObject, throwAppException } from '@common/utils'
+import { arrayToObject, formatStringDateUTC7, throwAppException } from '@common/utils'
 import { HomeworkSubmission } from './entities/submission.entity'
 import { HomeworkAnswer } from './entities/answer.entity'
 import { PaginateHomeworksDto, PaginateSubmissionsDto } from './dtos/paginate-homeworks.dto'
@@ -805,7 +805,7 @@ export class HomeworkService {
         code: s.student.user.code,
       },
       answer_count: s.answers.length,
-      submitted_at: s.createdAt,
+      submitted_at: formatStringDateUTC7(s.createdAt.toISOString()),
     }))
 
     return {
