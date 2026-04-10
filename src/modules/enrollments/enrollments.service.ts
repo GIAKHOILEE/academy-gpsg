@@ -275,6 +275,168 @@ export class EnrollmentsService {
     }
   }
 
+  async createEnrollmentV3(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, userId?: number): Promise<IEnrollments> {
+    const queryRunner = this.dataSource.createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+
+    try {
+      // Khởi tạo các repository sử dụng transaction manager
+      const enrollmentsRepo = queryRunner.manager.getRepository(Enrollments)
+      const studentRepo = queryRunner.manager.getRepository(Student)
+      const classRepo = queryRunner.manager.getRepository(Classes)
+      const voucherRepo = queryRunner.manager.getRepository(Voucher)
+      const classStudentsRepo = queryRunner.manager.getRepository(ClassStudents)
+
+      const { class_ids } = createEnrollmentDto
+      let studentId: number | null = null
+      let studentEntity: Student | null = null
+
+      // 1. XỬ LÝ THÔNG TIN HỌC VIÊN (Nếu đã đăng nhập)
+      if (userId) {
+        studentEntity = await studentRepo
+          .createQueryBuilder('student')
+          .leftJoinAndSelect('student.user', 'user')
+          .where('user.id = :userId', { userId })
+          .getOne()
+
+        if (studentEntity) {
+          studentId = studentEntity.id
+          // Tự động điền thông tin từ hồ sơ học viên vào đơn đăng ký
+          const { user } = studentEntity
+          Object.assign(createEnrollmentDto, {
+            saint_name: user.saint_name,
+            full_name: user.full_name,
+            full_name_normalized: removeVietnameseTones(user.full_name).toLowerCase(),
+            email: user.email,
+            phone_number: user.phone_number,
+            address: user.address,
+            birth_date: user.birth_date,
+            birth_place: user.birth_place,
+            parish: user.parish,
+            deanery: user.deanery,
+            diocese: user.diocese,
+            congregation: user.congregation,
+          })
+
+          // Chống đăng ký trùng lặp nếu học viên đã có mặt trong các lớp này
+          const requestedClassIds = class_ids.map(item => item.class_id)
+          const existingMemberships = await classStudentsRepo.find({
+            where: { student_id: studentId, class_id: In(requestedClassIds) },
+          })
+          if (existingMemberships.length > 0) {
+            throwAppException('STUDENT_ALREADY_IN_CLASS', ErrorCode.STUDENT_ALREADY_IN_CLASS, HttpStatus.BAD_REQUEST)
+          }
+        }
+      }
+
+      // 2. KIỂM TRA TÍNH HỢP LỆ CỦA LỚP HỌC (Validation)
+      const classIds = class_ids.map(item => item.class_id)
+      const classEntities = await classRepo.find({ where: { id: In(classIds) } })
+
+      if (classEntities.length !== class_ids.length) {
+        throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+
+      const classMap = arrayToObject(classEntities, 'id')
+      const todayString = new Date().toISOString().split('T')[0]
+
+      for (const item of class_ids) {
+        const cls = classMap[item.class_id]
+
+        // Kiểm tra thời hạn đăng ký
+        if (cls.registration_start_date && todayString < cls.registration_start_date) {
+          throwAppException('CLASS_NOT_ENROLLING', ErrorCode.CLASS_NOT_ENROLLING, HttpStatus.BAD_REQUEST)
+        }
+        if (cls.end_enrollment_day && todayString > cls.end_enrollment_day) {
+          throwAppException('CLASS_END_ENROLLING', ErrorCode.CLASS_END_ENROLLING, HttpStatus.BAD_REQUEST)
+        }
+
+        // Kiểm tra hình thức học (learn_type) có được hỗ trợ hay không
+        const isSupported =
+          item.learn_type === LearnType.OFFLINE ||
+          (item.learn_type === LearnType.VIDEO && cls.learn_video) ||
+          (item.learn_type === LearnType.MEETING && cls.learn_meeting)
+
+        if (!isSupported) {
+          throwAppException('CLASS_DOES_NOT_SUPPORT_LEARN_TYPE', ErrorCode.CLASS_DOES_NOT_SUPPORT_LEARN_TYPE, HttpStatus.BAD_REQUEST)
+        }
+      }
+
+      // 3. TÍNH TOÁN HỌC PHÍ VÀ VOUCHER
+      const totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
+      let discountAmount = 0
+
+      if (createEnrollmentDto.voucher_code) {
+        const voucher = await voucherRepo.findOne({ where: { code: createEnrollmentDto.voucher_code } })
+        if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+        if (voucher.is_used) throwAppException('VOUCHER_ALREADY_USED', ErrorCode.VOUCHER_ALREADY_USED, HttpStatus.BAD_REQUEST)
+
+        discountAmount = voucher.type === VoucherType.PERCENTAGE ? (totalFee * voucher.discount) / 100 : voucher.discount
+
+        createEnrollmentDto.discount = discountAmount
+      }
+
+      // 4. TẠO ĐƠN ĐĂNG KÝ (Enrollment Creation)
+      const enrollment = enrollmentsRepo.create({
+        ...createEnrollmentDto,
+        is_logged: isLogged,
+        code: generateRandomString(5),
+        total_fee: totalFee,
+        prepaid: 0,
+        debt: totalFee, // Mặc định đơn mới sẽ có dư nợ bằng tổng phí
+        student_id: studentId,
+        full_name_normalized: removeVietnameseTones(createEnrollmentDto.full_name).toLowerCase().trim(),
+        is_read_note: createEnrollmentDto.user_note ? false : null,
+      })
+
+      const savedEnrollment = await queryRunner.manager.save(Enrollments, enrollment)
+
+      // 5. CẬP NHẬT VOUCHER (Nếu có)
+      if (createEnrollmentDto.voucher_code) {
+        await voucherRepo.update(
+          { code: createEnrollmentDto.voucher_code },
+          {
+            student_id: studentId,
+            is_used: true,
+            use_at: new Date().toISOString(),
+            actual_discount: discountAmount,
+            enrollment_id: savedEnrollment.id,
+          },
+        )
+      }
+
+      // 6. CHUẨN BỊ DỮ LIỆU PHẢN HỒI (Final Result)
+      const result: IEnrollments = {
+        ...savedEnrollment,
+        student_id: studentId,
+        student_code: studentEntity?.user?.code || null,
+        birth_date: formatStringToDate(createEnrollmentDto.birth_date),
+        classes: class_ids.map(item => ({
+          class_id: item.class_id,
+          learn_type: item.learn_type,
+          class: classMap[item.class_id],
+        })),
+      }
+
+      await queryRunner.commitTransaction()
+
+      // 7. GỬI EMAIL THÀNH CÔNG (Chạy ngầm)
+      if (enrollment.email) {
+        setImmediate(() => {
+          this.handleEnrollmentEmail(enrollment, 'register').catch(err => console.error('Email register job failed:', err))
+        })
+      }
+
+      return result
+    } catch (error) {
+      await queryRunner.rollbackTransaction()
+      throw error
+    } finally {
+      await queryRunner.release()
+    }
+  }
+
   async updateEnrollmentV2(id: number, updateEnrollmentDto: UpdateEnrollmentsDto): Promise<void> {
     const { student_code, status, prepaid, class_ids, ...rest } = updateEnrollmentDto
     const queryRunner = this.dataSource.createQueryRunner()
@@ -548,6 +710,239 @@ export class EnrollmentsService {
       if (enrollment.email) {
         setImmediate(() => {
           this.handleEnrollmentEmail(enrollment, 'payment', status).catch(err => console.error('Email payment job failed:', err))
+        })
+      }
+
+      await queryRunner.commitTransaction()
+    } catch (error) {
+      await queryRunner.rollbackTransaction()
+      throw error
+    } finally {
+      await queryRunner.release()
+    }
+  }
+
+  async updateEnrollmentV3(id: number, updateEnrollmentDto: UpdateEnrollmentsDto): Promise<void> {
+    const { student_code, status: newStatus, prepaid, class_ids: newClassData, ...rest } = updateEnrollmentDto
+    const queryRunner = this.dataSource.createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
+
+    try {
+      // Khởi tạo các repository sử dụng transaction manager
+      const enrollmentsRepo = queryRunner.manager.getRepository(Enrollments)
+      const userRepo = queryRunner.manager.getRepository(User)
+      const studentRepo = queryRunner.manager.getRepository(Student)
+      const classRepo = queryRunner.manager.getRepository(Classes)
+      const classStudentsRepo = queryRunner.manager.getRepository(ClassStudents)
+      const voucherRepo = queryRunner.manager.getRepository(Voucher)
+
+      // 1. PHỤC HỒI ĐƠN VÀ LẤY THÔNG TIN HIỆN TẠI
+      // Nếu đơn bị xóa mềm, phục hồi lại trước khi cập nhật
+      await enrollmentsRepo.update(id, { deleted_at: null })
+
+      const enrollment = await enrollmentsRepo
+        .createQueryBuilder('enrollment')
+        .leftJoinAndSelect('enrollment.student', 'student')
+        .leftJoinAndSelect('student.user', 'user')
+        .where('enrollment.id = :id', { id })
+        .withDeleted()
+        .getOne()
+
+      if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      // 2. KIỂM TRA TÍNH HỢP LỆ (Validation)
+      // Không cho phép thay đổi mã học viên nếu đơn đã được gán mã từ trước
+      if (student_code && enrollment.student?.user?.code && enrollment.student.user.code !== student_code) {
+        throwAppException('ENROLLMENT_NOT_CHANGE_CODE_STUDENT', ErrorCode.ENROLLMENT_NOT_CHANGE_CODE_STUDENT, HttpStatus.BAD_REQUEST)
+      }
+
+      // Nếu đơn đã chính thức gán cho một StudentId, hạn chế sửa thông tin cá nhân qua API này để tránh sai lệch dữ liệu hệ thống
+      if (enrollment.student_id) {
+        const { full_name, saint_name, email, phone_number, address, birth_place, parish, deanery, diocese, congregation } = rest
+        const isInfoChanged = [
+          [full_name, enrollment.full_name],
+          [saint_name, enrollment.saint_name],
+          [email, enrollment.email],
+          [phone_number, enrollment.phone_number],
+          [address, enrollment.address],
+          [birth_place, enrollment.birth_place],
+          [parish, enrollment.parish],
+          [deanery, enrollment.deanery],
+          [diocese, enrollment.diocese],
+          [congregation, enrollment.congregation],
+        ].some(([val, oldVal]) => val !== undefined && val !== oldVal)
+
+        if (isInfoChanged) {
+          throwAppException('ENROLLMENT_NOT_CHANGE_STUDENT_INFO', ErrorCode.ENROLLMENT_NOT_CHANGE_STUDENT_INFO, HttpStatus.BAD_REQUEST)
+        }
+      }
+
+      // 3. ĐỊNH DANH HỌC VIÊN (Student Identification)
+      // Nếu quản trị viên cung cấp mã học viên và đơn hiện tại chưa được gán học viên
+      if (student_code && !enrollment.student_id) {
+        let user = await userRepo.findOne({ where: { code: student_code } })
+        let isNewUser = false
+
+        // Nếu mã học viên chưa tồn tại trong hệ thống User -> Tạo mới
+        if (!user) {
+          isNewUser = true
+          user = userRepo.create({
+            code: student_code,
+            password: await hashPassword(student_code),
+            role: Role.STUDENT,
+            status: UserStatus.ACTIVE,
+            ...rest,
+          })
+          user = await userRepo.save(user)
+        }
+
+        // Đảm bảo User có thực thể Student tương ứng
+        let student = await studentRepo.findOne({ where: { user_id: user.id } })
+        if (!student) {
+          student = studentRepo.create({ user_id: user.id, graduate: false, graduate_year: null })
+          student = await studentRepo.save(student)
+        }
+
+        // Gửi email chào mừng nếu đây là tài khoản mới
+        if (isNewUser && user.email) {
+          await this.emailService.sendMail([{ email: user.email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
+            name: user.full_name,
+            username: user.code,
+            password: user.code,
+            loginLink: `${process.env.FRONTEND_URL}`,
+          })
+        }
+        enrollment.student_id = student.id
+      }
+
+      // 4. CẬP NHẬT LỚP HỌC VÀ HỌC PHÍ (Classes & Fee)
+      const oldClassIds = enrollment.class_ids.map(item => item.class_id)
+      const newClassIds = newClassData ? newClassData.map(item => item.class_id) : oldClassIds
+      let totalFee = enrollment.total_fee
+
+      if (newClassData && newClassData.length > 0) {
+        const classEntities = await classRepo.find({ where: { id: In(newClassIds) } })
+        if (classEntities.length !== newClassData.length) {
+          throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+        }
+        totalFee = classEntities.reduce((acc, curr) => acc + curr.price, 0)
+        enrollment.class_ids = newClassData
+        enrollment.total_fee = totalFee
+      }
+
+      // 5. XỬ LÝ VOUCHER KHUYẾN MÃI
+      if (updateEnrollmentDto.voucher_code) {
+        const voucher = await voucherRepo.findOne({ where: { code: updateEnrollmentDto.voucher_code } })
+        if (!voucher) throwAppException('VOUCHER_NOT_FOUND', ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+        // Chỉ chấp nhận voucher nếu chưa dùng hoặc chính là voucher của đơn này
+        if (voucher.is_used && voucher.enrollment_id !== enrollment.id) {
+          throwAppException('VOUCHER_ALREADY_USED', ErrorCode.VOUCHER_ALREADY_USED, HttpStatus.BAD_REQUEST)
+        }
+
+        enrollment.discount = voucher.type === VoucherType.PERCENTAGE ? (totalFee * voucher.discount) / 100 : voucher.discount
+        enrollment.voucher_code = voucher.code
+
+        await voucherRepo.update(voucher.id, {
+          student_id: enrollment.student_id,
+          is_used: true,
+          enrollment_id: enrollment.id,
+          use_at: new Date().toISOString(),
+          actual_discount: enrollment.discount,
+        })
+      }
+
+      // 6. TRẠNG THÁI VÀ TÀI CHÍNH (Status & Financial)
+      const finalStatus = newStatus || enrollment.status
+      if (prepaid) {
+        // Chỉ cho phép cập nhật tiền trả trước nếu đang ở trạng thái nợ học phí (DEBT)
+        if (finalStatus !== StatusEnrollment.DEBT) {
+          throwAppException('ENROLLMENT_NOT_DEBT', ErrorCode.ENROLLMENT_NOT_DEBT, HttpStatus.BAD_REQUEST)
+        }
+        enrollment.prepaid = prepaid
+        enrollment.debt = totalFee - prepaid
+      }
+
+      // Cập nhật trạng thái thanh toán dựa trên trạng thái đơn
+      if (newStatus) {
+        enrollment.payment_status = newStatus === StatusEnrollment.DONE ? PaymentStatus.PAID : PaymentStatus.UNPAID
+      }
+
+      // 7. ĐỒNG BỘ THÀNH VIÊN LỚP (ClassStudents Sync)
+      // Logic: PENDING = chỉ là đơn đăng ký chờ. Các trạng thái khác = chính thức tham gia lớp.
+      const isBecomingMember = newStatus && newStatus !== StatusEnrollment.PENDING && enrollment.status === StatusEnrollment.PENDING
+      const isBecomingPending = newStatus === StatusEnrollment.PENDING && enrollment.status !== StatusEnrollment.PENDING
+      const isCurrentlyMember = newStatus ? newStatus !== StatusEnrollment.PENDING : enrollment.status !== StatusEnrollment.PENDING
+
+      if (isBecomingPending) {
+        // Nếu đơn quay về trạng thái PENDING -> Xóa học viên khỏi danh sách lớp chính thức
+        await classStudentsRepo.delete({ student_id: enrollment.student_id, class_id: In(oldClassIds) })
+      } else if (isCurrentlyMember && enrollment.student_id) {
+        // A. Kiểm tra sĩ số (Class Capacity Check)
+        // Chỉ kiểm tra khi bắt đầu duyệt đơn (PENDING -> Active) hoặc khi admin đổi lớp
+        if (isBecomingMember || newClassData) {
+          const classSpecs = await classRepo.find({ where: { id: In(newClassIds) }, select: ['id', 'max_students'] })
+          const currentCounts = await classStudentsRepo
+            .createQueryBuilder('cs')
+            .select('cs.class_id', 'class_id')
+            .addSelect('COUNT(cs.id)', 'count')
+            .where('cs.class_id IN (:...ids)', { ids: newClassIds })
+            .groupBy('cs.class_id')
+            .getRawMany()
+
+          const countMap = arrayToObject(currentCounts, 'class_id')
+          for (const spec of classSpecs) {
+            const max = Number(spec.max_students || 0)
+            const count = Number(countMap[spec.id]?.count || 0)
+            const isAlreadyActuallyInClass = oldClassIds.includes(spec.id) && enrollment.status !== StatusEnrollment.PENDING
+
+            // Nếu lớp có giới hạn và đã đầy, và học viên này chưa có trong lớp đó
+            if (max > 0 && count >= max && !isAlreadyActuallyInClass) {
+              throwAppException('CLASS_FULL', ErrorCode.CLASS_FULL, HttpStatus.BAD_REQUEST)
+            }
+          }
+        }
+
+        // B. Đồng bộ hóa dữ liệu bảng ClassStudents
+        // Xóa những lớp không còn trong danh sách đăng ký
+        const classesToRemove = oldClassIds.filter(id => !newClassIds.includes(id))
+        if (classesToRemove.length > 0) {
+          await classStudentsRepo.delete({ student_id: enrollment.student_id, class_id: In(classesToRemove) })
+        }
+
+        // Thêm mới hoặc cập nhật thông tin lớp hiện tại
+        const enrollmentClassDataMap = arrayToObject(enrollment.class_ids, 'class_id')
+        for (const classId of newClassIds) {
+          const classStudentEntry = await classStudentsRepo.findOne({ where: { student_id: enrollment.student_id, class_id: classId } })
+          const currentLearnType = enrollmentClassDataMap[classId].learn_type
+
+          if (!classStudentEntry) {
+            await classStudentsRepo.save({
+              student_id: enrollment.student_id,
+              class_id: classId,
+              learn_type: currentLearnType,
+            })
+          } else if (newClassData) {
+            // Cập nhật lại hình thức học (learn_type) nếu danh sách lớp có thay đổi
+            await classStudentsRepo.update(classStudentEntry.id, { learn_type: currentLearnType })
+          }
+        }
+      }
+
+      // 8. LƯU THAY ĐỔI VÀ GỬI THÔNG BÁO
+      const finalEnrollment = this.enrollmentsRepository.create({
+        ...enrollment,
+        status: newStatus || enrollment.status,
+        full_name_normalized: rest.full_name ? removeVietnameseTones(rest.full_name).toLowerCase() : enrollment.full_name_normalized,
+        ...rest,
+      })
+      await enrollmentsRepo.save(finalEnrollment)
+
+      if (enrollment.email) {
+        console.log('send email')
+        setImmediate(() => {
+          this.handleEnrollmentEmail(enrollment, 'payment', newStatus).catch(err => console.error('Email payment job failed:', err))
         })
       }
 
