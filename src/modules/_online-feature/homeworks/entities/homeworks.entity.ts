@@ -11,6 +11,10 @@ export class Homeworks {
   @Column({ nullable: true })
   title: string
 
+  // lưu theo số giây
+  @Column({ nullable: true })
+  time_limit: number
+
   @Column({ nullable: true })
   description: string
 
