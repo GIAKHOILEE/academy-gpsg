@@ -278,7 +278,7 @@ export class ExamScoreServiceV2 {
   }
 
   async getClassStudentScores(dto: PaginateExamScoresDto): Promise<{ data: any[]; meta: any }> {
-    const { ...rest } = dto
+    const { semester_id, scholastic_id, ...rest } = dto
     const queryBuilder = this.classStudentRepo
       .createQueryBuilder('class_student')
       .leftJoin('class_student.student', 'student')
@@ -298,6 +298,14 @@ export class ExamScoreServiceV2 {
         'class.name',
         'class.code',
       ])
+
+    if (semester_id) {
+      queryBuilder.andWhere('class.semester_id = :semester_id', { semester_id })
+    }
+
+    if (scholastic_id) {
+      queryBuilder.andWhere('class.scholastic_id = :scholastic_id', { scholastic_id })
+    }
 
     if (rest.orderBy === 'first_name') {
       rest.anotherOrderBy = 'user.first_name'
