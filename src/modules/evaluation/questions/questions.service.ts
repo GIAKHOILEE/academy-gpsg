@@ -110,27 +110,29 @@ export class QuestionsStatisticsService {
   async statisticQuestion(dto: PaginateQuestionsStatisticsDto) {
     const { class_id, page = 1, limit = 10 } = dto
 
-    // Pagination for classes
+    let targetClassIds: number[] = []
+    let total = 0
+
     const classQuery = this.answersRepository
       .createQueryBuilder('a')
       .select('a.class_id', 'class_id')
       .distinct(true)
 
     if (class_id) {
-      classQuery.where('a.class_id = :class_id', { class_id })
+      targetClassIds = [Number(class_id)]
+      total = 1
+    } else {
+      const rawClasses = await classQuery.getRawMany()
+      total = rawClasses.length
+      const paginatedClasses = rawClasses.slice((Number(page) - 1) * Number(limit), Number(page) * Number(limit))
+      targetClassIds = paginatedClasses.map(c => Number(c.class_id))
     }
-
-    const rawClasses = await classQuery.getRawMany()
-    const total = rawClasses.length
-    const totalPages = Math.ceil(total / Number(limit))
-    const paginatedClasses = rawClasses.slice((Number(page) - 1) * Number(limit), Number(page) * Number(limit))
-    const targetClassIds = paginatedClasses.map(c => Number(c.class_id))
 
     const meta: PaginationMeta = {
       total,
       page: Number(page),
       limit: Number(limit),
-      totalPages,
+      totalPages: Math.ceil(total / Number(limit)),
     }
 
     if (targetClassIds.length === 0) {
@@ -191,13 +193,13 @@ export class QuestionsStatisticsService {
     const questionTypeMap = new Map<number, QuestionType>(questionsList.map(q => [q.id, q.type]))
 
     // Data structure to hold everything
-    // resultByClass: class_id -> Map<question_id, any[]>
+    // resultByClass: class_id -> Map<question_id, any>
     const resultByClass = new Map<number, Map<number, any>>()
 
     const getGroup = (cId: number, qId: number) => {
       if (!resultByClass.has(cId)) resultByClass.set(cId, new Map())
       const qMap = resultByClass.get(cId)!
-      if (!qMap.has(qId)) qMap.set(qId, { questionId: qId, totalAll: 0, options: [] })
+      if (!qMap.has(qId)) qMap.set(qId, { questionId: qId, totalAll: 0, options: [], answers: [] })
       return qMap.get(qId)
     }
 
@@ -233,43 +235,54 @@ export class QuestionsStatisticsService {
 
     // Process Text
     rawText.forEach(r => {
-      const cId = Number(r.class_id)
       const qId = Number(r.question_id)
-      if (!resultByClass.has(cId)) resultByClass.set(cId, new Map())
-      const qMap = resultByClass.get(cId)!
-      if (!qMap.has(qId)) qMap.set(qId, { questionId: qId, answers: [], type: questionTypeMap.get(qId) || QuestionType.TEXT })
-      qMap.get(qId).answers.push(r.value)
+      const group = getGroup(Number(r.class_id), qId)
+      group.type = questionTypeMap.get(qId) || QuestionType.TEXT
+      group.answers.push(r.value)
     })
 
     // Format final response
     const finalResult = []
 
-    for (const [cId, qMap] of resultByClass.entries()) {
+    for (const cId of targetClassIds) {
       const questionsData = []
-      for (const [qId, data] of qMap.entries()) {
+      const qMap = resultByClass.get(cId) || new Map()
+
+      for (const question of questionsList) {
+        const qId = question.id
+        const data = qMap.get(qId) || {
+          questionId: qId,
+          totalAll: 0,
+          options: [],
+          answers: [],
+        }
+
         let stats = []
-        if (data.type === QuestionType.SINGLE_CHOICE || data.type === QuestionType.MULTIPLE_CHOICE) {
+        const qType = question.type
+
+        if (qType === QuestionType.SINGLE_CHOICE || qType === QuestionType.MULTIPLE_CHOICE) {
           stats = data.options.map(opt => ({
             optionIndex: Number(opt.value),
             total: opt.total,
-            percent: Number(((opt.total / data.totalAll) * 100).toFixed(2)),
+            percent: data.totalAll > 0 ? Number(((opt.total / data.totalAll) * 100).toFixed(2)) : 0,
           }))
-        } else if (data.type === QuestionType.NUMBER) {
+        } else if (qType === QuestionType.NUMBER) {
           stats = data.options.map(opt => ({
             value: Number(opt.value),
             total: opt.total,
-            percent: Number(((opt.total / data.totalAll) * 100).toFixed(2)),
+            percent: data.totalAll > 0 ? Number(((opt.total / data.totalAll) * 100).toFixed(2)) : 0,
           }))
-        } else if (data.type === QuestionType.TEXT) {
-          stats = data.answers
+        } else if (qType === QuestionType.TEXT) {
+          stats = data.answers || []
         }
 
         questionsData.push({
           questionId: qId,
-          type: data.type,
+          type: qType,
           statistics: stats,
         })
       }
+
       finalResult.push({
         class_id: cId,
         questions: questionsData,
