@@ -12,6 +12,9 @@ import { ErrorCode } from '@enums/error-codes.enum'
 import { UpdateClassStudentScoreDto } from './dtos/update-class-student-score.dto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { paginate } from '@common/pagination'
+import { Homeworks } from '@modules/_online-feature/homeworks/entities/homeworks.entity'
+import { HomeworkSubmission } from '@modules/_online-feature/homeworks/entities/submission.entity'
+import { Lesson } from '@modules/_online-feature/lesson/lesson.entity'
 @Injectable()
 export class ExamScoreService {
   constructor(private dataSource: DataSource) {}
@@ -355,7 +358,18 @@ export class ExamScoreServiceV2 {
         'class.id',
         'class.name',
         'class.code',
+        'lesson.id',
+        'lesson.title',
+        'homework.id',
+        'homework.title',
+        'homework.is_final',
+        'submission.id',
+        'submission.score',
+        'submission.status',
       ])
+      .leftJoin('class.lessons', 'lesson')
+      .leftJoin('lesson.homeworks', 'homework')
+      .leftJoin('homework.submissions', 'submission', 'submission.student = :student_id', { student_id: student.id })
       .andWhere('class_student.student_id = :student_id', { student_id: student.id })
 
     if (scholastic_id) {
@@ -394,6 +408,18 @@ export class ExamScoreServiceV2 {
         name: row?.class?.name ?? '',
         code: row?.class?.code ?? '',
       },
+      homework_scores:
+        row.class?.lessons?.flatMap((lesson: any) =>
+          lesson.homeworks?.map((hw: any) => ({
+            id: hw.id,
+            title: hw.title,
+            lesson_id: lesson.id,
+            lesson_title: lesson.title,
+            score: hw.submissions?.[0]?.score ?? null,
+            status: hw.submissions?.[0]?.status ?? null,
+            is_final: hw.is_final,
+          })),
+        ) ?? [],
     }))
 
     return { data: result, meta }
