@@ -14,6 +14,7 @@ import { Student } from './students.entity'
 import { IStudent } from './students.interface'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
+import { LibrarySyncService } from '@services/library-sync/library-sync.service'
 
 @Injectable()
 export class StudentsService {
@@ -22,6 +23,7 @@ export class StudentsService {
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
     private readonly emailService: BrevoMailerService,
+    private readonly librarySyncService: LibrarySyncService,
   ) {}
 
   async createStudent(createStudentDto: CreateStudentsDto): Promise<void> {
@@ -108,6 +110,19 @@ export class StudentsService {
       }
 
       await queryRunner.commitTransaction()
+
+      // Đồng bộ học viên sang hệ thống thư viện (sau khi commit thành công)
+      this.librarySyncService.syncStudentToLibrary({
+        full_name: full_name,
+        code: code,
+        saint_name: userData.saint_name || null,
+        password: password ?? code,
+        email: email || null,
+        birth_date: userData.birth_date || null,
+        phone: userData.phone_number || null,
+        address: userData.address || null,
+        avatar: userData.avatar || null,
+      })
 
       return
     } catch (error) {

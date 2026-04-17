@@ -10,7 +10,7 @@ import * as path from 'path'
 import puppeteer from 'puppeteer'
 // import { generatePdf } from 'html-pdf-node'
 // import * as PDFDocument from 'pdfkit'
-import { AppException } from './exeption'
+import { AppException, NestedData } from './exeption'
 import * as os from 'os'
 
 export function generateHash(password: string): string {
@@ -187,12 +187,12 @@ export function getLocalizedMessage(message: string, lang: string): string {
   return translations[message] || message
 }
 
-export function throwAppException(message: string, code: ErrorCode, status = HttpStatus.BAD_REQUEST): never {
+export function throwAppException(message: string, code: ErrorCode, status = HttpStatus.BAD_REQUEST, data?: NestedData): never {
   const cls = ClsServiceManager.getClsService()
   const req = cls.get<Request>('request')
   const lang = req?.headers['accept-language']?.split(',')[0] || 'vi'
   const messageTranslated = getLocalizedMessage(message, lang)
-  throw new AppException(messageTranslated, code, status)
+  throw new AppException(messageTranslated, code, status, data)
 }
 
 export function mapScheduleToVietnamese(schedule: Schedule[]): string[] {
