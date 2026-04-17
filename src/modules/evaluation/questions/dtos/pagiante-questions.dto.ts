@@ -1,6 +1,6 @@
 import { PaginationDto } from '@common/pagination'
-import { IsOptional, IsString } from 'class-validator'
-import { ApiPropertyOptional } from '@nestjs/swagger'
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class PaginateQuestionsDto extends PaginationDto {
   @IsOptional()
@@ -10,8 +10,8 @@ export class PaginateQuestionsDto extends PaginationDto {
 }
 
 export class PaginateQuestionsStatisticsDto extends PaginationDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  @ApiPropertyOptional({ description: 'Class id of the question', example: '1' })
-  class_id?: string
+  @ApiProperty({ description: 'Class id of the question', example: '1' })
+  class_id: string
 }
