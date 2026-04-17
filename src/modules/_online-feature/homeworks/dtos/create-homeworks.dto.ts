@@ -56,6 +56,14 @@ export class CreateHomeworksDto {
   total_points: number
 
   @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({
+    description: 'Time Limit (minutes)',
+    example: 60,
+  })
+  time_limit: number
+
+  @IsOptional()
   @IsString()
   @ApiPropertyOptional({
     description: 'Deadline Date',
@@ -112,6 +120,16 @@ export class CreateHomeworksDto {
     type: () => [CreateHomeworkQuestionDto],
   })
   questions: CreateHomeworkQuestionDto[]
+}
+
+export class HomeworkProgressDto {
+  @IsNotEmpty()
+  @IsNumber()
+  @ApiProperty({
+    description: 'Homework ID',
+    example: 1,
+  })
+  homework_id: number
 }
 
 export class CreateHomeworkQuestionDto {

@@ -4,7 +4,7 @@ import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { ResponseDto } from '@common/response.dto'
 import { HomeworkService } from './homeworks.service'
-import { CreateHomeworksDto } from './dtos/create-homeworks.dto'
+import { CreateHomeworksDto, HomeworkProgressDto } from './dtos/create-homeworks.dto'
 import { PaginateHomeworksDto, PaginateSubmissionsDto } from './dtos/paginate-homeworks.dto'
 import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
 import { GradeSubmissionDto } from './dtos/submission-grade.dto'
@@ -180,6 +180,17 @@ export class StudentHomeworkController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_FETCHED_SUCCESSFULLY',
+      data: homework,
+    })
+  }
+
+  @Post('start')
+  @ApiOperation({ summary: 'Start a homework' })
+  async startHomework(@Body() createDto: HomeworkProgressDto, @Req() req): Promise<ResponseDto> {
+    const homework = await this.homeworkService.startHomework(createDto, req.user.userId)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_STARTED_SUCCESSFULLY',
       data: homework,
     })
   }
