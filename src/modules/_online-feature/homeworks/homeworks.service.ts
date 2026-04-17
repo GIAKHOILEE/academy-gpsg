@@ -4,10 +4,10 @@ import { Repository, DataSource, In } from 'typeorm'
 import { Homeworks } from './entities/homeworks.entity'
 import { HomeworkQuestion } from './entities/question.entity'
 import { HomeworkOption } from './entities/option.entity'
-import { CreateHomeworksDto } from './dtos/create-homeworks.dto'
+import { CreateHomeworksDto, HomeworkProgressDto } from './dtos/create-homeworks.dto'
 import { Lesson } from '../lesson/lesson.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { arrayToObject, throwAppException } from '@common/utils'
+import { arrayToObject, formatStringDateUTC7, throwAppException } from '@common/utils'
 import { HomeworkSubmission } from './entities/submission.entity'
 import { HomeworkAnswer } from './entities/answer.entity'
 import { PaginateHomeworksDto, PaginateSubmissionsDto } from './dtos/paginate-homeworks.dto'
@@ -18,6 +18,7 @@ import { Student } from '@modules/students/students.entity'
 import { QuestionTypeHomework, SubmissionStatus } from '@enums/homework.enum'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { GradeSubmissionDto } from './dtos/submission-grade.dto'
+import { HomeworkProgress } from './entities/homework_progress.entity'
 
 @Injectable()
 export class HomeworkService {
@@ -77,6 +78,7 @@ export class HomeworkService {
         deadline_time: createDto.deadline_time,
         // is_active: createDto.is_active,
         is_final: createDto.is_final,
+        time_limit: createDto.time_limit,
       })
 
       const savedHw = await hwRepo.save(newHw)
@@ -148,6 +150,55 @@ export class HomeworkService {
       throw err
     } finally {
       await queryRunner.release()
+    }
+  }
+
+  async startHomework(createDto: HomeworkProgressDto, userId: number) {
+    const homeworkProgressRepo = this.dataSource.getRepository(HomeworkProgress)
+    const homeworkRepo = this.dataSource.getRepository(Homeworks)
+    const studentRepo = this.dataSource.getRepository(Student)
+
+    const student = await studentRepo.findOne({ where: { user: { id: userId } } })
+    if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    const homework = await homeworkRepo.findOne({ where: { id: createDto.homework_id } })
+    if (!homework) throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+    // Kiểm tra xem đã bắt đầu làm bài chưa
+    let progress = await homeworkProgressRepo.findOne({
+      where: { student_id: student.id, homework_id: createDto.homework_id },
+      order: { start_time: 'ASC' },
+    })
+
+    // Nếu chưa bắt đầu thì tạo mới
+    if (!progress) {
+      progress = homeworkProgressRepo.create({
+        student_id: student.id,
+        homework_id: createDto.homework_id,
+        time_limit: homework.time_limit,
+      })
+      progress = await homeworkProgressRepo.save(progress)
+    }
+
+    // Tính thời gian còn lại
+    let remainingTime = null
+    if (progress.time_limit && progress.time_limit > 0) {
+      const now = new Date().getTime()
+      const start = progress.start_time.getTime()
+      const elapsedSeconds = (now - start) / 1000
+      remainingTime = Math.max(0, Math.floor(progress.time_limit - elapsedSeconds))
+
+      if (remainingTime <= 0) {
+        throwAppException('HOMEWORK_TIME_EXPIRED', ErrorCode.HOMEWORK_TIME_EXPIRED, HttpStatus.BAD_REQUEST)
+      }
+    }
+
+    return {
+      homework_id: progress.homework_id,
+      student_id: progress.student_id,
+      time_limit: progress.time_limit,
+      start_time: progress.start_time,
+      remaining_time: remainingTime,
     }
   }
 
@@ -580,6 +631,16 @@ export class HomeworkService {
           avatar: result.student.user.avatar,
         },
       }
+
+      // update homework progress
+      const homeworkProgressRepo = this.dataSource.getRepository(HomeworkProgress)
+      const homeworkProgress = await homeworkProgressRepo.findOne({
+        where: { student_id: student.id, homework_id: submitDto.homework_id },
+      })
+      if (homeworkProgress) {
+        homeworkProgress.end_time = new Date()
+        await homeworkProgressRepo.save(homeworkProgress)
+      }
       return formattedResult
     } catch (err) {
       try {
@@ -805,7 +866,7 @@ export class HomeworkService {
         code: s.student.user.code,
       },
       answer_count: s.answers.length,
-      submitted_at: s.createdAt,
+      submitted_at: formatStringDateUTC7(s.createdAt.toISOString()),
     }))
 
     return {

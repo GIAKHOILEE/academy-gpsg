@@ -10,8 +10,8 @@ export class PaginateAnswersDto extends PaginationDto {
 
   @IsOptional()
   @IsString()
-  @ApiPropertyOptional({ description: 'Student ID' })
-  student_id?: string
+  @ApiPropertyOptional({ description: 'User ID' })
+  user_id?: string
 
   @IsOptional()
   @IsString()

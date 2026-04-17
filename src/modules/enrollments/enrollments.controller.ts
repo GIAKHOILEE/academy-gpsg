@@ -55,7 +55,7 @@ export class AdminEnrollmentsController {
   @ApiOperation({ summary: 'Cập nhật thông tin đăng ký' })
   @Put(':id')
   async updateEnrollment(@Param('id') id: number, @Body() updateEnrollmentDto: UpdateEnrollmentsDto): Promise<ResponseDto> {
-    const data = await this.enrollmentsService.updateEnrollmentV2(id, updateEnrollmentDto)
+    const data = await this.enrollmentsService.updateEnrollmentV3(id, updateEnrollmentDto)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'ENROLLMENT_UPDATE_SUCCESS',
@@ -87,7 +87,7 @@ export class EnrollmentsController {
   async createEnrollment(@Body() createEnrollmentDto: CreateEnrollmentsDto, @Request() req): Promise<ResponseDto> {
     const userId = req.user?.userId || null
     const isLogged = userId ? true : false
-    const data = await this.enrollmentsService.createEnrollmentV2(createEnrollmentDto, isLogged, userId)
+    const data = await this.enrollmentsService.createEnrollmentV3(createEnrollmentDto, isLogged, userId)
     return new ResponseDto({
       statusCode: 201,
       messageCode: 'ENROLLMENT_CREATE_SUCCESS',

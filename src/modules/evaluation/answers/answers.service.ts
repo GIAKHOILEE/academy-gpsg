@@ -43,7 +43,7 @@ export class AnswersService {
       throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
-    // mỗi câu hỏi chỉ được trả lời 1 lần
+    // mỗi câu hỏi chỉ được trả lời 1 lần bởi 1 sutdent trong 1 class
     const answersExist = await this.answersRepository
       .createQueryBuilder('answers')
       .where('answers.class_id = :class_id', { class_id })
@@ -87,6 +87,7 @@ export class AnswersService {
   //   }
 
   async getAnswers(paginateAnswersDto: PaginateAnswersDto): Promise<{ data: IAnswers[]; meta: PaginationMeta }> {
+    const { user_id, ...rest } = paginateAnswersDto
     const query = this.answersRepository
       .createQueryBuilder('answers')
       .select([
@@ -111,7 +112,15 @@ export class AnswersService {
       .leftJoin('answers.student', 'student')
       .leftJoin('student.user', 'user')
 
-    const { data, meta } = await paginate(query, paginateAnswersDto)
+    if (user_id) {
+      const student = await this.studentRepository.findOne({ where: { user_id: Number(user_id) } })
+      if (!student) {
+        throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+      query.andWhere('answers.student_id = :student_id', { student_id: student.id })
+    }
+
+    const { data, meta } = await paginate(query, rest)
 
     // group by student_id + class_id
     const map = new Map()
