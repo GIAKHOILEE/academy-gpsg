@@ -9,7 +9,7 @@ import { PaginateFinancesDto } from './dtos/paginate-finances.dto'
 import { formatStringDate, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { SelectQueryBuilder } from 'typeorm'
+import { Brackets, SelectQueryBuilder } from 'typeorm'
 
 @Injectable()
 export class FinancesService {
@@ -75,7 +75,7 @@ export class FinancesService {
     const query = this.financesRepository.createQueryBuilder('finances')
 
     rest.orderBy = rest.orderBy || 'trading_day'
-    rest.orderDirection = rest.orderDirection || 'ASC'
+    rest.orderDirection = rest.orderDirection || 'DESC'
 
     if (start_day) {
       query.andWhere('finances.trading_day >= :start_day', { start_day: this.transformDay(start_day) })
@@ -85,42 +85,89 @@ export class FinancesService {
     }
     const { data, meta } = await paginate(query, rest)
 
-    /** 1. Opening balance */
-    // chỉ khi có start_day, end_day, semester_id, scholastic_id thì mới tính số dư đầu kỳ
-    let openingBalance = 0
-    const needOpeningBalance = !!start_day || !!end_day || !!rest.semester_id || !!rest.scholastic_id
-    if (needOpeningBalance) {
-      const openingQb = this.financesRepository
-        .createQueryBuilder('finances')
-        .select('COALESCE(SUM(finances.amount_received - finances.amount_spent), 0)', 'balance')
-
-      this.buildBeforeFilterCondition(openingQb, paginateDto)
-      const openingBalanceRaw = await openingQb.getRawOne()
-      openingBalance = Number(openingBalanceRaw.balance)
+    if (data.length === 0) {
+      return {
+        data: [],
+        meta,
+        total_amount_received: 0,
+        total_amount_spent: 0,
+        total_total_amount: 0,
+      }
     }
 
-    let running_total_amount = openingBalance
+    /** 1. Calculate opening balance (all records historically BEFORE the oldest record on the current page) */
+    const isDesc = rest.orderDirection === 'DESC'
+    const oldestOnPage = isDesc ? data[data.length - 1] : data[0]
+
+    // We calculate the absolute balance "từ xưa đến giờ" up to (but not including) the oldest transaction on this page.
+    const openingQb = this.financesRepository
+      .createQueryBuilder('finances')
+      .select('COALESCE(SUM(finances.amount_received - finances.amount_spent), 0)', 'balance')
+
+    // Apply the scope filters (semester/scholastic) if present in the main query
+    if (rest.semester_id) openingQb.andWhere('finances.semester_id = :semester_id', { semester_id: rest.semester_id })
+    if (rest.scholastic_id) openingQb.andWhere('finances.scholastic_id = :scholastic_id', { scholastic_id: rest.scholastic_id })
+
+    // "Historically older" means strictly before this record's trading_day, or same day but smaller ID.
+    openingQb.andWhere(
+      new Brackets((qb) => {
+        qb.where('finances.trading_day < :tDay', { tDay: oldestOnPage.trading_day }).orWhere(
+          'finances.trading_day = :tDay AND finances.id < :tId',
+          { tDay: oldestOnPage.trading_day, tId: oldestOnPage.id },
+        )
+      }),
+    )
+
+    const openingBalanceRaw = await openingQb.getRawOne()
+    let running_total_amount = Number(openingBalanceRaw.balance)
 
     let total_amount_received = 0
     let total_amount_spent = 0
 
-    /** 2. Running balance trong filter */
-    const formattedFinances: IFinances[] = data.map((finance: FinancesEntity) => {
-      const received = Number(finance.amount_received)
-      const spent = Number(finance.amount_spent)
+    /** 2. Calculate running balance for each row */
+    let formattedFinances: IFinances[] = []
 
-      total_amount_received += received
-      total_amount_spent += spent
+    if (isDesc) {
+      // If DESC, we iterate the page data from end to start (chronological order)
+      // to correctly calculate the running total for each row.
+      const results: IFinances[] = new Array(data.length)
+      for (let i = data.length - 1; i >= 0; i--) {
+        const finance = data[i]
+        const received = Number(finance.amount_received)
+        const spent = Number(finance.amount_spent)
 
-      running_total_amount += received - spent
+        total_amount_received += received
+        total_amount_spent += spent
 
-      return {
-        ...finance,
-        total_amount: running_total_amount,
-        created_at: formatStringDate(finance.created_at.toISOString()),
-        updated_at: formatStringDate(finance.updated_at.toISOString()),
+        running_total_amount += received - spent
+
+        results[i] = {
+          ...finance,
+          total_amount: running_total_amount,
+          created_at: formatStringDate(finance.created_at.toISOString()),
+          updated_at: formatStringDate(finance.updated_at.toISOString()),
+        }
       }
-    })
+      formattedFinances = results
+    } else {
+      // If ASC, we iterate normally
+      formattedFinances = data.map((finance: FinancesEntity) => {
+        const received = Number(finance.amount_received)
+        const spent = Number(finance.amount_spent)
+
+        total_amount_received += received
+        total_amount_spent += spent
+
+        running_total_amount += received - spent
+
+        return {
+          ...finance,
+          total_amount: running_total_amount,
+          created_at: formatStringDate(finance.created_at.toISOString()),
+          updated_at: formatStringDate(finance.updated_at.toISOString()),
+        }
+      })
+    }
 
     return {
       data: formattedFinances,
@@ -155,32 +202,6 @@ export class FinancesService {
   /* ===========================================================
   ==========================PRIVATE============================
   =========================================================== */
-  private buildBeforeFilterCondition(qb: SelectQueryBuilder<FinancesEntity>, dto: PaginateFinancesDto) {
-    if (dto.start_day) {
-      qb.andWhere('finances.trading_day >= :start_day', {
-        start_day: dto.start_day,
-      })
-    }
-
-    if (dto.end_day) {
-      qb.andWhere('finances.trading_day <= :end_day', {
-        end_day: dto.end_day,
-      })
-    }
-
-    if (dto.semester_id) {
-      qb.andWhere('finances.semester_id < :semester_id', {
-        semester_id: dto.semester_id,
-      })
-      return
-    }
-
-    if (dto.scholastic_id) {
-      qb.andWhere('finances.scholastic_id < :scholastic_id', {
-        scholastic_id: dto.scholastic_id,
-      })
-    }
-  }
 
   private buildTradingDay(year?: number, month?: number, day?: number): number | null {
     // nếu 1 trong 3 cái không có thì cái đó lấy của hiện tại

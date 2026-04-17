@@ -108,174 +108,137 @@ export class QuestionsStatisticsService {
   ) {}
 
   async statisticQuestion(dto: PaginateQuestionsStatisticsDto) {
-    const { class_id, page = 1, limit = 10 } = dto
+    const { class_id, ...paginateParams } = dto
+    const cId = Number(class_id)
 
-    // Pagination for classes
-    const classQuery = this.answersRepository
-      .createQueryBuilder('a')
-      .select('a.class_id', 'class_id')
-      .distinct(true)
+    // 1. Paginate Questions instead of Classes
+    const questionQuery = this.questionsRepository.createQueryBuilder('q')
+    const { data: questionsList, meta } = await paginate(questionQuery, paginateParams as any)
+    const targetQuestionIds = questionsList.map(q => q.id)
 
-    if (class_id) {
-      classQuery.where('a.class_id = :class_id', { class_id })
+    if (targetQuestionIds.length === 0) {
+      return { data: { class_id: cId, questions: [] }, meta }
     }
 
-    const rawClasses = await classQuery.getRawMany()
-    const total = rawClasses.length
-    const totalPages = Math.ceil(total / Number(limit))
-    const paginatedClasses = rawClasses.slice((Number(page) - 1) * Number(limit), Number(page) * Number(limit))
-    const targetClassIds = paginatedClasses.map(c => Number(c.class_id))
-
-    const meta: PaginationMeta = {
-      total,
-      page: Number(page),
-      limit: Number(limit),
-      totalPages,
-    }
-
-    if (targetClassIds.length === 0) {
-      return { data: [], meta }
-    }
-
-    // Prepare query for Single Choice
+    // 2. Fetch statistics ONLY for current page's questions and the specified class
+    // Single Choice
     const qSingle = this.answersRepository
       .createQueryBuilder('a')
-      .select('a.class_id', 'class_id')
-      .addSelect('a.question_id', 'question_id')
+      .select('a.question_id', 'question_id')
       .addSelect('a.answer_single_choice', 'value')
       .addSelect('COUNT(*)', 'total')
-      .where('a.answer_single_choice IS NOT NULL')
-      .andWhere('a.class_id IN (:...targetClassIds)', { targetClassIds })
-
-    qSingle.groupBy('a.class_id').addGroupBy('a.question_id').addGroupBy('a.answer_single_choice')
+      .where('a.class_id = :cId', { cId })
+      .andWhere('a.question_id IN (:...targetQuestionIds)', { targetQuestionIds })
+      .andWhere('a.answer_single_choice IS NOT NULL')
+      .groupBy('a.question_id').addGroupBy('a.answer_single_choice')
     const rawSingle = await qSingle.getRawMany()
 
-    // Prepare query for Multiple Choice
-    const placeholders = targetClassIds.map(() => '?').join(',')
+    // Multiple Choice
+    const placeholders = targetQuestionIds.map(() => '?').join(',')
     let mcQuery = `
-      SELECT a.class_id as class_id, a.question_id as question_id, jt.value as value, COUNT(*) as total
+      SELECT a.question_id as question_id, jt.value as value, COUNT(*) as total
       FROM answers a,
       JSON_TABLE(a.answer_multiple_choice, '$[*]' COLUMNS (value INT PATH '$')) as jt
-      WHERE a.class_id IN (${placeholders})
-      GROUP BY a.class_id, a.question_id, jt.value
+      WHERE a.class_id = ? AND a.question_id IN (${placeholders})
+      GROUP BY a.question_id, jt.value
     `
-    const mcParams = [...targetClassIds]
+    const mcParams = [cId, ...targetQuestionIds]
     const rawMultiple = await this.answersRepository.query(mcQuery, mcParams)
 
-    // Prepare query for Number
+    // Number
     const qNumber = this.answersRepository
       .createQueryBuilder('a')
-      .select('a.class_id', 'class_id')
-      .addSelect('a.question_id', 'question_id')
+      .select('a.question_id', 'question_id')
       .addSelect('a.answer_number', 'value')
       .addSelect('COUNT(*)', 'total')
-      .where('a.answer_number IS NOT NULL')
-      .andWhere('a.class_id IN (:...targetClassIds)', { targetClassIds })
-
-    qNumber.groupBy('a.class_id').addGroupBy('a.question_id').addGroupBy('a.answer_number')
+      .where('a.class_id = :cId', { cId })
+      .andWhere('a.question_id IN (:...targetQuestionIds)', { targetQuestionIds })
+      .andWhere('a.answer_number IS NOT NULL')
+      .groupBy('a.question_id').addGroupBy('a.answer_number')
     const rawNumber = await qNumber.getRawMany()
 
-    // Prepare query for Text
+    // Text
     const qText = this.answersRepository
       .createQueryBuilder('a')
-      .select('a.class_id', 'class_id')
-      .addSelect('a.question_id', 'question_id')
+      .select('a.question_id', 'question_id')
       .addSelect('a.answer_text', 'value')
-      .where('a.answer_text IS NOT NULL')
-      .andWhere('a.class_id IN (:...targetClassIds)', { targetClassIds })
-
+      .where('a.class_id = :cId', { cId })
+      .andWhere('a.question_id IN (:...targetQuestionIds)', { targetQuestionIds })
+      .andWhere('a.answer_text IS NOT NULL')
     const rawText = await qText.getRawMany()
 
-    // Retrieve active questions to know their type
-    const questionsList = await this.questionsRepository.find({ select: ['id', 'type'] })
-    const questionTypeMap = new Map<number, QuestionType>(questionsList.map(q => [q.id, q.type]))
-
-    // Data structure to hold everything
-    // resultByClass: class_id -> Map<question_id, any[]>
-    const resultByClass = new Map<number, Map<number, any>>()
-
-    const getGroup = (cId: number, qId: number) => {
-      if (!resultByClass.has(cId)) resultByClass.set(cId, new Map())
-      const qMap = resultByClass.get(cId)!
-      if (!qMap.has(qId)) qMap.set(qId, { questionId: qId, totalAll: 0, options: [] })
-      return qMap.get(qId)
-    }
-
-    // Process Single Choice
-    rawSingle.forEach(r => {
-      const qId = Number(r.question_id)
-      const group = getGroup(Number(r.class_id), qId)
-      group.type = questionTypeMap.get(qId) || QuestionType.SINGLE_CHOICE
-      const total = Number(r.total)
-      group.totalAll += total
-      group.options.push({ value: r.value, total })
-    })
-
-    // Process Multiple Choice
-    rawMultiple.forEach(r => {
-      const qId = Number(r.question_id)
-      const group = getGroup(Number(r.class_id), qId)
-      group.type = questionTypeMap.get(qId) || QuestionType.MULTIPLE_CHOICE
-      const total = Number(r.total)
-      group.totalAll += total
-      group.options.push({ value: r.value, total })
-    })
-
-    // Process Number
-    rawNumber.forEach(r => {
-      const qId = Number(r.question_id)
-      const group = getGroup(Number(r.class_id), qId)
-      group.type = questionTypeMap.get(qId) || QuestionType.NUMBER
-      const total = Number(r.total)
-      group.totalAll += total
-      group.options.push({ value: r.value, total })
-    })
-
-    // Process Text
-    rawText.forEach(r => {
-      const cId = Number(r.class_id)
-      const qId = Number(r.question_id)
-      if (!resultByClass.has(cId)) resultByClass.set(cId, new Map())
-      const qMap = resultByClass.get(cId)!
-      if (!qMap.has(qId)) qMap.set(qId, { questionId: qId, answers: [], type: questionTypeMap.get(qId) || QuestionType.TEXT })
-      qMap.get(qId).answers.push(r.value)
-    })
-
-    // Format final response
-    const finalResult = []
-
-    for (const [cId, qMap] of resultByClass.entries()) {
-      const questionsData = []
-      for (const [qId, data] of qMap.entries()) {
-        let stats = []
-        if (data.type === QuestionType.SINGLE_CHOICE || data.type === QuestionType.MULTIPLE_CHOICE) {
-          stats = data.options.map(opt => ({
-            optionIndex: Number(opt.value),
-            total: opt.total,
-            percent: Number(((opt.total / data.totalAll) * 100).toFixed(2)),
-          }))
-        } else if (data.type === QuestionType.NUMBER) {
-          stats = data.options.map(opt => ({
-            value: Number(opt.value),
-            total: opt.total,
-            percent: Number(((opt.total / data.totalAll) * 100).toFixed(2)),
-          }))
-        } else if (data.type === QuestionType.TEXT) {
-          stats = data.answers
-        }
-
-        questionsData.push({
-          questionId: qId,
-          type: data.type,
-          statistics: stats,
-        })
+    // 3. Process data into a map for easy lookup
+    const questionStatsMap = new Map<number, any>()
+    const getGroup = (qId: number) => {
+      if (!questionStatsMap.has(qId)) {
+        questionStatsMap.set(qId, { totalAll: 0, options: [], answers: [] })
       }
-      finalResult.push({
-        class_id: cId,
-        questions: questionsData,
-      })
+      return questionStatsMap.get(qId)
     }
 
-    return { data: finalResult, meta }
+    rawSingle.forEach(r => {
+      const g = getGroup(Number(r.question_id))
+      const total = Number(r.total)
+      g.totalAll += total
+      g.options.push({ value: r.value, total })
+    })
+
+    rawMultiple.forEach(r => {
+      const g = getGroup(Number(r.question_id))
+      const total = Number(r.total)
+      g.totalAll += total
+      g.options.push({ value: r.value, total })
+    })
+
+    rawNumber.forEach(r => {
+      const g = getGroup(Number(r.question_id))
+      const total = Number(r.total)
+      g.totalAll += total
+      g.options.push({ value: r.value, total })
+    })
+
+    rawText.forEach(r => {
+      const g = getGroup(Number(r.question_id))
+      g.answers.push(r.value)
+    })
+
+    // 4. Format the final response
+    const formattedQuestions = questionsList.map(question => {
+      const qId = question.id
+      const data = questionStatsMap.get(qId) || { totalAll: 0, options: [], answers: [] }
+      let stats = []
+      const qType = question.type
+
+      if (qType === QuestionType.SINGLE_CHOICE || qType === QuestionType.MULTIPLE_CHOICE) {
+        stats = data.options.map(opt => ({
+          optionIndex: Number(opt.value),
+          total: opt.total,
+          percent: data.totalAll > 0 ? Number(((opt.total / data.totalAll) * 100).toFixed(2)) : 0,
+        }))
+      } else if (qType === QuestionType.NUMBER) {
+        stats = data.options.map(opt => ({
+          value: Number(opt.value),
+          total: opt.total,
+          percent: data.totalAll > 0 ? Number(((opt.total / data.totalAll) * 100).toFixed(2)) : 0,
+        }))
+      } else if (qType === QuestionType.TEXT) {
+        stats = data.answers || []
+      }
+
+      return {
+        questionId: qId,
+        question: question.question,
+        type: qType,
+        statistics: stats,
+      }
+    })
+
+    return {
+      data: {
+        class_id: cId,
+        questions: formattedQuestions,
+      },
+      meta,
+    }
   }
 }
