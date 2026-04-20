@@ -58,8 +58,8 @@ export class CreateHomeworksDto {
   @IsOptional()
   @IsNumber()
   @ApiPropertyOptional({
-    description: 'Time Limit (minutes)',
-    example: 60,
+    description: 'Time Limit (seconds)',
+    example: 3600,
   })
   time_limit: number
 

@@ -184,7 +184,9 @@ export class HomeworkService {
     let remainingTime = null
     if (progress.time_limit && progress.time_limit > 0) {
       const now = new Date().getTime()
-      const start = progress.start_time.getTime()
+      // Cộng thêm 7 tiếng (7 * 60 * 60 * 1000 ms) để bù đắp việc DB lưu giờ UTC+0 
+      // nhưng TypeORM đọc lên có thể bị hiểu nhầm là múi giờ Local
+      const start = progress.start_time.getTime() + 7 * 60 * 60 * 1000
       const elapsedSeconds = (now - start) / 1000
       remainingTime = Math.max(0, Math.floor(progress.time_limit - elapsedSeconds))
 
@@ -197,7 +199,7 @@ export class HomeworkService {
       homework_id: progress.homework_id,
       student_id: progress.student_id,
       time_limit: progress.time_limit,
-      start_time: progress.start_time,
+      start_time: formatStringDateUTC7(progress.start_time.toISOString()),
       remaining_time: remainingTime,
     }
   }
