@@ -6,11 +6,12 @@ import { Student } from './students.entity'
 import { User } from '../users/user.entity'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import { HttpModule } from '@nestjs/axios'
+import { LibrarySyncService } from '@services/library-sync/library-sync.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Student, User]), HttpModule],
   controllers: [StudentsController],
-  providers: [StudentsService, BrevoMailerService],
+  providers: [StudentsService, BrevoMailerService, LibrarySyncService],
   exports: [StudentsService],
 })
 export class StudentsModule {}
