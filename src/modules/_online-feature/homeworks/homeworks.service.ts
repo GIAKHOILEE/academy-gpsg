@@ -321,6 +321,7 @@ export class HomeworkService {
         'homework.deadline_date',
         'homework.deadline_time',
         'homework.total_points',
+        'homework.time_limit',
         // 'homework.is_active',
         'homework.is_final',
         'lesson.id',
@@ -358,6 +359,7 @@ export class HomeworkService {
         deadline_date: homework.deadline_date,
         deadline_time: homework.deadline_time,
         total_points: homework.total_points,
+        time_limit: homework.time_limit,
         // is_active: homework.is_active,
         is_final: homework.is_final,
         lesson: {
@@ -402,6 +404,7 @@ export class HomeworkService {
         'homework.deadline_date',
         'homework.deadline_time',
         'homework.total_points',
+        'homework.time_limit',
         // 'homework.is_active',
         'homework.is_final',
         'lesson.id',
