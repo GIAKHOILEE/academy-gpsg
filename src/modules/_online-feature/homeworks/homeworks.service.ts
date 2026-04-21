@@ -5,6 +5,7 @@ import { Homeworks } from './entities/homeworks.entity'
 import { HomeworkQuestion } from './entities/question.entity'
 import { HomeworkOption } from './entities/option.entity'
 import { CreateHomeworksDto, HomeworkProgressDto } from './dtos/create-homeworks.dto'
+import { UpdateHomeworksDto } from './dtos/update-homeworks.dto'
 import { Lesson } from '../lesson/lesson.entity'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { arrayToObject, formatStringDateUTC7, throwAppException } from '@common/utils'
@@ -106,6 +107,7 @@ export class HomeworkService {
       }
       // kiểm tra điểm của các question có đúng với total_points(homework) không
       const totalPoints = createDto.questions.reduce((sum, q) => sum + q.points, 0)
+      console.log(totalPoints)
       if (totalPoints !== 10) {
         throwAppException('TOTAL_POINTS_MISMATCH', ErrorCode.TOTAL_POINTS_MISMATCH, HttpStatus.BAD_REQUEST)
       }
@@ -262,29 +264,135 @@ export class HomeworkService {
   //   }
   // }
 
-  async updateHomework(homeworkId: number, updateDto: CreateHomeworksDto) {
-    const hw = await this.hwRepo.findOne({ where: { id: homeworkId }, relations: ['questions', 'questions.options', 'lesson'] })
-    if (!hw) throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
-
-    const lesson = await this.lessonRepo.findOne({ where: { id: updateDto.lesson_id } })
-    if (!lesson) throwAppException('LESSON_NOT_FOUND', ErrorCode.LESSON_NOT_FOUND, HttpStatus.NOT_FOUND)
-
+  async updateHomework(homeworkId: number, updateDto: UpdateHomeworksDto) {
+    const queryRunner = this.dataSource.createQueryRunner()
+    await queryRunner.connect()
+    await queryRunner.startTransaction()
     try {
-      // kiểm tra có submission và answer nào không
-      const hasSubmissions = await this.submissionRepo.exists({ where: { homework: { id: hw.id } } })
-      const hasAnswers = await this.answerRepo.exists({ where: { submission: { homework: { id: hw.id } } } })
+      const hwRepo = queryRunner.manager.getRepository(Homeworks)
+      const questionRepo = queryRunner.manager.getRepository(HomeworkQuestion)
+      const optionRepo = queryRunner.manager.getRepository(HomeworkOption)
+      const lessonRepo = queryRunner.manager.getRepository(Lesson)
+      const submissionRepo = queryRunner.manager.getRepository(HomeworkSubmission)
+      const answerRepo = queryRunner.manager.getRepository(HomeworkAnswer)
 
-      // nếu không có submission và answer thì xóa toàn bộ homework
-      if (!hasSubmissions && !hasAnswers) {
-        await this.hwRepo.delete(hw.id)
-        // gọi hàm createHomework tạo lại mới hoàn toàn
-        return this.createHomework(updateDto)
-      } else {
-        // nếu có submission và answer thì không được cập nhật
+      const hw = await hwRepo.findOne({
+        where: { id: homeworkId },
+        relations: ['questions', 'questions.options', 'lesson'],
+      })
+      if (!hw) throwAppException('HOMEWORK_NOT_FOUND', ErrorCode.HOMEWORK_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      const lesson = await lessonRepo.findOne({ where: { id: updateDto.lesson_id } })
+      if (!lesson) throwAppException('LESSON_NOT_FOUND', ErrorCode.LESSON_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      // kiểm tra có submission và answer nào không
+      const hasSubmissions = await submissionRepo.exists({ where: { homework: { id: hw.id } } })
+      const hasAnswers = await answerRepo.exists({ where: { submission: { homework: { id: hw.id } } } })
+
+      if (hasSubmissions || hasAnswers) {
         throwAppException('HOMEWORK_HAS_SUBMISSIONS', ErrorCode.HOMEWORK_HAS_SUBMISSIONS, HttpStatus.BAD_REQUEST)
       }
+
+      // check class đã có bài final chưa
+      const finalHw = await hwRepo
+        .createQueryBuilder('hw')
+        .select(['hw.id', 'hw.is_final', 'lesson.id', 'class.id'])
+        .leftJoin('hw.lesson', 'lesson')
+        .leftJoin('lesson.class', 'class')
+        .where('class.id = (SELECT l.class_id FROM lesson l WHERE l.id = :lessonId)', { lessonId: updateDto.lesson_id })
+        .andWhere('hw.is_final = :isFinal', { isFinal: true })
+        .andWhere('hw.id != :homeworkId', { homeworkId })
+        .getOne()
+
+      if (updateDto.is_final === true && finalHw) {
+        throwAppException('FINAL_HOMEWORK_EXISTS_IN_CLASS', ErrorCode.FINAL_HOMEWORK_EXISTS_IN_CLASS, HttpStatus.BAD_REQUEST)
+      }
+
+      // Cập nhật thông tin homework
+      hw.title = updateDto.title
+      hw.description = updateDto.description
+      hw.lesson = lesson
+      hw.total_points = 10 // mặc định 10 điểm
+      hw.deadline_date = updateDto.deadline_date
+      hw.deadline_time = updateDto.deadline_time
+      hw.is_final = updateDto.is_final
+      hw.time_limit = updateDto.time_limit
+
+      await hwRepo.save(hw)
+
+      // Xóa questions cũ (sẽ cascade xóa options)
+      await questionRepo.delete({ homework: { id: hw.id } })
+
+      // tạo questions + options mới
+      for (const qDto of updateDto.questions) {
+        const newQuestion = questionRepo.create({
+          homework: hw,
+          content: qDto.content,
+          type: qDto.type,
+          points: qDto.points,
+        })
+        const savedQ = await questionRepo.save(newQuestion)
+
+        if (Array.isArray(qDto.options)) {
+          for (const oDto of qDto.options) {
+            const newOption = optionRepo.create({
+              question: savedQ,
+              content: oDto.content,
+              is_correct: oDto.is_correct,
+            })
+            await optionRepo.save(newOption)
+          }
+        }
+      }
+
+      // kiểm tra điểm của các question có đúng với total_points(homework) không
+      const totalPoints = updateDto.questions.reduce((sum, q) => {
+        return sum + Math.round(q.points * 10)
+      }, 0) / 10
+      if (totalPoints !== 10) {
+        throwAppException('TOTAL_POINTS_MISMATCH', ErrorCode.TOTAL_POINTS_MISMATCH, HttpStatus.BAD_REQUEST)
+      }
+
+      // kiểm tra nếu là multiple choice thì phải có ít nhất 1 đáp án đúng
+      for (const qDto of updateDto.questions) {
+        if (qDto.type === QuestionTypeHomework.MCQ_MULTI) {
+          const hasCorrectOption = qDto.options.some(o => o.is_correct)
+          if (!hasCorrectOption) {
+            throwAppException(
+              'MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_ONE_CORRECT_OPTION',
+              ErrorCode.MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_ONE_CORRECT_OPTION,
+              HttpStatus.BAD_REQUEST,
+            )
+          }
+        }
+      }
+
+      // kiểm tra nếu là multiple choice thì phải có ít nhất 2 đáp án
+      for (const qDto of updateDto.questions) {
+        if (qDto.type === QuestionTypeHomework.MCQ_MULTI) {
+          const hasAtLeastTwoOptions = qDto.options.length >= 2
+          if (!hasAtLeastTwoOptions) {
+            throwAppException(
+              'MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_TWO_OPTIONS',
+              ErrorCode.MULTIPLE_CHOICE_MUST_HAVE_AT_LEAST_TWO_OPTIONS,
+              HttpStatus.BAD_REQUEST,
+            )
+          }
+        }
+      }
+
+      await queryRunner.commitTransaction()
+
+      // trả về kết quả
+      return await this.hwRepo.findOne({
+        where: { id: hw.id },
+        relations: ['questions', 'questions.options', 'lesson'],
+      })
     } catch (err) {
+      await queryRunner.rollbackTransaction()
       throw err
+    } finally {
+      await queryRunner.release()
     }
   }
 
