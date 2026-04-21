@@ -347,9 +347,9 @@ export class HomeworkService {
 
       // kiểm tra điểm của các question có đúng với total_points(homework) không
       const totalPoints = updateDto.questions.reduce((sum, q) => {
-        return sum + Math.round(q.points * 10)
-      }, 0) / 10
-      if (totalPoints !== 10) {
+        return sum + Math.round(q.points * 1000)
+      }, 0)
+      if (totalPoints !== 10000) {
         throwAppException('TOTAL_POINTS_MISMATCH', ErrorCode.TOTAL_POINTS_MISMATCH, HttpStatus.BAD_REQUEST)
       }
 
