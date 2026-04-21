@@ -5,6 +5,7 @@ import { Role } from '@enums/role.enum'
 import { ResponseDto } from '@common/response.dto'
 import { HomeworkService } from './homeworks.service'
 import { CreateHomeworksDto, HomeworkProgressDto } from './dtos/create-homeworks.dto'
+import { UpdateHomeworksDto } from './dtos/update-homeworks.dto'
 import { PaginateHomeworksDto, PaginateSubmissionsDto } from './dtos/paginate-homeworks.dto'
 import { SubmitHomeworkDto } from './dtos/submit-homework.dto'
 import { GradeSubmissionDto } from './dtos/submission-grade.dto'
@@ -72,7 +73,7 @@ export class AdminHomeworkController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a homework' })
-  async updateHomework(@Param('id') id: number, @Body() updateHomeworkDto: CreateHomeworksDto): Promise<ResponseDto> {
+  async updateHomework(@Param('id') id: number, @Body() updateHomeworkDto: UpdateHomeworksDto): Promise<ResponseDto> {
     const homework = await this.homeworkService.updateHomework(id, updateHomeworkDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
@@ -145,7 +146,7 @@ export class TeacherHomeworkController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a homework' })
-  async updateHomework(@Param('id') id: number, @Body() updateHomeworkDto: CreateHomeworksDto): Promise<ResponseDto> {
+  async updateHomework(@Param('id') id: number, @Body() updateHomeworkDto: UpdateHomeworksDto): Promise<ResponseDto> {
     const homework = await this.homeworkService.updateHomework(id, updateHomeworkDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
