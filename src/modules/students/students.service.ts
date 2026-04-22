@@ -34,7 +34,7 @@ export class StudentsService {
 
     try {
       const { image_4x6, diploma_image, transcript_image, other_document, card_code, ...userData } = createStudentDto
-      const { password, email, code, full_name, ...rest } = userData
+      const { password, email, code, full_name, birth_date, ...rest } = userData
 
       // Kiểm tra email đã tồn tại
       // if (email) {
@@ -57,6 +57,7 @@ export class StudentsService {
 
       const hashedPassword = await hashPassword(password ?? code)
       const first_name = full_name.split(' ')[0]
+      const new_birth_date = !birth_date || birth_date === "" ? "1970-01-01" : formatStringToDate(birth_date)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
         role: Role.STUDENT,
@@ -65,7 +66,7 @@ export class StudentsService {
         code,
         full_name,
         first_name,
-        birth_date: formatStringToDate(userData.birth_date),
+        birth_date: new_birth_date,
         ...rest,
       })
 
@@ -118,7 +119,7 @@ export class StudentsService {
         saint_name: userData.saint_name || null,
         password: password ?? code,
         email: email || null,
-        birth_date: userData.birth_date || null,
+        birth_date: new_birth_date,
         phone: userData.phone_number || null,
         address: userData.address || null,
         avatar: userData.avatar || null,
