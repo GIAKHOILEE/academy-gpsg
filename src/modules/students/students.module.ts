@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common'
-import { StudentsController } from './students.controller'
+import { AdminStudentsController, StudentsController } from './students.controller'
 import { StudentsService } from './students.service'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Student } from './students.entity'
@@ -10,7 +10,7 @@ import { LibrarySyncService } from '@services/library-sync/library-sync.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Student, User]), HttpModule],
-  controllers: [StudentsController],
+  controllers: [StudentsController, AdminStudentsController],
   providers: [StudentsService, BrevoMailerService, LibrarySyncService],
   exports: [StudentsService],
 })

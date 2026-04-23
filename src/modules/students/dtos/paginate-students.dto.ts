@@ -3,7 +3,7 @@ import { ClassStatus } from '@enums/class.enum'
 import { Gender } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { StudentCardStatus } from '@enums/user.enum'
-import { ApiPropertyOptional } from '@nestjs/swagger'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 
@@ -90,4 +90,15 @@ export class PaginateStudentsDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Trạng thái thẻ', enum: StudentCardStatus, example: StudentCardStatus.NOT_PRINTED })
   @Type(() => Number)
   card_status?: StudentCardStatus
+}
+
+
+export class SearchStudentClassCertificateDto {
+  @IsString()
+  @ApiProperty({ description: 'Tên sinh viên', example: 'Hoàng Phi Khanh Pro' })
+  full_name: string
+
+  @IsString()
+  @ApiProperty({ description: 'Ngày sinh (Định dạng: DD/MM/YYYY)', example: '11/06/2025' })
+  birth_date: string
 }

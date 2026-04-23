@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { formatStringToDate, hashPassword, throwAppException } from '@common/utils'
+import { formatStringDate, formatStringToDate, hashPassword, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -8,13 +8,14 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Not, Repository } from 'typeorm'
 import { User } from '../users/user.entity'
 import { CreateStudentsDto } from './dtos/create-students.dto'
-import { PaginateStudentsDto } from './dtos/paginate-students.dto'
+import { PaginateStudentsDto, SearchStudentClassCertificateDto } from './dtos/paginate-students.dto'
 import { UpdateStudentsDto } from './dtos/update-students.dto'
 import { Student } from './students.entity'
 import { IStudent } from './students.interface'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import { LibrarySyncService } from '@services/library-sync/library-sync.service'
+import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 
 @Injectable()
 export class StudentsService {
@@ -34,7 +35,7 @@ export class StudentsService {
 
     try {
       const { image_4x6, diploma_image, transcript_image, other_document, card_code, ...userData } = createStudentDto
-      const { password, email, code, full_name, ...rest } = userData
+      const { password, email, code, full_name, birth_date, ...rest } = userData
 
       // Kiểm tra email đã tồn tại
       // if (email) {
@@ -57,6 +58,7 @@ export class StudentsService {
 
       const hashedPassword = await hashPassword(password ?? code)
       const first_name = full_name.split(' ')[0]
+      const new_birth_date = !birth_date || birth_date === "" ? "1970-01-01" : formatStringToDate(birth_date)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
         role: Role.STUDENT,
@@ -65,7 +67,7 @@ export class StudentsService {
         code,
         full_name,
         first_name,
-        birth_date: formatStringToDate(userData.birth_date),
+        birth_date: new_birth_date,
         ...rest,
       })
 
@@ -118,7 +120,7 @@ export class StudentsService {
         saint_name: userData.saint_name || null,
         password: password ?? code,
         email: email || null,
-        birth_date: userData.birth_date || null,
+        birth_date: new_birth_date,
         phone: userData.phone_number || null,
         address: userData.address || null,
         avatar: userData.avatar || null,
@@ -479,34 +481,52 @@ export class StudentsService {
     }
   }
 
-  // async createStudentCardCode(createStudentCardCodeDto: CreateStudentCardCodeDto): Promise<void> {
-  //   const { card_code, user_id } = createStudentCardCodeDto
+  
+  async searchStudentClassCertificate(searchStudentClassCertificateDto: SearchStudentClassCertificateDto) {
+    const { full_name, birth_date } = searchStudentClassCertificateDto
+    const dateObj = formatStringToDate(birth_date)
+    const birthDateQuery = dateObj ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}` : birth_date
 
-  //   const student = await this.studentRepository.findOne({ where: { user_id } })
-  //   if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    const queryBuilder = this.dataSource
+      .getRepository(ClassStudents)
+      .createQueryBuilder('cs')
+      .innerJoin('cs.student', 'student')
+      .innerJoin('student.user', 'user')
+      .innerJoin('cs.class', 'class')
+      .where('user.full_name = :full_name', { full_name })
+      .andWhere('user.birth_date = :birth_date', { birth_date: birthDateQuery })
+      .select([
+        'user.id as user_id',
+        'user.saint_name as saint_name',
+        'user.full_name as full_name',
+        'user.birth_date as birth_date',
+        'user.code as code',
+        'student.id as student_id',
+        'student.card_code as card_code',
+        'class.id as class_id',
+        'class.name as class_name',
+        'class.opening_day as opening_day',
+        'class.closing_day as closing_day',
+        'cs.score as score',
+      ])
 
-  //   const existingStudent = await this.studentRepository.exists({ where: { card_code } })
-  //   if (existingStudent) throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
+    const result = await queryBuilder.getRawMany()
 
-  //   // check student đã có card_code chưa
-  //   if (student.card_code) throwAppException('STUDENT_HAD_CARD_CODE', ErrorCode.STUDENT_HAD_CARD_CODE, HttpStatus.BAD_REQUEST)
-
-  //   await this.studentRepository.update(student.id, { card_code })
-  //   return
-  // }
-
-  // async updateStudentCardCode(updateStudentCardCodeDto: UpdateStudentCardCodeDto): Promise<void> {
-  //   const { card_code, user_id } = updateStudentCardCodeDto
-
-  //   const student = await this.studentRepository.findOne({ where: { user_id } })
-  //   if (!student) throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
-
-  //   const existingStudent = await this.studentRepository.exists({ where: { card_code, id: Not(student.id) } })
-  //   if (existingStudent) {
-  //     throwAppException('STUDENT_CARD_CODE_ALREADY_EXISTS', ErrorCode.STUDENT_CARD_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
-  //   }
-
-  //   await this.studentRepository.update(student.id, { card_code })
-  //   return
-  // }
+    const formatResult = result.map((item: any) => {
+      return {
+        student_id: item.student_id,
+        saint_name: item.saint_name,
+        full_name: item.full_name,
+        birth_date: formatStringDate(item.birth_date.toISOString(), true),
+        code: item.code,
+        card_code: item.card_code,
+        class_id: item.class_id,
+        class_name: item.class_name,
+        opening_day: formatStringDate(item.opening_day, true),
+        closing_day: formatStringDate(item.closing_day, true),
+        score: item.score,
+      }
+    })
+    return formatResult
+  }
 }

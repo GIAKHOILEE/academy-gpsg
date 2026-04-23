@@ -8,7 +8,7 @@ export interface SyncStudentToLibraryDto {
   saint_name?: string
   password: string
   email?: string
-  birth_date?: string
+  birth_date?: string | Date
   phone?: string
   address?: string
   avatar?: string

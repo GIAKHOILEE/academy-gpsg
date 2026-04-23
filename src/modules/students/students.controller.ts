@@ -5,14 +5,14 @@ import { ResponseDto } from '@common/response.dto'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { PaginateStudentsDto } from './dtos/paginate-students.dto'
+import { PaginateStudentsDto, SearchStudentClassCertificateDto } from './dtos/paginate-students.dto'
 import { UpdateStudentsDto } from './dtos/update-students.dto'
 
 @ApiBearerAuth()
 @Auth(Role.ADMIN, Role.STAFF)
 @Controller('admin/students')
 @ApiTags('Admin Students')
-export class StudentsController {
+export class AdminStudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 
   // @Post('card-code')
@@ -89,6 +89,23 @@ export class StudentsController {
     return {
       statusCode: 200,
       messageCode: 'STUDENT_DELETE_SUCCESS',
+    }
+  }
+}
+
+@Controller('students')
+@ApiTags('Students')
+export class StudentsController {
+  constructor(private readonly studentsService: StudentsService) {}
+
+  @Get('credentials')
+  @ApiOperation({ summary: 'Lấy danh lớp học của học viên để cấp chứng chỉ' })
+  async getStudentCardCodes(@Query() searchStudentClassCertificateDto: SearchStudentClassCertificateDto): Promise<ResponseDto> {
+    const data = await this.studentsService.searchStudentClassCertificate(searchStudentClassCertificateDto)
+    return {
+      statusCode: 200,
+      messageCode: 'STUDENTS_GET_SUCCESS',
+      data: data,
     }
   }
 }
