@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { arrayToObject, removeVietnameseTones, throwAppException } from '@common/utils'
+import { arrayToObject, formatStringDate, removeVietnameseTones, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
@@ -505,6 +505,7 @@ export class ClassService {
         'class_students.id',
         'class_students.score',
         'class_students.learn_type',
+        'class_students.updated_at',
         'student.id',
         'user.code',
         'user.gender',
@@ -546,6 +547,7 @@ export class ClassService {
       id: classStudent.student.id,
       learn_type: classStudent.learn_type,
       score: classStudent.score,
+      date_of_issue: formatStringDate(classStudent.updated_at.toISOString(), true),
       code: classStudent.student.user.code,
       gender: classStudent.student.user.gender,
       avatar: classStudent.student.user.avatar,

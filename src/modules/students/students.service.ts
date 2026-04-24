@@ -509,6 +509,7 @@ export class StudentsService {
         'class.opening_day as opening_day',
         'class.closing_day as closing_day',
         'cs.score as score',
+        'cs.updated_at as updated_at',
       ])
 
     if (class_id) {
@@ -530,6 +531,7 @@ export class StudentsService {
         opening_day: formatStringDate(item.opening_day, true),
         closing_day: formatStringDate(item.closing_day, true),
         score: item.score,
+        date_of_issue: formatStringDate(item.updated_at.toISOString(), true),
       }
     })
     return formatResult
