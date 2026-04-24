@@ -499,7 +499,7 @@ export class ClassService {
     const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-    const classStudents = await this.classStudentsRepository
+    const classStudents = this.classStudentsRepository
       .createQueryBuilder('class_students')
       .select([
         'class_students.id',
@@ -522,9 +522,20 @@ export class ClassService {
         'user.deanery',
         'user.diocese',
         'user.congregation',
+        'class.id',
+        'class.name',
+        'class.code',
+        'subject.id',
+        'subject.name',
+        'subject.code',
+        'scholastic.id',
+        'scholastic.name',
       ])
       .leftJoin('class_students.student', 'student')
       .leftJoin('student.user', 'user')
+      .leftJoin('class_students.class', 'class')
+      .leftJoin('class.subject', 'subject')
+      .leftJoin('class.scholastic', 'scholastic')
       .where('class_students.class_id = :class_id', { class_id })
 
     if (full_name) {
@@ -563,6 +574,20 @@ export class ClassService {
       deanery: classStudent.student.user.deanery,
       diocese: classStudent.student.user.diocese,
       congregation: classStudent.student.user.congregation,
+      class: {
+        id: classStudent.class?.id,
+        name: classStudent.class?.name,
+        code: classStudent.class?.code,
+      },
+      subject: {
+        id: classStudent.class?.subject?.id,
+        name: classStudent.class?.subject?.name,
+        code: classStudent.class?.subject?.code,
+      },
+      scholastic: {
+        id: classStudent.class?.scholastic?.id,
+        name: classStudent.class?.scholastic?.name,
+      },
     }))
     return { data: formattedStudents, meta }
   }
