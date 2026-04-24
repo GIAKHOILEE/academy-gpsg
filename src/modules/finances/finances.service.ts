@@ -110,11 +110,11 @@ export class FinancesService {
 
     // "Historically older" means strictly before this record's trading_day, or same day but smaller ID.
     openingQb.andWhere(
-      new Brackets((qb) => {
-        qb.where('finances.trading_day < :tDay', { tDay: oldestOnPage.trading_day }).orWhere(
-          'finances.trading_day = :tDay AND finances.id < :tId',
-          { tDay: oldestOnPage.trading_day, tId: oldestOnPage.id },
-        )
+      new Brackets(qb => {
+        qb.where('finances.trading_day < :tDay', { tDay: oldestOnPage.trading_day }).orWhere('finances.trading_day = :tDay AND finances.id < :tId', {
+          tDay: oldestOnPage.trading_day,
+          tId: oldestOnPage.id,
+        })
       }),
     )
 

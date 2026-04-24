@@ -130,7 +130,8 @@ export class QuestionsStatisticsService {
       .where('a.class_id = :cId', { cId })
       .andWhere('a.question_id IN (:...targetQuestionIds)', { targetQuestionIds })
       .andWhere('a.answer_single_choice IS NOT NULL')
-      .groupBy('a.question_id').addGroupBy('a.answer_single_choice')
+      .groupBy('a.question_id')
+      .addGroupBy('a.answer_single_choice')
     const rawSingle = await qSingle.getRawMany()
 
     // Multiple Choice
@@ -154,7 +155,8 @@ export class QuestionsStatisticsService {
       .where('a.class_id = :cId', { cId })
       .andWhere('a.question_id IN (:...targetQuestionIds)', { targetQuestionIds })
       .andWhere('a.answer_number IS NOT NULL')
-      .groupBy('a.question_id').addGroupBy('a.answer_number')
+      .groupBy('a.question_id')
+      .addGroupBy('a.answer_number')
     const rawNumber = await qNumber.getRawMany()
 
     // Text

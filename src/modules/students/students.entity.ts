@@ -6,6 +6,7 @@ import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { Answers } from '@modules/evaluation/answers/answers.entity'
 import { IFile } from '@common/file'
 import { StudentCardStatus } from '@enums/user.enum'
+import { Certificates } from '@modules/certificates/certificates.entity'
 
 @Entity({ name: 'students' })
 export class Student {
@@ -65,6 +66,9 @@ export class Student {
 
   @OneToMany(() => Answers, answers => answers.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   answers: Answers[]
+
+  @OneToMany(() => Certificates, certificates => certificates.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  certificates: Certificates[]
 
   @CreateDateColumn()
   created_at: Date

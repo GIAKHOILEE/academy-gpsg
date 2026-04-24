@@ -58,7 +58,7 @@ export class StudentsService {
 
       const hashedPassword = await hashPassword(password ?? code)
       const first_name = full_name.split(' ')[0]
-      const new_birth_date = !birth_date || birth_date === "" ? "1970-01-01" : formatStringToDate(birth_date)
+      const new_birth_date = !birth_date || birth_date === '' ? '1970-01-01' : formatStringToDate(birth_date)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
         role: Role.STUDENT,
@@ -481,11 +481,12 @@ export class StudentsService {
     }
   }
 
-  
   async searchStudentClassCertificate(searchStudentClassCertificateDto: SearchStudentClassCertificateDto) {
-    const { full_name, birth_date } = searchStudentClassCertificateDto
+    const { full_name, birth_date, class_id } = searchStudentClassCertificateDto
     const dateObj = formatStringToDate(birth_date)
-    const birthDateQuery = dateObj ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}` : birth_date
+    const birthDateQuery = dateObj
+      ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
+      : birth_date
 
     const queryBuilder = this.dataSource
       .getRepository(ClassStudents)
@@ -509,6 +510,10 @@ export class StudentsService {
         'class.closing_day as closing_day',
         'cs.score as score',
       ])
+
+    if (class_id) {
+      queryBuilder.andWhere('class.id = :class_id', { class_id })
+    }
 
     const result = await queryBuilder.getRawMany()
 

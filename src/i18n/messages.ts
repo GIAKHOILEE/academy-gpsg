@@ -153,6 +153,7 @@ export const messages = {
     DISCUSS_JUST_ONE_PER_LESSON: 'Just one comment per lesson',
     OPTIONS_NOT_ALLOWED_FOR_TEXT: 'Options not allowed for text',
     OPTIONS_NOT_ALLOWED_FOR_NUMBER: 'Options not allowed for number',
+    CERTIFICATES_NOT_FOUND: 'Certificates not found',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -311,5 +312,6 @@ export const messages = {
     DISCUSS_JUST_ONE_PER_LESSON: 'Chỉ được tạo 1 bình luận cho buổi học',
     OPTIONS_NOT_ALLOWED_FOR_TEXT: 'Options không được phép cho loại text',
     OPTIONS_NOT_ALLOWED_FOR_NUMBER: 'Options không được phép cho loại number',
+    CERTIFICATES_NOT_FOUND: 'Chứng chỉ không tồn tại',
   },
 }

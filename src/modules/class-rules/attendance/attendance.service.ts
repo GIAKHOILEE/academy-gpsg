@@ -57,7 +57,10 @@ export class AttendanceService {
     const existed = await this.attendanceRepository.findOne({
       where: { class_student_id: classStudent.id, attendance_date: todayStr },
     })
-    if (existed) throwAppException('ATTENDANCE_ALREADY_MARKED', ErrorCode.ATTENDANCE_ALREADY_MARKED, HttpStatus.BAD_REQUEST, { student: { avatar: student?.user?.avatar }})
+    if (existed)
+      throwAppException('ATTENDANCE_ALREADY_MARKED', ErrorCode.ATTENDANCE_ALREADY_MARKED, HttpStatus.BAD_REQUEST, {
+        student: { avatar: student?.user?.avatar },
+      })
 
     // 5. Lấy rule của buổi hôm nay
     const rule = await this.attendanceRuleRepository.findOne({

@@ -59,6 +59,7 @@ import { DiscussModule } from '@modules/_online-feature/discuss/discuss.module'
 import { HomeworkModule } from '@modules/_online-feature/homeworks/homeworks.module'
 import { ConsultModule } from '@modules/consult/consult.module'
 import { ClassNotificationsModule } from '@modules/class/notifications/notifications.module'
+import { Certificates } from '@modules/certificates/certificates.entity'
 
 @Module({
   imports: [
@@ -117,6 +118,7 @@ import { ClassNotificationsModule } from '@modules/class/notifications/notificat
     LessonModule,
     DiscussModule,
     HomeworkModule,
+    Certificates,
   ],
   providers: [
     AppService,

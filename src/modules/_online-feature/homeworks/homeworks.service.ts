@@ -186,7 +186,7 @@ export class HomeworkService {
     let remainingTime = null
     if (progress.time_limit && progress.time_limit > 0) {
       const now = new Date().getTime()
-      // Cộng thêm 7 tiếng (7 * 60 * 60 * 1000 ms) để bù đắp việc DB lưu giờ UTC+0 
+      // Cộng thêm 7 tiếng (7 * 60 * 60 * 1000 ms) để bù đắp việc DB lưu giờ UTC+0
       // nhưng TypeORM đọc lên có thể bị hiểu nhầm là múi giờ Local
       const start = progress.start_time.getTime() + 7 * 60 * 60 * 1000
       const elapsedSeconds = (now - start) / 1000
@@ -427,7 +427,6 @@ export class HomeworkService {
       }
       studentId = student.id
     }
-
 
     const { lesson_id, ...rest } = paginateHomeworksDto
     const queryBuilder = this.hwRepo
