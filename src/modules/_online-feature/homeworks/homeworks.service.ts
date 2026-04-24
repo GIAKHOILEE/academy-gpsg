@@ -417,7 +417,18 @@ export class HomeworkService {
     }
   }
 
-  async getManyHomeworks(paginateHomeworksDto: PaginateHomeworksDto) {
+  async getManyHomeworks(paginateHomeworksDto: PaginateHomeworksDto, userId?: number) {
+    // nếu có userId thì tìm student/ mục đích xem student đã submit bài chưa
+    let studentId = null
+    if (userId) {
+      const student = await this.studentRepo.findOne({ where: { user: { id: userId } } })
+      if (!student) {
+        throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+      studentId = student.id
+    }
+
+
     const { lesson_id, ...rest } = paginateHomeworksDto
     const queryBuilder = this.hwRepo
       .createQueryBuilder('homework')
@@ -461,6 +472,25 @@ export class HomeworkService {
 
     const { data, meta } = await paginate(queryBuilder, rest)
 
+    let submittedHomeworkIds: number[] = []
+    if (studentId && data.length > 0) {
+      const homeworkIds = data.map(h => h.id)
+      const submissions = await this.submissionRepo.find({
+        where: {
+          student: { id: studentId },
+          homework: { id: In(homeworkIds) },
+        },
+        select: {
+          id: true,
+          homework: {
+            id: true,
+          },
+        },
+        relations: ['homework'],
+      })
+      submittedHomeworkIds = submissions.map(s => s.homework.id)
+    }
+
     const formattedHomeworks: IHomework[] = data.map(homework => {
       return {
         id: homework.id,
@@ -472,6 +502,7 @@ export class HomeworkService {
         time_limit: homework.time_limit,
         // is_active: homework.is_active,
         is_final: homework.is_final,
+        is_submit: submittedHomeworkIds.includes(homework.id),
         lesson: {
           id: homework.lesson.id,
           title: homework.lesson.title,

@@ -15,6 +15,7 @@ export interface IHomework {
   submissions?: IHomeworkSubmission[]
   lesson_id?: number
   lesson?: ILesson
+  is_submit?: boolean
 }
 
 export interface IHomeworkQuestion {

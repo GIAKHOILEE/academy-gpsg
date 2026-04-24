@@ -164,8 +164,8 @@ export class StudentHomeworkController {
   constructor(private readonly homeworkService: HomeworkService) {}
   @Get()
   @ApiOperation({ summary: 'Get many homeworks' })
-  async getManyHomeworks(@Query() paginateHomeworksDto: PaginateHomeworksDto): Promise<ResponseDto> {
-    const homeworks = await this.homeworkService.getManyHomeworks(paginateHomeworksDto)
+  async getManyHomeworks(@Query() paginateHomeworksDto: PaginateHomeworksDto, @Req() req): Promise<ResponseDto> {
+    const homeworks = await this.homeworkService.getManyHomeworks(paginateHomeworksDto, req.user.userId)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORKS_FETCHED_SUCCESSFULLY',
