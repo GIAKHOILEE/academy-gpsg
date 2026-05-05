@@ -136,7 +136,7 @@ export class QuestionsStatisticsService {
 
     // Multiple Choice
     const placeholders = targetQuestionIds.map(() => '?').join(',')
-    let mcQuery = `
+    const mcQuery = `
       SELECT a.question_id as question_id, jt.value as value, COUNT(*) as total
       FROM answers a,
       JSON_TABLE(a.answer_multiple_choice, '$[*]' COLUMNS (value INT PATH '$')) as jt

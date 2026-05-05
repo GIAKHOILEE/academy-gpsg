@@ -3,7 +3,7 @@ import { ClassStatus } from '@enums/class.enum'
 import { Gender } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { StudentCardStatus } from '@enums/user.enum'
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 

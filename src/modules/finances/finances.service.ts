@@ -9,7 +9,7 @@ import { PaginateFinancesDto } from './dtos/paginate-finances.dto'
 import { formatStringDate, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { Brackets, SelectQueryBuilder } from 'typeorm'
+import { Brackets } from 'typeorm'
 
 @Injectable()
 export class FinancesService {

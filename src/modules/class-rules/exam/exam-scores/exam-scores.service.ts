@@ -12,9 +12,6 @@ import { ErrorCode } from '@enums/error-codes.enum'
 import { UpdateClassStudentScoreDto } from './dtos/update-class-student-score.dto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { paginate } from '@common/pagination'
-import { Homeworks } from '@modules/_online-feature/homeworks/entities/homeworks.entity'
-import { HomeworkSubmission } from '@modules/_online-feature/homeworks/entities/submission.entity'
-import { Lesson } from '@modules/_online-feature/lesson/lesson.entity'
 @Injectable()
 export class ExamScoreService {
   constructor(private dataSource: DataSource) {}

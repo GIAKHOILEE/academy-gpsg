@@ -58,25 +58,25 @@ export class AdminCertificatesController {
 
 @Controller('certificates')
 export class CertificatesController {
-    constructor(private readonly certificatesService: CertificatesService) {}
+  constructor(private readonly certificatesService: CertificatesService) {}
 
-    @Get()
-    async findAll(@Query() dto: PaginateCertificatesDto):Promise<any> {
-        const data = await this.certificatesService.findAll(dto);
-        return new ResponseDto({
-              statusCode: HttpStatus.OK,
-              messageCode: 'CERTIFICATES_FETCHED_SUCCESSFULLY',
-              data: data,
-            })
-    }
+  @Get()
+  async findAll(@Query() dto: PaginateCertificatesDto): Promise<any> {
+    const data = await this.certificatesService.findAll(dto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'CERTIFICATES_FETCHED_SUCCESSFULLY',
+      data: data,
+    })
+  }
 
-    @Get(':id')
-    async findOne(@Param('id') id: number): Promise<ResponseDto> {
-        const certificate = await this.certificatesService.findOne(id)
-        return new ResponseDto({
-            statusCode: HttpStatus.OK,
-            messageCode: 'CERTIFICATE_FETCHED_SUCCESSFULLY',
-            data: certificate,
-        })
-    }
+  @Get(':id')
+  async findOne(@Param('id') id: number): Promise<ResponseDto> {
+    const certificate = await this.certificatesService.findOne(id)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'CERTIFICATE_FETCHED_SUCCESSFULLY',
+      data: certificate,
+    })
+  }
 }
