@@ -482,7 +482,7 @@ export class StudentsService {
   }
 
   async searchStudentClassCertificate(searchStudentClassCertificateDto: SearchStudentClassCertificateDto) {
-    const { full_name, birth_date, class_id } = searchStudentClassCertificateDto
+    const { full_name, birth_date, class_id, user_id } = searchStudentClassCertificateDto
     const dateObj = formatStringToDate(birth_date)
     const birthDateQuery = dateObj
       ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
@@ -494,13 +494,14 @@ export class StudentsService {
       .innerJoin('cs.student', 'student')
       .innerJoin('student.user', 'user')
       .innerJoin('cs.class', 'class')
-      .where('user.full_name = :full_name', { full_name })
-      .andWhere('user.birth_date = :birth_date', { birth_date: birthDateQuery })
+      .innerJoin('class.scholastic', 'scholastic')
+      .innerJoin('class.subject', 'subject')
       .select([
         'user.id as user_id',
         'user.saint_name as saint_name',
         'user.full_name as full_name',
         'user.birth_date as birth_date',
+        'user.birth_place as birth_place',
         'user.code as code',
         'student.id as student_id',
         'student.card_code as card_code',
@@ -509,7 +510,29 @@ export class StudentsService {
         'class.opening_day as opening_day',
         'class.closing_day as closing_day',
         'cs.score as score',
+        'cs.updated_at as updated_at',
+        'subject.id as subject_id',
+        'subject.name as subject_name',
+        'subject.code as subject_code',
+        'scholastic.id as scholastic_id',
+        'scholastic.name as scholastic_name',
       ])
+
+    if (class_id) {
+      queryBuilder.andWhere('class.id = :class_id', { class_id })
+    }
+
+    if (user_id) {
+      queryBuilder.andWhere('user.id = :user_id', { user_id })
+    }
+
+    if (full_name) {
+      queryBuilder.andWhere('user.full_name = :full_name', { full_name })
+    }
+
+    if (birth_date) {
+      queryBuilder.andWhere('user.birth_date = :birth_date', { birth_date: birthDateQuery })
+    }
 
     if (class_id) {
       queryBuilder.andWhere('class.id = :class_id', { class_id })
@@ -523,6 +546,7 @@ export class StudentsService {
         saint_name: item.saint_name,
         full_name: item.full_name,
         birth_date: formatStringDate(item.birth_date.toISOString(), true),
+        birth_place: item.birth_place,
         code: item.code,
         card_code: item.card_code,
         class_id: item.class_id,
@@ -530,6 +554,12 @@ export class StudentsService {
         opening_day: formatStringDate(item.opening_day, true),
         closing_day: formatStringDate(item.closing_day, true),
         score: item.score,
+        date_of_issue: formatStringDate(item.updated_at.toISOString(), true),
+        subject_id: item.subject_id,
+        subject_name: item.subject_name,
+        subject_code: item.subject_code,
+        scholastic_id: item.scholastic_id,
+        scholastic_name: item.scholastic_name,
       }
     })
     return formatResult
