@@ -57,6 +57,7 @@ export class CertificatesService {
         content: item.content,
         student: {
           id: item.student.id,
+          saint_name: item.student.user.saint_name,
           full_name: item.student.user.full_name,
           birth_date: item.student.user.birth_date,
         },
