@@ -140,3 +140,20 @@ export class AdminQuestionsStatisticsController {
     })
   }
 }
+
+@ApiTags('User Questions Statistics')
+@Controller('evaluation/questions/statistics')
+export class UserQuestionsStatisticsController {
+  constructor(private readonly questionsStatisticsService: QuestionsStatisticsService) {}
+
+  @Get()
+  async statisticQuestion(@Query() paginateQuestionsStatisticsDto: PaginateQuestionsStatisticsDto): Promise<ResponseDto> {
+    const result = await this.questionsStatisticsService.statisticQuestion(paginateQuestionsStatisticsDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'QUESTIONS_STATISTICS_FETCHED_SUCCESSFULLY',
+      data: result.data,
+      meta: result.meta,
+    })
+  }
+}
