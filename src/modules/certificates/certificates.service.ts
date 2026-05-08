@@ -52,6 +52,9 @@ export class CertificatesService {
         code: item.code,
         image_url: item.image_url,
         student_id: item.student_id,
+        date_of_issue: item.date_of_issue,
+        link_url: item.link_url,
+        content: item.content,
         student: {
           id: item.student.id,
           full_name: item.student.user.full_name,
