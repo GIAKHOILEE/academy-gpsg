@@ -136,7 +136,6 @@ export class TeachersService {
 
     try {
       const {
-        code,
         other_name,
         degree,
         specialized,
@@ -153,7 +152,7 @@ export class TeachersService {
         bank_branch,
         ...userData
       } = updateTeacherDto
-      const { email, full_name, password, birth_date, ...rest } = userData
+      const { email, full_name, password, birth_date, code, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)

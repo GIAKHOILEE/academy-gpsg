@@ -143,7 +143,7 @@ export class StudentsService {
 
     const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, card_status, ...userData } =
       updateStudentDto
-    const { email, full_name, password, birth_date, ...rest } = userData
+    const { email, full_name, password, birth_date, code, ...rest } = userData
 
     try {
       const studentRepo = queryRunner.manager.getRepository(Student)
@@ -156,6 +156,17 @@ export class StudentsService {
       const user = await userRepo.findOne({ where: { id: student.user_id } })
       if (!user) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
+      if(code){
+        const existingUser = await userRepo
+          .createQueryBuilder('users')
+          .where('users.code = :code', { code })
+          .andWhere('users.id != :id', { id: user.id })
+          .getOne()
+        if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        // cập nhật mật khẩu trùng với code
+        const hashedPassword = await hashPassword(code)
+        user.password = hashedPassword
+      }
       const isAvatarUpdated = (rest.avatar && rest.avatar !== user.avatar) || (image_4x6 && image_4x6 !== student.image_4x6)
 
       // // Check duplicate email

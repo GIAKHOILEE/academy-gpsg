@@ -437,14 +437,16 @@ export class EnrollmentsService {
             const fullName = enrollment.full_name || ''
             const mailContent = `Xin chào ${saintName}${fullName},<br><br>Học viện Mục vụ xin gửi video hướng dẫn sử dụng hệ thống học trực tuyến, xin học viên tham khảo kỹ để có một quá trình học tập thuận lợi nhất.<br><br>https://youtu.be/J_h32_gDSBE?si=-yo_sKlUyRq4O0Db<br><br>Mọi thắc mắc xin liên hệ lại với học viện qua bất kỳ hình thức liên lạc nào thuận tiện để được hỗ trợ.<br><br>Xin chân thành cảm ơn!`
 
-            this.emailService.sendMail(
-              [{ email: enrollment.email, name: enrollment.full_name }],
-              'Hướng dẫn sử dụng hệ thống học trực tuyến',
-              '',
-              null,
-              undefined,
-              mailContent,
-            ).catch(err => console.error('Email instruction job failed:', err))
+            this.emailService
+              .sendMail(
+                [{ email: enrollment.email, name: enrollment.full_name }],
+                'Hướng dẫn sử dụng hệ thống học trực tuyến',
+                '',
+                null,
+                undefined,
+                mailContent,
+              )
+              .catch(err => console.error('Email instruction job failed:', err))
           })
         }
       }
