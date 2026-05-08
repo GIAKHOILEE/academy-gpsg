@@ -503,11 +503,13 @@ export class EnrollmentsService {
         // Trường hợp : tạo mới user nếu chưa tồn tại
         if (!user) {
           isNewUser = true
+          const first_name = rest.full_name ? rest.full_name.split(' ')[0] : undefined
           user = userRepo.create({
             code: student_code,
             password: await hashPassword(student_code),
             role: Role.STUDENT,
             status: UserStatus.ACTIVE,
+            first_name,
             ...rest,
           })
           user = await userRepo.save(user)
@@ -793,11 +795,13 @@ export class EnrollmentsService {
         if (!user) {
           isNewUser = true
           isNewUserCreated = true
+          const first_name = rest.full_name ? rest.full_name.split(' ')[0] : undefined
           user = userRepo.create({
             code: student_code,
             password: await hashPassword(student_code),
             role: Role.STUDENT,
             status: UserStatus.ACTIVE,
+            first_name,
             ...rest,
           })
           user = await userRepo.save(user)
