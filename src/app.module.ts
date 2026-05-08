@@ -60,6 +60,7 @@ import { HomeworkModule } from '@modules/_online-feature/homeworks/homeworks.mod
 import { ConsultModule } from '@modules/consult/consult.module'
 import { ClassNotificationsModule } from '@modules/class/notifications/notifications.module'
 import { Certificates } from '@modules/certificates/certificates.entity'
+import { CertificatesModule } from '@modules/certificates/certificates.module'
 
 @Module({
   imports: [
@@ -118,7 +119,7 @@ import { Certificates } from '@modules/certificates/certificates.entity'
     LessonModule,
     DiscussModule,
     HomeworkModule,
-    Certificates,
+    CertificatesModule,
   ],
   providers: [
     AppService,
