@@ -12,10 +12,11 @@ import { HttpModule } from '@nestjs/axios'
 import { Voucher } from '@modules/voucher/voucher.entity'
 import { Footer } from '@modules/footer/footer.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
+import { LibrarySyncService } from '@services/library-sync/library-sync.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Enrollments, Student, Classes, User, Voucher, Footer, ClassStudents]), ScheduleModule.forRoot(), HttpModule],
   controllers: [AdminEnrollmentsController, EnrollmentsController],
-  providers: [EnrollmentsService, BrevoMailerService],
+  providers: [EnrollmentsService, BrevoMailerService, LibrarySyncService],
 })
 export class EnrollmentsModule {}

@@ -23,6 +23,7 @@ import { HttpStatus, Injectable } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectRepository } from '@nestjs/typeorm'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
+import { LibrarySyncService } from '@services/library-sync/library-sync.service'
 import * as fs from 'fs'
 import * as path from 'path'
 import { DataSource, In, Repository } from 'typeorm'
@@ -66,6 +67,7 @@ export class EnrollmentsService {
     private readonly footerRepository: Repository<Footer>,
     @InjectRepository(ClassStudents)
     private readonly classStudentsRepository: Repository<ClassStudents>,
+    private readonly librarySyncService: LibrarySyncService,
   ) {}
 
   async createEnrollmentV2(createEnrollmentDto: CreateEnrollmentsDto, isLogged: boolean, userId?: number): Promise<IEnrollments> {
@@ -737,6 +739,9 @@ export class EnrollmentsService {
       const classStudentsRepo = queryRunner.manager.getRepository(ClassStudents)
       const voucherRepo = queryRunner.manager.getRepository(Voucher)
 
+      let isNewUserCreated = false
+      let newUserObj: User | null = null
+
       // 1. PHỤC HỒI ĐƠN VÀ LẤY THÔNG TIN HIỆN TẠI
       // Nếu đơn bị xóa mềm, phục hồi lại trước khi cập nhật
       await enrollmentsRepo.update(id, { deleted_at: null })
@@ -787,6 +792,7 @@ export class EnrollmentsService {
         // Nếu mã học viên chưa tồn tại trong hệ thống User -> Tạo mới
         if (!user) {
           isNewUser = true
+          isNewUserCreated = true
           user = userRepo.create({
             code: student_code,
             password: await hashPassword(student_code),
@@ -795,6 +801,7 @@ export class EnrollmentsService {
             ...rest,
           })
           user = await userRepo.save(user)
+          newUserObj = user
         }
 
         // Đảm bảo User có thực thể Student tương ứng
@@ -947,6 +954,23 @@ export class EnrollmentsService {
       }
 
       await queryRunner.commitTransaction()
+
+      if (isNewUserCreated && newUserObj) {
+        // Đồng bộ học viên sang hệ thống thư viện
+        const birthDateToUse = rest.birth_date as any
+        const new_birth_date = !birthDateToUse || birthDateToUse === '' ? '1970-01-01' : formatStringToDate(birthDateToUse)
+        this.librarySyncService.syncStudentToLibrary({
+          full_name: newUserObj.full_name,
+          code: newUserObj.code,
+          saint_name: newUserObj.saint_name || null,
+          password: student_code,
+          email: newUserObj.email || null,
+          birth_date: new_birth_date as any,
+          phone: newUserObj.phone_number || null,
+          address: newUserObj.address || null,
+          avatar: newUserObj.avatar || null,
+        })
+      }
     } catch (error) {
       await queryRunner.rollbackTransaction()
       throw error
