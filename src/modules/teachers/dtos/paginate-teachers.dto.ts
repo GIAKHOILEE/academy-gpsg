@@ -13,6 +13,11 @@ export class PaginateTeachersDto extends PaginationDto {
   full_name?: string
 
   @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Mã thẻ giảng viên' })
+  card_code?: string
+
+  @IsOptional()
   @IsEnum(Gender)
   @ApiPropertyOptional({ description: 'Giới tính:: 0: other, 1: male, 2: female', enum: Gender })
   @Type(() => Number)

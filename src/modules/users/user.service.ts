@@ -149,7 +149,7 @@ export class UserService {
   }
 
   async updateUser(userId: number, updateUserDto: UpdateUserDto): Promise<void> {
-    const { username, full_name, ...dto } = updateUserDto
+    const { username, full_name, code, ...dto } = updateUserDto
     const user = await this.usersRepository.findOne({ where: { id: userId } })
     if (!user) {
       throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -161,13 +161,28 @@ export class UserService {
         .andWhere('users.id != :userId', { userId })
         .getOne()
       if (existingUser) {
-        throw new ConflictException('Username already exists')
+        throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
       user.username = username
     }
     if (full_name) {
       user.full_name = full_name
       user.first_name = full_name.split(' ')[0]
+    }
+
+    if (code) {
+      const existingUser = await this.usersRepository
+        .createQueryBuilder('users')
+        .where('users.code = :code', { code })
+        .andWhere('users.id != :userId', { userId })
+        .getOne()
+      if (existingUser) {
+        throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
+      }
+      user.code = code
+      // cập nhật mật khẩu trùng với code
+      const hashedPassword = await hashPassword(code)
+      user.password = hashedPassword
     }
     Object.assign(user, dto)
     await this.usersRepository.save(user)

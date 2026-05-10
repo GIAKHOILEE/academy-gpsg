@@ -52,12 +52,21 @@ export class DepartmentService {
   }
 
   async getAll(pagination: PaginateDepartmentDto, isAdmin: boolean): Promise<{ data: IDepartment[]; meta: PaginationMeta }> {
+    const { is_register, ...rest } = pagination
     const query = this.departmentRepository.createQueryBuilder('department')
     if (!isAdmin) {
-      query.where('department.is_active = :isActive', { isActive: true })
+      query.andWhere('department.is_active = :isActive', { isActive: true })
     }
 
-    const { data, meta } = await paginate(query, pagination)
+    // nếu có is_register thì filter class đang mở đăng kí
+    if (is_register === 'true') {
+      const today = new Date().toISOString().split('T')[0]
+      query.innerJoin('department.subjects', 'subject')
+      query.innerJoin('subject.classes', 'classes')
+      query.andWhere('classes.end_enrollment_day >= :today', { today })
+    }
+
+    const { data, meta } = await paginate(query, rest)
 
     const formattedData: IDepartment[] = data.map((department: Department) => ({
       id: department.id,

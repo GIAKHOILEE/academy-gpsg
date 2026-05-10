@@ -5,6 +5,11 @@ import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validat
 export class UpdateUserDto {
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Mã code', example: '2026-0001' })
+  code?: string
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Tên đầy đủ', example: 'John Doe' })
   full_name?: string
 
@@ -87,6 +92,11 @@ export class UpdatePasswordDto {
 }
 
 export class UpdateUserDtoV2 {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Mã code', example: '2026-0001' })
+  code?: string
+
   @ApiPropertyOptional({ description: 'Mật khẩu' })
   @IsString()
   @IsOptional()

@@ -32,17 +32,23 @@ export class CertificatesService {
 
   async findAll(dto: PaginateCertificatesDto): Promise<any> {
     const { full_name, birth_date } = dto
-    const dateObj = formatStringToDate(birth_date)
-    const birthDateQuery = dateObj
-      ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
-      : birth_date
 
     const queryBuilder = this.certificatesRepository
       .createQueryBuilder('certificates')
       .leftJoinAndSelect('certificates.student', 'student')
       .leftJoinAndSelect('student.user', 'user')
-      .where('user.full_name = :full_name', { full_name })
-      .andWhere('user.birth_date = :birth_date', { birth_date: birthDateQuery })
+
+    if (full_name) {
+      queryBuilder.andWhere('user.full_name = :full_name', { full_name })
+    }
+
+    if (birth_date) {
+      const dateObj = formatStringToDate(birth_date)
+      const birthDateQuery = dateObj
+        ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
+        : birth_date
+      queryBuilder.andWhere('user.birth_date = :birth_date', { birth_date: birthDateQuery })
+    }
 
     const data = await queryBuilder.getMany()
 
@@ -52,8 +58,12 @@ export class CertificatesService {
         code: item.code,
         image_url: item.image_url,
         student_id: item.student_id,
+        date_of_issue: item.date_of_issue,
+        link_url: item.link_url,
+        content: item.content,
         student: {
           id: item.student.id,
+          saint_name: item.student.user.saint_name,
           full_name: item.student.user.full_name,
           birth_date: item.student.user.birth_date,
         },

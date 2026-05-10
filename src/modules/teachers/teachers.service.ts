@@ -38,6 +38,7 @@ export class TeachersService {
     try {
       const {
         other_name,
+        card_code,
         degree,
         specialized,
         professional_certificate,
@@ -93,6 +94,7 @@ export class TeachersService {
 
       const teacher = queryRunner.manager.getRepository(Teacher).create({
         user_id: user.id,
+        card_code,
         other_name,
         degree,
         specialized,
@@ -136,8 +138,8 @@ export class TeachersService {
 
     try {
       const {
-        code,
         other_name,
+        card_code,
         degree,
         specialized,
         professional_certificate,
@@ -153,7 +155,7 @@ export class TeachersService {
         bank_branch,
         ...userData
       } = updateTeacherDto
-      const { email, full_name, password, birth_date, ...rest } = userData
+      const { email, full_name, password, birth_date, code, ...rest } = userData
 
       const teacher = await queryRunner.manager.getRepository(Teacher).findOne({ where: { id } })
       if (!teacher) throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -209,6 +211,7 @@ export class TeachersService {
 
       const updatedTeacher = queryRunner.manager.getRepository(Teacher).merge(teacher, {
         other_name: other_name,
+        card_code: card_code,
         degree: degree,
         specialized: specialized,
         professional_certificate: professional_certificate,
@@ -266,6 +269,7 @@ export class TeachersService {
     const formattedTeacher = {
       id: teacher.id,
       code: teacher.user.code,
+      card_code: teacher.card_code,
       full_name: teacher.user.full_name,
       first_name: teacher.user.first_name,
       email: teacher.user.email,
@@ -403,6 +407,7 @@ export class TeachersService {
     const formattedTeachers = data.map(teacher => ({
       id: teacher.id,
       code: teacher.user.code,
+      card_code: teacher.card_code,
       full_name: teacher.user.full_name,
       first_name: teacher.user.first_name,
       email: teacher.user.email,
@@ -518,6 +523,7 @@ export class TeachersService {
         ? {
             id: classEntity.teacher.id,
             code: classEntity.teacher.user.code,
+            card_code: classEntity.teacher.card_code,
             full_name: classEntity.teacher.user.full_name,
             saint_name: classEntity.teacher.user.saint_name,
             email: classEntity.teacher.user.email,

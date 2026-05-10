@@ -27,6 +27,7 @@ import { SuperAdminSeeder } from '@seeders/supperadmin.seeder'
 import { CloudinaryModule } from '@services/cloudinary/cloudinary.module'
 import { ClsModule } from 'nestjs-cls'
 import { AppService } from './app.service'
+import { AppController } from './app.controller'
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module'
 import { WitnessFaithModule } from './modules/witness-faiths/witness-faith.module'
 import { PostModule } from '@modules/post/post.module'
@@ -60,6 +61,7 @@ import { HomeworkModule } from '@modules/_online-feature/homeworks/homeworks.mod
 import { ConsultModule } from '@modules/consult/consult.module'
 import { ClassNotificationsModule } from '@modules/class/notifications/notifications.module'
 import { Certificates } from '@modules/certificates/certificates.entity'
+import { CertificatesModule } from '@modules/certificates/certificates.module'
 
 @Module({
   imports: [
@@ -118,8 +120,9 @@ import { Certificates } from '@modules/certificates/certificates.entity'
     LessonModule,
     DiscussModule,
     HomeworkModule,
-    Certificates,
+    CertificatesModule,
   ],
+  controllers: [AppController],
   providers: [
     AppService,
     SuperAdminSeeder,

@@ -143,7 +143,7 @@ export class StudentsService {
 
     const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, card_status, ...userData } =
       updateStudentDto
-    const { email, full_name, password, birth_date, ...rest } = userData
+    const { email, full_name, password, birth_date, code, ...rest } = userData
 
     try {
       const studentRepo = queryRunner.manager.getRepository(Student)
@@ -155,6 +155,20 @@ export class StudentsService {
 
       const user = await userRepo.findOne({ where: { id: student.user_id } })
       if (!user) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      if(code){
+        const existingUser = await userRepo
+          .createQueryBuilder('users')
+          .where('users.code = :code', { code })
+          .andWhere('users.id != :id', { id: user.id })
+          .getOne()
+        if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
+        // cập nhật mật khẩu trùng với code
+        const hashedPassword = await hashPassword(code)
+        user.password = hashedPassword
+        user.code = code
+      }
+      const isAvatarUpdated = (rest.avatar && rest.avatar !== user.avatar) || (image_4x6 && image_4x6 !== student.image_4x6)
 
       // // Check duplicate email
       // if (email) {
@@ -219,6 +233,24 @@ export class StudentsService {
         card_status: card_status ?? student.card_status,
       })
       await studentRepo.save(updatedStudent)
+
+      // gửi mail cho học viên nếu có thay đổi avatar
+      if (isAvatarUpdated && updatedUser.email) {
+        const avatarUrl = updatedUser.avatar || updatedStudent.image_4x6 || ''
+        const avatarHtml = avatarUrl ? `<br><br><img src="${avatarUrl}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />` : ''
+        const card_back_url = `https://res.cloudinary.com/dai7fok3c/image/upload/v1778406167/t3nmf7tsss9dikaleua4.png`
+        const cardBackHtml = `<br><br><img src="${card_back_url}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />`
+        const mailContent = `Xin chào ${updatedUser.saint_name ? updatedUser.saint_name + ' ' : ''}${updatedUser.full_name},<br><br>Học viện Mục vụ xin gửi thẻ học viên bản trực tuyến cho Anh/Chị. Nếu có nhu cầu lấy thẻ bản chính để sử dụng vui lòng đến trực tiếp Học viện Mục vụ hoặc liên hệ để yêu cầu chuyển phát về tận địa chỉ của Anh/Chị (học viên phải thanh toán chi phí in thẻ và vận chuyển).<br><br>Mọi thắc mắc xin liên hệ lại với học viện qua bất kỳ hình thức liên lạc nào thuận tiện để được hỗ trợ.<br><br>Xin chân thành cảm ơn! <br>${avatarHtml}${cardBackHtml}`
+
+        await this.emailService.sendMail(
+          [{ email: updatedUser.email, name: updatedUser.full_name }],
+          'Học viện Mục vụ - Thẻ học viên trực tuyến',
+          '',
+          null,
+          undefined,
+          mailContent,
+        )
+      }
 
       await queryRunner.commitTransaction()
 

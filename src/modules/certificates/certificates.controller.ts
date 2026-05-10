@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { CertificatesService } from './certificates.service'
 import { PaginateCertificatesDto } from './dtos/paginate-certificates.dto'
 import { ResponseDto } from '@common/response.dto'
 import { CreateCertificatesDto } from './dtos/create-certificates.dto'
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { UpdateCertificatesDto } from './dtos/update-certificates.dto'
 
 @ApiTags('Admin Certificates')
 @Controller('admin/certificates')
@@ -40,6 +41,18 @@ export class AdminCertificatesController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'CERTIFICATE_FETCHED_SUCCESSFULLY',
+      data: certificate,
+    })
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update a certificate' })
+  @ApiParam({ name: 'id', type: Number, description: 'Certificate id' })
+  async update(@Param('id') id: number, @Body() updateDto: UpdateCertificatesDto): Promise<ResponseDto> {
+    const certificate = await this.certificatesService.update(id, updateDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'CERTIFICATE_UPDATED_SUCCESSFULLY',
       data: certificate,
     })
   }

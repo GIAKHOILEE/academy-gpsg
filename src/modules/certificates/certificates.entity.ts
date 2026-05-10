@@ -9,6 +9,15 @@ export class Certificates {
   @Column({ nullable: true })
   code: string
 
+  @Column({ nullable: true })
+  date_of_issue: string
+
+  @Column({ nullable: true })
+  content: string
+
+  @Column({ nullable: true })
+  link_url: string
+
   @Column({ type: 'text', nullable: true })
   image_url: string
 
