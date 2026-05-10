@@ -166,6 +166,7 @@ export class StudentsService {
         // cập nhật mật khẩu trùng với code
         const hashedPassword = await hashPassword(code)
         user.password = hashedPassword
+        user.code = code
       }
       const isAvatarUpdated = (rest.avatar && rest.avatar !== user.avatar) || (image_4x6 && image_4x6 !== student.image_4x6)
 
