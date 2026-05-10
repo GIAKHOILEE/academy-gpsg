@@ -32,17 +32,23 @@ export class CertificatesService {
 
   async findAll(dto: PaginateCertificatesDto): Promise<any> {
     const { full_name, birth_date } = dto
-    const dateObj = formatStringToDate(birth_date)
-    const birthDateQuery = dateObj
-      ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
-      : birth_date
 
     const queryBuilder = this.certificatesRepository
       .createQueryBuilder('certificates')
       .leftJoinAndSelect('certificates.student', 'student')
       .leftJoinAndSelect('student.user', 'user')
-      .where('user.full_name = :full_name', { full_name })
-      .andWhere('user.birth_date = :birth_date', { birth_date: birthDateQuery })
+
+    if (full_name) {
+      queryBuilder.andWhere('user.full_name = :full_name', { full_name })
+    }
+
+    if (birth_date) {
+      const dateObj = formatStringToDate(birth_date)
+      const birthDateQuery = dateObj
+        ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
+        : birth_date
+      queryBuilder.andWhere('user.birth_date = :birth_date', { birth_date: birthDateQuery })
+    }
 
     const data = await queryBuilder.getMany()
 
