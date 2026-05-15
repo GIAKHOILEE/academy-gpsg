@@ -142,7 +142,7 @@ export class AdminQuestionsStatisticsController {
 }
 
 @ApiTags('User Questions Statistics')
-@Controller('evaluation/questions/statistics')
+@Controller('user/evaluation/questions/statistics')
 export class UserQuestionsStatisticsController {
   constructor(private readonly questionsStatisticsService: QuestionsStatisticsService) {}
 

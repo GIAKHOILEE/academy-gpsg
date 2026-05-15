@@ -9,6 +9,7 @@ import {
   TeacherQuestionsController,
   UserQuestionsController,
   AdminQuestionsStatisticsController,
+  UserQuestionsStatisticsController,
 } from './questions/questions.controller'
 import { AdminAnswersController, TeacherAnswersController, UserAnswersController } from './answers/answers.controller'
 import { Student } from '@modules/students/students.entity'
@@ -18,6 +19,7 @@ import { Classes } from '@modules/class/class.entity'
   imports: [TypeOrmModule.forFeature([Questions, Answers, Student, Classes])],
   controllers: [
     AdminQuestionsStatisticsController,
+    UserQuestionsStatisticsController,
     AdminQuestionsController,
     UserQuestionsController,
     TeacherQuestionsController,

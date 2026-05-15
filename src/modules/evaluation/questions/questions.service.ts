@@ -99,6 +99,7 @@ export class QuestionsService {
 }
 
 // thống kê
+@Injectable()
 export class QuestionsStatisticsService {
   constructor(
     @InjectRepository(Questions)
