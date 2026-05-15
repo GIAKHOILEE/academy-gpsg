@@ -10,6 +10,7 @@ import {
   UserQuestionsController,
   AdminQuestionsStatisticsController,
   UserQuestionsStatisticsController,
+  TeacherQuestionsStatisticsController,
 } from './questions/questions.controller'
 import { AdminAnswersController, TeacherAnswersController, UserAnswersController } from './answers/answers.controller'
 import { Student } from '@modules/students/students.entity'
@@ -20,6 +21,7 @@ import { Classes } from '@modules/class/class.entity'
   controllers: [
     AdminQuestionsStatisticsController,
     UserQuestionsStatisticsController,
+    TeacherQuestionsStatisticsController,
     AdminQuestionsController,
     UserQuestionsController,
     TeacherQuestionsController,
