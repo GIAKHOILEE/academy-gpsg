@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Thông báo thảo luận</title>
+    <style>
+        body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .content { background: #f9f9f9; padding: 30px; border: 1px solid #eee; border-radius: 10px; }
+        .message-student { color: #8e44ad; font-style: italic; } /* Màu tím cho học viên */
+        .message-teacher { color: #c0392b; font-style: italic; } /* Màu đỏ cho giảng viên */
+        .footer { text-align: left; margin-top: 20px; font-size: 14px; color: #333; }
+        .btn { display: inline-block; padding: 12px 24px; background-color: #ac7229; color: white !important; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="content">
+        {{#if isStudentMessage}}
+            <p>Kinh thưa Thầy <strong>{{teacherName}}</strong>,</p>
+            <p>Học viên tên là <strong>{{studentName}}</strong> học lớp <strong>{{className}}</strong> vừa gửi một tin nhắn trao đổi cùng giảng viên tại <strong>{{lessonTitle}}</strong>. Nội dung là:</p>
+            
+            <p class="message-student">"{{content}}"</p>
+
+            <p>Kính xin giảng viên dành chút thời gian vào trả lời trực tiếp học viên này trong buổi học đó trên hệ thống học tập của Học viện Mục vụ hoặc phản hồi trực tiếp tại email này để học viện hỗ trợ giảng viên gửi đến học viên.</p>
+        {{else}}
+            <p>Xin chào <strong>{{studentName}}</strong>,</p>
+            <p>Tin nhắn trao đổi cùng giảng viên tại <strong>{{lessonTitle}}</strong> môn học <strong>{{className}}</strong> đã được giảng viên phản hồi. Nội dung phản hồi như sau:</p>
+            
+            <p class="message-student">"{{studentMessage}}"</p>
+
+            <p>Phản hồi của giảng viên:</p>
+            <p class="message-teacher">"{{teacherMessage}}"</p>
+
+            <p>Nếu mong muốn phản hồi lại cho giảng viên xin vui lòng trao đổi trực tiếp trên hệ thống học tập trực tuyến của học viện. Phản hồi lại email này sẽ không được hỗ trợ gửi tin nhắn đến cho giảng viên.</p>
+        {{/if}}
+
+        <div class="footer">
+            <p>Xin trân thành cảm ơn!</p>
+        </div>
+
+        {{#if link}}
+        <center>
+            <a href="{{link}}" class="btn">Xem chi tiết trên hệ thống</a>
+        </center>
+        {{/if}}
+    </div>
+</body>
+</html>

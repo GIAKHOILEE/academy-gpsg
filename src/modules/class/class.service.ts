@@ -401,6 +401,7 @@ export class ClassService {
     const today = new Date().toISOString().split('T')[0]
     if (is_register) {
       query.andWhere('classes.end_enrollment_day >= :today', { today })
+      query.andWhere('classes.registration_start_date <= :today', { today })
     }
     if (!is_admin) {
       query.andWhere('classes.is_active = :is_active', { is_active: true })

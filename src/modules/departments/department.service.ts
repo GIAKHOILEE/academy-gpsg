@@ -64,6 +64,7 @@ export class DepartmentService {
       query.innerJoin('department.subjects', 'subject')
       query.innerJoin('subject.classes', 'classes')
       query.andWhere('classes.end_enrollment_day >= :today', { today })
+      query.andWhere('classes.registration_start_date <= :today', { today })
     }
 
     const { data, meta } = await paginate(query, rest)
