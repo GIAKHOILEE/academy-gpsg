@@ -2,37 +2,46 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Thông báo thảo luận mới</title>
+    <title>Thông báo thảo luận</title>
     <style>
         body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #ac7229, #b28566); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background: #f9f9f9; padding: 30px; border: 1px solid #eee; border-radius: 0 0 10px 10px; }
-        .message-box { background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #ac7229; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #888; }
+        .content { background: #f9f9f9; padding: 30px; border: 1px solid #eee; border-radius: 10px; }
+        .message-student { color: #8e44ad; font-style: italic; } /* Màu tím cho học viên */
+        .message-teacher { color: #c0392b; font-style: italic; } /* Màu đỏ cho giảng viên */
+        .footer { text-align: left; margin-top: 20px; font-size: 14px; color: #333; }
         .btn { display: inline-block; padding: 12px 24px; background-color: #ac7229; color: white !important; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Thảo luận mới</h1>
-    </div>
     <div class="content">
-        <p>Chào <strong>{{receiverName}}</strong>,</p>
-        <p>Bạn có một thông báo mới từ thảo luận trong bài học <strong>{{lessonTitle}}</strong>.</p>
-        
-        <div class="message-box">
-            <p><strong>{{senderName}}</strong> đã nhắn:</p>
-            <p><em>"{{content}}"</em></p>
+        {{#if isStudentMessage}}
+            <p>Kinh thưa Thầy <strong>{{teacherName}}</strong>,</p>
+            <p>Học viên tên là <strong>{{studentName}}</strong> học lớp <strong>{{className}}</strong> vừa gửi một tin nhắn trao đổi cùng giảng viên tại <strong>{{lessonTitle}}</strong>. Nội dung là:</p>
+            
+            <p class="message-student">"{{content}}"</p>
+
+            <p>Kính xin giảng viên dành chút thời gian vào trả lời trực tiếp học viên này trong buổi học đó trên hệ thống học tập của Học viện Mục vụ hoặc phản hồi trực tiếp tại email này để học viện hỗ trợ giảng viên gửi đến học viên.</p>
+        {{else}}
+            <p>Xin chào <strong>{{studentName}}</strong>,</p>
+            <p>Tin nhắn trao đổi cùng giảng viên tại <strong>{{lessonTitle}}</strong> môn học <strong>{{className}}</strong> đã được giảng viên phản hồi. Nội dung phản hồi như sau:</p>
+            
+            <p class="message-student">"{{studentMessage}}"</p>
+
+            <p>Phản hồi của giảng viên:</p>
+            <p class="message-teacher">"{{teacherMessage}}"</p>
+
+            <p>Nếu mong muốn phản hồi lại cho giảng viên xin vui lòng trao đổi trực tiếp trên hệ thống học tập trực tuyến của học viện. Phản hồi lại email này sẽ không được hỗ trợ gửi tin nhắn đến cho giảng viên.</p>
+        {{/if}}
+
+        <div class="footer">
+            <p>Xin trân thành cảm ơn!</p>
         </div>
 
-        <p>Vui lòng đăng nhập vào hệ thống để xem chi tiết và phản hồi.</p>
-        
+        {{#if link}}
         <center>
-            <a href="{{link}}" class="btn">Xem thảo luận</a>
+            <a href="{{link}}" class="btn">Xem chi tiết trên hệ thống</a>
         </center>
-    </div>
-    <div class="footer">
-        <p>Đây là email tự động, vui lòng không trả lời email này.</p>
+        {{/if}}
     </div>
 </body>
 </html>

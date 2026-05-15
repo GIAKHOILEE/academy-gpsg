@@ -16,12 +16,21 @@ export class BrevoMailerService {
   private readonly apiUrl = process.env.BREVO_API_URL
   constructor(private readonly httpService: HttpService) {}
 
-  async sendMail(receivers: IReceiver[], subject: string, filePath: string, data: any, attachment?: Attachment, rawContent?: string) {
+  async sendMail(
+    receivers: IReceiver[],
+    subject: string,
+    filePath: string,
+    data: any,
+    attachment?: Attachment,
+    rawContent?: string,
+    options?: { apiKey?: string; senderEmail?: string; senderName?: string },
+  ) {
     console.log('sendMail', receivers, subject, filePath, data)
 
     try {
       const headers = {
         accept: 'application/json',
+        // 'api-key': options?.apiKey || process.env.BREVO_API_KEY,
         'api-key': process.env.BREVO_API_KEY,
         'content-type': 'application/json',
       }
@@ -37,8 +46,8 @@ export class BrevoMailerService {
 
       const emailData: any = {
         sender: {
-          name: process.env.SENDER_NAME,
-          email: process.env.SENDER_EMAIL,
+          name: options?.senderName || process.env.SENDER_NAME,
+          email: options?.senderEmail || process.env.SENDER_EMAIL,
         },
         to: receivers,
         subject: subject,
@@ -53,6 +62,7 @@ export class BrevoMailerService {
         ]
       }
 
+      console.log('Sending email with htmlContent length:', htmlContent.length)
       const response = await firstValueFrom(this.httpService.post(this.apiUrl, emailData, { headers }))
       console.log('Email sent successfully:', response.data)
     } catch (error) {

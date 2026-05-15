@@ -10,7 +10,7 @@ import { User } from '@modules/users/user.entity'
 import { IDiscuss } from './discuss.interface'
 import { PaginateChildDiscussDto, PaginateDiscussDto } from './dtos/paginate-discuss.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { Role } from '@enums/role.enum'
+import { Gender, Role } from '@enums/role.enum'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import { UpdateDiscussDto } from './dtos/update-discuss.dto'
 
@@ -264,7 +264,7 @@ export class DiscussService {
     try {
       const discuss = await this.discussRepository.findOne({
         where: { id: discussId },
-        relations: ['user', 'lesson', 'lesson.class', 'lesson.class.teacher', 'lesson.class.teacher.user'],
+        relations: ['user', 'lesson', 'lesson.class', 'lesson.class.teacher', 'lesson.class.teacher.user', 'lesson.class.subject'],
       })
 
       if (!discuss) return
@@ -272,34 +272,70 @@ export class DiscussService {
       const sender = discuss.user
       const isSenderStudent = sender.role === Role.STUDENT
       let recipient: User
+      let templateData: any = {}
+      let emailSubject = ''
+
+      const senderName = `${sender.saint_name ? sender.saint_name + ' ' : ''}${sender.full_name}`
+      const className = discuss.lesson?.class?.subject?.name || 'Lớp học'
+      const lessonTitle = discuss.lesson?.title || 'Buổi học'
 
       if (isSenderStudent) {
-        // Học viên gửi -> Thông báo cho giảng viên của lớp
+        // Case 1: Học viên nhắn cho giảng viên
         recipient = discuss.lesson?.class?.teacher?.user
+        if (recipient) {
+          const title = recipient.gender === Gender.FEMALE ? 'Cô' : 'Thầy'
+          const teacherName = `${title} ${recipient.saint_name ? recipient.saint_name + ' ' : ''}${recipient.full_name}`
+          emailSubject = `Thảo luận từ học viên ${senderName} - ${className}`
+          templateData = {
+            isStudentMessage: true,
+            teacherName: teacherName,
+            studentName: senderName,
+            className: className,
+            lessonTitle: lessonTitle,
+            content: discuss.content,
+          }
+        }
       } else {
-        // Giảng viên/Admin gửi -> Thông báo cho học viên chủ thread
-        const rootDiscussId = discuss.parent_id || discuss.id
-        const rootDiscuss = await this.discussRepository.findOne({
-          where: { id: rootDiscussId },
-          relations: ['user'],
-        })
-        if (rootDiscuss && rootDiscuss.user.id !== senderId) {
-          recipient = rootDiscuss.user
+        // Case 2: Giảng viên phản hồi cho học viên
+        const rootId = discuss.parent_id || discuss.id
+        const latestStudentMsg = await this.discussRepository
+          .createQueryBuilder('discuss')
+          .leftJoinAndSelect('discuss.user', 'user')
+          .where('(discuss.id = :rootId OR discuss.parent_id = :rootId)', { rootId })
+          .andWhere('user.role = :role', { role: Role.STUDENT })
+          .orderBy('discuss.created_at', 'DESC')
+          .getOne()
+
+        if (latestStudentMsg) {
+          recipient = latestStudentMsg.user
+          const studentName = `${recipient.saint_name ? recipient.saint_name + ' ' : ''}${recipient.full_name}`
+          emailSubject = `Phản hồi từ giảng viên - Môn ${className}`
+          templateData = {
+            isStudentMessage: false,
+            studentName: studentName,
+            className: className,
+            lessonTitle: lessonTitle,
+            studentMessage: latestStudentMsg.content,
+            teacherMessage: discuss.content,
+          }
         }
       }
 
       if (recipient && recipient.email) {
-        const link = `${process.env.FRONTEND_URL || 'https://academy.gpsg.org'}/online-class/${discuss.lesson.class.id}`
+        const link = `${process.env.FRONTEND_URL}/online-class/${discuss.lesson?.class?.id}`
+        templateData.link = link
+
         await this.brevoMailerService.sendMail(
           [{ email: recipient.email, name: recipient.full_name }],
-          `Thông báo thảo luận mới từ ${sender.full_name}`,
+          emailSubject,
           'discuss-notification',
+          templateData,
+          undefined,
+          undefined,
           {
-            receiverName: recipient.full_name,
-            senderName: sender.full_name,
-            lessonTitle: discuss.lesson.title,
-            content: discuss.content,
-            link: link,
+            apiKey: process.env.BREVO_API_KEY_DISCUSS,
+            senderEmail: process.env.SENDER_EMAIL_DISCUSS,
+            senderName: 'Học viện Mục vụ',
           },
         )
       }
