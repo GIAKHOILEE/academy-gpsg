@@ -11,6 +11,8 @@ import { IDiscuss } from './discuss.interface'
 import { PaginateChildDiscussDto, PaginateDiscussDto } from './dtos/paginate-discuss.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { Role } from '@enums/role.enum'
+import { BrevoMailerService } from '@services/brevo-mailer/email.service'
+import { UpdateDiscussDto } from './dtos/update-discuss.dto'
 
 @Injectable()
 export class DiscussService {
@@ -21,6 +23,7 @@ export class DiscussService {
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly brevoMailerService: BrevoMailerService,
   ) {}
 
   async createDiscuss(createDiscussDto: CreateDiscussDto, userId: number): Promise<IDiscuss> {
@@ -73,6 +76,10 @@ export class DiscussService {
       admin_responded: createDiscussDto.admin_responded,
     })
     const savedDiscuss = await this.discussRepository.save(discuss)
+
+    // Gửi mail thông báo
+    this.sendDiscussNotification(savedDiscuss.id, userId)
+
     return {
       id: savedDiscuss.id,
       content: savedDiscuss.content,
@@ -80,23 +87,26 @@ export class DiscussService {
     }
   }
 
-  // async updateDiscuss(id: number, updateDiscussDto: UpdateDiscussDto, userId: number): Promise<void> {
-  //   const { content } = updateDiscussDto
-  //   const existDiscuss = await this.discussRepository
-  //     .createQueryBuilder('discuss')
-  //     .select(['discuss.id', 'user.id'])
-  //     .where('discuss.id = :id', { id })
-  //     .leftJoin('discuss.user', 'user')
-  //     .getOne()
+  async updateDiscuss(id: number, updateDiscussDto: UpdateDiscussDto, userId: number): Promise<void> {
+    const { content } = updateDiscussDto
+    const existDiscuss = await this.discussRepository
+      .createQueryBuilder('discuss')
+      .select(['discuss.id', 'user.id'])
+      .where('discuss.id = :id', { id })
+      .leftJoin('discuss.user', 'user')
+      .getOne()
 
-  //   if (!existDiscuss) {
-  //     throwAppException('DISCUSS_NOT_FOUND', ErrorCode.DISCUSS_NOT_FOUND, HttpStatus.NOT_FOUND)
-  //   }
-  //   if (existDiscuss.user.id !== userId) {
-  //     throwAppException('DISCUSS_NOT_ALLOW_UPDATE', ErrorCode.DISCUSS_NOT_ALLOW_UPDATE, HttpStatus.FORBIDDEN)
-  //   }
-  //   await this.discussRepository.update(id, { content })
-  // }
+    if (!existDiscuss) {
+      throwAppException('DISCUSS_NOT_FOUND', ErrorCode.DISCUSS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    if (existDiscuss.user.id !== userId) {
+      throwAppException('DISCUSS_NOT_ALLOW_UPDATE', ErrorCode.DISCUSS_NOT_ALLOW_UPDATE, HttpStatus.FORBIDDEN)
+    }
+    await this.discussRepository.update(id, { content })
+
+    // Gửi mail thông báo
+    this.sendDiscussNotification(id, userId)
+  }
 
   async deleteDiscuss(id: number, userId: number): Promise<void> {
     const existDiscuss = await this.discussRepository
@@ -248,5 +258,53 @@ export class DiscussService {
       }
     })
     return { data: formattedDiscusses, meta }
+  }
+
+  private async sendDiscussNotification(discussId: number, senderId: number) {
+    try {
+      const discuss = await this.discussRepository.findOne({
+        where: { id: discussId },
+        relations: ['user', 'lesson', 'lesson.class', 'lesson.class.teacher', 'lesson.class.teacher.user'],
+      })
+
+      if (!discuss) return
+
+      const sender = discuss.user
+      const isSenderStudent = sender.role === Role.STUDENT
+      let recipient: User
+
+      if (isSenderStudent) {
+        // Học viên gửi -> Thông báo cho giảng viên của lớp
+        recipient = discuss.lesson?.class?.teacher?.user
+      } else {
+        // Giảng viên/Admin gửi -> Thông báo cho học viên chủ thread
+        const rootDiscussId = discuss.parent_id || discuss.id
+        const rootDiscuss = await this.discussRepository.findOne({
+          where: { id: rootDiscussId },
+          relations: ['user'],
+        })
+        if (rootDiscuss && rootDiscuss.user.id !== senderId) {
+          recipient = rootDiscuss.user
+        }
+      }
+
+      if (recipient && recipient.email) {
+        const link = `${process.env.FRONTEND_URL || 'https://academy.gpsg.org'}/online-class/${discuss.lesson.class.id}`
+        await this.brevoMailerService.sendMail(
+          [{ email: recipient.email, name: recipient.full_name }],
+          `Thông báo thảo luận mới từ ${sender.full_name}`,
+          'discuss-notification',
+          {
+            receiverName: recipient.full_name,
+            senderName: sender.full_name,
+            lessonTitle: discuss.lesson.title,
+            content: discuss.content,
+            link: link,
+          },
+        )
+      }
+    } catch (error) {
+      console.error('Error sending discuss notification:', error)
+    }
   }
 }
