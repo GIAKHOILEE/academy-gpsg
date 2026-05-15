@@ -3,7 +3,7 @@ import { Repository } from 'typeorm'
 import { Discuss } from './discuss.entity'
 import { InjectRepository } from '@nestjs/typeorm'
 import { CreateDiscussDto } from './dtos/create-discuss.dto'
-import { formatStringDate, throwAppException } from '@common/utils'
+import { formatStringDateUTC7, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Lesson } from '../lesson/lesson.entity'
 import { User } from '@modules/users/user.entity'
@@ -198,7 +198,7 @@ export class DiscussService {
         },
         number_comment: numberCommentByDiscuss[discuss.id] || 0,
         // lesson: discuss.lesson,
-        created_at: formatStringDate(discuss.created_at.toISOString()),
+        created_at: formatStringDateUTC7(discuss.created_at.toISOString()),
       }
     })
     return { data: formattedDiscusses, meta }
@@ -244,7 +244,7 @@ export class DiscussService {
           avatar: discuss.user.avatar,
           role: discuss.user.role,
         },
-        created_at: formatStringDate(discuss.created_at.toISOString()),
+        created_at: formatStringDateUTC7(discuss.created_at.toISOString()),
       }
     })
     return { data: formattedDiscusses, meta }
