@@ -1265,7 +1265,9 @@ export class EnrollmentsService {
     meta: PaginateEnrollmentsDto
   }> {
     const { semester_id, scholastic_id, full_name, ...rest } = paginateEnrollmentsDto
+
     const queryBuilder = this.enrollmentsRepository.createQueryBuilder('enrollment')
+
     queryBuilder
       .select([
         'enrollment.id',
@@ -1296,30 +1298,70 @@ export class EnrollmentsService {
       .leftJoin('enrollment.student', 'student')
       .leftJoin('student.user', 'user')
 
+    /**
+     * Search full name
+     */
     if (full_name) {
       queryBuilder.andWhere(`enrollment.full_name_normalized LIKE :full_name`, {
         full_name: `%${removeVietnameseTones(full_name).toLowerCase().trim()}%`,
       })
     }
 
+    /**
+     * FILTER enrollment thật sự theo semester + scholastic
+     */
     if (semester_id || scholastic_id) {
-      queryBuilder
-        .addSelect(qb => {
-          const subQuery = qb
-            .select('JSON_ARRAYAGG(JSON_OBJECT("id", c.id, "name", c.name))')
-            .from(Classes, 'c')
-            .where('JSON_CONTAINS(enrollment.class_ids, CAST(c.id AS JSON), "$")')
+      queryBuilder.andWhere(qb => {
+        const subQuery = qb.subQuery().select('1').from(Classes, 'c').where("JSON_CONTAINS(enrollment.class_ids, JSON_OBJECT('class_id', c.id))")
 
-          if (semester_id) {
-            subQuery.andWhere('c.semester_id = :semester_id', { semester_id })
-          }
-          if (scholastic_id) {
-            subQuery.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
-          }
+        if (semester_id) {
+          subQuery.andWhere('c.semester_id = :semester_id', {
+            semester_id,
+          })
+        }
 
-          return subQuery
-        }, 'classes')
-        .groupBy('enrollment.id')
+        if (scholastic_id) {
+          subQuery.andWhere('c.scholastic_id = :scholastic_id', {
+            scholastic_id,
+          })
+        }
+
+        return `EXISTS ${subQuery.getQuery()}`
+      })
+
+      /**
+       * Optional:
+       * lấy classes đã filter
+       */
+      queryBuilder.addSelect(qb => {
+        const subQuery = qb
+          .select(
+            `
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              "id", c.id,
+              "name", c.name
+            )
+          )
+        `,
+          )
+          .from(Classes, 'c')
+          .where("JSON_CONTAINS(enrollment.class_ids, JSON_OBJECT('class_id', c.id))")
+
+        if (semester_id) {
+          subQuery.andWhere('c.semester_id = :semester_id', {
+            semester_id,
+          })
+        }
+
+        if (scholastic_id) {
+          subQuery.andWhere('c.scholastic_id = :scholastic_id', {
+            scholastic_id,
+          })
+        }
+
+        return subQuery
+      }, 'classes')
     }
 
     queryBuilder.withDeleted()
@@ -1331,21 +1373,6 @@ export class EnrollmentsService {
     }
 
     const { data, meta } = await paginate(queryBuilder, rest)
-
-    // lấy ra các class từ class_ids
-    // const classesIds = data.flatMap(enrollment => enrollment.class_ids.map(item => item.class_id) || [])
-    // const uniqueClassesIds = [...new Set(classesIds)] // bỏ trùng id
-
-    // let classesMap: Record<number, any> = {}
-    // if (uniqueClassesIds.length > 0) {
-    //   const classes = await this.classRepository
-    //     .createQueryBuilder('class')
-    //     .select(['class.id', 'class.name', 'class.code'])
-    //     .where('class.id IN (:...class_ids)', { class_ids: uniqueClassesIds })
-    //     .getMany()
-
-    //   // classesMap = arrayToObject(classes, 'id')
-    // }
 
     const formatEnrollments: IEnrollments[] = data.map(enrollment => {
       return {
@@ -1362,7 +1389,6 @@ export class EnrollmentsService {
         discount: enrollment.discount,
         is_read_note: enrollment.is_read_note,
         class_ids: enrollment.class_ids,
-        // classes: enrollment.class_ids.map(classId => classesMap[classId]),
       }
     })
 
