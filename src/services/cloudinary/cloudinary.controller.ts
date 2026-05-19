@@ -31,7 +31,8 @@ export class UploadController {
     if (!file) {
       throw new BadRequestException('No file uploaded')
     }
-    const response = await this.cloudinaryService.uploadFile(file)
+    // const response = await this.cloudinaryService.uploadFile(file)
+    const response = await this.cloudinaryService.uploadFileV2(file)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'UPLOAD_FILE_SUCCESS',
@@ -59,7 +60,8 @@ export class UploadController {
     if (!file) {
       throw new BadRequestException('No file uploaded')
     }
-    const response = await this.cloudinaryService.uploadPdf(file, 'pdf')
+    // const response = await this.cloudinaryService.uploadPdf(file, 'pdf')
+    const response = await this.cloudinaryService.uploadPdfV2(file, 'pdf')
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'UPLOAD_PDF_SUCCESS',
@@ -84,7 +86,8 @@ export class UploadController {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files uploaded')
     }
-    const response = await this.cloudinaryService.uploadMultipleFiles(files)
+    // const response = await this.cloudinaryService.uploadMultipleFiles(files)
+    const response = await this.cloudinaryService.uploadMultipleFilesV2(files)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'UPLOAD_MULTIPLE_FILES_SUCCESS',
@@ -105,7 +108,8 @@ export class UploadController {
     if (!body.url || typeof body.url !== 'string') {
       throw new BadRequestException('URL must be a string')
     }
-    const response = await this.cloudinaryService.deleteFile(body.url)
+    // const response = await this.cloudinaryService.deleteFile(body.url)
+    const response = await this.cloudinaryService.deleteFileV2(body.url)
     return new ResponseDto({
       statusCode: 200,
       messageCode: 'DELETE_FILE_SUCCESS',

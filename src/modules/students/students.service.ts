@@ -3,6 +3,7 @@ import { formatStringDate, formatStringToDate, hashPassword, throwAppException }
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
+import { ReligionType } from '@enums/user.enum'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Not, Repository } from 'typeorm'
@@ -378,6 +379,7 @@ export class StudentsService {
       department_id,
       scholastic_id,
       gender,
+      religion_type,
       ...rest
     } = paginateStudentsDto
 
@@ -413,6 +415,17 @@ export class StudentsService {
         })
       }
     }
+
+    if (religion_type !== undefined) {
+      if (religion_type === ReligionType.PARISHIONER) {
+        query.andWhere("(user.saint_name IS NOT NULL AND user.saint_name != '') AND (user.congregation IS NULL OR user.congregation = '')")
+      } else if (religion_type === ReligionType.FRIAR) {
+        query.andWhere("(user.congregation IS NOT NULL AND user.congregation != '')")
+      } else if (religion_type === ReligionType.OTHER_RELIGION) {
+        query.andWhere("(user.saint_name IS NULL OR user.saint_name = '') AND (user.congregation IS NULL OR user.congregation = '')")
+      }
+    }
+
     // Filters on user fields
     if (full_name) {
       query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })

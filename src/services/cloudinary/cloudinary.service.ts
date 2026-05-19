@@ -3,6 +3,7 @@ import { ICloudinary } from './cloudinary.provider'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 
 @Injectable()
 export class CloudinaryService {
@@ -10,6 +11,15 @@ export class CloudinaryService {
   private readonly storagePath = process.env.STORAGE_PATH
   private readonly env = process.env.NODE_ENV
   private readonly fileDomain = process.env.FILE_DOMAIN
+
+  private readonly s3Client = new S3Client({
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    },
+  })
 
   async uploadPdf(file: Express.Multer.File, subFolder: string = ''): Promise<string> {
     try {
@@ -67,6 +77,82 @@ export class CloudinaryService {
       await this.deleteFileFromStoragePath(url)
     } else {
       await this.deleteFileFromCloudinary(url)
+    }
+  }
+
+  // ==================== V2 R2 ====================
+
+  async uploadFileV2(file: Express.Multer.File): Promise<string> {
+    try {
+      const ext = path.extname(file.originalname || '') || ''
+      const fileName = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`
+      const bucketName = process.env.R2_BUCKET_NAME
+
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: fileName,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        }),
+      )
+
+      return `${process.env.R2_PUBLIC_URL}/${fileName}`
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Upload file to R2 failed')
+    }
+  }
+
+  async uploadPdfV2(file: Express.Multer.File, subFolder: string = ''): Promise<string> {
+    try {
+      let originalFilename = file.originalname.replace(/\.[^/.]+$/, '')
+      originalFilename += '.pdf'
+      const fileName = subFolder ? `${subFolder}/${originalFilename}` : originalFilename
+      const bucketName = process.env.R2_BUCKET_NAME
+
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: fileName,
+          Body: file.buffer,
+          ContentType: 'application/pdf',
+        }),
+      )
+
+      return `${process.env.R2_PUBLIC_URL}/${fileName}`
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Upload PDF to R2 failed')
+    }
+  }
+
+  async uploadMultipleFilesV2(files: Express.Multer.File[]) {
+    const urls = await Promise.all(files.map(file => this.uploadFileV2(file)))
+    return urls
+  }
+
+  async deleteFileV2(url: string) {
+    try {
+      if (!url || typeof url !== 'string') {
+        throw new BadRequestException(`URL must be a string, received: ${JSON.stringify(url)}`)
+      }
+
+      // URL: https://pub-xxx.r2.dev/filename.ext
+      const fileName = url.split('/').pop()
+      if (!fileName) {
+        throw new BadRequestException('Invalid R2 URL')
+      }
+
+      const bucketName = process.env.R2_BUCKET_NAME
+
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: bucketName,
+          Key: fileName,
+        }),
+      )
+      console.log('Deleted from R2:', fileName)
+    } catch (error: any) {
+      throw new BadRequestException(error.message || 'Delete file from R2 failed')
     }
   }
 

@@ -2,7 +2,7 @@ import { PaginationDto } from '@common/pagination'
 import { ClassStatus } from '@enums/class.enum'
 import { Gender } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
-import { StudentCardStatus } from '@enums/user.enum'
+import { ReligionType, StudentCardStatus } from '@enums/user.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
@@ -90,6 +90,12 @@ export class PaginateStudentsDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Trạng thái thẻ', enum: StudentCardStatus, example: StudentCardStatus.NOT_PRINTED })
   @Type(() => Number)
   card_status?: StudentCardStatus
+
+  @IsOptional()
+  @IsEnum(ReligionType)
+  @ApiPropertyOptional({ description: 'Loại tôn giáo: 1: Giáo dân, 2: Tu sĩ, 3: Đạo khác', enum: ReligionType })
+  @Type(() => Number)
+  religion_type?: ReligionType
 }
 
 export class SearchStudentClassCertificateDto {

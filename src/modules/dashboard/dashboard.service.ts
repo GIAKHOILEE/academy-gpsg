@@ -235,10 +235,34 @@ export class DashboardService {
       totalDepartment = await this.departmentRepository.count()
     }
 
+    // tổng số lớp được đăng ký
+    let totalClassRegistered: number = 0
+    let classRegisteredSql = `
+      SELECT COUNT(*) as count
+      FROM enrollments e
+      INNER JOIN JSON_TABLE(e.class_ids, '$[*]' COLUMNS (class_id INT PATH '$.class_id')) ec ON 1=1
+      INNER JOIN classes c ON c.id = ec.class_id
+      WHERE 1=1
+    `
+    const classRegisteredParams: any[] = []
+
+    if (semester_id) {
+      classRegisteredSql += ` AND c.semester_id = ?`
+      classRegisteredParams.push(semester_id)
+    }
+    if (scholastic_id) {
+      classRegisteredSql += ` AND c.scholastic_id = ?`
+      classRegisteredParams.push(scholastic_id)
+    }
+
+    const classRegisteredRes = await this.dataSource.query(classRegisteredSql, classRegisteredParams)
+    totalClassRegistered = Number(classRegisteredRes[0]?.count) || 0
+
     return {
       totalClass,
       totalTeacher,
       totalDepartment,
+      totalClassRegistered,
       ...data,
     }
   }

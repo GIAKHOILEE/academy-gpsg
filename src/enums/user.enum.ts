@@ -12,3 +12,9 @@ export enum StudentCardStatus {
   WAITING_REPRINT = 4, // đợi làm lại thẻ
   REPRINTED = 5, // đã in lại thẻ
 }
+
+export enum ReligionType {
+  PARISHIONER = 1, // giáo dân
+  FRIAR = 2, // tu sĩ
+  OTHER_RELIGION = 3, // đạo khác
+}
