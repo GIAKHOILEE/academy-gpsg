@@ -243,6 +243,7 @@ export class DashboardService {
       INNER JOIN JSON_TABLE(e.class_ids, '$[*]' COLUMNS (class_id INT PATH '$.class_id')) ec ON 1=1
       INNER JOIN classes c ON c.id = ec.class_id
       WHERE 1=1
+      AND e.status IN (${StatusEnrollment.DONE}, ${StatusEnrollment.PAY_LATE}, ${StatusEnrollment.DEBT})
     `
     const classRegisteredParams: any[] = []
 
