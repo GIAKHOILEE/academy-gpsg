@@ -46,10 +46,6 @@ const background = `data:image/png;base64,${backgroundBuffer.toString('base64')}
 const stamp = `data:image/png;base64,${stampBuffer.toString('base64')}`
 const qrCode = `data:image/png;base64,${qrCodeBuffer.toString('base64')}`
 
-const now = new Date()
-const day = now.getDate()
-const month = now.getMonth() + 1 // Vì getMonth() trả từ 0–11
-const year = now.getFullYear()
 @Injectable()
 export class EnrollmentsService {
   constructor(
@@ -1007,6 +1003,13 @@ export class EnrollmentsService {
   private async handleEnrollmentEmail(enrollment: Enrollments, type: 'register' | 'payment', status?: StatusEnrollment) {
     try {
       if (!enrollment.email) return
+
+      // Lấy ngày hiện tại theo múi giờ Việt Nam (UTC+7) để điền vào form mail/pdf
+      const now = new Date()
+      const utc7Date = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+      const day = utc7Date.getUTCDate()
+      const month = utc7Date.getUTCMonth() + 1
+      const year = utc7Date.getUTCFullYear()
 
       const class_ids = enrollment.class_ids.map(item => item.class_id)
       const classMap = arrayToObject(enrollment.class_ids, 'class_id')
