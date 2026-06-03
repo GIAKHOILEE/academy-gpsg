@@ -30,11 +30,10 @@ export class BrevoMailerService {
     try {
       const headers = {
         accept: 'application/json',
-        // 'api-key': options?.apiKey || process.env.BREVO_API_KEY,
-        'api-key': process.env.BREVO_API_KEY,
+        'X-Mailin-Authenticated-Sender': options?.senderEmail || process.env.SENDER_EMAIL,
+        'api-key': options?.apiKey || process.env.BREVO_API_KEY,
         'content-type': 'application/json',
       }
-
       let htmlContent = ''
       if (rawContent) {
         // nếu FE truyền content thẳng thì dùng luôn
