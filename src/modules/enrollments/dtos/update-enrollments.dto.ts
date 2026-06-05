@@ -1,6 +1,7 @@
 import { LearnType, PaymentMethod, StatusEnrollment } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
+import { Gender } from '@enums/role.enum'
 
 export class UpdateEnrollmentsDto {
   @ApiPropertyOptional({ description: 'Mã student', example: '123456' })
@@ -65,6 +66,11 @@ export class UpdateEnrollmentsDto {
   @IsString()
   @IsOptional()
   full_name: string
+
+  @ApiPropertyOptional({ description: 'Giới tính:: 0: other, 1: male, 2: female', enum: Gender })
+  @IsEnum(Gender)
+  @IsOptional()
+  gender?: Gender
 
   @ApiPropertyOptional({ description: 'Email', example: 'Email' })
   @IsString()

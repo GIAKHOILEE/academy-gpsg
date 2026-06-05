@@ -1,6 +1,7 @@
 import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { IClasses } from '@modules/class/class.interface'
 import { IFooter } from '@modules/footer/footer.interface'
+import { Gender } from '@enums/role.enum'
 
 export interface IEnrollments {
   id: number
@@ -26,6 +27,7 @@ export interface IEnrollments {
   student_code?: string
   saint_name?: string
   full_name?: string
+  gender?: Gender
   email?: string
   phone_number?: string
   birth_date?: Date

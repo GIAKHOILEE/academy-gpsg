@@ -1,5 +1,6 @@
 import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { Student } from '@modules/students/students.entity'
+import { Gender } from '@enums/role.enum'
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity('enrollments')
@@ -63,6 +64,10 @@ export class Enrollments {
   // Tên thánh
   @Column({ nullable: true })
   saint_name: string
+
+  // Giới tính
+  @Column({ nullable: true })
+  gender: Gender
 
   @Column({ nullable: true })
   full_name: string

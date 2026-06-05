@@ -13,7 +13,7 @@ import {
 } from '@common/utils'
 import { LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { Role } from '@enums/role.enum'
+import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Classes } from '@modules/class/class.entity'
@@ -315,6 +315,7 @@ export class EnrollmentsService {
             deanery: user.deanery,
             diocese: user.diocese,
             congregation: user.congregation,
+            gender: user.gender,
           })
 
           // Chống đăng ký trùng lặp nếu học viên đã có mặt trong các lớp này
@@ -410,6 +411,7 @@ export class EnrollmentsService {
         student_id: studentId,
         student_code: studentEntity?.user?.code || null,
         birth_date: formatStringToDate(createEnrollmentDto.birth_date),
+        gender: savedEnrollment.gender,
         classes: class_ids.map(item => ({
           class_id: item.class_id,
           learn_type: item.learn_type,
@@ -783,7 +785,7 @@ export class EnrollmentsService {
 
       // Nếu đơn đã chính thức gán cho một StudentId, hạn chế sửa thông tin cá nhân qua API này để tránh sai lệch dữ liệu hệ thống
       if (enrollment.student_id) {
-        const { full_name, saint_name, email, phone_number, address, birth_place, parish, deanery, diocese, congregation } = rest
+        const { full_name, saint_name, email, phone_number, address, birth_place, parish, deanery, diocese, congregation, gender } = rest
         const isInfoChanged = [
           [full_name, enrollment.full_name],
           [saint_name, enrollment.saint_name],
@@ -795,6 +797,7 @@ export class EnrollmentsService {
           [deanery, enrollment.deanery],
           [diocese, enrollment.diocese],
           [congregation, enrollment.congregation],
+          [gender, enrollment.gender],
         ].some(([val, oldVal]) => val !== undefined && val !== oldVal)
 
         if (isInfoChanged) {
@@ -812,13 +815,25 @@ export class EnrollmentsService {
         if (!user) {
           isNewUser = true
           isNewUserCreated = true
-          const first_name = rest.full_name ? rest.full_name.split(' ')[0] : undefined
+          const first_name = rest.full_name ? rest.full_name.split(' ')[0] : (enrollment.full_name ? enrollment.full_name.split(' ')[0] : undefined)
           user = userRepo.create({
             code: student_code,
             password: await hashPassword(student_code),
             role: Role.STUDENT,
             status: UserStatus.ACTIVE,
             first_name,
+            saint_name: enrollment.saint_name,
+            full_name: enrollment.full_name,
+            email: enrollment.email,
+            phone_number: enrollment.phone_number,
+            address: enrollment.address,
+            birth_place: enrollment.birth_place,
+            birth_date: enrollment.birth_date,
+            parish: enrollment.parish,
+            deanery: enrollment.deanery,
+            diocese: enrollment.diocese,
+            congregation: enrollment.congregation,
+            gender: enrollment.gender,
             ...rest,
           })
           user = await userRepo.save(user)
@@ -1139,6 +1154,7 @@ export class EnrollmentsService {
         'enrollment.is_logged',
         'enrollment.saint_name',
         'enrollment.full_name',
+        'enrollment.gender',
         'enrollment.email',
         'enrollment.phone_number',
         'enrollment.address',
@@ -1245,6 +1261,7 @@ export class EnrollmentsService {
       student_code: enrollment?.student?.user?.code ? enrollment?.student?.user?.code : null,
       saint_name: enrollment.saint_name,
       full_name: enrollment.full_name,
+      gender: enrollment.gender,
       email: enrollment.email,
       phone_number: enrollment.phone_number,
       address: enrollment.address,
@@ -1289,6 +1306,7 @@ export class EnrollmentsService {
         'enrollment.is_logged',
         'enrollment.saint_name',
         'enrollment.full_name',
+        'enrollment.gender',
         'enrollment.full_name_normalized',
         'enrollment.email',
         'enrollment.phone_number',
@@ -1385,6 +1403,7 @@ export class EnrollmentsService {
         student_code: enrollment?.student?.user?.code,
         saint_name: enrollment.saint_name,
         full_name: enrollment.full_name,
+        gender: enrollment.gender,
         birth_date: enrollment?.student?.user?.birth_date,
         email: enrollment.email,
         phone_number: enrollment.phone_number,
