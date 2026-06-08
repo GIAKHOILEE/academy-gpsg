@@ -811,6 +811,11 @@ export class EnrollmentsService {
         let user = await userRepo.findOne({ where: { code: student_code } })
         let isNewUser = false
 
+        // Nếu mã học viên đã tồn tại nhưng KHÔNG phải là học viên
+        if (user && user.role !== Role.STUDENT) {
+          throwAppException('USER_IS_NOT_A_STUDENT', ErrorCode.USER_IS_NOT_A_STUDENT, HttpStatus.BAD_REQUEST)
+        }
+
         // Nếu mã học viên chưa tồn tại trong hệ thống User -> Tạo mới
         if (!user) {
           isNewUser = true

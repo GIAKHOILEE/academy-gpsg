@@ -154,6 +154,7 @@ export const messages = {
     OPTIONS_NOT_ALLOWED_FOR_TEXT: 'Options not allowed for text',
     OPTIONS_NOT_ALLOWED_FOR_NUMBER: 'Options not allowed for number',
     CERTIFICATES_NOT_FOUND: 'Certificates not found',
+    USER_IS_NOT_A_STUDENT: 'User is not a student',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -313,5 +314,6 @@ export const messages = {
     OPTIONS_NOT_ALLOWED_FOR_TEXT: 'Options không được phép cho loại text',
     OPTIONS_NOT_ALLOWED_FOR_NUMBER: 'Options không được phép cho loại number',
     CERTIFICATES_NOT_FOUND: 'Chứng chỉ không tồn tại',
+    USER_IS_NOT_A_STUDENT: 'Người dùng tồn tại nhưng không phải là học viên',
   },
 }
