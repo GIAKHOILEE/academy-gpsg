@@ -105,10 +105,10 @@ export class HomeworkService {
           }
         }
       }
-      // kiểm tra điểm của các question có đúng với total_points(homework) không
+      // kiểm tra điểm của các question có đúng với total_points(homework) không (sử dụng Epsilon để tránh sai số số thực)
       const totalPoints = createDto.questions.reduce((sum, q) => sum + q.points, 0)
       console.log(totalPoints)
-      if (totalPoints !== 10) {
+      if (Math.abs(totalPoints - 10) > 1e-9) {
         throwAppException('TOTAL_POINTS_MISMATCH', ErrorCode.TOTAL_POINTS_MISMATCH, HttpStatus.BAD_REQUEST)
       }
       // kiểm tra nếu là multiple choice thì phải có ít nhất 1 đáp án đúng
@@ -345,11 +345,9 @@ export class HomeworkService {
         }
       }
 
-      // kiểm tra điểm của các question có đúng với total_points(homework) không
-      const totalPoints = updateDto.questions.reduce((sum, q) => {
-        return sum + Math.round(q.points * 1000)
-      }, 0)
-      if (totalPoints !== 10000) {
+      // kiểm tra điểm của các question có đúng với total_points(homework) không (sử dụng Epsilon để tránh sai số số thực)
+      const totalPoints = updateDto.questions.reduce((sum, q) => sum + q.points, 0)
+      if (Math.abs(totalPoints - 10) > 1e-9) {
         throwAppException('TOTAL_POINTS_MISMATCH', ErrorCode.TOTAL_POINTS_MISMATCH, HttpStatus.BAD_REQUEST)
       }
 
