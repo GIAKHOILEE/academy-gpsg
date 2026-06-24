@@ -672,8 +672,8 @@ export class HomeworkService {
       for (const ans of createdAnswers) {
         const q = qMap.get(ans.question.id)
         if (!q) continue
-        if (q.type === QuestionTypeHomework.ESSAY) {
-          // leave score 0 for teacher to grade
+        if (q.type === QuestionTypeHomework.ESSAY || q.type === QuestionTypeHomework.FILE) {
+          // để điểm bằng 0 để giáo viên tự chấm tay
           continue
         }
 
@@ -685,18 +685,18 @@ export class HomeworkService {
           const isCorrect = selected.length === 1 && correctIds.includes(selected[0])
           ans.score = isCorrect ? Number(q.points) : 0
         } else {
-          // MCQ_MULTI -> điểm từng câu (correct chosen / correct total), không có phạt
-          const correctChosen = selected.filter(id => correctIds.includes(id)).length
-          const portion = correctIds.length ? correctChosen / correctIds.length : 0
-          ans.score = Number(q.points) * Math.max(0, portion)
+          // MCQ_MULTI -> phải chọn chính xác toàn bộ đáp án đúng, chọn thừa hoặc thiếu là 0 điểm
+          const isCorrect = selected.length === correctIds.length && selected.every(id => correctIds.includes(id))
+          ans.score = isCorrect ? Number(q.points) : 0
         }
         totalScore += Number(ans.score || 0)
         await ansRepo.save(ans)
       }
 
-      // kiểm tra có câu hỏi essay không -> nếu không có thì đánh dấu AUTO_GRADED
+      // kiểm tra có câu hỏi essay và file không -> nếu không có thì đánh dấu AUTO_GRADED
       const hasEssay = hw.questions.some(q => q.type === QuestionTypeHomework.ESSAY)
-      if (!hasEssay) {
+      const hasFile = hw.questions.some(q => q.type === QuestionTypeHomework.FILE)
+      if (!hasEssay && !hasFile) {
         // tất cả đều tự động chấm
         const sumQuestionPoints = hw.total_points ?? (hw.questions.reduce((s, q) => s + Number(q.points || 0), 0) || 1)
         const percent = (totalScore / sumQuestionPoints) * 100
@@ -705,6 +705,18 @@ export class HomeworkService {
         savedSub.status = SubmissionStatus.AUTO_GRADED
         ;(savedSub as any).percent = percent // nếu có cột percent thì lưu vào đó, nếu không thì tính toán trên client
         await subRepo.save(savedSub)
+
+        // nếu bài thi là final và là trắc nghiệm toàn bộ (AUTO_GRADED) thì đồng bộ điểm ngay vào class_student
+        if (hw.is_final) {
+          const classStudentRepo = queryRunner.manager.getRepository(ClassStudents)
+          const classId = hw.lesson?.class?.id
+          if (classId) {
+            await classStudentRepo.update(
+              { student: { id: student.id }, class: { id: classId } },
+              { score: String(savedSub.score) }
+            )
+          }
+        }
       } else {
         // điểm từng câu cho MCQ answers; submission.status vẫn là PENDING
         savedSub.score = Number(totalScore)
