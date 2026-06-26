@@ -281,9 +281,11 @@ export class DiscussService {
 
       if (isSenderStudent) {
         // Case 1: Học viên nhắn cho giảng viên
-        recipient = discuss.lesson?.class?.teacher?.user
+        const teacher = discuss.lesson?.class?.teacher
+        recipient = teacher?.user
         if (recipient) {
-          const title = recipient.gender === Gender.FEMALE ? 'Cô' : 'Thầy'
+          // Nếu giáo viên có other_name thì sử dụng other_name làm danh xưng, ngược lại mới phân loại Thầy/Cô theo giới tính
+          const title = teacher.other_name ? teacher.other_name : (recipient.gender === Gender.FEMALE ? 'Cô' : 'Thầy')
           const teacherName = `${title} ${recipient.saint_name ? recipient.saint_name + ' ' : ''}${recipient.full_name}`
           emailSubject = `Thảo luận từ học viên ${senderName} - ${className}`
           templateData = {
