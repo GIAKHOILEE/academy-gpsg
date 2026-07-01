@@ -10,7 +10,7 @@ export class Discuss {
   @Column({ nullable: true })
   parent_id: number
 
-  @Column()
+  @Column({ type: 'longtext' })
   content: string
 
   @Column({ default: false })
