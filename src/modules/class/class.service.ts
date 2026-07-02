@@ -495,7 +495,7 @@ export class ClassService {
 
   //lấy danh sách học sinh của lớp
   async getStudentsOfClass(class_id: number, getStudentsOfClassDto: GetStudentsOfClassDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { full_name, code, first_name, ...rest } = getStudentsOfClassDto
+    const { full_name, code, first_name, learn_type, ...rest } = getStudentsOfClassDto
 
     const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -548,6 +548,9 @@ export class ClassService {
     }
     if (first_name) {
       classStudents.andWhere('user.first_name LIKE :first_name', { first_name: `%${first_name}%` })
+    }
+    if (learn_type) {
+      classStudents.andWhere('class_students.learn_type = :learn_type', { learn_type })
     }
 
     if (rest.orderBy === 'first_name') {
