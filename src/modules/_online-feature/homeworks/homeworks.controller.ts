@@ -248,6 +248,17 @@ export class AdminHomeworkSubmissionController {
       data: submission,
     })
   }
+
+  @Put('submissions/:id/toggle-download')
+  @ApiOperation({ summary: 'Admin toggle trạng thái is_download của bài nộp' })
+  async toggleIsDownloadAdmin(@Param('id') id: number): Promise<ResponseDto> {
+    const data = await this.homeworkService.toggleIsDownload(Number(id))
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSION_DOWNLOAD_STATUS_UPDATED_SUCCESSFULLY',
+      data,
+    })
+  }
 }
 
 @Controller('teacher/homeworks')
@@ -288,6 +299,17 @@ export class TeacherHomeworkSubmissionController {
       statusCode: HttpStatus.OK,
       messageCode: 'HOMEWORK_SUBMISSION_GRADED_SUCCESSFULLY',
       data: submission,
+    })
+  }
+
+  @Put('submissions/:id/toggle-download')
+  @ApiOperation({ summary: 'Teacher toggle trạng thái is_download của bài nộp' })
+  async toggleIsDownloadTeacher(@Param('id') id: number): Promise<ResponseDto> {
+    const data = await this.homeworkService.toggleIsDownload(Number(id))
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'HOMEWORK_SUBMISSION_DOWNLOAD_STATUS_UPDATED_SUCCESSFULLY',
+      data,
     })
   }
 }

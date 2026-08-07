@@ -39,6 +39,7 @@ export interface IHomeworkSubmission {
   answers?: IHomeworkAnswer[]
   score?: number
   status?: SubmissionStatus
+  is_download?: boolean
   homework_id?: number
   homework?: IHomework
   student_id?: number

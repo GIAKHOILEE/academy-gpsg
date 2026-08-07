@@ -737,6 +737,7 @@ export class HomeworkService {
           'submission.id',
           'submission.score',
           'submission.status',
+          'submission.is_download',
           'homework.id',
           'homework.title',
           'homework.description',
@@ -774,6 +775,7 @@ export class HomeworkService {
         id: result.id,
         score: result.score,
         status: result.status,
+        is_download: result.is_download ?? false,
         homework: result.homework,
         answers: result.answers,
         student: {
@@ -944,6 +946,7 @@ export class HomeworkService {
       id: submission.id,
       score: submission.score,
       status: submission.status,
+      is_download: submission.is_download,
       homework: {
         id: submission.homework.id,
         title: submission.homework.title,
@@ -1010,6 +1013,7 @@ export class HomeworkService {
       id: s.id,
       score: s.score,
       status: s.status,
+      is_download: s.is_download,
       learn_type: classStudentMap[s.student.id]?.learn_type,
       student: {
         id: s.student.id,
@@ -1063,6 +1067,7 @@ export class HomeworkService {
       id: submission.id,
       score: submission.score,
       status: submission.status,
+      is_download: submission.is_download,
       learn_type: classStudent?.learn_type,
       homework: {
         id: submission.homework.id,
@@ -1090,6 +1095,22 @@ export class HomeworkService {
         score: a.score,
         feedback: a.feedback,
       })),
+    }
+  }
+
+  // Đảo trạng thái đã tải xuống (is_download) của bài nộp
+  async toggleIsDownload(submissionId: number) {
+    const submission = await this.submissionRepo.findOne({ where: { id: submissionId } })
+    if (!submission) {
+      throwAppException('SUBMISSION_NOT_FOUND', ErrorCode.SUBMISSION_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    submission.is_download = !submission.is_download
+    await this.submissionRepo.save(submission)
+
+    return {
+      id: submission.id,
+      is_download: submission.is_download,
     }
   }
 }

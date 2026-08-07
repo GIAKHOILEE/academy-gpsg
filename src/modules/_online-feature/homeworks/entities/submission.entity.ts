@@ -27,6 +27,10 @@ export class HomeworkSubmission {
   @Column({ type: 'enum', enum: SubmissionStatus, default: SubmissionStatus.PENDING })
   status: SubmissionStatus
 
+  // Trạng thái đã tải xuống bài nộp hay chưa
+  @Column({ name: 'is_download', type: 'boolean', default: false })
+  is_download: boolean
+
   // ai chấm (user id) nếu chấm tay
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'graded_by' })
