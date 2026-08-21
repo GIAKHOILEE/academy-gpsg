@@ -820,7 +820,8 @@ export class EnrollmentsService {
         if (!user) {
           isNewUser = true
           isNewUserCreated = true
-          const first_name = rest.full_name ? rest.full_name.split(' ')[0] : (enrollment.full_name ? enrollment.full_name.split(' ')[0] : undefined)
+          const targetFullName = rest.full_name || enrollment.full_name
+          const first_name = targetFullName ? targetFullName.trim().split(/\s+/).pop() : undefined
           user = userRepo.create({
             code: student_code,
             password: await hashPassword(student_code),

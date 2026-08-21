@@ -58,7 +58,7 @@ export class StudentsService {
       }
 
       const hashedPassword = await hashPassword(password ?? code)
-      const first_name = full_name.split(' ')[0]
+      const first_name = full_name.trim().split(/\s+/).pop()
       const new_birth_date = !birth_date || birth_date === '' ? '1970-01-01' : formatStringToDate(birth_date)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
@@ -185,7 +185,7 @@ export class StudentsService {
       // tách full_name thành first_name và last_name
 
       const hashedPassword = password ? await hashPassword(password) : user.password
-      const first_name = full_name.split(' ')[0]
+      const first_name = full_name ? full_name.trim().split(/\s+/).pop() : user.first_name
       const updatedUser = userRepo.merge(user, {
         email: email ?? user.email,
         full_name: full_name ?? user.full_name,

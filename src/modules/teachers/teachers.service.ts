@@ -74,8 +74,8 @@ export class TeachersService {
         if (existingUser) throwAppException('CODE_ALREADY_EXISTS', ErrorCode.CODE_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
 
-      // từ full name tách ra first name
-      const first_name = full_name.split(' ')[0]
+      // từ full name tách ra first name (lấy tên - từ cuối cùng)
+      const first_name = full_name.trim().split(/\s+/).pop()
 
       const hashedPassword = await hashPassword(password ?? code)
       const user = queryRunner.manager.getRepository(User).create({
@@ -195,8 +195,8 @@ export class TeachersService {
         hashedPassword = await hashPassword(password)
       }
 
-      // từ full name tách ra first name
-      const first_name = full_name.split(' ')[0]
+      // từ full name tách ra first name (lấy tên - từ cuối cùng)
+      const first_name = full_name.trim().split(/\s+/).pop()
 
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
         email: email ?? user.email,

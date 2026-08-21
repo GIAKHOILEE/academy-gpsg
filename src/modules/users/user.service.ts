@@ -26,8 +26,8 @@ export class UserService {
       throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
 
-    // từ full name tách ra first name
-    const first_name = full_name.split(' ')[0]
+    // từ full name tách ra first name (lấy tên - từ cuối cùng)
+    const first_name = full_name.trim().split(/\s+/).pop()
 
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
@@ -49,8 +49,8 @@ export class UserService {
     if (existingUser) {
       throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
-    // từ full name tách ra first name
-    const first_name = full_name.split(' ')[0]
+    // từ full name tách ra first name (lấy tên - từ cuối cùng)
+    const first_name = full_name.trim().split(/\s+/).pop()
 
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
@@ -167,7 +167,7 @@ export class UserService {
     }
     if (full_name) {
       user.full_name = full_name
-      user.first_name = full_name.split(' ')[0]
+      user.first_name = full_name.trim().split(/\s+/).pop()
     }
 
     if (code) {
