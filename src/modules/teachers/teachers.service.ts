@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 
 import { paginate, PaginationMeta } from '@common/pagination'
-import { arrayToObject, formatStringToDate, hashPassword, throwAppException } from '@common/utils'
+import { arrayToObject, formatStringToDate, hashPassword, removeVietnameseTones, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -76,6 +76,7 @@ export class TeachersService {
 
       // từ full name tách ra first name (lấy tên - từ cuối cùng)
       const first_name = full_name.trim().split(/\s+/).pop()
+      const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
 
       const hashedPassword = await hashPassword(password ?? code)
       const user = queryRunner.manager.getRepository(User).create({
@@ -85,6 +86,7 @@ export class TeachersService {
         email,
         code,
         full_name,
+        full_name_normalized,
         first_name,
         birth_date: rest.birth_date ? formatStringToDate(rest.birth_date) : null,
         ...rest,
@@ -197,11 +199,13 @@ export class TeachersService {
 
       // từ full name tách ra first name (lấy tên - từ cuối cùng)
       const first_name = full_name.trim().split(/\s+/).pop()
+      const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : user.full_name_normalized
 
       const updatedUser = queryRunner.manager.getRepository(User).merge(user, {
         email: email ?? user.email,
         code: code ?? user.code,
         full_name: full_name ?? user.full_name,
+        full_name_normalized,
         first_name: first_name ?? user.first_name,
         password: hashedPassword,
         birth_date: birth_date ? formatStringToDate(birth_date) : user.birth_date,
@@ -347,7 +351,7 @@ export class TeachersService {
     }
 
     if (full_name) {
-      query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })
+      query.andWhere('user.full_name_normalized LIKE :full_name', { full_name: `%${removeVietnameseTones(full_name).toLowerCase().trim()}%` })
     }
 
     if (first_name) {

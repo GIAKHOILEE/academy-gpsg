@@ -13,6 +13,9 @@ export class User {
   full_name: string
 
   @Column({ nullable: true })
+  full_name_normalized: string
+
+  @Column({ nullable: true })
   first_name: string
 
   @Column({ unique: true, nullable: true })

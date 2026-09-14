@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { formatStringToDate, hashPassword, throwAppException, validateHash } from '@common/utils'
+import { formatStringToDate, hashPassword, removeVietnameseTones, throwAppException, validateHash } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -28,11 +28,13 @@ export class UserService {
 
     // từ full name tách ra first name (lấy tên - từ cuối cùng)
     const first_name = full_name.trim().split(/\s+/).pop()
+    const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
 
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
       username,
       full_name,
+      full_name_normalized,
       first_name,
       password: hashedPassword,
       role,
@@ -51,11 +53,13 @@ export class UserService {
     }
     // từ full name tách ra first name (lấy tên - từ cuối cùng)
     const first_name = full_name.trim().split(/\s+/).pop()
+    const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
 
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
       username,
       full_name,
+      full_name_normalized,
       first_name,
       password: hashedPassword,
       role: Role.STAFF,
@@ -72,10 +76,15 @@ export class UserService {
     if (existingUser) {
       throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
+    const first_name = full_name ? full_name.trim().split(/\s+/).pop() : undefined
+    const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
+
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
       username,
       full_name,
+      full_name_normalized,
+      first_name,
       password: hashedPassword,
       role: Role.FINANCE,
       status: UserStatus.ACTIVE,
@@ -86,12 +95,18 @@ export class UserService {
   }
 
   async getAllUsers(paginateUserDto: PaginateUserDto, role?: Role): Promise<{ data: IUser[]; meta: PaginationMeta }> {
+    const { full_name, ...restDto } = paginateUserDto
     const queryBuilder = this.usersRepository.createQueryBuilder('users')
     if (role) {
       queryBuilder.where('users.role = :role', { role })
     }
+    if (full_name) {
+      queryBuilder.andWhere('users.full_name_normalized LIKE :full_name', {
+        full_name: `%${removeVietnameseTones(full_name).toLowerCase().trim()}%`,
+      })
+    }
 
-    const { data, meta } = await paginate(queryBuilder, paginateUserDto)
+    const { data, meta } = await paginate(queryBuilder, restDto)
     const users = data.map(user => {
       return {
         id: user.id,
@@ -168,6 +183,7 @@ export class UserService {
     if (full_name) {
       user.full_name = full_name
       user.first_name = full_name.trim().split(/\s+/).pop()
+      user.full_name_normalized = removeVietnameseTones(full_name).toLowerCase().trim()
     }
 
     if (code) {

@@ -4,7 +4,7 @@ import { In, Repository } from 'typeorm'
 import { Attendance } from './attendance.entity'
 import { CreateAttendanceDto } from './dtos/create-attendance.dto'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { arrayToObject, throwAppException } from '@common/utils'
+import { arrayToObject, removeVietnameseTones, throwAppException } from '@common/utils'
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
@@ -148,8 +148,8 @@ export class AttendanceService {
 
     // Nếu có name thì filter theo name (partial match, case-insensitive) trên full_name / saint_name / code
     if (paginateAttendanceDto?.full_name) {
-      qb.andWhere(`(LOWER(user.full_name) LIKE :q)`, {
-        q: `%${paginateAttendanceDto.full_name.toLowerCase()}%`,
+      qb.andWhere(`(user.full_name_normalized LIKE :q)`, {
+        q: `%${removeVietnameseTones(paginateAttendanceDto.full_name).toLowerCase().trim()}%`,
       })
     }
 

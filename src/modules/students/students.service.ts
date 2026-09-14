@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { formatStringDate, formatStringToDate, hashPassword, throwAppException } from '@common/utils'
+import { formatStringDate, formatStringToDate, hashPassword, removeVietnameseTones, throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -59,6 +59,7 @@ export class StudentsService {
 
       const hashedPassword = await hashPassword(password ?? code)
       const first_name = full_name.trim().split(/\s+/).pop()
+      const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
       const new_birth_date = !birth_date || birth_date === '' ? '1970-01-01' : formatStringToDate(birth_date)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
@@ -67,6 +68,7 @@ export class StudentsService {
         email,
         code,
         full_name,
+        full_name_normalized,
         first_name,
         birth_date: new_birth_date,
         ...rest,
@@ -186,9 +188,11 @@ export class StudentsService {
 
       const hashedPassword = password ? await hashPassword(password) : user.password
       const first_name = full_name ? full_name.trim().split(/\s+/).pop() : user.first_name
+      const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : user.full_name_normalized
       const updatedUser = userRepo.merge(user, {
         email: email ?? user.email,
         full_name: full_name ?? user.full_name,
+        full_name_normalized,
         first_name: first_name ?? user.first_name,
         password: hashedPassword,
         birth_date: birth_date ? formatStringToDate(birth_date) : user.birth_date,
@@ -428,7 +432,7 @@ export class StudentsService {
 
     // Filters on user fields
     if (full_name) {
-      query.andWhere('user.full_name LIKE :full_name', { full_name: `%${full_name}%` })
+      query.andWhere('user.full_name_normalized LIKE :full_name', { full_name: `%${removeVietnameseTones(full_name).toLowerCase().trim()}%` })
     }
 
     if (email) {
@@ -572,7 +576,7 @@ export class StudentsService {
     }
 
     if (full_name) {
-      queryBuilder.andWhere('user.full_name = :full_name', { full_name })
+      queryBuilder.andWhere('user.full_name_normalized = :full_name', { full_name: removeVietnameseTones(full_name).toLowerCase().trim() })
     }
 
     if (birth_date) {

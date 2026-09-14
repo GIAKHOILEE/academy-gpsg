@@ -24,6 +24,7 @@ import { VisitorModule } from '@modules/visitor/visitor.module'
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { SuperAdminSeeder } from '@seeders/supperadmin.seeder'
+import { UserNormalizedNameSeeder } from '@seeders/user-normalized-name.seeder'
 import { CloudinaryModule } from '@services/cloudinary/cloudinary.module'
 import { ClsModule } from 'nestjs-cls'
 import { AppService } from './app.service'
@@ -127,6 +128,7 @@ import { CertificatesModule } from '@modules/certificates/certificates.module'
     AppService,
     SuperAdminSeeder,
     SettingSeeder,
+    UserNormalizedNameSeeder,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

@@ -830,6 +830,7 @@ export class EnrollmentsService {
             first_name,
             saint_name: enrollment.saint_name,
             full_name: enrollment.full_name,
+            full_name_normalized: enrollment.full_name ? removeVietnameseTones(enrollment.full_name).toLowerCase().trim() : null,
             email: enrollment.email,
             phone_number: enrollment.phone_number,
             address: enrollment.address,
