@@ -32,4 +32,22 @@ export class GradeSubmissionDto {
   @Type(() => GradeAnswerDto)
   @ApiProperty({ type: [GradeAnswerDto], description: 'Danh sách câu trả lời' })
   answers: GradeAnswerDto[]
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ description: 'Feedback chung cho toàn bộ bài nộp', required: false })
+  feedback?: string
+
+  @IsOptional()
+  @IsArray()
+  @ApiProperty({
+    description: 'Danh sách đính kèm (ảnh, file, link...) của giảng viên cho toàn bài',
+    required: false,
+    example: [
+      { name: 'nhan-xet.pdf', url: 'https://...', type: 'file' },
+      { name: 'anh-minh-hoa.png', url: 'https://...', type: 'image' },
+      { name: 'link-tham-khao', url: 'https://...', type: 'link' },
+    ],
+  })
+  feedback_attachments?: any[]
 }

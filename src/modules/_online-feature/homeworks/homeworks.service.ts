@@ -738,6 +738,8 @@ export class HomeworkService {
           'submission.score',
           'submission.status',
           'submission.is_download',
+          'submission.feedback',
+          'submission.feedback_attachments',
           'homework.id',
           'homework.title',
           'homework.description',
@@ -776,6 +778,8 @@ export class HomeworkService {
         score: result.score,
         status: result.status,
         is_download: result.is_download ?? false,
+        feedback: result.feedback ?? null,
+        feedback_attachments: result.feedback_attachments ?? null,
         homework: result.homework,
         answers: result.answers,
         student: {
@@ -810,7 +814,7 @@ export class HomeworkService {
 
   // grade one submission (teacher or admin)
   async gradeSubmission(graderId: number, gradeDto: GradeSubmissionDto) {
-    const { submission_id, answers: answersPayload } = gradeDto
+    const { submission_id, answers: answersPayload, feedback, feedback_attachments } = gradeDto
 
     // start transaction
     const queryRunner = this.dataSource.createQueryRunner()
@@ -874,6 +878,12 @@ export class HomeworkService {
       submission.status = SubmissionStatus.GRADED
       submission.graded_by = { id: graderId } as any
       submission.graded_at = new Date()
+      if (feedback !== undefined) {
+        submission.feedback = feedback
+      }
+      if (feedback_attachments !== undefined) {
+        submission.feedback_attachments = feedback_attachments
+      }
       await subRepo.save(submission)
 
       // nếu homework có is_final là true thì cho điểm vào bảng điểm
@@ -947,6 +957,8 @@ export class HomeworkService {
       score: submission.score,
       status: submission.status,
       is_download: submission.is_download,
+      feedback: submission.feedback,
+      feedback_attachments: submission.feedback_attachments,
       homework: {
         id: submission.homework.id,
         title: submission.homework.title,
@@ -1014,6 +1026,8 @@ export class HomeworkService {
       score: s.score,
       status: s.status,
       is_download: s.is_download,
+      feedback: s.feedback,
+      feedback_attachments: s.feedback_attachments,
       learn_type: classStudentMap[s.student.id]?.learn_type,
       student: {
         id: s.student.id,
@@ -1068,6 +1082,8 @@ export class HomeworkService {
       score: submission.score,
       status: submission.status,
       is_download: submission.is_download,
+      feedback: submission.feedback,
+      feedback_attachments: submission.feedback_attachments,
       learn_type: classStudent?.learn_type,
       homework: {
         id: submission.homework.id,

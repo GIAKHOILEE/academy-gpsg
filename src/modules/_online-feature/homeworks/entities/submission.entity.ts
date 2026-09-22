@@ -31,6 +31,14 @@ export class HomeworkSubmission {
   @Column({ name: 'is_download', type: 'boolean', default: false })
   is_download: boolean
 
+  // Nhận xét chung cho toàn bộ bài nộp
+  @Column({ type: 'text', nullable: true })
+  feedback: string
+
+  // Đính kèm (ảnh, file, link) cho feedback toàn bài
+  @Column({ type: 'json', nullable: true })
+  feedback_attachments: any
+
   // ai chấm (user id) nếu chấm tay
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'graded_by' })
