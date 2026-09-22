@@ -1,8 +1,10 @@
 import { IUser } from '@modules/users/user.interface'
 import { ILesson } from '../lesson/lesson.interface'
+import { DiscussType } from '@enums/discuss.enum'
 
 export interface IDiscuss {
   id: number
+  type?: DiscussType
   number_comment?: number
   parent_id?: number
   content?: string

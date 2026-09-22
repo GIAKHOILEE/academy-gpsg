@@ -13,6 +13,7 @@ import { paginate, PaginationMeta } from '@common/pagination'
 import { Gender, Role } from '@enums/role.enum'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import { UpdateDiscussDto } from './dtos/update-discuss.dto'
+import { DiscussType } from '@enums/discuss.enum'
 
 @Injectable()
 export class DiscussService {
@@ -70,6 +71,7 @@ export class DiscussService {
 
     const discuss = this.discussRepository.create({
       ...createDiscussDto,
+      type: createDiscussDto.type ?? DiscussType.TEXT,
       user: existUser,
       lesson: existLesson,
       user_responded: createDiscussDto.user_responded,
@@ -83,12 +85,13 @@ export class DiscussService {
     return {
       id: savedDiscuss.id,
       content: savedDiscuss.content,
+      type: savedDiscuss.type,
       user: existUser,
     }
   }
 
   async updateDiscuss(id: number, updateDiscussDto: UpdateDiscussDto, userId: number): Promise<void> {
-    const { content } = updateDiscussDto
+    const { content, type } = updateDiscussDto
     const existDiscuss = await this.discussRepository
       .createQueryBuilder('discuss')
       .select(['discuss.id', 'user.id'])
@@ -102,7 +105,10 @@ export class DiscussService {
     if (existDiscuss.user.id !== userId) {
       throwAppException('DISCUSS_NOT_ALLOW_UPDATE', ErrorCode.DISCUSS_NOT_ALLOW_UPDATE, HttpStatus.FORBIDDEN)
     }
-    await this.discussRepository.update(id, { content })
+    const updatePayload: Partial<Discuss> = {}
+    if (content !== undefined) updatePayload.content = content
+    if (type !== undefined) updatePayload.type = type
+    await this.discussRepository.update(id, updatePayload)
 
     // Gửi mail thông báo
     this.sendDiscussNotification(id, userId)
@@ -132,6 +138,7 @@ export class DiscussService {
       .select([
         'discuss.id',
         'discuss.content',
+        'discuss.type',
         'discuss.user_responded',
         'discuss.admin_responded',
         'discuss.created_at',
@@ -197,6 +204,7 @@ export class DiscussService {
       return {
         id: discuss.id,
         content: discuss.content,
+        type: discuss.type,
         user_responded: discuss.user_responded,
         admin_responded: discuss.admin_responded,
         user: {
@@ -221,6 +229,7 @@ export class DiscussService {
       .select([
         'discuss.id',
         'discuss.content',
+        'discuss.type',
         'discuss.created_at',
         'discuss.parent_id',
         'user.id',
@@ -247,6 +256,7 @@ export class DiscussService {
       return {
         id: discuss.id,
         content: discuss.content,
+        type: discuss.type,
         user: {
           id: discuss.user.id,
           full_name: discuss.user.full_name,

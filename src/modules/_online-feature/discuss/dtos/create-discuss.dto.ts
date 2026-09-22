@@ -1,7 +1,19 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { DiscussType } from '@enums/discuss.enum'
+import { Type } from 'class-transformer'
 
 export class CreateDiscussDto {
+  @IsOptional()
+  @IsEnum(DiscussType)
+  @Type(() => Number)
+  @ApiPropertyOptional({
+    description: 'Loại thảo luận (1: TEXT, 2: IMG, 3: FILE). Mặc định là 1 (TEXT)',
+    enum: DiscussType,
+    example: DiscussType.TEXT,
+  })
+  type?: DiscussType
+
   @IsOptional()
   @IsNumber()
   @ApiPropertyOptional({ description: 'Parent comment id', example: 1 })

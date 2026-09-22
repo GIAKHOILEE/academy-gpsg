@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, DeleteDateColumn, JoinColumn } from 'typeorm'
 import { Lesson } from '../lesson/lesson.entity'
 import { User } from '@modules/users/user.entity'
+import { DiscussType } from '@enums/discuss.enum'
 
 @Entity()
 export class Discuss {
@@ -9,6 +10,9 @@ export class Discuss {
 
   @Column({ nullable: true })
   parent_id: number
+
+  @Column({ type: 'enum', enum: DiscussType, default: DiscussType.TEXT })
+  type: DiscussType
 
   @Column({ type: 'longtext' })
   content: string
