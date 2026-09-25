@@ -20,6 +20,7 @@ import { QuestionTypeHomework, SubmissionStatus } from '@enums/homework.enum'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { GradeSubmissionDto } from './dtos/submission-grade.dto'
 import { HomeworkProgress } from './entities/homework_progress.entity'
+import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 
 @Injectable()
 export class HomeworkService {
@@ -37,6 +38,7 @@ export class HomeworkService {
     @InjectRepository(ClassStudents)
     private classStudentRepo: Repository<ClassStudents>,
     private dataSource: DataSource,
+    private readonly emailService: BrevoMailerService,
   ) {}
 
   async createHomework(createDto: CreateHomeworksDto) {
@@ -904,6 +906,11 @@ export class HomeworkService {
       await queryRunner.commitTransaction()
       await queryRunner.release()
 
+      // Gửi email thông báo cho học viên sau khi được chấm điểm hoặc nhận xét
+      this.sendGradeNotification(submission.id).catch(err => {
+        console.error('Error sending grade notification email:', err)
+      })
+
       // return full submission using main repo to avoid queryRunner release race
       return this.submissionRepo.findOne({
         where: { id: submission.id },
@@ -1127,6 +1134,61 @@ export class HomeworkService {
     return {
       id: submission.id,
       is_download: submission.is_download,
+    }
+  }
+
+  private async sendGradeNotification(submissionId: number) {
+    try {
+      const submission = await this.submissionRepo.findOne({
+        where: { id: submissionId },
+        relations: [
+          'student',
+          'student.user',
+          'homework',
+          'homework.lesson',
+          'homework.lesson.class',
+          'homework.lesson.class.subject',
+        ],
+      })
+
+      if (!submission) return
+
+      const user = submission.student?.user
+      if (!user || !user.email) return
+
+      const saintName = user.saint_name ? user.saint_name.trim() : ''
+      const fullName = user.full_name ? user.full_name.trim() : ''
+      const studentName = saintName ? `${saintName} ${fullName}` : fullName
+
+      const homeworkTitle = submission.homework?.title || 'Bài kiểm tra'
+      const lessonTitle = submission.homework?.lesson?.title || 'Buổi học'
+      const subjectName =
+        submission.homework?.lesson?.class?.subject?.name ||
+        submission.homework?.lesson?.class?.name ||
+        'Môn học'
+
+      const emailSubject = `Thông báo kết quả bài kiểm tra: ${homeworkTitle} - Môn ${subjectName}`
+
+      const templateData = {
+        studentName,
+        homeworkTitle,
+        lessonTitle,
+        subjectName,
+      }
+
+      await this.emailService.sendMail(
+        [{ email: user.email, name: user.full_name || studentName }],
+        emailSubject,
+        'homework-graded-notification',
+        templateData,
+        undefined,
+        undefined,
+        {
+          senderName: 'Học viện Mục vụ',
+        },
+      )
+    } catch (error) {
+      console.error('Error in sendGradeNotification:', error)
     }
   }
 }
