@@ -65,3 +65,11 @@ export enum AttendanceRuleType {
   EXAM = 3, // thi
   OFF = 4, // nghỉ
 }
+
+// đặc cách lớp học (tính lương giáo viên)
+export enum ClassSpecial {
+  LV1 = 1, // dấu - : min(trần lương, lợi nhuận) + phụ cấp
+  LV2 = 2, // dấu tích xanh : trần lương + phụ cấp
+  LV3 = 3, // ngôi sao : lợi nhuận + phụ cấp
+}
+

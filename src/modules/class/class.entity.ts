@@ -1,4 +1,4 @@
-import { ClassStatus, Schedule } from '@enums/class.enum'
+import { ClassSpecial, ClassStatus, Schedule } from '@enums/class.enum'
 import { Subject } from '@modules/subjects/subjects.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import {
@@ -49,6 +49,11 @@ export class Classes {
   // bồi dưỡng thêm
   @Column({ type: 'decimal', precision: 10, scale: 0, default: 0 })
   extra_allowance: number
+
+  // đặc cách lớp học (tính lương giáo viên)
+  @Column({ default: ClassSpecial.LV1 })
+  special: ClassSpecial
+
 
   // số tiết học
   @Column({ type: 'float', nullable: true })

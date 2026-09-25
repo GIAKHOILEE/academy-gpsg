@@ -1,4 +1,4 @@
-import { ClassStatus, Schedule } from '@enums/class.enum'
+import { ClassSpecial, ClassStatus, Schedule } from '@enums/class.enum'
 import { ClassStudents } from './class-students/class-student.entity'
 import { ISubject } from '@modules/subjects/subjects.interface'
 import { ITeacher } from '@modules/teachers/teachers.interface'
@@ -14,8 +14,10 @@ export interface IClasses {
   status?: ClassStatus
   salary?: number
   extra_allowance?: number
+  special?: ClassSpecial
   number_lessons?: number
   number_periods?: number
+
   classroom?: string
   credit?: number
   max_students?: number

@@ -1,6 +1,5 @@
 import { Classes } from '@modules/class/class.entity'
 import { User } from '@modules/users/user.entity'
-import { TeacherSpecial } from '@enums/user.enum'
 import {
   Column,
   CreateDateColumn,
@@ -30,13 +29,10 @@ export class Teacher {
   @Column()
   user_id: number
 
-  // đặc cách giáo viên
-  @Column({ default: TeacherSpecial.LV1 })
-  special: TeacherSpecial
-
   // tên khác
   @Column({ nullable: true })
   other_name: string
+
 
   // học vị
   @Column({ nullable: true })

@@ -1,7 +1,7 @@
 import { throwAppException } from '@common/utils'
-import { ClassStatus, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { ClassSpecial, ClassStatus, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { TeacherSpecial } from '@enums/user.enum'
+
 import { Classes } from '@modules/class/class.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { Student } from '@modules/students/students.entity'
@@ -585,7 +585,7 @@ export class DashboardService {
         COALESCE(c.salary, 0) AS salary_per_period,
         COALESCE(c.extra_allowance, 0) AS extra_allowance,
         c.teacher_id,
-        t.special AS teacher_special,
+        COALESCE(c.special, 1) AS class_special,
         COUNT(DISTINCT e.id) AS total_students,
         COUNT(DISTINCT e.id) * COALESCE(c.price, 0) AS total_revenue,
         SUM(
@@ -607,7 +607,7 @@ export class DashboardService {
       WHERE ${whereClause}
       GROUP BY d.id, d.name, c.id, c.code, c.name, c.price, 
                c.number_periods, c.salary, c.extra_allowance, 
-               c.teacher_id, t.special
+               c.teacher_id, c.special
       ORDER BY d.name, c.name
     `
 
@@ -646,13 +646,13 @@ export class DashboardService {
       const salaryPerPeriod = Number(row.salary_per_period || 0)
       const extraAllowance = Number(row.extra_allowance || 0)
       const salaryCap = numberPeriods * salaryPerPeriod
-      const teacherSpecial = row.teacher_special
+      const classSpecial = Number(row.class_special || ClassSpecial.LV1)
 
       let finalSalary = 0
-      if (teacherSpecial === TeacherSpecial.LV2) {
+      if (classSpecial === ClassSpecial.LV2) {
         // tick xanh: final = cap + extra
         finalSalary = salaryCap + extraAllowance
-      } else if (teacherSpecial === TeacherSpecial.LV3) {
+      } else if (classSpecial === ClassSpecial.LV3) {
         // star: final = profit + extra
         finalSalary = totalProfit + extraAllowance
       } else {
@@ -769,7 +769,7 @@ export class DashboardService {
         COALESCE(c.number_periods, 0) AS number_periods,
         COALESCE(c.salary, 0) AS salary_per_period,
         COALESCE(c.extra_allowance, 0) AS extra_allowance,
-        t.special AS teacher_special,
+        COALESCE(c.special, 1) AS class_special,
         COUNT(DISTINCT e.id) AS total_students,
         COUNT(DISTINCT e.id) * COALESCE(c.price, 0) AS total_revenue,
         SUM(COALESCE(e.discount, 0) / GREATEST(JSON_LENGTH(e.class_ids), 1)) AS discount
@@ -788,7 +788,7 @@ export class DashboardService {
       WHERE ${whereClause}
       GROUP BY t.id, t.other_name, u.full_name, u.saint_name,
                d.id, d.name, c.id, c.code, c.name,
-               c.number_periods, c.salary, c.extra_allowance, t.special
+               c.number_periods, c.salary, c.extra_allowance, c.special
       ORDER BY d.name, c.name
     `
 
@@ -819,14 +819,16 @@ export class DashboardService {
       const extraAllowance = Number(row.extra_allowance || 0)
       const salaryCap = numberPeriods * salaryPerPeriod
 
+      const classSpecial = Number(row.class_special || ClassSpecial.LV1)
+
       let finalSalary = 0
-      if (row.teacher_special === TeacherSpecial.LV1) {
+      if (classSpecial === ClassSpecial.LV1) {
         // không đặc cách
         finalSalary = Math.min(totalProfit, salaryCap) + extraAllowance
-      } else if (row.teacher_special === TeacherSpecial.LV2) {
+      } else if (classSpecial === ClassSpecial.LV2) {
         // tích xanh
         finalSalary = salaryCap + extraAllowance
-      } else if (row.teacher_special === TeacherSpecial.LV3) {
+      } else if (classSpecial === ClassSpecial.LV3) {
         // ngôi sao vàng
         finalSalary = totalProfit + extraAllowance
       } else {
@@ -862,7 +864,9 @@ export class DashboardService {
         salary: salaryPerPeriod,
         extra_allowance: extraAllowance,
         salary_cap: salaryCap,
-        teacher_special: row.teacher_special,
+        special: classSpecial,
+        class_special: classSpecial,
+        teacher_special: classSpecial,
         final_salary: finalSalary,
       })
 
@@ -879,24 +883,25 @@ export class DashboardService {
   }
 
   async updateTeacherSalary(teacherSalaryDto: UpdateTeacherSalaryDto): Promise<void> {
-    const { class_id, teacher_id, salary, extra_allowance, teacher_special } = teacherSalaryDto
+    const { class_id, teacher_id, salary, extra_allowance, special, teacher_special } = teacherSalaryDto
     const classEntity = await this.classRepository.exists({ where: { id: class_id } })
     if (!classEntity) {
       throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.BAD_REQUEST)
     }
 
-    const teacherEntity = await this.teacherRepository.exists({ where: { id: teacher_id } })
-    if (!teacherEntity) {
-      throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.BAD_REQUEST)
+    if (teacher_id) {
+      const teacherEntity = await this.teacherRepository.exists({ where: { id: teacher_id } })
+      if (!teacherEntity) {
+        throwAppException('TEACHER_NOT_FOUND', ErrorCode.TEACHER_NOT_FOUND, HttpStatus.BAD_REQUEST)
+      }
     }
+
+    const classSpecial = special ?? teacher_special ?? ClassSpecial.LV1
 
     await this.classRepository.update(class_id, {
       salary,
       extra_allowance,
-    })
-
-    await this.teacherRepository.update(teacher_id, {
-      special: teacher_special as TeacherSpecial,
+      special: classSpecial,
     })
   }
 }

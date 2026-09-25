@@ -1,20 +1,14 @@
 import { CreateUserDtoV2 } from '@modules/users/dtos/create-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
-import { TeacherSpecial } from '@enums/user.enum'
 import { IFile } from '@common/file'
 
 export class CreateTeachersDto extends CreateUserDtoV2 {
-  // đặc cách giáo viên
-  @IsOptional()
-  @IsEnum(TeacherSpecial)
-  @ApiPropertyOptional({ description: 'Đặc cách giáo viên', enum: TeacherSpecial, example: TeacherSpecial.LV1 })
-  special: TeacherSpecial
-
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'Mã thẻ giảng viên' })
   card_code: string
+
 
   @IsOptional()
   @IsString()

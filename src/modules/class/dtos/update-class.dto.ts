@@ -1,4 +1,4 @@
-import { ClassStatus, Schedule } from '@enums/class.enum'
+import { ClassSpecial, ClassStatus, Schedule } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
@@ -47,6 +47,12 @@ export class UpdateClassDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Bồi dưỡng thêm của giáo viên', example: 1000000 })
   extra_allowance: number
+
+  @IsEnum(ClassSpecial)
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Đặc cách lớp (tính lương giáo viên)', example: ClassSpecial.LV1, enum: ClassSpecial })
+  special: ClassSpecial
+
 
   @IsArray()
   @IsEnum(Schedule, { each: true })

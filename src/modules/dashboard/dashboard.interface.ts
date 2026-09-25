@@ -44,13 +44,19 @@ export interface DepartmentRevenue {
 
 export interface ClassRevenue {
   class_id: number
+  class_code?: string
   class_name: string
   teacher_id: number
   teacher_name: string
+  teacher_other_name?: string
+  teacher_saint_name?: string
   number_periods: number
   salary: number
   extra_allowance: number
   salary_cap: number
+  special?: number
+  class_special?: number
   teacher_special: number
   final_salary: number
 }
+

@@ -1,9 +1,9 @@
-// đặc cách giáo viên
-export enum TeacherSpecial {
-  LV1 = 1, // dấu -
-  LV2 = 2, // dấu tích xanh
-  LV3 = 3, // ngôi sao
-}
+import { ClassSpecial } from './class.enum'
+
+// đặc cách giáo viên (Deprecated: chuyển sang sử dụng ClassSpecial của từng lớp học)
+export const TeacherSpecial = ClassSpecial
+export type TeacherSpecial = ClassSpecial
+
 
 export enum StudentCardStatus {
   NOT_PRINTED = 1, // chưa in thẻ

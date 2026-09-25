@@ -1,5 +1,4 @@
 import { IFile } from '@common/file'
-import { TeacherSpecial } from '@enums/user.enum'
 import { UpdateUserDtoV2 } from '@modules/users/dtos/update-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
@@ -10,11 +9,6 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Mã thẻ giảng viên' })
   card_code: string
 
-  // đặc cách giáo viên
-  @IsOptional()
-  @IsEnum(TeacherSpecial)
-  @ApiPropertyOptional({ description: 'Đặc cách giáo viên', enum: TeacherSpecial, example: TeacherSpecial.LV1 })
-  special: TeacherSpecial
 
   @IsOptional()
   @IsString()
