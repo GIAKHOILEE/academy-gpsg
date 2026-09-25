@@ -17,6 +17,7 @@ import { Gender, Role } from '@enums/role.enum'
 import { User } from '@modules/users/user.entity'
 import { Department } from '@modules/departments/departments.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
+import { StatsCacheService } from '@common/stats-cache.service'
 @Injectable()
 export class DashboardService {
   constructor(
@@ -37,12 +38,23 @@ export class DashboardService {
     @InjectRepository(ClassStudents)
     private readonly classStudentRepository: Repository<ClassStudents>,
     private readonly dataSource: DataSource,
+    private readonly statsCache: StatsCacheService,
   ) {}
+
+  /** Tên bảng thật của entity User (tránh hard-code sai khi dùng raw SQL). */
+  private get userTable(): string {
+    return this.userRepository.metadata.tableName
+  }
 
   // xếp loại học viên
   async studentRanking(filter: FilterDashboardBySemesterDto): Promise<any> {
     const { semester_id, scholastic_id } = filter
+    return this.statsCache.wrap(`dashboard:student-ranking:${scholastic_id ?? ''}:${semester_id ?? ''}`, () =>
+      this.computeStudentRanking(semester_id, scholastic_id),
+    )
+  }
 
+  private async computeStudentRanking(semester_id?: number, scholastic_id?: number): Promise<any> {
     const queryBuilder = this.classStudentRepository
       .createQueryBuilder('cs')
       .innerJoin('cs.class', 'c')
@@ -117,136 +129,118 @@ export class DashboardService {
       total,
     }
   }
+
+  /**
+   * Tập user_id của học viên có ghi danh thuộc kỳ/niên khoá được lọc.
+   *
+   * Đi từ `classes` (bảng nhỏ, có index theo semester/scholastic) sang bảng quan hệ
+   * `enrollment_classes` rồi mới về enrollments/students — toàn bộ đường đi đều bằng
+   * index. Bản cũ đọc thẳng cột JSON `enrollments.class_ids` bằng JSON_TABLE trong một
+   * EXISTS tương quan, khiến MySQL phải quét lại cả bảng enrollments cho TỪNG dòng user.
+   */
+  private enrolledStudentUserIdsSql(semester_id?: number, scholastic_id?: number): { sql: string; params: any[] } {
+    const params: any[] = []
+    let sql = `
+      SELECT DISTINCT s.user_id AS user_id
+      FROM classes c
+      INNER JOIN enrollment_classes ec ON ec.class_id = c.id
+      INNER JOIN enrollments e ON e.id = ec.enrollment_id
+      INNER JOIN students s ON s.id = e.student_id
+      WHERE e.deleted_at IS NULL`
+
+    if (semester_id) {
+      sql += ` AND c.semester_id = ?`
+      params.push(semester_id)
+    }
+    if (scholastic_id) {
+      sql += ` AND c.scholastic_id = ?`
+      params.push(scholastic_id)
+    }
+
+    return { sql, params }
+  }
+
   // thống kê dân số học viên
   async studentStatistics(filter: FilterDashboardBySemesterDto): Promise<any> {
     const { semester_id, scholastic_id } = filter
+    return this.statsCache.wrap(`dashboard:student-statistics:${scholastic_id ?? ''}:${semester_id ?? ''}`, () =>
+      this.computeStudentStatistics(semester_id, scholastic_id),
+    )
+  }
 
-    const queryBuilder = this.userRepository
-      .createQueryBuilder('u')
-      .select([
-        // Nam
-        `SUM(CASE WHEN u.gender = 1 AND (u.saint_name IS NOT NULL AND u.saint_name != '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS male_giaodan`,
-        `SUM(CASE WHEN u.gender = 1 AND (u.congregation IS NOT NULL AND u.congregation != '') THEN 1 ELSE 0 END) AS male_tusi`,
-        `SUM(CASE WHEN u.gender = 1 AND (u.saint_name IS NULL OR u.saint_name = '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS male_daokhac`,
+  private async computeStudentStatistics(semester_id?: number, scholastic_id?: number): Promise<any> {
+    const hasFilter = Boolean(semester_id || scholastic_id)
 
-        // Nữ
-        `SUM(CASE WHEN u.gender = 2 AND (u.saint_name IS NOT NULL AND u.saint_name != '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS female_giaodan`,
-        `SUM(CASE WHEN u.gender = 2 AND (u.congregation IS NOT NULL AND u.congregation != '') THEN 1 ELSE 0 END) AS female_tusi`,
-        `SUM(CASE WHEN u.gender = 2 AND (u.saint_name IS NULL OR u.saint_name = '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS female_daokhac`,
+    // ===== 1. Dân số học viên theo giới tính / thành phần =====
+    const populationParams: any[] = []
+    let populationSql = `
+      SELECT
+        SUM(CASE WHEN u.gender = 1 AND (u.saint_name IS NOT NULL AND u.saint_name != '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS male_giaodan,
+        SUM(CASE WHEN u.gender = 1 AND (u.congregation IS NOT NULL AND u.congregation != '') THEN 1 ELSE 0 END) AS male_tusi,
+        SUM(CASE WHEN u.gender = 1 AND (u.saint_name IS NULL OR u.saint_name = '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS male_daokhac,
 
-        // Khác / không xác định
-        `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND (u.saint_name IS NOT NULL AND u.saint_name != '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS other_giaodan`,
-        `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND (u.congregation IS NOT NULL AND u.congregation != '') THEN 1 ELSE 0 END) AS other_tusi`,
-        `SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND (u.saint_name IS NULL OR u.saint_name = '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS other_daokhac`,
-      ])
-      .where('u.role = :role', { role: Role.STUDENT })
+        SUM(CASE WHEN u.gender = 2 AND (u.saint_name IS NOT NULL AND u.saint_name != '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS female_giaodan,
+        SUM(CASE WHEN u.gender = 2 AND (u.congregation IS NOT NULL AND u.congregation != '') THEN 1 ELSE 0 END) AS female_tusi,
+        SUM(CASE WHEN u.gender = 2 AND (u.saint_name IS NULL OR u.saint_name = '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS female_daokhac,
 
-    if (semester_id || scholastic_id) {
-      let filterSql = `EXISTS (
-        SELECT 1
-        FROM students s
-        INNER JOIN enrollments e ON e.student_id = s.id
-        INNER JOIN JSON_TABLE(e.class_ids, "$[*]" COLUMNS (class_id INT PATH "$.class_id")) ec ON 1=1
-        INNER JOIN classes c ON c.id = ec.class_id
-        WHERE s.user_id = u.id`
+        SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND (u.saint_name IS NOT NULL AND u.saint_name != '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS other_giaodan,
+        SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND (u.congregation IS NOT NULL AND u.congregation != '') THEN 1 ELSE 0 END) AS other_tusi,
+        SUM(CASE WHEN (u.gender = 0 OR u.gender IS NULL) AND (u.saint_name IS NULL OR u.saint_name = '') AND (u.congregation IS NULL OR u.congregation = '') THEN 1 ELSE 0 END) AS other_daokhac
+      FROM `
 
-      if (semester_id) {
-        filterSql += ` AND c.semester_id = :semester_id`
-      }
-      if (scholastic_id) {
-        filterSql += ` AND c.scholastic_id = :scholastic_id`
-      }
-      filterSql += ')'
-
-      queryBuilder.andWhere(filterSql)
+    if (hasFilter) {
+      const enrolled = this.enrolledStudentUserIdsSql(semester_id, scholastic_id)
+      populationSql += `(${enrolled.sql}) eu INNER JOIN ${this.userTable} u ON u.id = eu.user_id`
+      populationParams.push(...enrolled.params)
+    } else {
+      populationSql += `${this.userTable} u`
     }
 
-    const result = await queryBuilder.setParameters({ semester_id, scholastic_id, role: Role.STUDENT }).getRawOne()
+    populationSql += ` WHERE u.role = ? AND u.deleted_at IS NULL`
+    populationParams.push(Role.STUDENT)
 
-    const data = {
-      male: {
-        parishioners: +result.male_giaodan,
-        friar: +result.male_tusi,
-        otherReligions: +result.male_daokhac,
-        total: +result.male_giaodan + +result.male_tusi + +result.male_daokhac,
-      },
-      female: {
-        parishioners: +result.female_giaodan,
-        friar: +result.female_tusi,
-        otherReligions: +result.female_daokhac,
-        total: +result.female_giaodan + +result.female_tusi + +result.female_daokhac,
-      },
-      other: {
-        parishioners: +result.other_giaodan,
-        friar: +result.other_tusi,
-        otherReligions: +result.other_daokhac,
-        total: +result.other_giaodan + +result.other_tusi + +result.other_daokhac,
-      },
-      total: {
-        parishioners: +result.male_giaodan + +result.female_giaodan + +result.other_giaodan,
-        friar: +result.male_tusi + +result.female_tusi + +result.other_tusi,
-        otherReligions: +result.male_daokhac + +result.female_daokhac + +result.other_daokhac,
-        total:
-          +result.male_giaodan +
-          +result.female_giaodan +
-          +result.other_giaodan +
-          +result.male_tusi +
-          +result.female_tusi +
-          +result.other_tusi +
-          +result.male_daokhac +
-          +result.female_daokhac +
-          +result.other_daokhac,
-      },
-    }
-
-    // tổng số lớp
+    // ===== 2. Tổng số lớp =====
     const classQb = this.classRepository.createQueryBuilder('c')
     if (semester_id) classQb.andWhere('c.semester_id = :semester_id', { semester_id })
     if (scholastic_id) classQb.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
-    const totalClass = await classQb.getCount()
 
-    // tổng số giảng viên
-    let totalTeacher: number
-    if (semester_id || scholastic_id) {
+    // ===== 3. Tổng số giảng viên =====
+    const teacherPromise = (() => {
+      if (!hasFilter) return this.teacherRepository.count()
       const teacherQb = this.teacherRepository.createQueryBuilder('t').innerJoin('classes', 'c', 'c.teacher_id = t.id')
       if (semester_id) teacherQb.andWhere('c.semester_id = :semester_id', { semester_id })
       if (scholastic_id) teacherQb.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+      return teacherQb
+        .select('COUNT(DISTINCT t.id)', 'count')
+        .getRawOne()
+        .then(r => Number(r?.count) || 0)
+    })()
 
-      const teacherRes = await teacherQb.select('COUNT(DISTINCT t.id)', 'count').getRawOne()
-      totalTeacher = Number(teacherRes.count)
-    } else {
-      totalTeacher = await this.teacherRepository.count()
-    }
-
-    // tổng số khoa
-    let totalDepartment: number
-    if (semester_id || scholastic_id) {
+    // ===== 4. Tổng số khoa =====
+    const departmentPromise = (() => {
+      if (!hasFilter) return this.departmentRepository.count()
       const departmentQb = this.departmentRepository
         .createQueryBuilder('d')
         .innerJoin('subjects', 's', 's.department_id = d.id')
         .innerJoin('classes', 'c', 'c.subject_id = s.id')
-
       if (semester_id) departmentQb.andWhere('c.semester_id = :semester_id', { semester_id })
       if (scholastic_id) departmentQb.andWhere('c.scholastic_id = :scholastic_id', { scholastic_id })
+      return departmentQb
+        .select('COUNT(DISTINCT d.id)', 'count')
+        .getRawOne()
+        .then(r => Number(r?.count) || 0)
+    })()
 
-      const departmentRes = await departmentQb.select('COUNT(DISTINCT d.id)', 'count').getRawOne()
-      totalDepartment = Number(departmentRes.count)
-    } else {
-      totalDepartment = await this.departmentRepository.count()
-    }
-
-    // tổng số lớp được đăng ký
-    let totalClassRegistered: number = 0
+    // ===== 5. Tổng số lớp được đăng ký =====
     let classRegisteredSql = `
-      SELECT COUNT(*) as count
-      FROM enrollments e
-      INNER JOIN JSON_TABLE(e.class_ids, '$[*]' COLUMNS (class_id INT PATH '$.class_id')) ec ON 1=1
-      INNER JOIN classes c ON c.id = ec.class_id
-      WHERE 1=1
-      AND e.status IN (${StatusEnrollment.DONE}, ${StatusEnrollment.PAY_LATE}, ${StatusEnrollment.DEBT})
+      SELECT COUNT(*) AS count
+      FROM classes c
+      INNER JOIN enrollment_classes ec ON ec.class_id = c.id
+      INNER JOIN enrollments e ON e.id = ec.enrollment_id
+      WHERE e.deleted_at IS NULL
+        AND e.status IN (${StatusEnrollment.DONE}, ${StatusEnrollment.PAY_LATE}, ${StatusEnrollment.DEBT})
     `
     const classRegisteredParams: any[] = []
-
     if (semester_id) {
       classRegisteredSql += ` AND c.semester_id = ?`
       classRegisteredParams.push(semester_id)
@@ -256,14 +250,61 @@ export class DashboardService {
       classRegisteredParams.push(scholastic_id)
     }
 
-    const classRegisteredRes = await this.dataSource.query(classRegisteredSql, classRegisteredParams)
-    totalClassRegistered = Number(classRegisteredRes[0]?.count) || 0
+    // Chạy song song thay vì tuần tự -> tổng thời gian = query chậm nhất, không phải tổng các query
+    const [populationRows, totalClass, totalTeacher, totalDepartment, classRegisteredRes] = await Promise.all([
+      this.dataSource.query(populationSql, populationParams),
+      classQb.getCount(),
+      teacherPromise,
+      departmentPromise,
+      this.dataSource.query(classRegisteredSql, classRegisteredParams),
+    ])
+
+    const result = populationRows[0] ?? {}
+    const n = (v: any) => Number(v) || 0
+
+    const maleParishioners = n(result.male_giaodan)
+    const maleFriar = n(result.male_tusi)
+    const maleOther = n(result.male_daokhac)
+    const femaleParishioners = n(result.female_giaodan)
+    const femaleFriar = n(result.female_tusi)
+    const femaleOther = n(result.female_daokhac)
+    const otherParishioners = n(result.other_giaodan)
+    const otherFriar = n(result.other_tusi)
+    const otherOther = n(result.other_daokhac)
+
+    const data = {
+      male: {
+        parishioners: maleParishioners,
+        friar: maleFriar,
+        otherReligions: maleOther,
+        total: maleParishioners + maleFriar + maleOther,
+      },
+      female: {
+        parishioners: femaleParishioners,
+        friar: femaleFriar,
+        otherReligions: femaleOther,
+        total: femaleParishioners + femaleFriar + femaleOther,
+      },
+      other: {
+        parishioners: otherParishioners,
+        friar: otherFriar,
+        otherReligions: otherOther,
+        total: otherParishioners + otherFriar + otherOther,
+      },
+      total: {
+        parishioners: maleParishioners + femaleParishioners + otherParishioners,
+        friar: maleFriar + femaleFriar + otherFriar,
+        otherReligions: maleOther + femaleOther + otherOther,
+        total:
+          maleParishioners + femaleParishioners + otherParishioners + maleFriar + femaleFriar + otherFriar + maleOther + femaleOther + otherOther,
+      },
+    }
 
     return {
       totalClass,
       totalTeacher,
       totalDepartment,
-      totalClassRegistered,
+      totalClassRegistered: Number(classRegisteredRes[0]?.count) || 0,
       ...data,
     }
   }
@@ -271,7 +312,12 @@ export class DashboardService {
   // thông kê tuổi học viên
   async studentAgeStatistics(filter: FilterDashboardBySemesterDto): Promise<any> {
     const { semester_id, scholastic_id } = filter
+    return this.statsCache.wrap(`dashboard:student-age:${scholastic_id ?? ''}:${semester_id ?? ''}`, () =>
+      this.computeStudentAgeStatistics(semester_id, scholastic_id),
+    )
+  }
 
+  private async computeStudentAgeStatistics(semester_id?: number, scholastic_id?: number): Promise<any> {
     const ageGroups = [
       { label: 'Từ 0-9', min: -99999, max: 9 },
       { label: 'Từ 10-19', min: 10, max: 19 },
@@ -283,63 +329,37 @@ export class DashboardService {
       { label: 'Trên 70', min: 70, max: 99999 },
     ]
 
-    const queryBuilder = this.userRepository
-      .createQueryBuilder('u')
-      .select([`TIMESTAMPDIFF(YEAR, u.birth_date, CURDATE()) as age`, `u.gender as gender`, `COUNT(*) as total`])
-      .where('u.role = :role', { role: Role.STUDENT })
-      .andWhere('u.birth_date IS NOT NULL')
+    const hasFilter = Boolean(semester_id || scholastic_id)
+    const params: any[] = []
+    let sql = `SELECT TIMESTAMPDIFF(YEAR, u.birth_date, CURDATE()) AS age, u.gender AS gender, COUNT(*) AS total FROM `
 
-    // filter semester / scholastic
-    if (semester_id || scholastic_id) {
-      let filterSql = `EXISTS (
-        SELECT 1
-        FROM students s
-        INNER JOIN enrollments e ON e.student_id = s.id
-        INNER JOIN JSON_TABLE(e.class_ids, "$[*]" COLUMNS (class_id INT PATH "$.class_id")) ec ON 1=1
-        INNER JOIN classes c ON c.id = ec.class_id
-        WHERE s.user_id = u.id`
-
-      if (semester_id) {
-        filterSql += ` AND c.semester_id = :semester_id`
-      }
-      if (scholastic_id) {
-        filterSql += ` AND c.scholastic_id = :scholastic_id`
-      }
-
-      filterSql += ')'
-      queryBuilder.andWhere(filterSql)
+    if (hasFilter) {
+      const enrolled = this.enrolledStudentUserIdsSql(semester_id, scholastic_id)
+      sql += `(${enrolled.sql}) eu INNER JOIN ${this.userTable} u ON u.id = eu.user_id`
+      params.push(...enrolled.params)
+    } else {
+      sql += `${this.userTable} u`
     }
 
-    queryBuilder.groupBy('age').addGroupBy('u.gender')
+    sql += ` WHERE u.role = ? AND u.deleted_at IS NULL AND u.birth_date IS NOT NULL GROUP BY age, u.gender`
+    params.push(Role.STUDENT)
 
-    const raw = await queryBuilder.setParameters({ semester_id, scholastic_id }).getRawMany()
+    const raw = await this.dataSource.query(sql, params)
 
-    // ===== map sang ageGroups =====
+    // Gom theo nhóm tuổi trong 1 lượt duyệt thay vì duyệt lại toàn bộ raw cho từng nhóm
+    const result = ageGroups.map(group => ({ ageGroup: group.label, male: 0, female: 0, other: 0, total: 0 }))
 
-    const result = ageGroups.map(group => {
-      let male = 0
-      let female = 0
-      let other = 0
+    raw.forEach(row => {
+      const age = Number(row.age)
+      const gender = Number(row.gender)
+      const total = Number(row.total)
+      const index = ageGroups.findIndex(g => age >= g.min && age <= g.max)
+      if (index < 0) return
 
-      raw.forEach(row => {
-        const age = Number(row.age)
-        const gender = Number(row.gender)
-        const total = Number(row.total)
-
-        if (age >= group.min && age <= group.max) {
-          if (gender === Gender.MALE) male += total
-          else if (gender === Gender.FEMALE) female += total
-          else other += total
-        }
-      })
-
-      return {
-        ageGroup: group.label,
-        male,
-        female,
-        other,
-        total: male + female + other,
-      }
+      if (gender === Gender.MALE) result[index].male += total
+      else if (gender === Gender.FEMALE) result[index].female += total
+      else result[index].other += total
+      result[index].total += total
     })
 
     return result
@@ -593,13 +613,8 @@ export class DashboardService {
           GREATEST(JSON_LENGTH(e.class_ids), 1)
         ) AS total_discount,
         COUNT(DISTINCT CASE WHEN e.discount > 0 THEN e.id END) AS total_student_discount
-      FROM enrollments e
-      INNER JOIN JSON_TABLE(
-        e.class_ids,
-        '$[*]' COLUMNS(
-          class_id INT PATH '$.class_id'
-        )
-      ) ec ON TRUE
+      FROM enrollment_classes ec
+      INNER JOIN enrollments e ON e.id = ec.enrollment_id
       INNER JOIN classes c ON c.id = ec.class_id
       INNER JOIN subjects s ON s.id = c.subject_id
       INNER JOIN departments d ON d.id = s.department_id
@@ -773,14 +788,9 @@ export class DashboardService {
         COUNT(DISTINCT e.id) AS total_students,
         COUNT(DISTINCT e.id) * COALESCE(c.price, 0) AS total_revenue,
         SUM(COALESCE(e.discount, 0) / GREATEST(JSON_LENGTH(e.class_ids), 1)) AS discount
-      FROM enrollments e
-      INNER JOIN JSON_TABLE(
-        e.class_ids,
-        '$[*]' COLUMNS (
-          class_id INT PATH '$.class_id'
-        )
-      ) jt ON TRUE
-      INNER JOIN classes c ON c.id = jt.class_id
+      FROM enrollment_classes ec
+      INNER JOIN enrollments e ON e.id = ec.enrollment_id
+      INNER JOIN classes c ON c.id = ec.class_id
       INNER JOIN subjects s ON s.id = c.subject_id
       INNER JOIN departments d ON d.id = s.department_id
       INNER JOIN teachers t ON t.id = c.teacher_id

@@ -11,5 +11,6 @@ export const databaseConfig: TypeOrmModuleOptions = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   entities: [__dirname + '/../modules/**/*.entity{.ts,.js}'],
+  subscribers: [__dirname + '/../modules/**/*.subscriber{.ts,.js}'],
   synchronize: true, // tự động sync table
 }

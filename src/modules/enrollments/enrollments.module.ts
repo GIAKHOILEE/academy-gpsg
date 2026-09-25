@@ -13,10 +13,16 @@ import { Voucher } from '@modules/voucher/voucher.entity'
 import { Footer } from '@modules/footer/footer.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { LibrarySyncService } from '@services/library-sync/library-sync.service'
+import { EnrollmentClasses } from './enrollment-classes.entity'
+import { EnrollmentClassesBackfill } from './enrollment-classes.backfill'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Enrollments, Student, Classes, User, Voucher, Footer, ClassStudents]), ScheduleModule.forRoot(), HttpModule],
+  imports: [
+    TypeOrmModule.forFeature([Enrollments, EnrollmentClasses, Student, Classes, User, Voucher, Footer, ClassStudents]),
+    ScheduleModule.forRoot(),
+    HttpModule,
+  ],
   controllers: [AdminEnrollmentsController, EnrollmentsController],
-  providers: [EnrollmentsService, BrevoMailerService, LibrarySyncService],
+  providers: [EnrollmentsService, BrevoMailerService, LibrarySyncService, EnrollmentClassesBackfill],
 })
 export class EnrollmentsModule {}
