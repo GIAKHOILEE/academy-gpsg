@@ -72,6 +72,39 @@ export class AdminEnrollmentsController {
       messageCode: 'ENROLLMENT_DELETE_SUCCESS',
     })
   }
+
+  @ApiOperation({ summary: 'Gửi email xác nhận thanh toán (hoá đơn)' })
+  @Post(':id/send-payment-email')
+  async sendPaymentEmail(@Param('id') id: number): Promise<ResponseDto> {
+    await this.enrollmentsService.sendPaymentSuccessEmail(id)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'ENROLLMENT_PAYMENT_EMAIL_SENT_SUCCESS',
+      data: null,
+    })
+  }
+
+  @ApiOperation({ summary: 'Gửi email thông tin tài khoản học viên' })
+  @Post(':id/send-account-email')
+  async sendAccountEmail(@Param('id') id: number): Promise<ResponseDto> {
+    await this.enrollmentsService.sendAccountEmail(id)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'ENROLLMENT_ACCOUNT_EMAIL_SENT_SUCCESS',
+      data: null,
+    })
+  }
+
+  @ApiOperation({ summary: 'Gửi email hướng dẫn sử dụng hệ thống học trực tuyến' })
+  @Post(':id/send-instruction-email')
+  async sendInstructionEmail(@Param('id') id: number): Promise<ResponseDto> {
+    await this.enrollmentsService.sendInstructionEmail(id)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'ENROLLMENT_INSTRUCTION_EMAIL_SENT_SUCCESS',
+      data: null,
+    })
+  }
 }
 
 @Controller('enrollments')

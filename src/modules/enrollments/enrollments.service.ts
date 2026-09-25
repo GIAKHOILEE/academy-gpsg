@@ -1022,7 +1022,12 @@ export class EnrollmentsService {
     }
   }
 
-  private async handleEnrollmentEmail(enrollment: Enrollments, type: 'register' | 'payment', status?: StatusEnrollment) {
+  private async handleEnrollmentEmail(
+    enrollment: Enrollments,
+    type: 'register' | 'payment',
+    status?: StatusEnrollment,
+    isThrowError = false,
+  ) {
     try {
       if (!enrollment.email) return
 
@@ -1141,7 +1146,101 @@ export class EnrollmentsService {
       )
     } catch (err) {
       console.error('Error sending enrollment email:', err)
+      if (isThrowError) {
+        throw err
+      }
     }
+  }
+
+  async sendPaymentSuccessEmail(id: number): Promise<void> {
+    const enrollment = await this.enrollmentsRepository.findOne({ where: { id } })
+    if (!enrollment) {
+      throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    if (!enrollment.email) {
+      throwAppException('NO_EMAIL_FOUND', ErrorCode.NO_EMAIL_FOUND, HttpStatus.BAD_REQUEST)
+    }
+
+    if (enrollment.status !== StatusEnrollment.DONE) {
+      throwAppException('ENROLLMENT_NOT_PAID', ErrorCode.ENROLLMENT_NOT_PAID, HttpStatus.BAD_REQUEST)
+    }
+
+    await this.handleEnrollmentEmail(enrollment, 'payment', StatusEnrollment.DONE, true)
+  }
+
+  async sendAccountEmail(id: number): Promise<void> {
+    const enrollment = await this.enrollmentsRepository.findOne({ where: { id } })
+    if (!enrollment) {
+      throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const userRepo = this.dataSource.getRepository(User)
+    let user: User | null = null
+
+    if (enrollment.student_id) {
+      const student = await this.studentRepository.findOne({ where: { id: enrollment.student_id } })
+      if (student?.user_id) {
+        user = await userRepo.findOne({ where: { id: student.user_id } })
+      }
+    }
+
+    if (!user && enrollment.email) {
+      user = await userRepo.findOne({ where: { email: enrollment.email } })
+    }
+
+    if (!user) {
+      throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const emailToSend = user.email || enrollment.email
+    if (!emailToSend) {
+      throwAppException('NO_EMAIL_FOUND', ErrorCode.NO_EMAIL_FOUND, HttpStatus.BAD_REQUEST)
+    }
+
+    await this.emailService.sendMail(
+      [{ email: emailToSend, name: user.full_name }],
+      'Đăng ký tài khoản thành công',
+      'register-success',
+      {
+        name: user.full_name,
+        username: user.code,
+        password: user.code,
+        loginLink: `${process.env.FRONTEND_URL}`,
+      },
+    )
+  }
+
+  async sendInstructionEmail(id: number): Promise<void> {
+    const enrollment = await this.enrollmentsRepository.findOne({ where: { id } })
+    if (!enrollment) {
+      throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    if (!enrollment.email) {
+      throwAppException('NO_EMAIL_FOUND', ErrorCode.NO_EMAIL_FOUND, HttpStatus.BAD_REQUEST)
+    }
+
+    const hasOnlineClass =
+      Array.isArray(enrollment.class_ids) &&
+      enrollment.class_ids.some(item => item.learn_type === LearnType.VIDEO || item.learn_type === LearnType.MEETING)
+
+    if (!hasOnlineClass) {
+      throwAppException('ENROLLMENT_NO_ONLINE_CLASS', ErrorCode.ENROLLMENT_NO_ONLINE_CLASS, HttpStatus.BAD_REQUEST)
+    }
+
+    const saintName = enrollment.saint_name ? `${enrollment.saint_name} ` : ''
+    const fullName = enrollment.full_name || ''
+    const mailContent = `Xin chào ${saintName}${fullName},<br><br>Học viện Mục vụ xin gửi video hướng dẫn sử dụng hệ thống học trực tuyến, xin học viên tham khảo kỹ để có một quá trình học tập thuận lợi nhất.<br><br>https://youtu.be/J_h32_gDSBE?si=-yo_sKlUyRq4O0Db<br><br>Mọi thắc mắc xin liên hệ lại với học viện qua bất kỳ hình thức liên lạc nào thuận tiện để được hỗ trợ.<br><br>Xin chân thành cảm ơn!`
+
+    await this.emailService.sendMail(
+      [{ email: enrollment.email, name: enrollment.full_name }],
+      'Hướng dẫn sử dụng hệ thống học trực tuyến',
+      '',
+      null,
+      undefined,
+      mailContent,
+    )
   }
 
   async getEnrollmentById(id: number): Promise<IEnrollments> {

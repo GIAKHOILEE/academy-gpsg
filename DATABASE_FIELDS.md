@@ -66,6 +66,7 @@ Tệp entity: src/modules/class/class.entity.ts
 - price (number): Học phí của lớp học cho mỗi học viên đăng ký.
 - salary (decimal): Mức lương / thù lao trả cho giáo viên giảng dạy trên mỗi tiết học.
 - extra_allowance (decimal): Mức trợ cấp / phụ cấp bổ sung cho giáo viên.
+- special (enum ClassSpecial): Đặc cách lớp học tính lương cho giáo viên (1: LV1 không đặc cách, 2: LV2 tích xanh - hưởng đủ trần lương, 3: LV3 ngôi sao vàng - hưởng theo lợi nhuận).
 - number_periods (float): Tổng số tiết học quy định của lớp học.
 - number_lessons (number): Tổng số buổi học thực tế của lớp.
 - max_students (number): Số lượng học viên tối đa được phép ghi danh vào lớp.

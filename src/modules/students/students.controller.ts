@@ -91,6 +91,17 @@ export class AdminStudentsController {
       messageCode: 'STUDENT_DELETE_SUCCESS',
     }
   }
+
+  @ApiOperation({ summary: 'Gửi email thông tin tài khoản cho học viên' })
+  @Post(':id/send-account-email')
+  async sendAccountEmail(@Param('id') id: number): Promise<ResponseDto> {
+    await this.studentsService.sendAccountEmail(id)
+    return {
+      statusCode: 200,
+      messageCode: 'STUDENT_ACCOUNT_EMAIL_SENT_SUCCESS',
+      data: null,
+    }
+  }
 }
 
 @Controller('students')

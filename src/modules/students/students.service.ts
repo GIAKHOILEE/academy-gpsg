@@ -613,4 +613,33 @@ export class StudentsService {
     })
     return formatResult
   }
+
+  async sendAccountEmail(studentId: number): Promise<void> {
+    const student = await this.studentRepository.findOne({ where: { id: studentId } })
+    if (!student) {
+      throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const userRepo = this.dataSource.getRepository(User)
+    const user = await userRepo.findOne({ where: { id: student.user_id } })
+    if (!user) {
+      throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    if (!user.email) {
+      throwAppException('NO_EMAIL_FOUND', ErrorCode.NO_EMAIL_FOUND, HttpStatus.BAD_REQUEST)
+    }
+
+    await this.emailService.sendMail(
+      [{ email: user.email, name: user.full_name }],
+      'Đăng ký tài khoản thành công',
+      'register-success',
+      {
+        name: user.full_name,
+        username: user.code,
+        password: user.code,
+        loginLink: `${process.env.FRONTEND_URL}`,
+      },
+    )
+  }
 }
