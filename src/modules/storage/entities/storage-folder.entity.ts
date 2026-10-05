@@ -50,8 +50,14 @@ export class StorageFolderEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string
 
-  /** Đường dẫn đầy đủ tính từ gốc của dịch vụ, không có dấu / ở đầu và cuối. */
-  @Column({ type: 'varchar', length: 1000 })
+  /**
+   * Đường dẫn đầy đủ tính từ gốc của dịch vụ, không có dấu / ở đầu và cuối.
+   *
+   * Độ dài tối đa 700 ký tự vì cột này nằm trong index unique cùng provider_id:
+   * InnoDB giới hạn khoá index 3072 byte, mà utf8mb4 tốn 4 byte/ký tự
+   * (700 x 4 + 4 byte của int = 2804 byte).
+   */
+  @Column({ type: 'varchar', length: 700 })
   path: string
 
   /** Id thư mục do dịch vụ cấp (Google Drive, OneDrive). */

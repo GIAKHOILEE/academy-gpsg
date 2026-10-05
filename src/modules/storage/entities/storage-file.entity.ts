@@ -32,8 +32,13 @@ export class StorageFileEntity {
   /**
    * Định danh file trên dịch vụ: key với S3/Azure/Bunny, đường dẫn tương đối với Local,
    * public_id với Cloudinary, file id với Google Drive/OneDrive.
+   *
+   * Độ dài tối đa 700 ký tự vì cột này nằm trong index unique cùng provider_id:
+   * InnoDB giới hạn khoá index 3072 byte, mà utf8mb4 tốn 4 byte/ký tự
+   * (700 x 4 + 4 byte của int = 2804 byte). Key do hệ thống sinh chỉ dài vài chục
+   * ký tự, 700 là dư sức cả khi quét bucket có thư mục lồng sâu.
    */
-  @Column({ type: 'varchar', length: 1000 })
+  @Column({ type: 'varchar', length: 700 })
   object_key: string
 
   /** Tên file người dùng thấy. */
@@ -53,8 +58,12 @@ export class StorageFileEntity {
   @Column({ type: 'bigint', default: 0 })
   size_bytes: string
 
-  /** URL công khai đang được dùng trong toàn hệ thống. Khoá để tra ngược "dùng ở đâu". */
-  @Column({ type: 'varchar', length: 1000, nullable: true })
+  /**
+   * URL công khai đang được dùng trong toàn hệ thống. Khoá để tra ngược "dùng ở đâu".
+   * Có index vì mỗi lần xoá file theo URL (code cũ gọi kiểu này) đều tra qua cột này.
+   * Giới hạn 700 ký tự theo đúng lý do ở `object_key`.
+   */
+  @Column({ type: 'varchar', length: 700, nullable: true })
   @Index()
   url: string
 
