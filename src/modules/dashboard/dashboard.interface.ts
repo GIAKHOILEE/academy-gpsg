@@ -59,4 +59,3 @@ export interface ClassRevenue {
   teacher_special: number
   final_salary: number
 }
-

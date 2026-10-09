@@ -28,7 +28,6 @@ export class CreateClassDto {
   @ApiPropertyOptional({ description: 'Đặc cách lớp (tính lương giáo viên)', example: ClassSpecial.LV1, enum: ClassSpecial })
   special: ClassSpecial
 
-
   @IsNumber()
   @IsNotEmpty()
   @ApiProperty({ description: 'Số buổi học', example: 10 })

@@ -53,7 +53,6 @@ export class UpdateClassDto {
   @ApiPropertyOptional({ description: 'Đặc cách lớp (tính lương giáo viên)', example: ClassSpecial.LV1, enum: ClassSpecial })
   special: ClassSpecial
 
-
   @IsArray()
   @IsEnum(Schedule, { each: true })
   @IsOptional()

@@ -54,4 +54,3 @@ export class UpdateTeacherSalaryDto {
   })
   teacher_special?: ClassSpecial
 }
-

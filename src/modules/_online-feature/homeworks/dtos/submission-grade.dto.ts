@@ -14,11 +14,16 @@ export class GradeAnswerDto {
   score: number
 
   @IsOptional()
-  // feedback optional
-  @IsOptional()
   @IsString()
   @ApiProperty({ description: 'Feedback của câu hỏi', required: false })
   feedback?: string
+
+  @IsOptional()
+  @ApiProperty({
+    description: 'Danh sách đính kèm hoặc link đính kèm của giảng viên cho câu hỏi',
+    required: false,
+  })
+  feedback_attachments?: any
 }
 
 export class GradeSubmissionDto {
@@ -39,7 +44,6 @@ export class GradeSubmissionDto {
   feedback?: string
 
   @IsOptional()
-  @IsArray()
   @ApiProperty({
     description: 'Danh sách đính kèm (ảnh, file, link...) của giảng viên cho toàn bài',
     required: false,
@@ -49,5 +53,5 @@ export class GradeSubmissionDto {
       { name: 'link-tham-khao', url: 'https://...', type: 'link' },
     ],
   })
-  feedback_attachments?: any[]
+  feedback_attachments?: any
 }

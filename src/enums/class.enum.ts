@@ -72,4 +72,3 @@ export enum ClassSpecial {
   LV2 = 2, // dấu tích xanh : trần lương + phụ cấp
   LV3 = 3, // ngôi sao : lợi nhuận + phụ cấp
 }
-

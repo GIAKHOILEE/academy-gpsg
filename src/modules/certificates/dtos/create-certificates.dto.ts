@@ -43,7 +43,6 @@ export class CreateCertificatesDto {
   @IsOptional()
   content: string
 
-
   @ApiProperty({
     example: 'https://example.com/image.jpg',
     description: 'Certificate image URL',

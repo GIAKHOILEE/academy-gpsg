@@ -9,7 +9,6 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Mã thẻ giảng viên' })
   card_code: string
 
-
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên khác (GM, LM, TS, ThS,...)' })

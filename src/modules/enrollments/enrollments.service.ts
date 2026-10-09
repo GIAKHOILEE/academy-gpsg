@@ -1022,12 +1022,7 @@ export class EnrollmentsService {
     }
   }
 
-  private async handleEnrollmentEmail(
-    enrollment: Enrollments,
-    type: 'register' | 'payment',
-    status?: StatusEnrollment,
-    isThrowError = false,
-  ) {
+  private async handleEnrollmentEmail(enrollment: Enrollments, type: 'register' | 'payment', status?: StatusEnrollment, isThrowError = false) {
     try {
       if (!enrollment.email) return
 
@@ -1198,17 +1193,12 @@ export class EnrollmentsService {
       throwAppException('NO_EMAIL_FOUND', ErrorCode.NO_EMAIL_FOUND, HttpStatus.BAD_REQUEST)
     }
 
-    await this.emailService.sendMail(
-      [{ email: emailToSend, name: user.full_name }],
-      'Đăng ký tài khoản thành công',
-      'register-success',
-      {
-        name: user.full_name,
-        username: user.code,
-        password: user.code,
-        loginLink: `${process.env.FRONTEND_URL}`,
-      },
-    )
+    await this.emailService.sendMail([{ email: emailToSend, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
+      name: user.full_name,
+      username: user.code,
+      password: user.code,
+      loginLink: `${process.env.FRONTEND_URL}`,
+    })
   }
 
   async sendInstructionEmail(id: number): Promise<void> {

@@ -33,7 +33,6 @@ export class Teacher {
   @Column({ nullable: true })
   other_name: string
 
-
   // học vị
   @Column({ nullable: true })
   degree: string

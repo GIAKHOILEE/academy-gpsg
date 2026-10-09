@@ -54,7 +54,6 @@ export class Classes {
   @Column({ default: ClassSpecial.LV1 })
   special: ClassSpecial
 
-
   // số tiết học
   @Column({ type: 'float', nullable: true })
   number_periods: number

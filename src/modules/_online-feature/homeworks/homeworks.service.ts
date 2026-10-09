@@ -22,6 +22,23 @@ import { GradeSubmissionDto } from './dtos/submission-grade.dto'
 import { HomeworkProgress } from './entities/homework_progress.entity'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 
+function formatFeedbackAttachments(val: any) {
+  if (val === undefined || val === null) return val
+  if (typeof val === 'string') {
+    try {
+      return JSON.parse(val)
+    } catch {
+      return val.includes(',')
+        ? val
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : [val]
+    }
+  }
+  return val
+}
+
 @Injectable()
 export class HomeworkService {
   constructor(
@@ -713,10 +730,7 @@ export class HomeworkService {
           const classStudentRepo = queryRunner.manager.getRepository(ClassStudents)
           const classId = hw.lesson?.class?.id
           if (classId) {
-            await classStudentRepo.update(
-              { student: { id: student.id }, class: { id: classId } },
-              { score: String(savedSub.score) }
-            )
+            await classStudentRepo.update({ student: { id: student.id }, class: { id: classId } }, { score: String(savedSub.score) })
           }
         }
       } else {
@@ -751,6 +765,8 @@ export class HomeworkService {
           'answers.answer_text',
           'answers.file',
           'answers.selected_option_ids',
+          'answers.feedback',
+          'answers.feedback_attachments',
           'question.id',
           'question.content',
           'question.type',
@@ -861,7 +877,12 @@ export class HomeworkService {
 
         // persist grading to answer
         exist.score = given
-        exist.feedback = aPayload.feedback ?? exist.feedback
+        if (aPayload.feedback !== undefined) {
+          exist.feedback = aPayload.feedback
+        }
+        if (aPayload.feedback_attachments !== undefined) {
+          exist.feedback_attachments = formatFeedbackAttachments(aPayload.feedback_attachments)
+        }
         await ansRepo.save(exist)
       }
 
@@ -884,7 +905,7 @@ export class HomeworkService {
         submission.feedback = feedback
       }
       if (feedback_attachments !== undefined) {
-        submission.feedback_attachments = feedback_attachments
+        submission.feedback_attachments = formatFeedbackAttachments(feedback_attachments)
       }
       await subRepo.save(submission)
 
@@ -985,6 +1006,7 @@ export class HomeworkService {
         file: a.file,
         score: a.score,
         feedback: a.feedback,
+        feedback_attachments: a.feedback_attachments,
       })),
     }
   }
@@ -1117,6 +1139,7 @@ export class HomeworkService {
         file: a.file,
         score: a.score,
         feedback: a.feedback,
+        feedback_attachments: a.feedback_attachments,
       })),
     }
   }
@@ -1141,14 +1164,7 @@ export class HomeworkService {
     try {
       const submission = await this.submissionRepo.findOne({
         where: { id: submissionId },
-        relations: [
-          'student',
-          'student.user',
-          'homework',
-          'homework.lesson',
-          'homework.lesson.class',
-          'homework.lesson.class.subject',
-        ],
+        relations: ['student', 'student.user', 'homework', 'homework.lesson', 'homework.lesson.class', 'homework.lesson.class.subject'],
       })
 
       if (!submission) return
@@ -1162,10 +1178,7 @@ export class HomeworkService {
 
       const homeworkTitle = submission.homework?.title || 'Bài kiểm tra'
       const lessonTitle = submission.homework?.lesson?.title || 'Buổi học'
-      const subjectName =
-        submission.homework?.lesson?.class?.subject?.name ||
-        submission.homework?.lesson?.class?.name ||
-        'Môn học'
+      const subjectName = submission.homework?.lesson?.class?.subject?.name || submission.homework?.lesson?.class?.name || 'Môn học'
 
       const emailSubject = `Thông báo kết quả bài kiểm tra: ${homeworkTitle} - Môn ${subjectName}`
 

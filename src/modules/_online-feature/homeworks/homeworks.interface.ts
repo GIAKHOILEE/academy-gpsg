@@ -57,6 +57,7 @@ export interface IHomeworkAnswer {
   selected_option_ids?: number[]
   score?: number
   feedback?: string
+  feedback_attachments?: any
   question_id?: number
   question?: IHomeworkQuestion
   submission_id?: number

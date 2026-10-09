@@ -159,7 +159,7 @@ export class StudentsService {
       const user = await userRepo.findOne({ where: { id: student.user_id } })
       if (!user) throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
 
-      if(code){
+      if (code) {
         const existingUser = await userRepo
           .createQueryBuilder('users')
           .where('users.code = :code', { code })
@@ -242,7 +242,9 @@ export class StudentsService {
       // gửi mail cho học viên nếu có thay đổi avatar
       if (isAvatarUpdated && updatedUser.email) {
         const avatarUrl = updatedUser.avatar || updatedStudent.image_4x6 || ''
-        const avatarHtml = avatarUrl ? `<br><br><img src="${avatarUrl}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />` : ''
+        const avatarHtml = avatarUrl
+          ? `<br><br><img src="${avatarUrl}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />`
+          : ''
         const card_back_url = `https://res.cloudinary.com/dai7fok3c/image/upload/v1778406167/t3nmf7tsss9dikaleua4.png`
         const cardBackHtml = `<br><br><img src="${card_back_url}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />`
         const mailContent = `Xin chào ${updatedUser.saint_name ? updatedUser.saint_name + ' ' : ''}${updatedUser.full_name},<br><br>Học viện Mục vụ xin gửi thẻ học viên bản trực tuyến cho Anh/Chị. Nếu có nhu cầu lấy thẻ bản chính để sử dụng vui lòng đến trực tiếp Học viện Mục vụ hoặc liên hệ để yêu cầu chuyển phát về tận địa chỉ của Anh/Chị (học viên phải thanh toán chi phí in thẻ và vận chuyển).<br><br>Mọi thắc mắc xin liên hệ lại với học viện qua bất kỳ hình thức liên lạc nào thuận tiện để được hỗ trợ.<br><br>Xin chân thành cảm ơn! <br>${avatarHtml}${cardBackHtml}`
@@ -630,16 +632,11 @@ export class StudentsService {
       throwAppException('NO_EMAIL_FOUND', ErrorCode.NO_EMAIL_FOUND, HttpStatus.BAD_REQUEST)
     }
 
-    await this.emailService.sendMail(
-      [{ email: user.email, name: user.full_name }],
-      'Đăng ký tài khoản thành công',
-      'register-success',
-      {
-        name: user.full_name,
-        username: user.code,
-        password: user.code,
-        loginLink: `${process.env.FRONTEND_URL}`,
-      },
-    )
+    await this.emailService.sendMail([{ email: user.email, name: user.full_name }], 'Đăng ký tài khoản thành công', 'register-success', {
+      name: user.full_name,
+      username: user.code,
+      password: user.code,
+      loginLink: `${process.env.FRONTEND_URL}`,
+    })
   }
 }

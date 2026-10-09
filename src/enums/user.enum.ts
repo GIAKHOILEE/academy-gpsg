@@ -4,7 +4,6 @@ import { ClassSpecial } from './class.enum'
 export const TeacherSpecial = ClassSpecial
 export type TeacherSpecial = ClassSpecial
 
-
 export enum StudentCardStatus {
   NOT_PRINTED = 1, // chưa in thẻ
   PRINTED = 2, // đã in thẻ

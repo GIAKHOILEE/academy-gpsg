@@ -35,6 +35,10 @@ export class HomeworkAnswer {
   @Column({ type: 'text', nullable: true })
   feedback: string
 
+  // Đính kèm (ảnh, file, link...) cho feedback của câu hỏi
+  @Column({ type: 'json', nullable: true })
+  feedback_attachments: any
+
   @CreateDateColumn()
   createdAt: Date
 
