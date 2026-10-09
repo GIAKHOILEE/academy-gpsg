@@ -1,10 +1,13 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm'
+import { Index, Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm'
 import { UserStatus } from '@enums/status.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { CommentEntity } from '@modules/class-activities/comment/comment.entity'
 import { Discuss } from '@modules/_online-feature/discuss/discuss.entity'
 
 @Entity()
+// Dashboard lọc/đếm học viên theo role + gender liên tục -> tránh full table scan bảng user
+@Index('idx_user_role', ['role'])
+@Index('idx_user_role_gender', ['role', 'gender'])
 export class User {
   @PrimaryGeneratedColumn()
   id: number

@@ -1,3 +1,5 @@
+import { StatsCacheInterceptor } from '@common/stats-cache.interceptor'
+import { StatsCacheModule } from '@common/stats-cache.module'
 import { databaseConfig } from '@config/database.config'
 import { LanguageMiddleware } from '@middleware/language.middleware'
 import { VisitLoggerMiddleware } from '@middleware/visitor.middleware'
@@ -37,7 +39,7 @@ import { BannerModule } from '@modules/banner/banner.module'
 import { NavigationModule } from '@modules/navigation/navigation.module'
 import { VoucherModule } from '@modules/voucher/voucher.module'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
-import { APP_GUARD } from '@nestjs/core'
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { AttendanceRuleModule } from './modules/class-rules/attendance-rule/attendance-rule..module'
 import { AttendanceModule } from './modules/class-rules/attendance/attendance.module'
 import { NavigationAttendanceModule } from './modules/navigation-attendance/navigation.module'
@@ -63,6 +65,7 @@ import { ConsultModule } from '@modules/consult/consult.module'
 import { ClassNotificationsModule } from '@modules/class/notifications/notifications.module'
 import { Certificates } from '@modules/certificates/certificates.entity'
 import { CertificatesModule } from '@modules/certificates/certificates.module'
+import { StorageModule } from '@modules/storage/storage.module'
 
 @Module({
   imports: [
@@ -73,6 +76,7 @@ import { CertificatesModule } from '@modules/certificates/certificates.module'
       },
     }),
     TypeOrmModule.forRoot(databaseConfig),
+    StatsCacheModule,
     TypeOrmModule.forFeature([User, Visitor, Settings]),
     ThrottlerModule.forRoot([{ ttl: 1, limit: 10 }]),
     AuthModule,
@@ -122,6 +126,7 @@ import { CertificatesModule } from '@modules/certificates/certificates.module'
     DiscussModule,
     HomeworkModule,
     CertificatesModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [
@@ -132,6 +137,10 @@ import { CertificatesModule } from '@modules/certificates/certificates.module'
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: StatsCacheInterceptor,
     },
   ],
 })
