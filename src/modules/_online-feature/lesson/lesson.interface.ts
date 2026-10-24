@@ -16,5 +16,14 @@ export interface ILesson {
   meeting_url?: string
   class_id?: number
   class?: IClasses
+  attendance_rule_id?: number
+  attendance_rule?: any
+  video_progress?: {
+    last_position?: number
+    watched_seconds?: number
+    is_completed?: boolean
+    progress_percentage?: number
+    attendance_status?: number
+  }
   // discussion?: IDiscuss[]
 }

@@ -1,6 +1,7 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { UpdateDateColumn } from 'typeorm'
 import { Classes } from '@modules/class/class.entity'
+import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
 import { Discuss } from '../discuss/discuss.entity'
 import { Homeworks } from '../homeworks/entities/homeworks.entity'
 import { ClassNotification } from '@modules/class/notifications/notifications.entity'
@@ -46,6 +47,13 @@ export class Lesson {
   @ManyToOne(() => Classes, classes => classes.lessons, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'class_id' })
   class: Classes
+
+  @Column({ nullable: true })
+  attendance_rule_id: number
+
+  @ManyToOne(() => AttendanceRule, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'attendance_rule_id' })
+  attendance_rule: AttendanceRule
 
   @OneToMany(() => Discuss, discusses => discusses.lesson, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   discusses: Discuss[]

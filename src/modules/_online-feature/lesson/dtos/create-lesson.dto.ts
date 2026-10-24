@@ -90,4 +90,12 @@ export class CreateLessonDto {
     example: 'https://www.google.com',
   })
   meeting_url: string
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({
+    description: 'ID buổi điểm danh liên kết (attendance_rule_id)',
+    example: 1,
+  })
+  attendance_rule_id?: number
 }

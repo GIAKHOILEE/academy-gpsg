@@ -7,6 +7,7 @@ import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { CreateLessonDto } from './dtos/create-lesson.dto'
 import { UpdateLessonDto } from './dtos/update-lesson.dto'
+import { UpdateVideoProgressDto } from './dtos/update-video-progress.dto'
 import { LessonService } from './lesson.service'
 
 @Controller('admin/lessons')
@@ -176,12 +177,38 @@ export class UserLessonController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a lesson by id' })
-  async getLessonById(@Param('id') id: number): Promise<ResponseDto> {
-    const lesson = await this.lessonService.getLessonById(id)
+  async getLessonById(@Param('id') id: number, @Req() req): Promise<ResponseDto> {
+    const lesson = await this.lessonService.getLessonById(id, req.user?.userId)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_GET_BY_ID_SUCCESSFULLY',
       data: lesson,
+    })
+  }
+
+  @Post(':id/video-progress')
+  @ApiOperation({ summary: 'Cập nhật tiến trình xem video bài học và tự động điểm danh' })
+  async updateVideoProgress(
+    @Param('id') id: number,
+    @Body() updateVideoProgressDto: UpdateVideoProgressDto,
+    @Req() req,
+  ): Promise<ResponseDto> {
+    const progress = await this.lessonService.updateVideoProgress(id, req.user.userId, updateVideoProgressDto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'LESSON_VIDEO_PROGRESS_UPDATED_SUCCESSFULLY',
+      data: progress,
+    })
+  }
+
+  @Get(':id/video-progress')
+  @ApiOperation({ summary: 'Lấy tiến trình xem video bài học' })
+  async getVideoProgress(@Param('id') id: number, @Req() req): Promise<ResponseDto> {
+    const progress = await this.lessonService.getVideoProgress(id, req.user.userId)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'LESSON_VIDEO_PROGRESS_GET_SUCCESSFULLY',
+      data: progress,
     })
   }
 }

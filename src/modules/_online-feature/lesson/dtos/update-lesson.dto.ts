@@ -1,4 +1,4 @@
-import { IsArray, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IFile } from '@common/file'
 
@@ -88,4 +88,12 @@ export class UpdateLessonDto {
     example: 'https://www.google.com',
   })
   meeting_url?: string
+
+  @IsOptional()
+  @IsNumber()
+  @ApiPropertyOptional({
+    description: 'ID buổi điểm danh liên kết (attendance_rule_id)',
+    example: 1,
+  })
+  attendance_rule_id?: number
 }
