@@ -4,6 +4,7 @@ import { BunnyStorageDriver } from '../drivers/bunny.driver'
 import { CloudinaryStorageDriver } from '../drivers/cloudinary.driver'
 import { DropboxStorageDriver } from '../drivers/dropbox.driver'
 import { GoogleDriveStorageDriver } from '../drivers/google-drive.driver'
+import { HvmStorageDriver } from '../drivers/hvm.driver'
 import { LocalStorageDriver } from '../drivers/local.driver'
 import { OneDriveStorageDriver } from '../drivers/onedrive.driver'
 import { S3StorageDriver } from '../drivers/s3.driver'
@@ -32,6 +33,7 @@ describe('StorageDriverFactory', () => {
         [StorageDriver.ONEDRIVE, { tenant_id: 'common', client_id: 'c', client_secret: 's' }, OneDriveStorageDriver],
         [StorageDriver.AZURE_BLOB, { account_name: 'a', container: 'c', sas_token: 't' }, AzureBlobStorageDriver],
         [StorageDriver.BUNNY, { storage_zone: 'z', access_key: 'k' }, BunnyStorageDriver],
+        [StorageDriver.HVM, { base_url: 'https://app.hvmvsaigon.edu.vn', api_key: 'hvmk_x' }, HvmStorageDriver],
       ]
 
       for (const [driver, config, expected] of cases) {

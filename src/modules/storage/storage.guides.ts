@@ -326,6 +326,22 @@ export const S3_PRESET_GUIDES: Record<string, StorageSetupGuide> = {
  *  HƯỚNG DẪN CHO CÁC DRIVER KHÔNG PHẢI S3
  * ------------------------------------------------------------------ */
 export const DRIVER_GUIDES: Record<string, StorageSetupGuide> = {
+  [StorageDriver.HVM]: {
+    title: 'HVM Storage (kho video/file tự host)',
+    steps: [
+      { text: 'Đăng nhập hvm-storage, vào Quản trị > Tích hợp (/admin/integrations).', url: 'https://app.hvmvsaigon.edu.vn/admin/integrations' },
+      { text: 'Mở ứng dụng "academy" (hoặc tạo mới), bấm xoay key và copy API key vào ô API key. Key chỉ hiện một lần.' },
+      { text: 'Điền URL app của hvm-storage vào ô URL hvm-storage, ví dụ https://app.hvmvsaigon.edu.vn.' },
+      { text: 'Thêm domain của web học viện vào "Allowed origins" của ứng dụng để trình duyệt upload thẳng được.' },
+      { text: 'Bấm Kiểm tra kết nối: thấy tên ứng dụng và thư mục gốc là xong.' },
+    ],
+    warnings: [
+      'Key mặc định trong code chỉ để deploy lần đầu chạy được; phải xoay key trên hvm-storage rồi dán key mới vào env HVM_STORAGE_API_KEY.',
+      'Video không có link file trực tiếp, chỉ có trang nhúng /embed; nơi hiển thị phải dùng iframe.',
+      'URL công khai của dịch vụ này chính là URL app; link file thật nằm trên domain video riêng và do hvm-storage trả về.',
+    ],
+    publicUrlHint: 'Để trống hoặc điền đúng URL app của hvm-storage, ví dụ https://app.hvmvsaigon.edu.vn.',
+  },
   // Hướng dẫn chung của driver S3; chọn dịch vụ cụ thể sẽ hiện thêm hướng dẫn
   // riêng của dịch vụ đó lấy từ S3_PRESET_GUIDES.
   [StorageDriver.S3]: {

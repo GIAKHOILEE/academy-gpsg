@@ -67,6 +67,7 @@ import { Certificates } from '@modules/certificates/certificates.entity'
 import { CertificatesModule } from '@modules/certificates/certificates.module'
 import { StorageModule } from '@modules/storage/storage.module'
 import { BooksModule } from '@modules/books/books.module'
+import { StorageHubModule } from '@modules/storage/hub/storage-hub.module'
 
 @Module({
   imports: [
@@ -129,6 +130,7 @@ import { BooksModule } from '@modules/books/books.module'
     CertificatesModule,
     StorageModule,
     BooksModule,
+    StorageHubModule,
   ],
   controllers: [AppController],
   providers: [

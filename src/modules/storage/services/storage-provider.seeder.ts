@@ -3,6 +3,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { StorageProviderEntity } from '../entities/storage-provider.entity'
+import { HVM_STORAGE_API_KEY_ENV, HVM_STORAGE_DEFAULT_API_KEY, HVM_STORAGE_DEFAULT_URL, HVM_STORAGE_URL_ENV } from '../hvm-storage.defaults'
 import { StorageCryptoService } from './storage-crypto.service'
 import { StorageUsageService } from './storage-usage.service'
 
@@ -15,6 +16,11 @@ import { StorageUsageService } from './storage-usage.service'
  *
  * Chỉ tạo một lần: đã có dịch vụ nào trùng cấu hình thì bỏ qua, và dịch vụ do
  * người dùng sửa sau đó sẽ không bị ghi đè.
+ *
+ * Riêng hvm-storage được tạo **luôn luôn** (có mặc định trong code) và là dịch vụ
+ * mặc định, vì đó là kho file chính của học viện từ nay về sau. Env
+ * HVM_STORAGE_URL / HVM_STORAGE_API_KEY có giá trị thì thắng mặc định, và được
+ * ghi đè vào dịch vụ đã có mỗi lần khởi động (để xoay key chỉ cần sửa env).
  */
 @Injectable()
 export class StorageProviderSeeder implements OnApplicationBootstrap {
@@ -34,6 +40,8 @@ export class StorageProviderSeeder implements OnApplicationBootstrap {
       if (await this.seedR2()) created.push('Cloudflare R2')
       if (await this.seedCloudinary()) created.push('Cloudinary')
       if (await this.seedLocal()) created.push('Ổ đĩa máy chủ')
+      // Chạy sau cùng để hạ cờ mặc định của những dịch vụ vừa tạo ở trên
+      if (await this.seedHvm()) created.push('HVM Storage')
 
       if (!created.length) return
 
@@ -137,6 +145,64 @@ export class StorageProviderSeeder implements OnApplicationBootstrap {
         is_default: false,
         is_system: true,
         priority: 90,
+        weight: 1,
+        status: StorageProviderStatus.UNKNOWN,
+      }),
+    )
+    return true
+  }
+
+  /**
+   * hvm-storage: tạo mặc định với priority cao nhất và là dịch vụ mặc định.
+   *
+   * - Chưa có dòng nào driver `hvm` => tạo mới, hạ `is_default` của mọi dịch vụ khác.
+   * - Đã có => không tạo lại. Nếu env đang đặt URL/key thì ghi đè vào config của
+   *   các dòng còn sống (không đụng cờ bật/tắt/mặc định người dùng đã chỉnh).
+   */
+  private async seedHvm(): Promise<boolean> {
+    const envUrl = process.env[HVM_STORAGE_URL_ENV]
+    const envKey = process.env[HVM_STORAGE_API_KEY_ENV]
+    const baseUrl = String(envUrl || HVM_STORAGE_DEFAULT_URL).replace(/\/+$/, '')
+    const apiKey = String(envKey || HVM_STORAGE_DEFAULT_API_KEY)
+
+    const existing = (await this.providerRepository.find({ where: { driver: StorageDriver.HVM }, withDeleted: true })).filter(
+      provider => provider.driver === StorageDriver.HVM,
+    )
+
+    if (existing.length) {
+      if (!envUrl && !envKey) return false
+
+      for (const provider of existing) {
+        if (provider.deleted_at) continue
+        const config = this.crypto.decryptJson(provider.config_encrypted) || {}
+        if (config.base_url === baseUrl && config.api_key === apiKey) continue
+
+        provider.config_encrypted = this.crypto.encryptJson({ ...config, base_url: baseUrl, api_key: apiKey })
+        provider.public_base_url = baseUrl
+        await this.providerRepository.save(provider)
+        this.logger.log(`Đã cập nhật URL/API key của "${provider.name}" từ biến môi trường`)
+      }
+      return false
+    }
+
+    // Chỉ được có một dịch vụ mặc định
+    await this.providerRepository.update({ is_default: true }, { is_default: false })
+
+    await this.providerRepository.save(
+      this.providerRepository.create({
+        name: envUrl || envKey ? 'HVM Storage (từ biến môi trường)' : 'HVM Storage (mặc định)',
+        driver: StorageDriver.HVM,
+        config_encrypted: this.crypto.encryptJson({
+          base_url: baseUrl,
+          api_key: apiKey,
+          folder_path: process.env.HVM_STORAGE_FOLDER || null,
+          default_visibility: process.env.HVM_STORAGE_DEFAULT_VISIBILITY || null,
+        }),
+        public_base_url: baseUrl,
+        is_enabled: true,
+        is_default: true,
+        is_system: true,
+        priority: 5,
         weight: 1,
         status: StorageProviderStatus.UNKNOWN,
       }),

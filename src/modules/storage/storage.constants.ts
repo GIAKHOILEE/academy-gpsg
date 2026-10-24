@@ -671,6 +671,53 @@ export const STORAGE_DRIVER_SCHEMAS: StorageDriverSchema[] = [
       },
     ],
   },
+  {
+    driver: StorageDriver.HVM,
+    label: 'HVM Storage (kho video/file tự host)',
+    description:
+      'Kho video/file của giáo xứ tại app.hvmvsaigon.edu.vn. Backend gọi /api/integration/* bằng API key; trình duyệt upload thẳng lên kho bằng hub token. Video phát qua trang nhúng, ảnh/tài liệu có link trực tiếp.',
+    docsUrl: 'https://app.hvmvsaigon.edu.vn/admin/integrations',
+    capabilities: { quotaApi: true, listing: true, signedUrl: true, publicUrl: true, realFolders: true, move: true },
+    fields: [
+      {
+        key: 'base_url',
+        label: 'URL hvm-storage',
+        type: 'text',
+        required: true,
+        placeholder: 'https://app.hvmvsaigon.edu.vn',
+        help: 'Địa chỉ app của hvm-storage (không phải domain video). Không có dấu / ở cuối.',
+      },
+      {
+        key: 'api_key',
+        label: 'API key',
+        type: 'password',
+        required: true,
+        secret: true,
+        placeholder: 'hvmk_academy_...',
+        help: 'Lấy ở /admin/integrations trên hvm-storage, chỉ hiện một lần lúc tạo hoặc xoay key.',
+      },
+      {
+        key: 'folder_path',
+        label: 'Thư mục con (không bắt buộc)',
+        type: 'text',
+        placeholder: 'academy',
+        help: 'Đường dẫn con bên trong thư mục gốc mà hvm-storage đã gán cho ứng dụng. Để trống thì file nằm ngay ở thư mục gốc đó.',
+      },
+      {
+        key: 'default_visibility',
+        label: 'Chế độ hiển thị cho file mới',
+        type: 'select',
+        options: [
+          { value: '', label: 'Theo mặc định của ứng dụng trên hvm-storage' },
+          { value: 'PUBLIC', label: 'PUBLIC - ai có link cũng xem được' },
+          { value: 'DOMAIN_LOCKED', label: 'DOMAIN_LOCKED - chỉ nhúng được trên domain cho phép' },
+          { value: 'UNLISTED', label: 'UNLISTED - chỉ xem qua link có chữ ký' },
+          { value: 'PRIVATE', label: 'PRIVATE - chỉ xem qua link có chữ ký' },
+        ],
+        help: 'Ảnh dùng với next/image nên để PUBLIC vì trình tối ưu ảnh của Next không gửi Referer.',
+      },
+    ],
+  },
 ]
 
 export const STORAGE_DRIVER_SCHEMA_MAP = new Map(STORAGE_DRIVER_SCHEMAS.map(s => [s.driver, s]))

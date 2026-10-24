@@ -12,6 +12,8 @@ export enum StorageDriver {
   ONEDRIVE = 'onedrive',
   AZURE_BLOB = 'azure_blob',
   BUNNY = 'bunny',
+  /** hvm-storage tự host (app.hvmvsaigon.edu.vn) - kho video/file của giáo xứ, nói chuyện qua /api/integration/* */
+  HVM = 'hvm',
 }
 
 /** Tình trạng hoạt động của 1 dịch vụ, cập nhật mỗi lần test / refresh usage. */

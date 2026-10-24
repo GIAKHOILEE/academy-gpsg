@@ -95,6 +95,14 @@ export class StorageProviderService {
     return provider
   }
 
+  /**
+   * Dịch vụ đang bật đầu tiên (theo priority) của một loại driver. Dùng cho các
+   * tích hợp cần đúng một dịch vụ cụ thể, ví dụ hub token của hvm-storage.
+   */
+  async findEnabledByDriver(driver: StorageDriver): Promise<StorageProviderEntity | null> {
+    return this.providerRepository.findOne({ where: { driver, is_enabled: true }, order: { priority: 'ASC', id: 'ASC' } })
+  }
+
   /* --------------------------- Ghi dữ liệu --------------------------- */
 
   async createProvider(dto: CreateStorageProviderDto) {
