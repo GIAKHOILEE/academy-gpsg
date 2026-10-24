@@ -1,5 +1,5 @@
 import { PaginationDto } from '@common/pagination'
-import { ClassStatus, LearnType } from '@enums/class.enum'
+import { BookDeliveryStatus, ClassStatus, LearnType } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsBooleanString, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
@@ -88,6 +88,12 @@ export class GetStudentsOfClassDto extends PaginationDto {
   @IsEnum(LearnType)
   @Type(() => Number)
   learn_type: LearnType
+
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Trạng thái nhận sách: 1 (Chưa gửi), 2 (Đang gửi), 3 (Đã nhận)', example: BookDeliveryStatus.NOT_SENT, enum: BookDeliveryStatus })
+  @IsEnum(BookDeliveryStatus)
+  @Type(() => Number)
+  book_status: BookDeliveryStatus
 }
 
 export class PaginateClassOfStudentDto extends PaginationDto {

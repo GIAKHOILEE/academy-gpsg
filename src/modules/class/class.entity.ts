@@ -7,6 +7,8 @@ import {
   Entity,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   OneToOne,
@@ -21,6 +23,7 @@ import { Exam } from '@modules/class-rules/exam/_exam/exam.entity'
 import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
 import { Lesson } from '@modules/_online-feature/lesson/lesson.entity'
 import { ClassNotification } from './notifications/notifications.entity'
+import { Book } from '@modules/books/books.entity'
 
 @Entity({ name: 'classes' })
 @Index('idx_classes_semester_scholastic', ['semester_id', 'scholastic_id']) // Composite index for revenue queries
@@ -178,6 +181,14 @@ export class Classes {
 
   @OneToMany(() => ClassNotification, notification => notification.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   notifications: ClassNotification[]
+
+  @ManyToMany(() => Book, book => book.classes, { cascade: true })
+  @JoinTable({
+    name: 'class_books',
+    joinColumn: { name: 'class_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'book_id', referencedColumnName: 'id' },
+  })
+  books: Book[]
 
   @CreateDateColumn()
   created_at: Date

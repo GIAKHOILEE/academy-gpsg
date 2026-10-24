@@ -172,6 +172,8 @@ export const messages = {
     STORAGE_QUOTA_EXCEEDED: 'Storage service has run out of space',
     STORAGE_DRIVER_NOT_SUPPORTED: 'Unsupported storage service type',
     STORAGE_OPERATION_NOT_SUPPORTED: 'This storage service does not support that operation',
+    BOOK_NOT_FOUND: 'Book / syllabus not found',
+    BOOK_CODE_ALREADY_EXISTS: 'Book code already exists',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -349,5 +351,7 @@ export const messages = {
     STORAGE_QUOTA_EXCEEDED: 'Dịch vụ lưu trữ đã hết dung lượng',
     STORAGE_DRIVER_NOT_SUPPORTED: 'Loại dịch vụ lưu trữ chưa được hỗ trợ',
     STORAGE_OPERATION_NOT_SUPPORTED: 'Dịch vụ lưu trữ này không hỗ trợ thao tác đó',
+    BOOK_NOT_FOUND: 'Sách / giáo trình không tồn tại',
+    BOOK_CODE_ALREADY_EXISTS: 'Mã sách / giáo trình đã tồn tại',
   },
 }

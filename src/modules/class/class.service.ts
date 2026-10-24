@@ -15,10 +15,12 @@ import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } fr
 import { UpdateClassDto } from './dtos/update-class.dto'
 import { IStudent } from '@modules/students/students.interface'
 import { ClassStudents } from './class-students/class-student.entity'
-import { ClassStatus } from '@enums/class.enum'
+import { BookDeliveryStatus, ClassStatus } from '@enums/class.enum'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { Student } from '@modules/students/students.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
+import { Book } from '@modules/books/books.entity'
+import { UpdateStudentBookStatusDto } from './dtos/update-student-book-status.dto'
 
 @Injectable()
 export class ClassService {
@@ -39,10 +41,12 @@ export class ClassService {
     private studentRepository: Repository<Student>,
     @InjectRepository(Enrollments)
     private enrollmentRepository: Repository<Enrollments>,
+    @InjectRepository(Book)
+    private bookRepository: Repository<Book>,
   ) {}
 
   async createClass(createClassDto: CreateClassDto): Promise<IClasses> {
-    const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = createClassDto
+    const { code, subject_id, teacher_id, scholastic_id, semester_id, book_ids, ...rest } = createClassDto
 
     const existingClass = await this.classRepository.findOne({ where: { code } })
     if (existingClass) throwAppException('CLASS_CODE_ALREADY_EXISTS', ErrorCode.CLASS_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
@@ -121,7 +125,12 @@ export class ClassService {
       status = ClassStatus.ENROLLING
     }
 
-    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status, is_online })
+    let books: Book[] = []
+    if (book_ids && book_ids.length > 0) {
+      books = await this.bookRepository.findBy({ id: In(book_ids) })
+    }
+
+    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status, is_online, books })
     const savedClass = await this.classRepository.save(classEntity)
 
     const formattedClass: IClasses = {
@@ -152,6 +161,16 @@ export class ClassService {
       learn_meeting: savedClass.learn_meeting,
       is_online: savedClass.is_online,
       content: savedClass.content,
+      books: books.map(b => ({
+        id: b.id,
+        name: b.name,
+        code: b.code,
+        author: b.author,
+        publisher: b.publisher,
+        publication_year: b.publication_year,
+        image: b.image,
+        description: b.description,
+      })),
       subject: {
         id: subject.id,
         code: subject.code,
@@ -177,8 +196,8 @@ export class ClassService {
   }
 
   async updateClass(id: number, updateClassDto: UpdateClassDto): Promise<void> {
-    const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = updateClassDto
-    const existingClass = await this.classRepository.findOne({ where: { id } })
+    const { code, subject_id, teacher_id, scholastic_id, semester_id, book_ids, ...rest } = updateClassDto
+    const existingClass = await this.classRepository.findOne({ where: { id }, relations: ['books'] })
     if (!existingClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (subject_id) {
@@ -197,17 +216,6 @@ export class ClassService {
       const semester = await this.semesterRepository.exists({ where: { id: semester_id } })
       if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
-
-    // ngày khai giảng phải sau ngày kết thúc ghi danh
-    // if (rest.opening_day && rest.end_enrollment_day) {
-    //   if (new Date(rest.opening_day) < new Date(rest.end_enrollment_day)) {
-    //     throwAppException(
-    //       'OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY',
-    //       ErrorCode.OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY,
-    //       HttpStatus.BAD_REQUEST,
-    //     )
-    //   }
-    // }
 
     // ngày kết thúc lớp phải sau ngày khai giảng
     if (rest.closing_day && rest.opening_day) {
@@ -245,6 +253,12 @@ export class ClassService {
       is_online = true
     } else {
       is_online = false
+    }
+
+    if (book_ids !== undefined) {
+      const books = book_ids.length > 0 ? await this.bookRepository.findBy({ id: In(book_ids) }) : []
+      existingClass.books = books
+      await this.classRepository.save(existingClass)
     }
 
     await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id, status, is_online })
@@ -288,6 +302,7 @@ export class ClassService {
       .leftJoinAndSelect('teacher.user', 'user')
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
+      .leftJoinAndSelect('classes.books', 'books')
       .where('classes.id = :id', { id })
       .getOne()
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -324,6 +339,18 @@ export class ClassService {
       is_online: classEntity.is_online,
       is_free: classEntity.is_free,
       content: classEntity.content,
+      books: classEntity.books
+        ? classEntity.books.map(b => ({
+            id: b.id,
+            name: b.name,
+            code: b.code,
+            author: b.author,
+            publisher: b.publisher,
+            publication_year: b.publication_year,
+            image: b.image,
+            description: b.description,
+          }))
+        : [],
       subject: classEntity?.subject
         ? {
             id: classEntity.subject.id,
@@ -498,7 +525,7 @@ export class ClassService {
 
   //lấy danh sách học sinh của lớp
   async getStudentsOfClass(class_id: number, getStudentsOfClassDto: GetStudentsOfClassDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { full_name, code, first_name, learn_type, ...rest } = getStudentsOfClassDto
+    const { full_name, code, first_name, learn_type, book_status, ...rest } = getStudentsOfClassDto
 
     const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -509,6 +536,9 @@ export class ClassService {
         'class_students.id',
         'class_students.score',
         'class_students.learn_type',
+        'class_students.book_status',
+        'class_students.book_delivery_note',
+        'class_students.book_received_date',
         'class_students.updated_at',
         'student.id',
         'user.code',
@@ -555,6 +585,9 @@ export class ClassService {
     if (learn_type) {
       classStudents.andWhere('class_students.learn_type = :learn_type', { learn_type })
     }
+    if (book_status) {
+      classStudents.andWhere('class_students.book_status = :book_status', { book_status })
+    }
 
     if (rest.orderBy === 'first_name') {
       rest.anotherOrderBy = 'user.first_name'
@@ -563,7 +596,11 @@ export class ClassService {
     const { data, meta } = await paginate(classStudents, rest)
     const formattedStudents: IStudent[] = data.map(classStudent => ({
       id: classStudent.student.id,
+      class_student_id: classStudent.id,
       learn_type: classStudent.learn_type,
+      book_status: classStudent.book_status,
+      book_delivery_note: classStudent.book_delivery_note,
+      book_received_date: classStudent.book_received_date,
       score: classStudent.score,
       date_of_issue: formatStringDate(classStudent.updated_at.toISOString(), true),
       code: classStudent.student.user.code,
@@ -937,5 +974,41 @@ export class ClassService {
         await this.classRepository.update(classEntity.id, { status: newStatus })
       }
     }
+  }
+
+  // Cập nhật trạng thái nhận sách của học sinh trong lớp
+  async updateStudentBookStatus(classId: number, studentId: number, dto: UpdateStudentBookStatusDto): Promise<void> {
+    const classStudent = await this.classStudentsRepository.findOne({
+      where: { class_id: classId, student_id: studentId },
+    })
+    if (!classStudent) {
+      throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
+    }
+
+    const updateData: Partial<ClassStudents> = {
+      book_status: dto.book_status,
+    }
+    if (dto.book_delivery_note !== undefined) {
+      updateData.book_delivery_note = dto.book_delivery_note
+    }
+    if (dto.book_received_date !== undefined) {
+      updateData.book_received_date = dto.book_received_date
+    } else if (dto.book_status === BookDeliveryStatus.RECEIVED && !classStudent.book_received_date) {
+      updateData.book_received_date = new Date().toISOString().split('T')[0]
+    }
+
+    await this.classStudentsRepository.update(classStudent.id, updateData)
+  }
+
+  // Cập nhật danh sách sách gắn vào lớp
+  async updateClassBooks(classId: number, bookIds: number[]): Promise<void> {
+    const classEntity = await this.classRepository.findOne({ where: { id: classId }, relations: ['books'] })
+    if (!classEntity) {
+      throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const books = bookIds && bookIds.length > 0 ? await this.bookRepository.findBy({ id: In(bookIds) }) : []
+    classEntity.books = books
+    await this.classRepository.save(classEntity)
   }
 }

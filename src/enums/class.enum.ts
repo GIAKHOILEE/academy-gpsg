@@ -72,3 +72,10 @@ export enum ClassSpecial {
   LV2 = 2, // dấu tích xanh : trần lương + phụ cấp
   LV3 = 3, // ngôi sao : lợi nhuận + phụ cấp
 }
+
+// Trạng thái nhận sách / gửi sách cho học sinh
+export enum BookDeliveryStatus {
+  NOT_SENT = 1, // Chưa gửi
+  SENDING = 2, // Đang gửi / Đã gửi bưu điện
+  RECEIVED = 3, // Đã nhận sách
+}

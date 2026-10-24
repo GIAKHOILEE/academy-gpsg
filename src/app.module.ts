@@ -66,6 +66,7 @@ import { ClassNotificationsModule } from '@modules/class/notifications/notificat
 import { Certificates } from '@modules/certificates/certificates.entity'
 import { CertificatesModule } from '@modules/certificates/certificates.module'
 import { StorageModule } from '@modules/storage/storage.module'
+import { BooksModule } from '@modules/books/books.module'
 
 @Module({
   imports: [
@@ -127,6 +128,7 @@ import { StorageModule } from '@modules/storage/storage.module'
     HomeworkModule,
     CertificatesModule,
     StorageModule,
+    BooksModule,
   ],
   controllers: [AppController],
   providers: [

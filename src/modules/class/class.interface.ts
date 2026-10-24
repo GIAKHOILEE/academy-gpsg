@@ -5,6 +5,7 @@ import { ITeacher } from '@modules/teachers/teachers.interface'
 import { IDepartment } from '@modules/departments/department.interface'
 import { ISemester } from './_semester/semester.interface'
 import { IScholastic } from './_scholastic/scholastic.interface'
+import { IBook } from '@modules/books/books.interface'
 
 export interface IClasses {
   id: number
@@ -45,4 +46,5 @@ export interface IClasses {
   subject?: ISubject
   teacher?: ITeacher
   class_students?: ClassStudents[]
+  books?: IBook[]
 }
