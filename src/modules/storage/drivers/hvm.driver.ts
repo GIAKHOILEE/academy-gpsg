@@ -194,11 +194,10 @@ export class HvmStorageDriver implements IStorageDriver {
 
   async download(objectKey: string): Promise<Buffer> {
     const id = await this.resolveId(objectKey)
-    const signed = await this.request<{ url: string; expiresAt: string }>(
-      'GET',
-      `/api/integration/files/${encodeURIComponent(id)}/signed-url`,
-      { query: { ttl: INTERNAL_SIGNED_URL_TTL }, action: 'lấy link tải' },
-    )
+    const signed = await this.request<{ url: string; expiresAt: string }>('GET', `/api/integration/files/${encodeURIComponent(id)}/signed-url`, {
+      query: { ttl: INTERNAL_SIGNED_URL_TTL },
+      action: 'lấy link tải',
+    })
 
     const response = await this.rawFetch(signed.url, { method: 'GET' })
     if (!response.ok) {
@@ -271,11 +270,10 @@ export class HvmStorageDriver implements IStorageDriver {
   async getSignedUrl(objectKey: string, expiresInSeconds: number): Promise<string | null> {
     const id = await this.resolveId(objectKey)
     const ttl = Math.min(Math.max(1, Math.floor(expiresInSeconds || 3600)), 7 * 24 * 3600)
-    const signed = await this.request<{ url: string; expiresAt: string }>(
-      'GET',
-      `/api/integration/files/${encodeURIComponent(id)}/signed-url`,
-      { query: { ttl }, action: 'lấy link tải tạm thời' },
-    )
+    const signed = await this.request<{ url: string; expiresAt: string }>('GET', `/api/integration/files/${encodeURIComponent(id)}/signed-url`, {
+      query: { ttl },
+      action: 'lấy link tải tạm thời',
+    })
     return signed.url
   }
 

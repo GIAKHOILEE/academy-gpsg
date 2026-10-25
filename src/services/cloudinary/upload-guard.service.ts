@@ -1,13 +1,6 @@
 import { HttpException, HttpStatus, Injectable, PayloadTooLargeException } from '@nestjs/common'
 import * as crypto from 'crypto'
-import {
-  DEDUPE_WINDOW_MS,
-  formatMb,
-  maxFileSizeFor,
-  maxFilesPerBatchFor,
-  RATE_LIMIT_BYTES,
-  RATE_LIMIT_UPLOADS,
-} from './upload-limits'
+import { DEDUPE_WINDOW_MS, formatMb, maxFileSizeFor, maxFilesPerBatchFor, RATE_LIMIT_BYTES, RATE_LIMIT_UPLOADS } from './upload-limits'
 
 /** Người gọi upload: đúng hình dạng req.user của JwtStrategy. */
 export interface UploadActor {
@@ -88,9 +81,7 @@ export class UploadGuardService {
       )
     }
 
-    const bytesInWindow = history
-      .filter(event => now - event.at < RATE_LIMIT_BYTES.windowMs)
-      .reduce((sum, event) => sum + event.bytes, 0)
+    const bytesInWindow = history.filter(event => now - event.at < RATE_LIMIT_BYTES.windowMs).reduce((sum, event) => sum + event.bytes, 0)
     if (bytesInWindow + incomingBytes > RATE_LIMIT_BYTES.max) {
       const retryMs = this.retryAfterMs(history, now, RATE_LIMIT_BYTES.windowMs)
       throw new HttpException(

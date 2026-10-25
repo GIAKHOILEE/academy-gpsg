@@ -78,8 +78,18 @@ describe('UploadGuardService', () => {
 
     it('tính cả lô đang xin tải: 25 đã tải + lô 6 file => 429', () => {
       for (let i = 0; i < 25; i++) guard.record(student, [file(10)])
-      expect(() => guard.assertRate(student, Array.from({ length: 6 }, () => file(10)))).toThrow(HttpException)
-      expect(() => guard.assertRate(student, Array.from({ length: 5 }, () => file(10)))).not.toThrow()
+      expect(() =>
+        guard.assertRate(
+          student,
+          Array.from({ length: 6 }, () => file(10)),
+        ),
+      ).toThrow(HttpException)
+      expect(() =>
+        guard.assertRate(
+          student,
+          Array.from({ length: 5 }, () => file(10)),
+        ),
+      ).not.toThrow()
     })
 
     it('tổng byte trong 1 giờ vượt 300 MB => 429 dù số lần còn ít', () => {

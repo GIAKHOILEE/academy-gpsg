@@ -247,15 +247,29 @@ describe('HvmStorageDriver', () => {
     it('trang đầu: ensure không được dùng; dò thư mục theo từng cấp, lấy thư mục con rồi file', async () => {
       fetchMock
         .mockResolvedValueOnce(jsonResponse(200, meDto)) // /me để biết root
-        .mockResolvedValueOnce(jsonResponse(200, { items: [{ type: 'folder', id: 'fAcademy', title: 'academy', parentId: 'root1', path: 'academy', counts: { children: 1 } }] }))
-        .mockResolvedValueOnce(jsonResponse(200, { items: [{ type: 'folder', id: 'fAvatars', title: 'avatars', parentId: 'fAcademy', path: 'academy/avatars', counts: { children: 0 } }] }))
+        .mockResolvedValueOnce(
+          jsonResponse(200, {
+            items: [{ type: 'folder', id: 'fAcademy', title: 'academy', parentId: 'root1', path: 'academy', counts: { children: 1 } }],
+          }),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse(200, {
+            items: [{ type: 'folder', id: 'fAvatars', title: 'avatars', parentId: 'fAcademy', path: 'academy/avatars', counts: { children: 0 } }],
+          }),
+        )
         .mockResolvedValueOnce(jsonResponse(200, { items: [fileDto()], total: 3 }))
 
       const result = await driver.list('', undefined, 1)
 
       expect(result.prefixes).toEqual(['avatars'])
       expect(result.objects).toEqual([
-        expect.objectContaining({ objectKey: 'file1', name: 'anh.png', size: 13, mimeType: 'image/png', url: 'https://video.hvmvsaigon.edu.vn/f/file1/anh.png' }),
+        expect.objectContaining({
+          objectKey: 'file1',
+          name: 'anh.png',
+          size: 13,
+          mimeType: 'image/png',
+          url: 'https://video.hvmvsaigon.edu.vn/f/file1/anh.png',
+        }),
       ])
       // Còn 2 file nữa => cursor là skip tiếp theo
       expect(result.cursor).toBe('1')
@@ -274,7 +288,9 @@ describe('HvmStorageDriver', () => {
 
   describe('thư mục và di chuyển', () => {
     it('createFolder dùng /folders/ensure với đường dẫn đã ghép folder_path và cache id', async () => {
-      fetchMock.mockResolvedValueOnce(jsonResponse(200, { type: 'folder', id: 'fNew', title: '2026', parentId: 'x', path: 'academy/pdf/2026', counts: { children: 0 } }))
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse(200, { type: 'folder', id: 'fNew', title: '2026', parentId: 'x', path: 'academy/pdf/2026', counts: { children: 0 } }),
+      )
 
       await expect(driver.createFolder('pdf/2026')).resolves.toBe('fNew')
       await expect(driver.createFolder('pdf/2026')).resolves.toBe('fNew')
@@ -306,7 +322,9 @@ describe('HvmStorageDriver', () => {
 
   describe('createSession', () => {
     it('POST /sessions với đúng body và trả về token', async () => {
-      fetchMock.mockResolvedValueOnce(jsonResponse(201, { token: 'jwt', expiresAt: '2026-10-25T01:00:00.000Z', hubUrl: 'https://app/api/hub', deliveryOrigin: 'https://video' }))
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse(201, { token: 'jwt', expiresAt: '2026-10-25T01:00:00.000Z', hubUrl: 'https://app/api/hub', deliveryOrigin: 'https://video' }),
+      )
 
       const session = await driver.createSession({ subject: '2:15', permissions: ['read'], ttlSeconds: 3600 })
 
@@ -319,7 +337,9 @@ describe('HvmStorageDriver', () => {
   describe('lỗi', () => {
     it('lỗi HTTP là HvmStorageError giữ status và code', async () => {
       // Hai lần gọi, mỗi lần một phản hồi (lỗi /me không được cache)
-      fetchMock.mockResolvedValueOnce(jsonResponse(500, { code: 'INTERNAL', message: 'Nổ' })).mockResolvedValueOnce(jsonResponse(500, { code: 'INTERNAL', message: 'Nổ' }))
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse(500, { code: 'INTERNAL', message: 'Nổ' }))
+        .mockResolvedValueOnce(jsonResponse(500, { code: 'INTERNAL', message: 'Nổ' }))
 
       await expect(driver.getUsage()).rejects.toMatchObject({ status: 500, code: 'INTERNAL', message: expect.stringContaining('500') })
       await expect(driver.getUsage()).rejects.toBeInstanceOf(HvmStorageError)

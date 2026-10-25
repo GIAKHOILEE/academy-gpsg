@@ -155,9 +155,12 @@ export class StorageProviderSeeder implements OnApplicationBootstrap {
   /**
    * hvm-storage: tạo mặc định với priority cao nhất và là dịch vụ mặc định.
    *
-   * - Chưa có dòng nào driver `hvm` => tạo mới, hạ `is_default` của mọi dịch vụ khác.
-   * - Đã có => không tạo lại. Nếu env đang đặt URL/key thì ghi đè vào config của
-   *   các dòng còn sống (không đụng cờ bật/tắt/mặc định người dùng đã chỉnh).
+   * - Chưa có dòng nào driver `hvm` => tạo mới từ env (nếu có) hoặc giá trị mặc định trong
+   *   code, hạ `is_default` của mọi dịch vụ khác.
+   * - Đã có => KHÔNG đụng gì. URL/API key là cấu hình động: sửa tại trang quản trị
+   *   "Quản lý lưu trữ" (lưu mã hoá trong DB, có hiệu lực ngay). Env chỉ là giá trị khởi
+   *   tạo lần đầu — trước đây env ghi đè DB mỗi lần restart, làm key vừa xoay trên giao
+   *   diện bị trả về giá trị cũ.
    */
   private async seedHvm(): Promise<boolean> {
     const envUrl = process.env[HVM_STORAGE_URL_ENV]
@@ -168,22 +171,7 @@ export class StorageProviderSeeder implements OnApplicationBootstrap {
     const existing = (await this.providerRepository.find({ where: { driver: StorageDriver.HVM }, withDeleted: true })).filter(
       provider => provider.driver === StorageDriver.HVM,
     )
-
-    if (existing.length) {
-      if (!envUrl && !envKey) return false
-
-      for (const provider of existing) {
-        if (provider.deleted_at) continue
-        const config = this.crypto.decryptJson(provider.config_encrypted) || {}
-        if (config.base_url === baseUrl && config.api_key === apiKey) continue
-
-        provider.config_encrypted = this.crypto.encryptJson({ ...config, base_url: baseUrl, api_key: apiKey })
-        provider.public_base_url = baseUrl
-        await this.providerRepository.save(provider)
-        this.logger.log(`Đã cập nhật URL/API key của "${provider.name}" từ biến môi trường`)
-      }
-      return false
-    }
+    if (existing.length) return false
 
     // Chỉ được có một dịch vụ mặc định
     await this.providerRepository.update({ is_default: true }, { is_default: false })

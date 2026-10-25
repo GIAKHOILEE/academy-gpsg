@@ -178,7 +178,7 @@ describe('StorageProviderSeeder', () => {
     })
   })
 
-  describe('HVM Storage (mặc định trong code, env thắng)', () => {
+  describe('HVM Storage (env/mặc định chỉ khởi tạo lần đầu, DB thắng)', () => {
     it('tạo bằng giá trị mặc định khi không có env: bật, mặc định, priority 5, public_base_url = base_url', async () => {
       await seeder.onApplicationBootstrap()
 
@@ -234,24 +234,24 @@ describe('StorageProviderSeeder', () => {
       expect(providerRepository.update).not.toHaveBeenCalled()
     })
 
-    it('đã có dòng hvm và env đặt key mới thì cập nhật config, không đụng cờ của người dùng', async () => {
+    it('đã có dòng hvm: env đặt key khác cũng KHÔNG ghi đè (key sửa trên giao diện là nguồn sự thật)', async () => {
       const existing = Object.assign(new StorageProviderEntity(), {
         id: 1,
         name: 'HVM Storage (mặc định)',
         driver: StorageDriver.HVM,
         is_enabled: false,
         is_default: false,
-        config_encrypted: crypto.encryptJson({ base_url: HVM_STORAGE_DEFAULT_URL, api_key: 'cu', folder_path: 'academy' }),
+        config_encrypted: crypto.encryptJson({ base_url: HVM_STORAGE_DEFAULT_URL, api_key: 'key-xoay-tren-ui', folder_path: 'academy' }),
       })
       providerRepository.find.mockResolvedValue([existing])
-      process.env.HVM_STORAGE_API_KEY = 'hvmk_academy_moi'
+      process.env.HVM_STORAGE_API_KEY = 'hvmk_academy_cu_trong_env'
 
       await seeder.onApplicationBootstrap()
 
-      expect(providerRepository.save).toHaveBeenCalledTimes(1)
+      expect(providerRepository.save).not.toHaveBeenCalled()
       expect(crypto.decryptJson(existing.config_encrypted)).toEqual({
         base_url: HVM_STORAGE_DEFAULT_URL,
-        api_key: 'hvmk_academy_moi',
+        api_key: 'key-xoay-tren-ui',
         folder_path: 'academy',
       })
       expect(existing.is_enabled).toBe(false)
