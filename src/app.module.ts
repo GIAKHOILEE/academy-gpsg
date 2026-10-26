@@ -68,6 +68,7 @@ import { CertificatesModule } from '@modules/certificates/certificates.module'
 import { StorageModule } from '@modules/storage/storage.module'
 import { BooksModule } from '@modules/books/books.module'
 import { StorageHubModule } from '@modules/storage/hub/storage-hub.module'
+import { HvmMeetModule } from '@modules/hvm-meet/hvm-meet.module'
 
 @Module({
   imports: [
@@ -131,6 +132,7 @@ import { StorageHubModule } from '@modules/storage/hub/storage-hub.module'
     StorageModule,
     BooksModule,
     StorageHubModule,
+    HvmMeetModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,5 +1,6 @@
 import { IFile } from '@common/file'
 import { IClasses } from '@modules/class/class.interface'
+import { MeetingProvider } from '@enums/meeting.enum'
 
 export interface ILesson {
   id?: number
@@ -14,6 +15,7 @@ export interface ILesson {
   slide_url?: IFile[]
   document_url?: IFile[]
   meeting_url?: string
+  meeting_provider?: MeetingProvider
   class_id?: number
   class?: IClasses
   attendance_rule_id?: number

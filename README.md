@@ -159,6 +159,16 @@ src/
    JWT_SECRET=your_jwt_secret_key
    ```
 
+   Tuỳ chọn — phòng học HVM Meet (chỉ dùng để **khởi tạo lần đầu** bảng `hvm_meet_settings`;
+   sau đó sửa ở trang quản trị "Phòng học HVM Meet", env không ghi đè nữa):
+   ```env
+   HVM_MEET_URL=https://meet.hvmvsaigon.edu.vn
+   HVM_MEET_API_KEY=hvmm_academy_...
+   HVM_MEET_WEBHOOK_SECRET=...
+   ```
+   Trên HVM Meet, đặt webhook URL của ứng dụng academy là `<URL backend>/webhooks/hvm-meet`
+   và thêm origin của hvm-home vào danh sách origin được nhúng.
+
 3. **Chạy dự án ở chế độ phát triển (Development):**
    ```bash
    npm run start:dev

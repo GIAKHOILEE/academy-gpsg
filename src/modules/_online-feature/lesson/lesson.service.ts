@@ -86,6 +86,7 @@ export class LessonService {
       slide_url: savedLesson.slide_url,
       document_url: savedLesson.document_url,
       meeting_url: savedLesson.meeting_url,
+      meeting_provider: savedLesson.meeting_provider,
       class_id: savedLesson.class.id,
       attendance_rule_id: savedLesson.attendance_rule_id,
     }
@@ -159,6 +160,7 @@ export class LessonService {
         'lesson.slide_url',
         'lesson.document_url',
         'lesson.meeting_url',
+        'lesson.meeting_provider',
         'lesson.attendance_rule_id',
         'attendance_rule.id',
         'attendance_rule.lesson_date',
@@ -257,6 +259,7 @@ export class LessonService {
         slide_url: lesson.slide_url,
         document_url: lesson.document_url,
         meeting_url: lesson.meeting_url,
+        meeting_provider: lesson.meeting_provider,
         attendance_rule_id: lesson.attendance_rule_id,
         attendance_rule: lesson.attendance_rule
           ? {
@@ -318,6 +321,7 @@ export class LessonService {
       slide_url: lesson.slide_url,
       document_url: lesson.document_url,
       meeting_url: lesson.meeting_url,
+      meeting_provider: lesson.meeting_provider,
       attendance_rule_id: lesson.attendance_rule_id,
       attendance_rule: lesson.attendance_rule
         ? {

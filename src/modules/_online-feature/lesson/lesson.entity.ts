@@ -6,6 +6,7 @@ import { Discuss } from '../discuss/discuss.entity'
 import { Homeworks } from '../homeworks/entities/homeworks.entity'
 import { ClassNotification } from '@modules/class/notifications/notifications.entity'
 import { IFile } from '@common/file'
+import { MeetingProvider } from '@enums/meeting.enum'
 
 @Entity('lesson')
 export class Lesson {
@@ -43,6 +44,10 @@ export class Lesson {
 
   @Column({ nullable: true })
   meeting_url: string
+
+  // Phòng học của buổi: link ngoài (meeting_url) hay phòng HVM Meet tích hợp
+  @Column({ type: 'varchar', length: 20, default: MeetingProvider.EXTERNAL })
+  meeting_provider: MeetingProvider
 
   @ManyToOne(() => Classes, classes => classes.lessons, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'class_id' })

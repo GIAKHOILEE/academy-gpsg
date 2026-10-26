@@ -7,6 +7,7 @@ import * as winston from 'winston'
 import 'winston-daily-rotate-file'
 import { WinstonModule } from 'nest-winston'
 import * as express from 'express'
+import { HVM_MEET_WEBHOOK_PATH } from '@modules/hvm-meet/hvm-meet.constants'
 dotenv.config()
 
 async function bootstrap() {
@@ -53,6 +54,9 @@ async function bootstrap() {
       instance,
     }),
   })
+  // Webhook HVM Meet cần đúng byte gốc của body để kiểm chữ ký HMAC: giữ raw body (Buffer)
+  // cho riêng đường này; phải đặt trước express.json, vì body đã parse thì json parser bỏ qua
+  app.use(HVM_MEET_WEBHOOK_PATH, express.raw({ type: '*/*', limit: '5mb' }))
   // set body parser limits ở đây (trước app.listen)
   app.use(express.json({ limit: '100mb' }))
   app.use(express.urlencoded({ limit: '100mb', extended: true }))

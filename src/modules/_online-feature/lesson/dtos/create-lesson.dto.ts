@@ -1,6 +1,7 @@
 import { IFile } from '@common/file'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { MeetingProvider } from '@enums/meeting.enum'
+import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateLessonDto {
   @IsNotEmpty()
@@ -90,6 +91,15 @@ export class CreateLessonDto {
     example: 'https://www.google.com',
   })
   meeting_url: string
+
+  @IsOptional()
+  @IsEnum(MeetingProvider)
+  @ApiPropertyOptional({
+    description: 'Phòng học của buổi: external = link ngoài (meeting_url), hvm_meet = phòng HVM Meet tích hợp',
+    enum: MeetingProvider,
+    example: MeetingProvider.EXTERNAL,
+  })
+  meeting_provider?: MeetingProvider
 
   @IsOptional()
   @IsNumber()
