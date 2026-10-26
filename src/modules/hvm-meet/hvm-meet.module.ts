@@ -11,20 +11,23 @@ import { HvmMeetSettingController } from './controllers/hvm-meet-setting.control
 import { HvmMeetWebhookController } from './controllers/hvm-meet-webhook.controller'
 import { LessonMeetingController } from './controllers/lesson-meeting.controller'
 import { HvmMeetSettingEntity } from './entities/hvm-meet-setting.entity'
+import { LessonMeetSession } from './entities/lesson-meet-session.entity'
 import { HvmMeetClientService } from './services/hvm-meet-client.service'
 import { HvmMeetSettingSeeder } from './services/hvm-meet-setting.seeder'
 import { HvmMeetSettingService } from './services/hvm-meet-setting.service'
 import { HvmMeetWebhookService } from './services/hvm-meet-webhook.service'
+import { LessonMeetSessionService } from './services/lesson-meet-session.service'
 import { LessonMeetingService } from './services/lesson-meeting.service'
 
 /**
  * Tích hợp phòng học HVM Meet (thay link Google Meet cho buổi học online):
  * - cấu hình động, mã hoá trong DB (admin/hvm-meet/config)
  * - cấp vé vào phòng cho buổi học (POST lessons/:id/meeting/join)
+ * - xem lại buổi học: danh sách session + vé trang replay (lessons/:id/meeting/sessions...)
  * - nhận webhook điểm danh / bản ghi hình (POST webhooks/hvm-meet)
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([HvmMeetSettingEntity, Lesson, User, Student, Teacher, ClassStudents, Attendance])],
+  imports: [TypeOrmModule.forFeature([HvmMeetSettingEntity, LessonMeetSession, Lesson, User, Student, Teacher, ClassStudents, Attendance])],
   controllers: [HvmMeetSettingController, LessonMeetingController, HvmMeetWebhookController],
   providers: [
     // Dùng chung cách mã hoá (và khoá STORAGE_ENCRYPTION_KEY) với cấu hình dịch vụ lưu trữ
@@ -32,6 +35,7 @@ import { LessonMeetingService } from './services/lesson-meeting.service'
     HvmMeetClientService,
     HvmMeetSettingService,
     HvmMeetSettingSeeder,
+    LessonMeetSessionService,
     LessonMeetingService,
     HvmMeetWebhookService,
   ],

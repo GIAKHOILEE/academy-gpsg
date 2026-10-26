@@ -2,7 +2,16 @@ import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { HVM_MEET_REQUEST_TIMEOUT_MS } from '../hvm-meet.constants'
-import { HvmMeetCreateTicketRequest, HvmMeetIntegrationMe, HvmMeetRoom, HvmMeetTicket, HvmMeetUpsertRoomRequest } from '../hvm-meet.types'
+import {
+  HvmMeetCreateTicketRequest,
+  HvmMeetIntegrationMe,
+  HvmMeetReplayTicketRequest,
+  HvmMeetRoom,
+  HvmMeetSession,
+  HvmMeetSessionArchive,
+  HvmMeetTicket,
+  HvmMeetUpsertRoomRequest,
+} from '../hvm-meet.types'
 
 /** Cặp URL + API key để gọi HVM Meet; lấy từ cấu hình đã giải mã. */
 export interface HvmMeetConnection {
@@ -58,7 +67,7 @@ export class HvmMeetClientService {
     return this.request(conn, 'GET', `/v1/integration/rooms/${encodeURIComponent(externalId)}`, { action: 'lấy thông tin phòng' })
   }
 
-  listSessions(conn: HvmMeetConnection, externalId: string): Promise<any[]> {
+  listSessions(conn: HvmMeetConnection, externalId: string): Promise<HvmMeetSession[]> {
     return this.request(conn, 'GET', `/v1/integration/rooms/${encodeURIComponent(externalId)}/sessions`, { action: 'lấy danh sách buổi' })
   }
 
@@ -68,6 +77,19 @@ export class HvmMeetClientService {
 
   getAttendance(conn: HvmMeetConnection, sessionId: string): Promise<any> {
     return this.request(conn, 'GET', `/v1/integration/sessions/${encodeURIComponent(sessionId)}/attendance`, { action: 'lấy báo cáo điểm danh' })
+  }
+
+  /** Biên bản đầy đủ của một buổi: trò chuyện, cảm xúc, sự kiện, bình chọn, điểm danh, bản ghi. */
+  getArchive(conn: HvmMeetConnection, sessionId: string): Promise<HvmMeetSessionArchive> {
+    return this.request(conn, 'GET', `/v1/integration/sessions/${encodeURIComponent(sessionId)}/archive`, { action: 'lấy biên bản buổi học' })
+  }
+
+  /** Vé (một lần) mở trang xem lại của HVM Meet: video đồng bộ với trò chuyện, cảm xúc, sự kiện. Nhúng được bằng iframe. */
+  createReplayTicket(conn: HvmMeetConnection, sessionId: string, body: HvmMeetReplayTicketRequest): Promise<HvmMeetTicket> {
+    return this.request(conn, 'POST', `/v1/integration/sessions/${encodeURIComponent(sessionId)}/replay-tickets`, {
+      body,
+      action: 'cấp vé xem lại',
+    })
   }
 
   /** Kết thúc buổi đang diễn ra, phòng vẫn mở để vào lại. */
@@ -96,6 +118,11 @@ export class HvmMeetClientService {
     }
     if (error.code === 'ROOM_JOIN_CLOSED') {
       throwAppException('HVM_MEET_ROOM_JOIN_CLOSED', ErrorCode.HVM_MEET_ROOM_JOIN_CLOSED, HttpStatus.FORBIDDEN, { reason: 'ROOM_JOIN_CLOSED' })
+    }
+    if (error.code === 'SESSION_NOT_FOUND') {
+      throwAppException('LESSON_MEETING_SESSION_NOT_FOUND', ErrorCode.LESSON_MEETING_SESSION_NOT_FOUND, HttpStatus.NOT_FOUND, {
+        reason: 'SESSION_NOT_FOUND',
+      })
     }
     if (error.code === 'ROOM_CLOSED') {
       throwAppException('HVM_MEET_ROOM_CLOSED', ErrorCode.HVM_MEET_ROOM_CLOSED, HttpStatus.FORBIDDEN, { reason: 'ROOM_CLOSED' })

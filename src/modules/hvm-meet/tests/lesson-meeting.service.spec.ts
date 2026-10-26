@@ -2,7 +2,8 @@ import { LearnType } from '@enums/class.enum'
 import { HvmMeetRole, MeetingProvider } from '@enums/meeting.enum'
 import { Role } from '@enums/role.enum'
 import { HvmMeetApiError, HvmMeetClientService } from '../services/hvm-meet-client.service'
-import { decideMeetingRole, LessonMeetingService } from '../services/lesson-meeting.service'
+import { LessonMeetSessionService } from '../services/lesson-meet-session.service'
+import { decideMeetingRole, decideReplayAccess, LessonMeetingService } from '../services/lesson-meeting.service'
 
 describe('decideMeetingRole', () => {
   it.each([
@@ -21,6 +22,23 @@ describe('decideMeetingRole', () => {
   })
 })
 
+describe('decideReplayAccess', () => {
+  it.each([
+    ['giảng viên của lớp', Role.TEACHER, true, null, true],
+    ['giảng viên lớp khác', Role.TEACHER, false, null, false],
+    ['admin', Role.ADMIN, false, null, true],
+    ['giáo vụ', Role.STAFF, false, null, true],
+    ['tài chính', Role.FINANCE, false, null, false],
+    ['học viên học trực tuyến', Role.STUDENT, false, LearnType.MEETING, true],
+    // khác với vào phòng: học viên học qua video / tại lớp vẫn được xem lại
+    ['học viên học qua video', Role.STUDENT, false, LearnType.VIDEO, true],
+    ['học viên học tại lớp', Role.STUDENT, false, LearnType.OFFLINE, true],
+    ['học viên không thuộc lớp', Role.STUDENT, false, null, false],
+  ])('%s → %s', (_label, role, isClassTeacher, learnType, expected) => {
+    expect(decideReplayAccess({ role, isClassTeacher, learnType })).toBe(expected)
+  })
+})
+
 describe('LessonMeetingService.joinLesson', () => {
   let service: LessonMeetingService
   let client: HvmMeetClientService
@@ -33,6 +51,8 @@ describe('LessonMeetingService.joinLesson', () => {
   let settingService: any
   let upsertRoom: jest.Mock
   let createTicket: jest.Mock
+  let sessions: any[]
+  let sessionService: LessonMeetSessionService
 
   const config = { base_url: 'https://meet.test', api_key: 'hvmm_academy_x', webhook_secret: 's', default_template_key: 'class' }
   const ticket = { ticket: 't1', joinUrl: 'https://meet.test/join/t1', expiresAt: '2026-10-26T11:32:00Z' }
@@ -78,6 +98,26 @@ describe('LessonMeetingService.joinLesson', () => {
     client.upsertRoom = upsertRoom
     client.createTicket = createTicket
 
+    // sổ session: buổi sess-12a thuộc buổi học 12, sess-99 thuộc buổi học 99
+    sessions = [
+      { id: 1, lesson_id: 12, session_id: 'sess-12a', started_at: new Date('2026-10-26T11:30:00Z'), ended_at: new Date('2026-10-26T13:00:00Z') },
+      { id: 2, lesson_id: 99, session_id: 'sess-99', started_at: new Date('2026-10-20T11:30:00Z'), ended_at: null },
+    ]
+    const sessionRepository = {
+      findOne: jest.fn(async ({ where }) => sessions.find(row => Object.entries(where).every(([key, value]) => row[key] === value)) || null),
+      find: jest.fn(async ({ where }) => sessions.filter(row => row.lesson_id === where.lesson_id)),
+      create: jest.fn(data => ({ ...data })),
+      save: jest.fn(async row => {
+        if (!row.id) {
+          row.id = sessions.length + 1
+          sessions.push(row)
+        }
+        return row
+      }),
+    }
+    client.listSessions = jest.fn(async () => [])
+    sessionService = new LessonMeetSessionService(sessionRepository as any, client)
+
     service = new LessonMeetingService(
       lessonRepository,
       userRepository,
@@ -86,6 +126,7 @@ describe('LessonMeetingService.joinLesson', () => {
       classStudentRepository,
       settingService,
       client,
+      sessionService,
     )
   })
 
@@ -190,5 +231,90 @@ describe('LessonMeetingService.joinLesson', () => {
 
     await expect(service.joinLesson(12, { userId: 101, role: Role.STUDENT })).resolves.toMatchObject({ joinUrl: ticket.joinUrl })
     expect(upsertRoom).toHaveBeenCalledTimes(2)
+  })
+
+  describe('xem lại buổi học', () => {
+    const replayTicket = { ticket: 'r1', joinUrl: 'https://meet.test/replay/r1', expiresAt: '2026-10-27T01:02:00Z' }
+
+    beforeEach(() => {
+      client.createReplayTicket = jest.fn(async () => replayTicket)
+      client.getArchive = jest.fn(async () => ({ session: { id: 'sess-12a' }, chat: [], events: [] }) as any)
+    })
+
+    it('học viên học qua video được xem danh sách buổi (có thời lượng), kèm đồng bộ bù từ HVM Meet', async () => {
+      ;(client.listSessions as jest.Mock).mockResolvedValue([
+        { id: 'sess-12b', roomId: 'room-1', startedAt: '2026-10-27T11:30:00Z', endedAt: null, peakParticipants: 3, participantCount: 3 },
+      ])
+
+      const result = await service.listSessions(12, { userId: 102, role: Role.STUDENT })
+
+      expect(client.listSessions).toHaveBeenCalledWith({ baseUrl: 'https://meet.test', apiKey: 'hvmm_academy_x' }, 'lesson-12')
+      expect(result.map(item => item.session_id)).toEqual(['sess-12a', 'sess-12b'])
+      expect(result[0]).toMatchObject({ duration_seconds: 5400, is_live: false })
+      expect(result[1]).toMatchObject({ is_live: true, duration_seconds: null })
+    })
+
+    it('tích hợp đang tắt vẫn liệt kê được từ sổ trong DB', async () => {
+      settingService.getActiveConfig.mockResolvedValue(null)
+      await expect(service.listSessions(12, { userId: 50, role: Role.TEACHER })).resolves.toHaveLength(1)
+      expect(client.listSessions).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['học viên không thuộc lớp', 103, Role.STUDENT],
+      ['giảng viên lớp khác', 51, Role.TEACHER],
+      ['tài chính', 5, Role.FINANCE],
+    ])('%s không được xem lại (403)', async (_label, userId, role) => {
+      const error = await service.listSessions(12, { userId, role }).catch(err => err)
+      expect(error.getStatus()).toBe(403)
+      expect(error.response.data).toEqual({ reason: 'NOT_ALLOWED' })
+    })
+
+    it('cấp vé xem lại với identity của người xem, trả url để nhúng', async () => {
+      await expect(service.createReplay(12, 'sess-12a', { userId: 102, role: Role.STUDENT })).resolves.toEqual({
+        url: replayTicket.joinUrl,
+        expiresAt: replayTicket.expiresAt,
+      })
+      expect(client.createReplayTicket).toHaveBeenCalledWith(expect.anything(), 'sess-12a', {
+        identity: 'academy:user:102',
+        name: 'Giuse Người 102',
+      })
+    })
+
+    it('session của buổi học khác (đổi sessionId trên URL) → 404, không cấp vé', async () => {
+      const error = await service.createReplay(12, 'sess-99', { userId: 101, role: Role.STUDENT }).catch(err => err)
+      expect(error.getStatus()).toBe(404)
+      expect(error.response.data).toEqual({ reason: 'SESSION_NOT_FOUND' })
+      // đã thử đồng bộ bù trước khi kết luận
+      expect(client.listSessions).toHaveBeenCalled()
+      expect(client.createReplayTicket).not.toHaveBeenCalled()
+    })
+
+    it('session chưa có trong sổ (lỡ webhook) nhưng HVM Meet có → đồng bộ bù rồi cấp vé', async () => {
+      ;(client.listSessions as jest.Mock).mockResolvedValue([
+        {
+          id: 'sess-12c',
+          roomId: 'room-1',
+          startedAt: '2026-10-28T11:30:00Z',
+          endedAt: '2026-10-28T13:00:00Z',
+          peakParticipants: 9,
+          participantCount: 9,
+        },
+      ])
+      await expect(service.createReplay(12, 'sess-12c', { userId: 50, role: Role.TEACHER })).resolves.toMatchObject({ url: replayTicket.joinUrl })
+    })
+
+    it('học viên không xem được biên bản thô; admin thì được', async () => {
+      const error = await service.getArchive(12, 'sess-12a', { userId: 101, role: Role.STUDENT }).catch(err => err)
+      expect(error.getStatus()).toBe(403)
+
+      await expect(service.getArchive(12, 'sess-12a', { userId: 1, role: Role.ADMIN })).resolves.toMatchObject({ session: { id: 'sess-12a' } })
+    })
+
+    it('HVM Meet báo SESSION_NOT_FOUND khi cấp vé → 404', async () => {
+      ;(client.createReplayTicket as jest.Mock).mockRejectedValue(new HvmMeetApiError('Không tìm thấy buổi', 404, 'SESSION_NOT_FOUND'))
+      const error = await service.createReplay(12, 'sess-12a', { userId: 1, role: Role.ADMIN }).catch(err => err)
+      expect(error.getStatus()).toBe(404)
+    })
   })
 })

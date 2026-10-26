@@ -15,7 +15,8 @@ import {
   normalizeLessonDate,
   pickRecordingPlaybackUrl,
 } from '../hvm-meet.mapping'
-import { HvmMeetAttendanceFinalizedData, HvmMeetRecordingReadyData, HvmMeetWebhookEnvelope } from '../hvm-meet.types'
+import { HvmMeetAttendanceFinalizedData, HvmMeetRecordingReadyData, HvmMeetRoomLifecycleData, HvmMeetWebhookEnvelope } from '../hvm-meet.types'
+import { LessonMeetSessionService } from './lesson-meet-session.service'
 
 export interface HvmMeetWebhookResult {
   event: string
@@ -45,6 +46,7 @@ export class HvmMeetWebhookService {
     private readonly classStudentRepository: Repository<ClassStudents>,
     @InjectRepository(Attendance)
     private readonly attendanceRepository: Repository<Attendance>,
+    private readonly sessionService: LessonMeetSessionService,
   ) {}
 
   async handle(envelope: HvmMeetWebhookEnvelope): Promise<HvmMeetWebhookResult> {
@@ -55,8 +57,11 @@ export class HvmMeetWebhookService {
         return this.handleAttendanceFinalized(envelope.data)
       case 'recording.ready':
         return this.handleRecordingReady(envelope.data)
+      case 'room.started':
+      case 'room.ended':
+        return this.handleRoomLifecycle(event, envelope.data)
       default:
-        // room.started, room.ended, participant.*, attendance.check.closed, recording.started/failed, poll.closed, ping...
+        // participant.*, attendance.check.closed, recording.started/failed, poll.closed, ping...
         this.logger.log(`Nhận sự kiện HVM Meet "${event}" (${envelope?.id}), không cần xử lý`)
         return { event, handled: false, skipped: 'event_ignored' }
     }
@@ -70,6 +75,7 @@ export class HvmMeetWebhookService {
     const event = 'attendance.finalized'
     const lesson = await this.findLesson(data?.externalId)
     if (!lesson) return { event, handled: false, skipped: 'lesson_not_found' }
+    await this.sessionService.record(lesson.id, data?.sessionId, { room_id: data?.roomId, attendance_finalized: true })
 
     const attendanceDate = this.resolveAttendanceDate(lesson)
     if (!attendanceDate) {
@@ -162,6 +168,8 @@ export class HvmMeetWebhookService {
     const lesson = await this.findLesson(data?.externalId)
     if (!lesson) return { event, handled: false, skipped: 'lesson_not_found' }
 
+    await this.sessionService.record(lesson.id, data?.sessionId, { room_id: data?.roomId, recording_ready: true })
+
     const url = pickRecordingPlaybackUrl(data?.storage?.urls)
     if (!url) {
       this.logger.warn(`Bản ghi ${data?.recordingId} của buổi ${lesson.id} chưa có link phát lại, bỏ qua`)
@@ -173,6 +181,21 @@ export class HvmMeetWebhookService {
 
     await this.lessonRepository.update({ id: lesson.id }, { video_url: videoUrls })
     return { event, handled: true, lesson_id: lesson.id, added: true, url }
+  }
+
+  /** room.started / room.ended: ghi session vào sổ để học viên xem lại được buổi học. */
+  async handleRoomLifecycle(event: string, data: HvmMeetRoomLifecycleData): Promise<HvmMeetWebhookResult> {
+    const lesson = await this.findLesson(data?.externalId)
+    if (!lesson) return { event, handled: false, skipped: 'lesson_not_found' }
+    if (!data?.sessionId) return { event, handled: false, skipped: 'no_session_id' }
+
+    await this.sessionService.record(lesson.id, data.sessionId, {
+      room_id: data.roomId,
+      started_at: data.startedAt,
+      ended_at: event === 'room.ended' ? data.endedAt : null,
+      peak_participants: data.peakParticipants ?? null,
+    })
+    return { event, handled: true, lesson_id: lesson.id, session_id: data.sessionId }
   }
 
   /* ------------------------------ private ------------------------------ */

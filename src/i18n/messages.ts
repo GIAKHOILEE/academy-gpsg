@@ -184,6 +184,7 @@ export const messages = {
     HVM_MEET_REQUEST_FAILED: 'HVM Meet rejected the request',
     HVM_MEET_INVALID_CONFIG: 'HVM Meet configuration is invalid',
     HVM_MEET_WEBHOOK_INVALID_SIGNATURE: 'Invalid webhook signature',
+    LESSON_MEETING_SESSION_NOT_FOUND: 'Online session of this lesson not found',
   },
   vi: {
     SCHOLASTIC_ALREADY_EXISTS: 'Trường học đã tồn tại',
@@ -373,5 +374,6 @@ export const messages = {
     HVM_MEET_REQUEST_FAILED: 'HVM Meet từ chối yêu cầu',
     HVM_MEET_INVALID_CONFIG: 'Cấu hình HVM Meet không hợp lệ',
     HVM_MEET_WEBHOOK_INVALID_SIGNATURE: 'Chữ ký webhook không hợp lệ',
+    LESSON_MEETING_SESSION_NOT_FOUND: 'Không tìm thấy buổi học trực tuyến cần xem lại',
   },
 }

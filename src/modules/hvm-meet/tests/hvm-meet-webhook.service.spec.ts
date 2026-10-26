@@ -1,5 +1,6 @@
 import { AttendanceStatus } from '@enums/class.enum'
 import { HvmMeetWebhookService } from '../services/hvm-meet-webhook.service'
+import { LessonMeetSessionService } from '../services/lesson-meet-session.service'
 import { HvmMeetAttendanceReport } from '../hvm-meet.types'
 
 const report = (userId: number, overrides: Partial<HvmMeetAttendanceReport> = {}): HvmMeetAttendanceReport => ({
@@ -26,6 +27,8 @@ describe('HvmMeetWebhookService', () => {
   let attendanceRepository: any
   let attendances: any[]
   let lesson: any
+  let sessions: any[]
+  let sessionRepository: any
 
   beforeEach(() => {
     lesson = { id: 12, title: 'Bài 1', start_date: '26/10/2026', video_url: ['https://youtu.be/x'], class: { id: 3 }, attendance_rule: null }
@@ -58,7 +61,21 @@ describe('HvmMeetWebhookService', () => {
       }),
     }
 
-    service = new HvmMeetWebhookService(lessonRepository, studentRepository, classStudentRepository, attendanceRepository)
+    sessions = []
+    sessionRepository = {
+      findOne: jest.fn(async ({ where }) => sessions.find(row => Object.entries(where).every(([key, value]) => row[key] === value)) || null),
+      create: jest.fn(data => ({ recording_ready: false, attendance_finalized: false, ...data })),
+      save: jest.fn(async row => {
+        if (!row.id) {
+          row.id = sessions.length + 1
+          sessions.push(row)
+        }
+        return row
+      }),
+    }
+    const sessionService = new LessonMeetSessionService(sessionRepository, null)
+
+    service = new HvmMeetWebhookService(lessonRepository, studentRepository, classStudentRepository, attendanceRepository, sessionService)
     jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined)
     jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined)
   })
@@ -182,7 +199,67 @@ describe('HvmMeetWebhookService', () => {
     })
   })
 
-  it.each(['room.started', 'room.ended', 'participant.joined', 'attendance.check.closed', 'recording.failed', 'poll.closed', 'ping'])(
+  describe('sổ session để xem lại (room.started / room.ended / recording.ready / attendance.finalized)', () => {
+    const send = (event: string, data: Record<string, any>) =>
+      service.handle({ id: `d-${event}`, event, createdAt: '', app: 'academy', data: { roomId: 'room-1', externalId: 'lesson-12', ...data } })
+
+    it('room.started rồi room.ended → một dòng có giờ bắt đầu, kết thúc, số người cao nhất', async () => {
+      await send('room.started', { sessionId: 'sess-1', startedAt: '2026-10-26T11:30:00Z' })
+      await expect(
+        send('room.ended', { sessionId: 'sess-1', startedAt: '2026-10-26T11:30:00Z', endedAt: '2026-10-26T13:00:00Z', peakParticipants: 25 }),
+      ).resolves.toMatchObject({ handled: true, lesson_id: 12, session_id: 'sess-1' })
+
+      expect(sessions).toHaveLength(1)
+      expect(sessions[0]).toMatchObject({
+        lesson_id: 12,
+        session_id: 'sess-1',
+        room_id: 'room-1',
+        started_at: new Date('2026-10-26T11:30:00Z'),
+        ended_at: new Date('2026-10-26T13:00:00Z'),
+        peak_participants: 25,
+      })
+    })
+
+    it('idempotent và chịu được sai thứ tự: ended tới trước, started tới sau, gửi lại nhiều lần', async () => {
+      const ended = { sessionId: 'sess-1', startedAt: '2026-10-26T11:30:00Z', endedAt: '2026-10-26T13:00:00Z', peakParticipants: 25 }
+      await send('room.ended', ended)
+      await send('room.started', { sessionId: 'sess-1', startedAt: '2026-10-26T11:30:00Z' })
+      await send('room.ended', ended)
+      const saves = sessionRepository.save.mock.calls.length
+      await send('room.started', { sessionId: 'sess-1', startedAt: '2026-10-26T11:30:00Z' })
+
+      expect(sessions).toHaveLength(1)
+      // room.started tới muộn không xoá giờ kết thúc
+      expect(sessions[0].ended_at).toEqual(new Date('2026-10-26T13:00:00Z'))
+      // không có gì mới thì không ghi DB
+      expect(sessionRepository.save.mock.calls.length).toBe(saves)
+    })
+
+    it('recording.ready và attendance.finalized bật cờ trên đúng dòng session, không tạo dòng mới', async () => {
+      await send('room.ended', { sessionId: 'sess-1', startedAt: '2026-10-26T11:30:00Z', endedAt: '2026-10-26T13:00:00Z' })
+      await send('recording.ready', { sessionId: 'sess-1', recordingId: 'rec1', storage: { urls: { embed: 'https://app.test/embed/abc' } } })
+      await send('attendance.finalized', { sessionId: 'sess-1', reports: [] })
+      await send('recording.ready', { sessionId: 'sess-1', recordingId: 'rec1', storage: { urls: { embed: 'https://app.test/embed/abc' } } })
+
+      expect(sessions).toHaveLength(1)
+      expect(sessions[0]).toMatchObject({ recording_ready: true, attendance_finalized: true })
+      // vẫn giữ hành vi cũ: link bản ghi vào video_url
+      expect(lesson.video_url).toEqual(['https://youtu.be/x', 'https://app.test/embed/abc'])
+    })
+
+    it('buổi khác nhau của cùng buổi học là các dòng khác nhau', async () => {
+      await send('room.started', { sessionId: 'sess-1', startedAt: '2026-10-26T11:30:00Z' })
+      await send('room.started', { sessionId: 'sess-2', startedAt: '2026-10-26T12:10:00Z' })
+      expect(sessions.map(row => row.session_id)).toEqual(['sess-1', 'sess-2'])
+    })
+
+    it('phòng không phải của buổi học thì không ghi', async () => {
+      await expect(send('room.started', { externalId: 'meeting-x', sessionId: 'sess-9' })).resolves.toMatchObject({ handled: false })
+      expect(sessions).toHaveLength(0)
+    })
+  })
+
+  it.each(['participant.joined', 'attendance.check.closed', 'recording.failed', 'poll.closed', 'ping'])(
     'sự kiện %s chỉ xác nhận, không đụng DB',
     async event => {
       await expect(service.handle({ id: 'x', event, createdAt: '', app: 'academy', data: {} })).resolves.toMatchObject({

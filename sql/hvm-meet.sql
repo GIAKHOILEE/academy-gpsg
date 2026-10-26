@@ -36,3 +36,27 @@ CREATE TABLE IF NOT EXISTS `hvm_meet_settings` (
 -- ---------------------------------------------------------------------------
 SELECT `meeting_provider`, COUNT(*) AS `lessons` FROM `lesson` GROUP BY `meeting_provider`;
 SELECT `id`, `is_enabled`, `default_template_key`, `status`, `status_checked_at` FROM `hvm_meet_settings`;
+
+-- ---------------------------------------------------------------------------
+-- 4) Sổ các buổi HVM Meet đã diễn ra theo buổi học (để "Xem lại buổi học")
+--    Ghi bởi webhook room.started / room.ended / recording.ready / attendance.finalized
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `lesson_meet_sessions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `lesson_id` int NOT NULL,
+  `session_id` varchar(64) NOT NULL,
+  `room_id` varchar(64) NULL,
+  `started_at` datetime NULL,
+  `ended_at` datetime NULL,
+  `peak_participants` int NULL,
+  `recording_ready` tinyint NOT NULL DEFAULT 0,
+  `attendance_finalized` tinyint NOT NULL DEFAULT 0,
+  `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `updated_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_lesson_meet_sessions_session` (`session_id`),
+  KEY `idx_lesson_meet_sessions_lesson` (`lesson_id`),
+  CONSTRAINT `fk_lesson_meet_sessions_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `lesson` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+SELECT `lesson_id`, COUNT(*) AS `sessions`, SUM(`recording_ready`) AS `with_recording` FROM `lesson_meet_sessions` GROUP BY `lesson_id`;

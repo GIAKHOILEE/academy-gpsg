@@ -14,9 +14,16 @@ import * as crypto from 'crypto'
 import { Repository } from 'typeorm'
 import { academyIdentity, HVM_MEET_ROOM_SYNC_TTL_MS, lessonExternalId } from '../hvm-meet.constants'
 import { buildLessonSchedule } from '../hvm-meet.mapping'
-import { HvmMeetConnectionConfig, HvmMeetRosterEntry, HvmMeetUpsertRoomRequest, LessonMeetingJoinResult } from '../hvm-meet.types'
+import {
+  HvmMeetConnectionConfig,
+  HvmMeetRosterEntry,
+  HvmMeetSessionArchive,
+  HvmMeetUpsertRoomRequest,
+  LessonMeetingJoinResult,
+} from '../hvm-meet.types'
 import { HvmMeetApiError, HvmMeetClientService, HvmMeetConnection } from './hvm-meet-client.service'
 import { HvmMeetSettingService } from './hvm-meet-setting.service'
+import { LessonMeetSessionService } from './lesson-meet-session.service'
 
 /** Người dùng đã đăng nhập, đúng hình dạng req.user do JwtStrategy trả về. */
 export interface MeetingUser {
@@ -43,6 +50,19 @@ export function decideMeetingRole(input: { role: Role; isClassTeacher: boolean; 
   if (STAFF_ROLES.includes(role)) return HvmMeetRole.COHOST
   if (role === Role.STUDENT) return input.learnType === LearnType.MEETING ? HvmMeetRole.PARTICIPANT : null
   return null
+}
+
+/**
+ * Ai được xem lại các buổi HVM Meet đã diễn ra của một buổi học:
+ * giảng viên phụ trách lớp, admin / giáo vụ, và MỌI học viên có trong lớp (kể cả học qua video
+ * hay học tại lớp — xem lại chính là cách học viên học qua video theo kịp buổi trực tuyến).
+ */
+export function decideReplayAccess(input: { role: Role; isClassTeacher: boolean; learnType: LearnType | null }): boolean {
+  const role = Number(input.role) as Role
+  if (role === Role.TEACHER) return input.isClassTeacher
+  if (STAFF_ROLES.includes(role)) return true
+  if (role === Role.STUDENT) return input.learnType !== null
+  return false
 }
 
 /** Tên hiển thị trong phòng: "Tên thánh Họ tên", tối đa 120 ký tự theo hợp đồng HVM Meet. */
@@ -72,6 +92,7 @@ export class LessonMeetingService {
     private readonly classStudentRepository: Repository<ClassStudents>,
     private readonly settingService: HvmMeetSettingService,
     private readonly client: HvmMeetClientService,
+    private readonly sessionService: LessonMeetSessionService,
   ) {}
 
   /**
@@ -144,25 +165,8 @@ export class LessonMeetingService {
 
   /** Vai trò của người dùng trong phòng buổi học này, null = không được vào. */
   async resolveRole(lesson: Lesson, user: MeetingUser): Promise<HvmMeetRole | null> {
-    const userId = Number(user?.userId)
-    const role = Number(user?.role) as Role
-    if (!Number.isFinite(userId) || !lesson.class) return null
-
-    let isClassTeacher = false
-    let learnType: LearnType | null = null
-
-    if (role === Role.TEACHER) {
-      const teacher = await this.teacherRepository.findOne({ where: { user_id: userId } })
-      isClassTeacher = Boolean(teacher && lesson.class.teacher_id && teacher.id === lesson.class.teacher_id)
-    } else if (role === Role.STUDENT) {
-      const student = await this.studentRepository.findOne({ where: { user_id: userId } })
-      if (student) {
-        const classStudent = await this.classStudentRepository.findOne({ where: { class_id: lesson.class.id, student_id: student.id } })
-        learnType = classStudent ? Number(classStudent.learn_type) : null
-      }
-    }
-
-    return decideMeetingRole({ role, isClassTeacher, learnType })
+    const context = await this.loadAccessContext(lesson, user)
+    return context ? decideMeetingRole(context) : null
   }
 
   /** Danh sách dự kiến tham gia: giảng viên (host) + học viên học trực tuyến của lớp (participant). */
@@ -199,7 +203,124 @@ export class LessonMeetingService {
     return roster
   }
 
+  /* --------------------------- Xem lại buổi học --------------------------- */
+
+  /**
+   * Các lần phòng HVM Meet của buổi học đã diễn ra (mới nhất trước). Đồng bộ bù từ HVM Meet
+   * nếu tích hợp đang bật, phòng khi webhook bị lỡ.
+   */
+  async listSessions(lessonId: number, user: MeetingUser) {
+    const lesson = await this.findLessonForReplay(lessonId, user)
+
+    const config = await this.settingService.getActiveConfig()
+    if (config) await this.sessionService.syncFromHvmMeet({ baseUrl: config.base_url, apiKey: config.api_key }, lesson.id)
+
+    const sessions = await this.sessionService.listByLesson(lesson.id)
+    return sessions.map(session => this.sessionService.toResponse(session))
+  }
+
+  /**
+   * Vé xem lại (một lần, ngắn hạn) cho trang replay của HVM Meet: video đồng bộ với trò chuyện,
+   * cảm xúc, giơ tay, chia sẻ màn hình, bình chọn, điểm danh giữa buổi. FE nhúng `url` bằng iframe.
+   */
+  async createReplay(lessonId: number, sessionId: string, user: MeetingUser): Promise<{ url: string; expiresAt: string }> {
+    const lesson = await this.findLessonForReplay(lessonId, user)
+    const config = await this.requireActiveConfig()
+    const conn: HvmMeetConnection = { baseUrl: config.base_url, apiKey: config.api_key }
+    await this.assertSessionOfLesson(conn, lesson.id, sessionId)
+
+    const userId = Number(user?.userId)
+    const account = await this.userRepository.findOne({ where: { id: userId } })
+    try {
+      const ticket = await this.client.createReplayTicket(conn, sessionId, {
+        identity: academyIdentity(userId),
+        name: meetingDisplayName(account, `Người dùng ${userId}`),
+      })
+      return { url: ticket.joinUrl, expiresAt: ticket.expiresAt }
+    } catch (error) {
+      this.client.rethrowAsAppException(error)
+    }
+  }
+
+  /** Biên bản đầy đủ của buổi (chỉ admin / giáo vụ): trò chuyện, sự kiện, bình chọn, điểm danh, bản ghi. */
+  async getArchive(lessonId: number, sessionId: string, user: MeetingUser): Promise<HvmMeetSessionArchive> {
+    if (!STAFF_ROLES.includes(Number(user?.role) as Role)) {
+      throwAppException('LESSON_MEETING_FORBIDDEN', ErrorCode.LESSON_MEETING_FORBIDDEN, HttpStatus.FORBIDDEN, { reason: 'NOT_ALLOWED' })
+    }
+    const lesson = await this.findLessonForReplay(lessonId, user)
+    const config = await this.requireActiveConfig()
+    const conn: HvmMeetConnection = { baseUrl: config.base_url, apiKey: config.api_key }
+    await this.assertSessionOfLesson(conn, lesson.id, sessionId)
+
+    try {
+      return await this.client.getArchive(conn, sessionId)
+    } catch (error) {
+      this.client.rethrowAsAppException(error)
+    }
+  }
+
   /* ------------------------------ private ------------------------------ */
+
+  private async findLessonForReplay(lessonId: number, user: MeetingUser): Promise<Lesson> {
+    const lesson = await this.lessonRepository.findOne({ where: { id: lessonId }, relations: ['class'] })
+    if (!lesson) {
+      throwAppException('LESSON_NOT_FOUND', ErrorCode.LESSON_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    const context = await this.loadAccessContext(lesson, user)
+    if (!context || !decideReplayAccess(context)) {
+      throwAppException('LESSON_MEETING_FORBIDDEN', ErrorCode.LESSON_MEETING_FORBIDDEN, HttpStatus.FORBIDDEN, { reason: 'NOT_ALLOWED' })
+    }
+    return lesson
+  }
+
+  private async requireActiveConfig(): Promise<HvmMeetConnectionConfig> {
+    const config = await this.settingService.getActiveConfig()
+    if (!config) {
+      throwAppException('HVM_MEET_NOT_CONFIGURED', ErrorCode.HVM_MEET_NOT_CONFIGURED, HttpStatus.SERVICE_UNAVAILABLE, {
+        reason: 'NOT_CONFIGURED',
+      })
+    }
+    return config
+  }
+
+  /**
+   * sessionId phải thuộc đúng buổi học trong URL — nếu không, ai có quyền ở lớp này cũng xem
+   * được buổi của lớp khác chỉ bằng cách đổi sessionId. Chưa có trong sổ thì đồng bộ bù rồi xét lại.
+   */
+  private async assertSessionOfLesson(conn: HvmMeetConnection, lessonId: number, sessionId: string) {
+    if (await this.sessionService.findForLesson(lessonId, sessionId)) return
+    await this.sessionService.syncFromHvmMeet(conn, lessonId, true)
+    if (await this.sessionService.findForLesson(lessonId, sessionId)) return
+    throwAppException('LESSON_MEETING_SESSION_NOT_FOUND', ErrorCode.LESSON_MEETING_SESSION_NOT_FOUND, HttpStatus.NOT_FOUND, {
+      reason: 'SESSION_NOT_FOUND',
+    })
+  }
+
+  /** Dữ kiện để quyết định quyền: vai trò, có phải giảng viên của lớp, hình thức học trong lớp. */
+  private async loadAccessContext(
+    lesson: Lesson,
+    user: MeetingUser,
+  ): Promise<{ role: Role; isClassTeacher: boolean; learnType: LearnType | null } | null> {
+    const userId = Number(user?.userId)
+    const role = Number(user?.role) as Role
+    if (!Number.isFinite(userId) || !lesson.class) return null
+
+    let isClassTeacher = false
+    let learnType: LearnType | null = null
+
+    if (role === Role.TEACHER) {
+      const teacher = await this.teacherRepository.findOne({ where: { user_id: userId } })
+      isClassTeacher = Boolean(teacher && lesson.class.teacher_id && teacher.id === lesson.class.teacher_id)
+    } else if (role === Role.STUDENT) {
+      const student = await this.studentRepository.findOne({ where: { user_id: userId } })
+      if (student) {
+        const classStudent = await this.classStudentRepository.findOne({ where: { class_id: lesson.class.id, student_id: student.id } })
+        learnType = classStudent ? Number(classStudent.learn_type) : null
+      }
+    }
+
+    return { role, isClassTeacher, learnType }
+  }
 
   private async buildRoomRequest(lesson: Lesson, config: HvmMeetConnectionConfig): Promise<HvmMeetUpsertRoomRequest> {
     const { scheduledStart, scheduledEnd } = buildLessonSchedule(lesson)

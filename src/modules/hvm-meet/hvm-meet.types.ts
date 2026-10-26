@@ -56,7 +56,51 @@ export interface HvmMeetTicket {
   expiresAt: string
 }
 
+export interface HvmMeetSession {
+  id: string
+  roomId: string
+  roomTitle?: string
+  startedAt: string
+  endedAt?: string | null
+  peakParticipants: number
+  participantCount: number
+  attendanceFinalizedAt?: string | null
+}
+
+export interface HvmMeetReplayTicketRequest {
+  /** Người xem, ghi vào nhật ký bên HVM Meet */
+  identity?: string
+  name?: string
+}
+
+/**
+ * Biên bản đầy đủ của một buổi (GET /v1/integration/sessions/{id}/archive): người tham gia,
+ * trò chuyện, dòng thời gian (cảm xúc, giơ tay, chia sẻ màn hình...), bình chọn, điểm danh, bản ghi.
+ * academy chỉ chuyển tiếp cho trang quản trị nên giữ kiểu lỏng.
+ */
+export interface HvmMeetSessionArchive {
+  session: HvmMeetSession
+  room: { id: string; externalId: string; title: string; metadata?: Record<string, any> }
+  participants: any[]
+  chat: any[]
+  events: { at: string; type: string; identity: string; name: string; data: any }[]
+  polls: any[]
+  checks: any[]
+  attendance: any
+  recordings: { recording: any; playback?: { kind: 'embed' | 'file'; url: string } }[]
+}
+
 /* ------------------------------ Webhook ------------------------------ */
+
+/** room.started / room.ended */
+export interface HvmMeetRoomLifecycleData {
+  roomId: string
+  externalId: string
+  sessionId: string
+  startedAt?: string | null
+  endedAt?: string | null
+  peakParticipants?: number | null
+}
 
 export interface HvmMeetWebhookEnvelope<T = any> {
   id: string
