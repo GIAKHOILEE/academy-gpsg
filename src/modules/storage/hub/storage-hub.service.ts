@@ -98,20 +98,27 @@ export class StorageHubService {
       throw new ServiceUnavailableException(`Không lấy được phiên làm việc từ hvm-storage: ${error?.message}`)
     }
 
+    // Hạn tính theo ĐỒNG HỒ CỦA MÁY NÀY (now + ttl), không tin mốc tuyệt đối hvm-storage
+    // trả về. 28/10/2026 máy hvm-storage chạy nhanh 7 tiếng: token chỉ sống 1 giờ theo đồng
+    // hồ bên đó nhưng expiresAt lại là "giờ thật + 8 tiếng" -> cache và trình duyệt giữ
+    // token hết hạn cả buổi, mọi lần tải lên đều 401. Lấy mốc sớm hơn của hai bên.
+    const remoteMs = Date.parse(created.expiresAt)
+    const localMs = now + HUB_SESSION_TTL_SECONDS * 1000
+    const expiresAtMs = Number.isFinite(remoteMs) ? Math.min(remoteMs, localMs) : localMs
+
     const session: HubSession = {
       hubUrl: created.hubUrl,
       token: created.token,
-      expiresAt: created.expiresAt,
+      expiresAt: new Date(expiresAtMs).toISOString(),
       deliveryOrigin: created.deliveryOrigin,
       permissions,
     }
 
-    const expiresAtMs = Date.parse(created.expiresAt)
     this.cache.set(key, {
       session,
       providerId: provider.id,
       role: user.role,
-      expiresAtMs: Number.isFinite(expiresAtMs) ? expiresAtMs : now + HUB_SESSION_TTL_SECONDS * 1000,
+      expiresAtMs,
     })
     this.pruneCache(now)
     return session

@@ -98,6 +98,35 @@ describe('StorageHubService', () => {
       expect(createSession).toHaveBeenCalledTimes(2)
     })
 
+    it('máy hvm-storage chạy nhanh 7 tiếng: hạn theo đồng hồ máy này, không giữ token hết hạn', async () => {
+      // Token sống 1 giờ theo đồng hồ bên kho, nhưng expiresAt báo về là giờ thật + 8 tiếng.
+      createSession.mockImplementation(async (request: any) => ({
+        token: `jwt-${Date.now()}`,
+        expiresAt: new Date(Date.now() + 7 * 3600_000 + request.ttlSeconds * 1000).toISOString(),
+        hubUrl: 'https://app.test/api/hub',
+        deliveryOrigin: 'https://video.test',
+      }))
+
+      const first = await service.getSession({ userId: 1, role: Role.ADMIN })
+      expect(first.expiresAt).toBe('2026-10-25T11:00:00.000Z')
+
+      jest.setSystemTime(new Date('2026-10-25T10:56:00.000Z'))
+      const second = await service.getSession({ userId: 1, role: Role.ADMIN })
+      expect(createSession).toHaveBeenCalledTimes(2)
+      expect(second.token).not.toBe(first.token)
+    })
+
+    it('máy hvm-storage chạy chậm: lấy mốc sớm hơn của bên kho', async () => {
+      createSession.mockImplementation(async (request: any) => ({
+        token: 't',
+        expiresAt: new Date(Date.now() - 30 * 60_000 + request.ttlSeconds * 1000).toISOString(),
+        hubUrl: 'https://app.test/api/hub',
+        deliveryOrigin: 'https://video.test',
+      }))
+      const session = await service.getSession({ userId: 1, role: Role.ADMIN })
+      expect(session.expiresAt).toBe('2026-10-25T10:30:00.000Z')
+    })
+
     it('đổi vai trò thì không dùng lại token cũ (quyền khác)', async () => {
       await service.getSession({ userId: 1, role: Role.STUDENT })
       const promoted = await service.getSession({ userId: 1, role: Role.ADMIN })
