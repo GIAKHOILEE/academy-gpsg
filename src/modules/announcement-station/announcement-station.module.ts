@@ -7,8 +7,10 @@ import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import { AdminAnnouncementStationController } from './announcement-station.controller'
 import { HttpModule } from '@nestjs/axios'
 
+import { AnnouncementStation } from './announcement-station.entity'
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, Teacher]), HttpModule],
+  imports: [TypeOrmModule.forFeature([Student, Teacher, AnnouncementStation]), HttpModule],
   providers: [AnnouncementStationService, BrevoMailerService],
   controllers: [AdminAnnouncementStationController],
 })

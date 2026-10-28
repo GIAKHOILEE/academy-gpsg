@@ -1,3 +1,4 @@
+import { AnnouncementType } from '@enums/announcement.enum'
 import { Role } from '@enums/role.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator'
@@ -36,6 +37,16 @@ export class AnnouncementDto {
     example: Role.STUDENT,
   })
   role: Role
+
+  @IsOptional()
+  @IsEnum(AnnouncementType)
+  @ApiPropertyOptional({
+    description: 'Loại thông báo: email, sms, zalo',
+    enum: AnnouncementType,
+    default: AnnouncementType.EMAIL,
+    example: AnnouncementType.EMAIL,
+  })
+  type?: AnnouncementType
 
   @IsArray()
   @IsNotEmpty()
