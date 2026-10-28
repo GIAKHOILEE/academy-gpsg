@@ -4,7 +4,7 @@ import { ErrorCode } from '@enums/error-codes.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { ReligionType } from '@enums/user.enum'
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Not, Repository } from 'typeorm'
 import { User } from '../users/user.entity'
@@ -20,6 +20,8 @@ import { ClassStudents } from '@modules/class/class-students/class-student.entit
 
 @Injectable()
 export class StudentsService {
+  private readonly logger = new Logger(StudentsService.name)
+
   constructor(
     private readonly dataSource: DataSource,
     @InjectRepository(Student)
@@ -239,27 +241,26 @@ export class StudentsService {
       })
       await studentRepo.save(updatedStudent)
 
-      // gửi mail cho học viên nếu có thay đổi avatar
-      if (isAvatarUpdated && updatedUser.email) {
-        const avatarUrl = updatedUser.avatar || updatedStudent.image_4x6 || ''
-        const avatarHtml = avatarUrl
-          ? `<br><br><img src="${avatarUrl}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />`
-          : ''
-        const card_back_url = `https://res.cloudinary.com/dai7fok3c/image/upload/v1778406167/t3nmf7tsss9dikaleua4.png`
-        const cardBackHtml = `<br><br><img src="${card_back_url}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />`
-        const mailContent = `Xin chào ${updatedUser.saint_name ? updatedUser.saint_name + ' ' : ''}${updatedUser.full_name},<br><br>Học viện Mục vụ xin gửi thẻ học viên bản trực tuyến cho Anh/Chị. Nếu có nhu cầu lấy thẻ bản chính để sử dụng vui lòng đến trực tiếp Học viện Mục vụ hoặc liên hệ để yêu cầu chuyển phát về tận địa chỉ của Anh/Chị (học viên phải thanh toán chi phí in thẻ và vận chuyển).<br><br>Mọi thắc mắc xin liên hệ lại với học viện qua bất kỳ hình thức liên lạc nào thuận tiện để được hỗ trợ.<br><br>Xin chân thành cảm ơn! <br>${avatarHtml}${cardBackHtml}`
-
-        await this.emailService.sendMail(
-          [{ email: updatedUser.email, name: updatedUser.full_name }],
-          'Học viện Mục vụ - Thẻ học viên trực tuyến',
-          '',
-          null,
-          undefined,
-          mailContent,
-        )
-      }
+      // Email thẻ học viên gửi SAU khi commit (xem bên dưới). Trước đây gửi ngay trong
+      // transaction: Brevo lỗi (key tắt, hết hạn mức, mạng chập) là cả lần lưu bị rollback,
+      // admin nhận 500 và ảnh đại diện mới không bao giờ được lưu.
+      const cardMail =
+        isAvatarUpdated && updatedUser.email
+          ? {
+              email: updatedUser.email,
+              full_name: updatedUser.full_name,
+              saint_name: updatedUser.saint_name,
+              avatarUrl: updatedUser.avatar || updatedStudent.image_4x6 || '',
+            }
+          : null
 
       await queryRunner.commitTransaction()
+
+      if (cardMail) {
+        this.sendStudentCardMail(cardMail).catch(error =>
+          this.logger.error(`Không gửi được email thẻ học viên cho ${cardMail.email}: ${error?.message ?? error}`),
+        )
+      }
 
       return
     } catch (error) {
@@ -268,6 +269,25 @@ export class StudentsService {
     } finally {
       await queryRunner.release()
     }
+  }
+
+  /** Email thẻ học viên trực tuyến (mặt trước = ảnh đại diện đã ghép khung, mặt sau cố định). */
+  private async sendStudentCardMail(user: { email: string; full_name: string; saint_name?: string | null; avatarUrl: string }) {
+    const avatarHtml = user.avatarUrl
+      ? `<br><br><img src="${user.avatarUrl}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />`
+      : ''
+    const card_back_url = `https://res.cloudinary.com/dai7fok3c/image/upload/v1778406167/t3nmf7tsss9dikaleua4.png`
+    const cardBackHtml = `<br><br><img src="${card_back_url}" alt="Thẻ học viên" style="max-width: 100%; max-height: 400px; border-radius: 8px;" />`
+    const mailContent = `Xin chào ${user.saint_name ? user.saint_name + ' ' : ''}${user.full_name},<br><br>Học viện Mục vụ xin gửi thẻ học viên bản trực tuyến cho Anh/Chị. Nếu có nhu cầu lấy thẻ bản chính để sử dụng vui lòng đến trực tiếp Học viện Mục vụ hoặc liên hệ để yêu cầu chuyển phát về tận địa chỉ của Anh/Chị (học viên phải thanh toán chi phí in thẻ và vận chuyển).<br><br>Mọi thắc mắc xin liên hệ lại với học viện qua bất kỳ hình thức liên lạc nào thuận tiện để được hỗ trợ.<br><br>Xin chân thành cảm ơn! <br>${avatarHtml}${cardBackHtml}`
+
+    await this.emailService.sendMail(
+      [{ email: user.email, name: user.full_name }],
+      'Học viện Mục vụ - Thẻ học viên trực tuyến',
+      '',
+      null,
+      undefined,
+      mailContent,
+    )
   }
 
   async deleteStudent(id: number): Promise<void> {
