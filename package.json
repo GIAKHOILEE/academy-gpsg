@@ -99,6 +99,7 @@
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1",
+      "^src/(.*)$": "<rootDir>/$1",
       "^@(common|config|decorators|enums|guards|i18n|logger|middleware|modules|seeders|services|strategies)/(.*)$": "<rootDir>/$1/$2"
     }
   }
