@@ -3,6 +3,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { StorageProviderEntity } from '../entities/storage-provider.entity'
+import { HVM_STORAGE_API_KEY_ENV, HVM_STORAGE_DEFAULT_API_KEY, HVM_STORAGE_DEFAULT_URL, HVM_STORAGE_URL_ENV } from '../hvm-storage.defaults'
 import { StorageCryptoService } from './storage-crypto.service'
 import { StorageUsageService } from './storage-usage.service'
 
@@ -15,6 +16,11 @@ import { StorageUsageService } from './storage-usage.service'
  *
  * Chỉ tạo một lần: đã có dịch vụ nào trùng cấu hình thì bỏ qua, và dịch vụ do
  * người dùng sửa sau đó sẽ không bị ghi đè.
+ *
+ * Riêng hvm-storage được tạo **luôn luôn** (có mặc định trong code) và là dịch vụ
+ * mặc định, vì đó là kho file chính của học viện từ nay về sau. Env
+ * HVM_STORAGE_URL / HVM_STORAGE_API_KEY có giá trị thì thắng mặc định, và được
+ * ghi đè vào dịch vụ đã có mỗi lần khởi động (để xoay key chỉ cần sửa env).
  */
 @Injectable()
 export class StorageProviderSeeder implements OnApplicationBootstrap {
@@ -34,6 +40,8 @@ export class StorageProviderSeeder implements OnApplicationBootstrap {
       if (await this.seedR2()) created.push('Cloudflare R2')
       if (await this.seedCloudinary()) created.push('Cloudinary')
       if (await this.seedLocal()) created.push('Ổ đĩa máy chủ')
+      // Chạy sau cùng để hạ cờ mặc định của những dịch vụ vừa tạo ở trên
+      if (await this.seedHvm()) created.push('HVM Storage')
 
       if (!created.length) return
 
@@ -137,6 +145,52 @@ export class StorageProviderSeeder implements OnApplicationBootstrap {
         is_default: false,
         is_system: true,
         priority: 90,
+        weight: 1,
+        status: StorageProviderStatus.UNKNOWN,
+      }),
+    )
+    return true
+  }
+
+  /**
+   * hvm-storage: tạo mặc định với priority cao nhất và là dịch vụ mặc định.
+   *
+   * - Chưa có dòng nào driver `hvm` => tạo mới từ env (nếu có) hoặc giá trị mặc định trong
+   *   code, hạ `is_default` của mọi dịch vụ khác.
+   * - Đã có => KHÔNG đụng gì. URL/API key là cấu hình động: sửa tại trang quản trị
+   *   "Quản lý lưu trữ" (lưu mã hoá trong DB, có hiệu lực ngay). Env chỉ là giá trị khởi
+   *   tạo lần đầu — trước đây env ghi đè DB mỗi lần restart, làm key vừa xoay trên giao
+   *   diện bị trả về giá trị cũ.
+   */
+  private async seedHvm(): Promise<boolean> {
+    const envUrl = process.env[HVM_STORAGE_URL_ENV]
+    const envKey = process.env[HVM_STORAGE_API_KEY_ENV]
+    const baseUrl = String(envUrl || HVM_STORAGE_DEFAULT_URL).replace(/\/+$/, '')
+    const apiKey = String(envKey || HVM_STORAGE_DEFAULT_API_KEY)
+
+    const existing = (await this.providerRepository.find({ where: { driver: StorageDriver.HVM }, withDeleted: true })).filter(
+      provider => provider.driver === StorageDriver.HVM,
+    )
+    if (existing.length) return false
+
+    // Chỉ được có một dịch vụ mặc định
+    await this.providerRepository.update({ is_default: true }, { is_default: false })
+
+    await this.providerRepository.save(
+      this.providerRepository.create({
+        name: envUrl || envKey ? 'HVM Storage (từ biến môi trường)' : 'HVM Storage (mặc định)',
+        driver: StorageDriver.HVM,
+        config_encrypted: this.crypto.encryptJson({
+          base_url: baseUrl,
+          api_key: apiKey,
+          folder_path: process.env.HVM_STORAGE_FOLDER || null,
+          default_visibility: process.env.HVM_STORAGE_DEFAULT_VISIBILITY || null,
+        }),
+        public_base_url: baseUrl,
+        is_enabled: true,
+        is_default: true,
+        is_system: true,
+        priority: 5,
         weight: 1,
         status: StorageProviderStatus.UNKNOWN,
       }),

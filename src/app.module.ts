@@ -67,6 +67,7 @@ import { Certificates } from '@modules/certificates/certificates.entity'
 import { CertificatesModule } from '@modules/certificates/certificates.module'
 import { StorageModule } from '@modules/storage/storage.module'
 import { BooksModule } from '@modules/books/books.module'
+import { StorageHubModule } from '@modules/storage/hub/storage-hub.module'
 import { SmsGatewayModule } from '@modules/sms-gateway/sms-gateway.module'
 import { ScheduleModule } from '@nestjs/schedule'
 
@@ -131,6 +132,7 @@ import { ScheduleModule } from '@nestjs/schedule'
     CertificatesModule,
     StorageModule,
     BooksModule,
+    StorageHubModule,
     ScheduleModule.forRoot(),
     SmsGatewayModule,
   ],

@@ -5,6 +5,7 @@ import { BunnyStorageDriver } from '../drivers/bunny.driver'
 import { CloudinaryStorageDriver } from '../drivers/cloudinary.driver'
 import { DropboxStorageDriver } from '../drivers/dropbox.driver'
 import { GoogleDriveStorageDriver } from '../drivers/google-drive.driver'
+import { HvmStorageDriver } from '../drivers/hvm.driver'
 import { LocalStorageDriver } from '../drivers/local.driver'
 import { OneDriveStorageDriver } from '../drivers/onedrive.driver'
 import { S3StorageDriver } from '../drivers/s3.driver'
@@ -47,6 +48,8 @@ export class StorageDriverFactory {
         return new AzureBlobStorageDriver(config, publicBaseUrl)
       case StorageDriver.BUNNY:
         return new BunnyStorageDriver(config, publicBaseUrl)
+      case StorageDriver.HVM:
+        return new HvmStorageDriver(config, publicBaseUrl)
       default:
         throw new BadRequestException(`Chưa hỗ trợ loại dịch vụ lưu trữ "${driver}"`)
     }

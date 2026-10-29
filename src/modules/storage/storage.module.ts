@@ -35,6 +35,7 @@ import { StorageUsageService } from './services/storage-usage.service'
     StorageProviderSeeder,
   ],
   // StorageService là cửa duy nhất các module khác nên dùng; phần còn lại là nội bộ
-  exports: [StorageService, StorageProviderService, StorageFileService, StorageUsageService],
+  // StorageDriverFactory mở cho StorageHubModule dựng driver hvm từ provider đã lưu
+  exports: [StorageService, StorageProviderService, StorageFileService, StorageUsageService, StorageDriverFactory],
 })
 export class StorageModule {}
