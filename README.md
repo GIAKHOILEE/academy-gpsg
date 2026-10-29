@@ -176,3 +176,11 @@ src/
 
 Sau khi ứng dụng khởi chạy thành công, truy cập đường dẫn dưới đây trên trình duyệt để xem tài liệu API chi tiết:
 - **Swagger UI:** `http://localhost:3000/api` (hoặc cổng cấu hình tương ứng).
+
+
+---
+
+## 7. Tài liệu Trạm Gửi SMS Cá Nhân (Personal SMS Gateway)
+
+Xem tài liệu chi tiết về kiến trúc hàng đợi MySQL, giao thức WebSocket (`/ws/sms-gateway`), tích hợp `AnnouncementStation` và hướng dẫn triển khai Nginx WSS tại:
+- [docs/SMS_GATEWAY.md](./docs/SMS_GATEWAY.md)

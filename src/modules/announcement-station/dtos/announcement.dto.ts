@@ -1,7 +1,7 @@
 import { AnnouncementType } from '@enums/announcement.enum'
 import { Role } from '@enums/role.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf } from 'class-validator'
 
 export class AnnouncementDto {
   @IsString()
@@ -18,17 +18,18 @@ export class AnnouncementDto {
     description: 'Nội dung',
     example: 'Thông báo',
   })
-  content: string
+  content?: string
 
+  @ValidateIf(o => o.type !== AnnouncementType.SMS && o.file_url !== undefined && o.file_url !== null)
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @ApiPropertyOptional({
-    description: 'URL của các file',
+    description: 'URL của các file (không cần truyền khi type là sms)',
     example: ['https://example.com/file1.pdf', 'https://example.com/file2.pdf'],
     type: [String],
   })
-  file_url: string[]
+  file_url?: string[]
 
   @IsEnum(Role)
   @IsNotEmpty()

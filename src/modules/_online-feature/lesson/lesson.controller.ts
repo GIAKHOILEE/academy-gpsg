@@ -188,11 +188,7 @@ export class UserLessonController {
 
   @Post(':id/video-progress')
   @ApiOperation({ summary: 'Cập nhật tiến trình xem video bài học và tự động điểm danh' })
-  async updateVideoProgress(
-    @Param('id') id: number,
-    @Body() updateVideoProgressDto: UpdateVideoProgressDto,
-    @Req() req,
-  ): Promise<ResponseDto> {
+  async updateVideoProgress(@Param('id') id: number, @Body() updateVideoProgressDto: UpdateVideoProgressDto, @Req() req): Promise<ResponseDto> {
     const progress = await this.lessonService.updateVideoProgress(id, req.user.userId, updateVideoProgressDto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,

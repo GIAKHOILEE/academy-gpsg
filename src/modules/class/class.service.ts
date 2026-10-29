@@ -130,7 +130,18 @@ export class ClassService {
       books = await this.bookRepository.findBy({ id: In(book_ids) })
     }
 
-    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status, is_online, books })
+    const classEntity = this.classRepository.create({
+      ...rest,
+      code,
+      subject,
+      teacher,
+      scholastic,
+      semester,
+      name: subject.name,
+      status,
+      is_online,
+      books,
+    })
     const savedClass = await this.classRepository.save(classEntity)
 
     const formattedClass: IClasses = {

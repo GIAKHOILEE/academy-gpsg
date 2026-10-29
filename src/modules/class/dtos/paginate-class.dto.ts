@@ -90,7 +90,11 @@ export class GetStudentsOfClassDto extends PaginationDto {
   learn_type: LearnType
 
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Trạng thái nhận sách: 1 (Chưa gửi), 2 (Đang gửi), 3 (Đã nhận)', example: BookDeliveryStatus.NOT_SENT, enum: BookDeliveryStatus })
+  @ApiPropertyOptional({
+    description: 'Trạng thái nhận sách: 1 (Chưa gửi), 2 (Đang gửi), 3 (Đã nhận)',
+    example: BookDeliveryStatus.NOT_SENT,
+    enum: BookDeliveryStatus,
+  })
   @IsEnum(BookDeliveryStatus)
   @Type(() => Number)
   book_status: BookDeliveryStatus

@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
+import { WsAdapter } from '@nestjs/platform-ws'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { AppModule } from './app.module'
 import * as dotenv from 'dotenv'
@@ -59,6 +60,7 @@ async function bootstrap() {
   app.enableCors({
     origin: '*',
   })
+  app.useWebSocketAdapter(new WsAdapter(app))
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -42,6 +42,12 @@ export class AnnouncementStation {
   @Column({ nullable: true })
   email: string
 
+  @Column({ nullable: true })
+  phone_number: string
+
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  sms_job_uid: string
+
   @CreateDateColumn()
   created_at: Date
 
