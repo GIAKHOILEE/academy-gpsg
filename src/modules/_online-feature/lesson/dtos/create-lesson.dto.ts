@@ -1,6 +1,6 @@
 import { IFile } from '@common/file'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator'
 
 export class CreateLessonDto {
   @IsNotEmpty()
@@ -98,4 +98,15 @@ export class CreateLessonDto {
     example: 1,
   })
   attendance_rule_id?: number
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  @ApiPropertyOptional({
+    description: 'Tỷ lệ % thời lượng xem video tối thiểu để được tính điểm danh (mặc định 50%)',
+    example: 50,
+    default: 50,
+  })
+  attendance_percent?: number
 }

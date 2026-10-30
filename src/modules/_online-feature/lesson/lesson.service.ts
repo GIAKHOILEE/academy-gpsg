@@ -67,6 +67,7 @@ export class LessonService {
 
     const lesson = this.lessonRepository.create({
       ...createLessonDto,
+      attendance_percent: createLessonDto.attendance_percent ?? 50,
       class: classExists,
       index: maxIndex,
     })
@@ -88,6 +89,7 @@ export class LessonService {
       meeting_url: savedLesson.meeting_url,
       class_id: savedLesson.class.id,
       attendance_rule_id: savedLesson.attendance_rule_id,
+      attendance_percent: savedLesson.attendance_percent,
     }
     return formattedLesson
   }
@@ -160,6 +162,7 @@ export class LessonService {
         'lesson.document_url',
         'lesson.meeting_url',
         'lesson.attendance_rule_id',
+        'lesson.attendance_percent',
         'attendance_rule.id',
         'attendance_rule.lesson_date',
         'attendance_rule.type',
@@ -258,6 +261,7 @@ export class LessonService {
         document_url: lesson.document_url,
         meeting_url: lesson.meeting_url,
         attendance_rule_id: lesson.attendance_rule_id,
+        attendance_percent: lesson.attendance_percent ?? 50,
         attendance_rule: lesson.attendance_rule
           ? {
               id: lesson.attendance_rule.id,
@@ -265,7 +269,12 @@ export class LessonService {
               type: lesson.attendance_rule.type,
             }
           : null,
-        video_progress: progressMap[lesson.id] || null,
+        video_progress: progressMap[lesson.id]
+          ? {
+              ...progressMap[lesson.id],
+              attendance_percent: lesson.attendance_percent ?? 50,
+            }
+          : null,
         discuss: {
           admin_responded: discussStatusMap[lesson.id]?.admin_responded,
           user_responded: discussStatusMap[lesson.id]?.user_responded,
@@ -299,6 +308,7 @@ export class LessonService {
             total_duration: progress.total_duration,
             is_completed: progress.is_completed,
             progress_percentage: Number(((progress.watched_seconds / (progress.total_duration || 1)) * 100).toFixed(1)),
+            attendance_percent: lesson.attendance_percent ?? 50,
           }
         }
       }
@@ -319,6 +329,7 @@ export class LessonService {
       document_url: lesson.document_url,
       meeting_url: lesson.meeting_url,
       attendance_rule_id: lesson.attendance_rule_id,
+      attendance_percent: lesson.attendance_percent ?? 50,
       attendance_rule: lesson.attendance_rule
         ? {
             id: lesson.attendance_rule.id,
@@ -396,11 +407,12 @@ export class LessonService {
       progress.total_duration = dto.duration
     }
 
-    // Kiểm tra đạt mốc 50% thời lượng
-    const requiredThreshold = (dto.duration || progress.total_duration || 0) * 0.5
-    const isOver50Percent = progress.watched_seconds >= requiredThreshold && requiredThreshold > 0
+    // Kiểm tra đạt mốc % thời lượng yêu cầu của bài học (mặc định 50%)
+    const requiredPercent = lesson.attendance_percent ?? 50
+    const requiredThreshold = (dto.duration || progress.total_duration || 0) * (requiredPercent / 100)
+    const isCompletedThreshold = progress.watched_seconds >= requiredThreshold && requiredThreshold > 0
 
-    if (isOver50Percent) {
+    if (isCompletedThreshold) {
       progress.is_completed = true
     }
 
@@ -413,7 +425,7 @@ export class LessonService {
     // 1. Chỉ tính cho học viên khi learn_type là VIDEO hoặc MEETING (OFFLINE thì không điểm danh qua video)
     const isEligibleOnline = [LearnType.VIDEO, LearnType.MEETING].includes(classStudent.learn_type)
 
-    if (isOver50Percent && isEligibleOnline && lesson.attendance_rule_id) {
+    if (isCompletedThreshold && isEligibleOnline && lesson.attendance_rule_id) {
       const rule = lesson.attendance_rule || (await this.attendanceRuleRepository.findOne({ where: { id: lesson.attendance_rule_id } }))
       if (rule) {
         const attendanceDate = rule.lesson_date
@@ -422,10 +434,10 @@ export class LessonService {
         })
 
         if (attendance) {
-          // 2. Quá ngày hoặc trước đó là vắng -> xem bù đủ >= 50% thì chuyển thành CÓ MẶT (PRESENT)
+          // 2. Quá ngày hoặc trước đó là vắng -> xem bù đủ >= requiredPercent% thì chuyển thành CÓ MẶT (PRESENT)
           if (attendance.status !== AttendanceStatus.PRESENT) {
             attendance.status = AttendanceStatus.PRESENT
-            attendance.note = 'Điểm danh tự động qua video (hoàn thành >= 50%)'
+            attendance.note = `Điểm danh tự động qua video (hoàn thành >= ${requiredPercent}%)`
             await this.attendanceRepository.save(attendance)
           }
         } else {
@@ -434,7 +446,7 @@ export class LessonService {
             class_student_id: classStudent.id,
             attendance_date: attendanceDate,
             status: AttendanceStatus.PRESENT,
-            note: 'Điểm danh tự động qua video (hoàn thành >= 50%)',
+            note: `Điểm danh tự động qua video (hoàn thành >= ${requiredPercent}%)`,
           })
           await this.attendanceRepository.save(attendance)
         }
@@ -449,6 +461,7 @@ export class LessonService {
       watched_seconds: Number(progress.watched_seconds.toFixed(1)),
       total_duration: progress.total_duration,
       progress_percentage: Number(((progress.watched_seconds / (progress.total_duration || 1)) * 100).toFixed(1)),
+      attendance_percent: requiredPercent,
       is_completed: progress.is_completed,
       attendance_marked: attendanceMarked,
       attendance_status: attendanceStatus,
@@ -465,9 +478,16 @@ export class LessonService {
       throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
+    const lesson = await this.lessonRepository.findOne({
+      where: { id: lessonId },
+      relations: ['attendance_rule', 'class'],
+    })
+
     const progress = await this.lessonVideoProgressRepository.findOne({
       where: { lesson_id: lessonId, student_id: student.id },
     })
+
+    const requiredPercent = lesson?.attendance_percent ?? 50
 
     if (!progress) {
       return {
@@ -476,16 +496,12 @@ export class LessonService {
         watched_seconds: 0,
         total_duration: 0,
         progress_percentage: 0,
+        attendance_percent: requiredPercent,
         is_completed: false,
         attendance_marked: false,
         attendance_status: null,
       }
     }
-
-    const lesson = await this.lessonRepository.findOne({
-      where: { id: lessonId },
-      relations: ['attendance_rule', 'class'],
-    })
 
     let attendanceStatus = null
     let attendanceMarked = false
@@ -514,6 +530,7 @@ export class LessonService {
       watched_seconds: Number(progress.watched_seconds.toFixed(1)),
       total_duration: progress.total_duration,
       progress_percentage: Number(((progress.watched_seconds / (progress.total_duration || 1)) * 100).toFixed(1)),
+      attendance_percent: requiredPercent,
       is_completed: progress.is_completed,
       attendance_marked: attendanceMarked,
       attendance_status: attendanceStatus,

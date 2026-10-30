@@ -55,6 +55,10 @@ export class Lesson {
   @JoinColumn({ name: 'attendance_rule_id' })
   attendance_rule: AttendanceRule
 
+  // Tỷ lệ % thời lượng xem video tối thiểu để tính điểm danh (mặc định 50%)
+  @Column({ type: 'float', default: 50 })
+  attendance_percent: number
+
   @OneToMany(() => Discuss, discusses => discusses.lesson, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   discusses: Discuss[]
 

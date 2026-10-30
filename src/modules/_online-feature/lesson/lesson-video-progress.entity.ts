@@ -33,7 +33,7 @@ export class LessonVideoProgress {
   @Column({ type: 'float', default: 0 })
   total_duration: number
 
-  // Đã xem đạt >= 50% hay chưa
+  // Đã xem đạt tỷ lệ % yêu cầu của bài học hay chưa
   @Column({ type: 'boolean', default: false })
   is_completed: boolean
 
