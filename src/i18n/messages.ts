@@ -105,6 +105,7 @@ export const messages = {
     ONLY_STUDENT_OR_TEACHER: 'Role không hợp lệ, chỉ cho phép STUDENT hoặc TEACHER',
     NO_EMAIL_FOUND: 'Không tìm thấy email người nhận',
     NO_PHONE_NUMBER_FOUND: 'Recipient phone number not found',
+    ANNOUNCEMENT_NOT_FOUND: 'Announcement not found',
     CLASS_ACTIVITIES_NOT_FOUND: 'Hoạt động lớp học không tồn tại',
     TEACHER_NOT_IN_CLASS: 'Teacher not in class',
     COMMENT_NOT_FOUND: 'Comment not found',
@@ -371,5 +372,6 @@ export const messages = {
     SMS_RATE_LIMIT_EXCEEDED: 'Vượt quá giới hạn số lượng tin nhắn mỗi phút',
     SMS_DAILY_LIMIT_EXCEEDED: 'Vượt quá giới hạn số lượng tin nhắn trong ngày',
     NO_PHONE_NUMBER_FOUND: 'Không tìm thấy số điện thoại người nhận',
+    ANNOUNCEMENT_NOT_FOUND: 'Thông báo không tồn tại',
   },
 }

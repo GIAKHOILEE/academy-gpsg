@@ -1,15 +1,18 @@
-import { throwAppException } from '@common/utils'
+import { paginate, PaginationMeta } from '@common/pagination'
+import { removeVietnameseTones, throwAppException } from '@common/utils'
 import { AnnouncementStatus, AnnouncementType } from '@enums/announcement.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { AnnouncementDto } from '@modules/announcement-station/dtos/announcement.dto'
+import { PaginateAnnouncementStationDto } from '@modules/announcement-station/dtos/paginate-announcement-station.dto'
 import { SmsGatewayService } from '@modules/sms-gateway/sms-gateway.service'
 import { Student } from '@modules/students/students.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
+import { User } from '@modules/users/user.entity'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
-import { In, Repository } from 'typeorm'
+import { Brackets, In, Repository } from 'typeorm'
 
 import { AnnouncementStation } from './announcement-station.entity'
 
@@ -25,6 +28,174 @@ export class AnnouncementStationService {
     private readonly emailService: BrevoMailerService,
     private readonly smsGatewayService: SmsGatewayService,
   ) {}
+
+  async getAnnouncements(paginateDto: PaginateAnnouncementStationDto): Promise<{ data: any[]; meta: PaginationMeta }> {
+    const {
+      page,
+      limit,
+      orderBy,
+      orderDirection,
+      anotherOrderBy,
+      type,
+      status,
+      role,
+      title,
+      content,
+      email,
+      phone_number,
+      target_id,
+      user_id,
+      sms_job_uid,
+      full_name,
+      from_date,
+      to_date,
+    } = paginateDto
+
+    const qb = this.announcementStationRepository
+      .createQueryBuilder('announcement')
+      .withDeleted()
+      .leftJoinAndMapOne('announcement.user', User, 'user', 'user.id = announcement.user_id')
+
+    if (type) {
+      qb.andWhere('announcement.type = :type', { type })
+    }
+
+    if (status) {
+      qb.andWhere('announcement.status = :status', { status })
+    }
+
+    if (role !== undefined && role !== null && (role as any) !== '') {
+      qb.andWhere('announcement.role = :role', { role: Number(role) })
+    }
+
+    if (target_id !== undefined && target_id !== null && (target_id as any) !== '') {
+      qb.andWhere('announcement.target_id = :target_id', { target_id: Number(target_id) })
+    }
+
+    if (user_id !== undefined && user_id !== null && (user_id as any) !== '') {
+      qb.andWhere('announcement.user_id = :user_id', { user_id: Number(user_id) })
+    }
+
+    if (sms_job_uid?.trim()) {
+      qb.andWhere('announcement.sms_job_uid = :sms_job_uid', { sms_job_uid: sms_job_uid.trim() })
+    }
+
+    if (title?.trim()) {
+      qb.andWhere('LOWER(announcement.title) LIKE :title', { title: `%${title.trim().toLowerCase()}%` })
+    }
+
+    if (content?.trim()) {
+      qb.andWhere('LOWER(announcement.content) LIKE :content', { content: `%${content.trim().toLowerCase()}%` })
+    }
+
+    if (email?.trim()) {
+      qb.andWhere('LOWER(announcement.email) LIKE :email', { email: `%${email.trim().toLowerCase()}%` })
+    }
+
+    if (phone_number?.trim()) {
+      qb.andWhere('announcement.phone_number LIKE :phone_number', { phone_number: `%${phone_number.trim()}%` })
+    }
+
+    if (full_name?.trim()) {
+      const normalizedName = removeVietnameseTones(full_name).toLowerCase().trim()
+      qb.andWhere('(user.full_name_normalized LIKE :normalizedName OR LOWER(user.full_name) LIKE :rawName)', {
+        normalizedName: `%${normalizedName}%`,
+        rawName: `%${full_name.trim().toLowerCase()}%`,
+      })
+    }
+
+    if (from_date?.trim()) {
+      const fromDateObj = new Date(from_date.trim())
+      if (!isNaN(fromDateObj.getTime())) {
+        qb.andWhere('announcement.created_at >= :fromDate', { fromDate: fromDateObj })
+      }
+    }
+
+    if (to_date?.trim()) {
+      const rawTo = to_date.trim()
+      const toDateObj = new Date(rawTo)
+      if (!isNaN(toDateObj.getTime())) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(rawTo)) {
+          toDateObj.setHours(23, 59, 59, 999)
+        }
+        qb.andWhere('announcement.created_at <= :toDate', { toDate: toDateObj })
+      }
+    }
+
+    if (!orderBy) {
+      qb.orderBy('announcement.id', orderDirection || 'DESC')
+    }
+
+    const { data, meta } = await paginate(qb, {
+      page,
+      limit,
+      orderBy,
+      orderDirection,
+      anotherOrderBy,
+    })
+
+    return {
+      data: data.map(item => this.formatAnnouncement(item as AnnouncementStation & { user?: User })),
+      meta,
+    }
+  }
+
+  async getAnnouncementById(id: number) {
+    const announcement = (await this.announcementStationRepository
+      .createQueryBuilder('announcement')
+      .withDeleted()
+      .leftJoinAndMapOne('announcement.user', User, 'user', 'user.id = announcement.user_id')
+      .where('announcement.id = :id', { id })
+      .getOne()) as (AnnouncementStation & { user?: User }) | null
+
+    if (!announcement) {
+      throwAppException('ANNOUNCEMENT_NOT_FOUND', ErrorCode.ANNOUNCEMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    let smsJob = null
+    if (announcement.sms_job_uid) {
+      try {
+        smsJob = await this.smsGatewayService.getJobByIdOrUid(announcement.sms_job_uid)
+      } catch {
+        smsJob = null
+      }
+    }
+
+    return {
+      ...this.formatAnnouncement(announcement),
+      sms_job: smsJob,
+    }
+  }
+
+  private formatAnnouncement(item: AnnouncementStation & { user?: User }) {
+    return {
+      id: item.id,
+      title: item.title,
+      content: item.content,
+      file_url: item.file_url,
+      role: item.role,
+      type: item.type,
+      status: item.status,
+      target_id: item.target_id,
+      user_id: item.user_id,
+      email: item.email,
+      phone_number: item.phone_number,
+      sms_job_uid: item.sms_job_uid,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      user: item.user
+        ? {
+            id: item.user.id,
+            code: item.user.code,
+            saint_name: item.user.saint_name,
+            full_name: item.user.full_name,
+            email: item.user.email,
+            phone_number: item.user.phone_number,
+            avatar: item.user.avatar,
+          }
+        : null,
+    }
+  }
 
   async sendAnnouncement(announcementDto: AnnouncementDto) {
     const { role, userIds, title, content, file_url, type = AnnouncementType.EMAIL } = announcementDto
