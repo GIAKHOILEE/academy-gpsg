@@ -1,6 +1,6 @@
 import { AttendanceStatus } from '@enums/class.enum'
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator'
-import { ApiProperty } from '@nestjs/swagger'
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class UpdateAttendanceDto {
   @IsNotEmpty()
@@ -17,4 +17,9 @@ export class UpdateAttendanceDto {
   @IsEnum(AttendanceStatus)
   @ApiProperty({ description: 'Attendance Status', enum: AttendanceStatus, example: AttendanceStatus.PRESENT })
   status: AttendanceStatus
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Ghi chú (lý do vắng,...)', example: 'Xin phép nghỉ ốm' })
+  note?: string
 }

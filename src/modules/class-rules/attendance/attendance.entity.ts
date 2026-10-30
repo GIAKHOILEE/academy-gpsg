@@ -11,7 +11,7 @@ export class Attendance {
   @Column({ type: 'date' })
   attendance_date: string
 
-  // Trạng thái: Có mặt / Vắng / Đi trễ
+  // Trạng thái: Có mặt / Vắng / Đi trễ / Vắng có phép
   @Column({ type: 'enum', enum: AttendanceStatus, default: AttendanceStatus.PRESENT })
   status: AttendanceStatus
 

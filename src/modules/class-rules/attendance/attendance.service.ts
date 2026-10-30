@@ -30,7 +30,7 @@ export class AttendanceService {
   ) {}
 
   async createAttendance(createAttendanceDto: CreateAttendanceDto) {
-    const { class_id, card_code } = createAttendanceDto
+    const { class_id, card_code, note } = createAttendanceDto
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
 
@@ -109,6 +109,7 @@ export class AttendanceService {
       class_student_id: classStudent.id,
       attendance_date: todayStr,
       status,
+      note: note ?? null,
     })
     const savedAttendance = await this.attendanceRepository.save(attendance)
 
@@ -178,6 +179,7 @@ export class AttendanceService {
         student_name: cs.student.user.full_name,
         student_saint_name: cs.student?.user?.saint_name,
         records: {},
+        notes: {},
         attendance_rate: 0,
       }
 
@@ -187,16 +189,21 @@ export class AttendanceService {
         const att = attendances.find(a => a.class_student_id === cs.id && a.attendance_date === date)
 
         if (att) {
+          row.notes[date] = att.note || null
           if (att.status === AttendanceStatus.PRESENT) {
             row.records[date] = AttendanceStatus.PRESENT
             presentCount++
           } else if (att.status === AttendanceStatus.LATE) {
             row.records[date] = AttendanceStatus.LATE
             presentCount++ // vẫn tính là tham dự
+          } else if (att.status === AttendanceStatus.EXCUSED_ABSENT) {
+            row.records[date] = AttendanceStatus.EXCUSED_ABSENT
+            presentCount += 0.5 // vắng có phép tính nửa buổi (50%)
           } else {
             row.records[date] = AttendanceStatus.ABSENT
           }
         } else {
+          row.notes[date] = null
           if (date < today) {
             // Buổi học đã qua nhưng không có điểm danh → Vắng
             row.records[date] = AttendanceStatus.ABSENT
@@ -256,7 +263,7 @@ export class AttendanceService {
     )
     // xử lý update / insert
     const updates = updateAttendanceDtos.map(async dto => {
-      const { student_id, attendance_date, status } = dto
+      const { student_id, attendance_date, status, note } = dto
 
       if (!studentMap[student_id]) {
         throwAppException('STUDENT_NOT_FOUND', ErrorCode.STUDENT_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -273,6 +280,9 @@ export class AttendanceService {
       if (attendance) {
         // đã có row thì update
         attendance.status = status
+        if (note !== undefined) {
+          attendance.note = note
+        }
         return this.attendanceRepository.update(attendance.id, attendance)
       } else {
         // chưa có row thì tạo mới
@@ -280,6 +290,7 @@ export class AttendanceService {
           class_student_id: classStudent.id,
           attendance_date,
           status,
+          note: note ?? null,
         })
         return this.attendanceRepository.save(attendance)
       }

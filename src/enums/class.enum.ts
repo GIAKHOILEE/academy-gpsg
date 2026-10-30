@@ -52,6 +52,7 @@ export enum AttendanceStatus {
   PRESENT = 1, // Có mặt
   ABSENT = 2, // Vắng
   LATE = 3, // Đi trễ
+  EXCUSED_ABSENT = 4, // Vắng có phép
 }
 
 export enum TeacherEvaluationStatus {
