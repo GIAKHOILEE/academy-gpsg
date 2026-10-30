@@ -15,10 +15,11 @@ import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } fr
 import { UpdateClassDto } from './dtos/update-class.dto'
 import { IStudent } from '@modules/students/students.interface'
 import { ClassStudents } from './class-students/class-student.entity'
-import { ClassStatus } from '@enums/class.enum'
+import { BookDeliveryStatus, ClassStatus, LearnType, StudentBookChangeStatus } from '@enums/class.enum'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { Student } from '@modules/students/students.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
+import { StudentBook } from '@modules/books/student-books.entity'
 
 @Injectable()
 export class ClassService {
@@ -39,6 +40,8 @@ export class ClassService {
     private studentRepository: Repository<Student>,
     @InjectRepository(Enrollments)
     private enrollmentRepository: Repository<Enrollments>,
+    @InjectRepository(StudentBook)
+    private studentBookRepository: Repository<StudentBook>,
   ) {}
 
   async createClass(createClassDto: CreateClassDto): Promise<IClasses> {
@@ -830,8 +833,11 @@ export class ClassService {
     const uniqueStudentIds = [...new Set(studentIds)]
     if (uniqueStudentIds.length === 0) return
 
-    const classExists = await this.classRepository.exists({ where: { id: classId } })
-    if (!classExists) {
+    const classEntity = await this.classRepository.findOne({
+      where: { id: classId },
+      relations: ['books'],
+    })
+    if (!classEntity) {
       throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
@@ -847,6 +853,88 @@ export class ClassService {
       class_id: classId,
       student_id: In(uniqueStudentIds),
     })
+
+    // Đồng bộ student_books khi xóa học sinh khỏi lớp:
+    // - Nếu học sinh vẫn còn học online lớp khác có cùng sách -> cập nhật class_id sang lớp đó, giữ NORMAL.
+    // - Nếu không còn học online lớp nào có sách đó:
+    //   + book_status = NOT_SENT -> xóa bản ghi student_books.
+    //   + book_status = SENDING / RECEIVED -> không xóa, đánh dấu change_status = STUDENT_CHANGED_CLASS (2).
+    const classBookIds = (classEntity.books || []).map(b => b.id)
+    const whereConditions: any[] = [{ student_id: In(uniqueStudentIds), class_id: classId }]
+    if (classBookIds.length > 0) {
+      whereConditions.push({ student_id: In(uniqueStudentIds), book_id: In(classBookIds) })
+    }
+
+    const affectedStudentBooks = await this.studentBookRepository.find({
+      where: whereConditions,
+    })
+
+    if (affectedStudentBooks.length > 0) {
+      const remainingOnlineMemberships = await this.classStudentsRepository.find({
+        where: {
+          student_id: In(uniqueStudentIds),
+          learn_type: In([LearnType.VIDEO, LearnType.MEETING]),
+        },
+      })
+
+      const remainingOnlineClassIds = [...new Set(remainingOnlineMemberships.map(m => m.class_id))]
+      const classBooksMap = new Map<number, number[]>()
+      if (remainingOnlineClassIds.length > 0) {
+        const remainingClasses = await this.classRepository.find({
+          where: { id: In(remainingOnlineClassIds) },
+          relations: ['books'],
+        })
+        for (const cls of remainingClasses) {
+          classBooksMap.set(
+            cls.id,
+            (cls.books || []).map(b => b.id),
+          )
+        }
+      }
+
+      // Map: `${student_id}_${book_id}` -> remaining online class_id
+      const studentBookToRemainingClass = new Map<string, number>()
+      for (const m of remainingOnlineMemberships) {
+        const bookIdsOfClass = classBooksMap.get(m.class_id) || []
+        for (const bid of bookIdsOfClass) {
+          const key = `${m.student_id}_${bid}`
+          if (!studentBookToRemainingClass.has(key)) {
+            studentBookToRemainingClass.set(key, m.class_id)
+          }
+        }
+      }
+
+      const idsToDelete: number[] = []
+      const idsToMarkChangedClass: number[] = []
+
+      for (const sb of affectedStudentBooks) {
+        const alternativeClassId = studentBookToRemainingClass.get(`${sb.student_id}_${sb.book_id}`)
+        if (alternativeClassId) {
+          if (sb.class_id === classId || sb.change_status !== StudentBookChangeStatus.NORMAL) {
+            await this.studentBookRepository.update(sb.id, {
+              class_id: alternativeClassId,
+              change_status: StudentBookChangeStatus.NORMAL,
+            })
+          }
+        } else {
+          if (sb.book_status === BookDeliveryStatus.NOT_SENT) {
+            idsToDelete.push(sb.id)
+          } else {
+            idsToMarkChangedClass.push(sb.id)
+          }
+        }
+      }
+
+      if (idsToDelete.length > 0) {
+        await this.studentBookRepository.delete(idsToDelete)
+      }
+      if (idsToMarkChangedClass.length > 0) {
+        await this.studentBookRepository.update(
+          { id: In(idsToMarkChangedClass) },
+          { change_status: StudentBookChangeStatus.STUDENT_CHANGED_CLASS },
+        )
+      }
+    }
   }
 
   // Cronjob: cập nhật status lớp học mỗi ngày lúc 00:00

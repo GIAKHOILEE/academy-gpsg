@@ -1,5 +1,5 @@
 import { PaginationDto } from '@common/pagination'
-import { BookDeliveryStatus } from '@enums/class.enum'
+import { BookDeliveryStatus, StudentBookChangeStatus } from '@enums/class.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
@@ -18,6 +18,24 @@ export class PaginateStudentBookDto extends PaginationDto {
   book_id?: number
 
   @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @ApiPropertyOptional({ description: 'Lọc theo ID lớp học mà học sinh nhận sách' })
+  class_id?: number
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @ApiPropertyOptional({ description: 'Lọc theo ID học kỳ của lớp' })
+  semester_id?: number
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @ApiPropertyOptional({ description: 'Lọc theo ID niên khóa của lớp' })
+  scholastic_id?: number
+
+  @IsOptional()
   @IsEnum(BookDeliveryStatus)
   @Type(() => Number)
   @ApiPropertyOptional({
@@ -25,6 +43,16 @@ export class PaginateStudentBookDto extends PaginationDto {
     enum: BookDeliveryStatus,
   })
   book_status?: BookDeliveryStatus
+
+  @IsOptional()
+  @IsEnum(StudentBookChangeStatus)
+  @Type(() => Number)
+  @ApiPropertyOptional({
+    description:
+      'Đánh dấu biến động: 0 (Bình thường), 1 (Lớp đã bị xóa khỏi sách khi đang gửi/đã nhận), 2 (Học sinh đã đổi lớp/rời lớp khi đang gửi/đã nhận)',
+    enum: StudentBookChangeStatus,
+  })
+  change_status?: StudentBookChangeStatus
 
   @IsOptional()
   @IsString()
@@ -68,6 +96,11 @@ export class CreateStudentBookDto {
   @ApiProperty({ description: 'ID sách / giáo trình', example: 1 })
   book_id: number
 
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'ID lớp học mà học sinh nhận sách', example: 1 })
+  class_id?: number
+
   @IsEnum(BookDeliveryStatus)
   @IsOptional()
   @ApiPropertyOptional({
@@ -76,6 +109,15 @@ export class CreateStudentBookDto {
     enum: BookDeliveryStatus,
   })
   book_status?: BookDeliveryStatus
+
+  @IsEnum(StudentBookChangeStatus)
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Đánh dấu biến động: 0 (Bình thường), 1 (Lớp bị xóa khỏi sách), 2 (Học sinh đổi lớp)',
+    example: StudentBookChangeStatus.NORMAL,
+    enum: StudentBookChangeStatus,
+  })
+  change_status?: StudentBookChangeStatus
 
   @IsString()
   @IsOptional()
@@ -94,6 +136,11 @@ export class CreateStudentBookDto {
 }
 
 export class UpdateStudentBookDto {
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'ID lớp học mà học sinh nhận sách', example: 1 })
+  class_id?: number
+
   @IsEnum(BookDeliveryStatus)
   @IsOptional()
   @ApiPropertyOptional({
@@ -102,6 +149,15 @@ export class UpdateStudentBookDto {
     enum: BookDeliveryStatus,
   })
   book_status?: BookDeliveryStatus
+
+  @IsEnum(StudentBookChangeStatus)
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Đánh dấu biến động: 0 (Bình thường), 1 (Lớp bị xóa khỏi sách), 2 (Học sinh đổi lớp)',
+    example: StudentBookChangeStatus.NORMAL,
+    enum: StudentBookChangeStatus,
+  })
+  change_status?: StudentBookChangeStatus
 
   @IsString()
   @IsOptional()
@@ -118,4 +174,3 @@ export class UpdateStudentBookDto {
   @ApiPropertyOptional({ description: 'Ngày nhận sách (YYYY-MM-DD)', example: '2026-10-30' })
   book_received_date?: string
 }
-

@@ -302,6 +302,9 @@ export class StudentsService {
       .leftJoinAndSelect('students.user', 'user')
       .leftJoinAndSelect('students.student_books', 'student_books')
       .leftJoinAndSelect('student_books.book', 'book')
+      .leftJoinAndSelect('student_books.class', 'class')
+      .leftJoinAndSelect('class.semester', 'semester')
+      .leftJoinAndSelect('class.scholastic', 'scholastic')
       .select([
         'students.id',
         'students.card_code',
@@ -332,7 +335,9 @@ export class StudentsService {
         'student_books.id',
         'student_books.student_id',
         'student_books.book_id',
+        'student_books.class_id',
         'student_books.book_status',
+        'student_books.change_status',
         'student_books.shipping_address',
         'student_books.book_delivery_note',
         'student_books.book_received_date',
@@ -346,6 +351,13 @@ export class StudentsService {
         'book.publication_year',
         'book.image',
         'book.description',
+        'class.id',
+        'class.name',
+        'class.code',
+        'semester.id',
+        'semester.name',
+        'scholastic.id',
+        'scholastic.name',
       ])
       .where('students.id = :id', { id })
       .getOne()
@@ -382,7 +394,9 @@ export class StudentsService {
         id: sb.id,
         student_id: sb.student_id,
         book_id: sb.book_id,
+        class_id: sb.class_id ?? null,
         book_status: sb.book_status,
+        change_status: sb.change_status,
         shipping_address: sb.shipping_address,
         book_delivery_note: sb.book_delivery_note,
         book_received_date: sb.book_received_date,
@@ -400,6 +414,25 @@ export class StudentsService {
               description: sb.book.description,
             }
           : undefined,
+        class: sb.class
+          ? {
+              id: sb.class.id,
+              name: sb.class.name,
+              code: sb.class.code,
+              semester: sb.class.semester
+                ? {
+                    id: sb.class.semester.id,
+                    name: sb.class.semester.name,
+                  }
+                : null,
+              scholastic: sb.class.scholastic
+                ? {
+                    id: sb.class.scholastic.id,
+                    name: sb.class.scholastic.name,
+                  }
+                : null,
+            }
+          : null,
       })),
     }
     return formattedStudent

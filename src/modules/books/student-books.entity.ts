@@ -1,4 +1,5 @@
-import { BookDeliveryStatus } from '@enums/class.enum'
+import { BookDeliveryStatus, StudentBookChangeStatus } from '@enums/class.enum'
+import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm'
 import { Book } from './books.entity'
@@ -23,8 +24,18 @@ export class StudentBook {
   @Column()
   book_id: number
 
+  @ManyToOne(() => Classes, { onDelete: 'SET NULL', onUpdate: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'class_id' })
+  class: Classes
+
+  @Column({ nullable: true })
+  class_id: number
+
   @Column({ type: 'enum', enum: BookDeliveryStatus, default: BookDeliveryStatus.NOT_SENT })
   book_status: BookDeliveryStatus
+
+  @Column({ type: 'enum', enum: StudentBookChangeStatus, default: StudentBookChangeStatus.NORMAL })
+  change_status: StudentBookChangeStatus
 
   @Column({ type: 'text', nullable: true })
   shipping_address: string
@@ -41,4 +52,3 @@ export class StudentBook {
   @UpdateDateColumn()
   updated_at: Date
 }
-

@@ -80,3 +80,10 @@ export enum BookDeliveryStatus {
   SENDING = 2, // Đang gửi / Đã gửi bưu điện
   RECEIVED = 3, // Đã nhận sách
 }
+
+// Đánh dấu biến động của student_books khi sách đang gửi (SENDING) hoặc đã nhận (RECEIVED)
+export enum StudentBookChangeStatus {
+  NORMAL = 0, // Bình thường
+  CLASS_REMOVED = 1, // Lớp học đã bị xóa khỏi sách (khi sách đang gửi / đã nhận)
+  STUDENT_CHANGED_CLASS = 2, // Học sinh đã đổi lớp / rời lớp (khi sách đang gửi / đã nhận)
+}

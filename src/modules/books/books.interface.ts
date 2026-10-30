@@ -1,4 +1,4 @@
-import { BookDeliveryStatus, ClassStatus } from '@enums/class.enum'
+import { BookDeliveryStatus, ClassStatus, StudentBookChangeStatus } from '@enums/class.enum'
 import { Gender } from '@enums/role.enum'
 
 export interface IBookClassSummary {
@@ -32,7 +32,9 @@ export interface IStudentBook {
   id: number
   student_id: number
   book_id: number
+  class_id?: number
   book_status: BookDeliveryStatus
+  change_status: StudentBookChangeStatus
   shipping_address?: string
   book_delivery_note?: string
   book_received_date?: string
@@ -58,5 +60,18 @@ export interface IStudentBook {
     publication_year?: number
     image?: string
     description?: string
+  }
+  class?: {
+    id: number
+    name?: string
+    code?: string
+    semester?: {
+      id: number
+      name?: string
+    }
+    scholastic?: {
+      id: number
+      name?: string
+    }
   }
 }

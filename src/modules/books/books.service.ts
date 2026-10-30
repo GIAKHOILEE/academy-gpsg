@@ -1,6 +1,6 @@
 import { paginate, PaginationMeta } from '@common/pagination'
 import { removeVietnameseTones, throwAppException } from '@common/utils'
-import { BookDeliveryStatus, LearnType, StatusEnrollment } from '@enums/class.enum'
+import { BookDeliveryStatus, LearnType, StatusEnrollment, StudentBookChangeStatus } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Classes } from '@modules/class/class.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
@@ -68,7 +68,9 @@ export class BooksService {
       id: sb.id,
       student_id: sb.student_id,
       book_id: sb.book_id,
+      class_id: sb.class_id ?? null,
       book_status: sb.book_status,
+      change_status: sb.change_status ?? StudentBookChangeStatus.NORMAL,
       shipping_address: sb.shipping_address,
       book_delivery_note: sb.book_delivery_note,
       book_received_date: sb.book_received_date,
@@ -99,13 +101,36 @@ export class BooksService {
             description: sb.book.description,
           }
         : undefined,
+      class: sb.class
+        ? {
+            id: sb.class.id,
+            name: sb.class.name,
+            code: sb.class.code,
+            semester: sb.class.semester
+              ? {
+                  id: sb.class.semester.id,
+                  name: sb.class.semester.name,
+                }
+              : null,
+            scholastic: sb.class.scholastic
+              ? {
+                  id: sb.class.scholastic.id,
+                  name: sb.class.scholastic.name,
+                }
+              : null,
+          }
+        : null,
     }
   }
 
   /**
-   * Đồng bộ student_books khi gắn/gỡ lớp học vào sách:
-   * - Với các lớp mới gắn vào sách: tìm học viên đang học online (VIDEO/MEETING) trong các lớp đó và tạo bản ghi student_books nếu chưa có.
-   * - Với các lớp bị gỡ khỏi sách: nếu học viên không còn học online lớp nào khác gắn với sách này và trạng thái là NOT_SENT thì xóa bản ghi student_books.
+   * Đồng bộ student_books khi thêm hoặc xóa lớp học khỏi sách (Mục 2):
+   * - Thêm lớp vào sách: tìm học viên đang học online (VIDEO/MEETING) trong lớp đó -> tạo mới student_books (gắn class_id) hoặc gỡ đánh dấu nếu đã tồn tại.
+   * - Xóa lớp khỏi sách:
+   *   + Nếu học viên vẫn còn học online ở một lớp khác cũng gắn với sách này -> cập nhật class_id sang lớp đó.
+   *   + Nếu không còn học lớp nào của sách này:
+   *     * book_status === NOT_SENT -> xóa khỏi student_books.
+   *     * book_status === SENDING hoặc RECEIVED -> không xóa, đánh dấu change_status = CLASS_REMOVED (1).
    */
   private async syncStudentBooksWhenClassesChanged(bookId: number, addedClassIds: number[], removedClassIds: number[]): Promise<void> {
     if (addedClassIds.length > 0) {
@@ -116,7 +141,14 @@ export class BooksService {
         },
       })
 
-      const uniqueStudentIds = [...new Set(onlineClassStudents.map(cs => cs.student_id))]
+      const studentToClassMap = new Map<number, number>()
+      for (const cs of onlineClassStudents) {
+        if (!studentToClassMap.has(cs.student_id)) {
+          studentToClassMap.set(cs.student_id, cs.class_id)
+        }
+      }
+
+      const uniqueStudentIds = [...studentToClassMap.keys()]
       if (uniqueStudentIds.length > 0) {
         const existingStudentBooks = await this.studentBookRepository.find({
           where: {
@@ -124,8 +156,19 @@ export class BooksService {
             student_id: In(uniqueStudentIds),
           },
         })
-        const existingStudentIdSet = new Set(existingStudentBooks.map(sb => sb.student_id))
-        const missingStudentIds = uniqueStudentIds.filter(sid => !existingStudentIdSet.has(sid))
+        const existingByStudentId = new Map<number, StudentBook>(existingStudentBooks.map(sb => [sb.student_id, sb]))
+        const missingStudentIds = uniqueStudentIds.filter(sid => !existingByStudentId.has(sid))
+
+        // Cập nhật lại class_id và đưa change_status về NORMAL nếu bản ghi cũ từng bị đánh dấu
+        for (const [studentId, existing] of existingByStudentId.entries()) {
+          const targetClassId = studentToClassMap.get(studentId)
+          if (existing.change_status !== StudentBookChangeStatus.NORMAL || !existing.class_id) {
+            await this.studentBookRepository.update(existing.id, {
+              class_id: targetClassId,
+              change_status: StudentBookChangeStatus.NORMAL,
+            })
+          }
+        }
 
         if (missingStudentIds.length > 0) {
           // Lấy địa chỉ nhận sách từ đơn đăng ký gần nhất của học viên
@@ -147,7 +190,9 @@ export class BooksService {
             this.studentBookRepository.create({
               student_id: studentId,
               book_id: bookId,
+              class_id: studentToClassMap.get(studentId) ?? null,
               book_status: BookDeliveryStatus.NOT_SENT,
+              change_status: StudentBookChangeStatus.NORMAL,
               shipping_address: shippingAddressMap.get(studentId) ?? null,
             }),
           )
@@ -163,33 +208,48 @@ export class BooksService {
           learn_type: In([LearnType.VIDEO, LearnType.MEETING]),
         },
       })
-      const affectedStudentIds = [...new Set(affectedClassStudents.map(cs => cs.student_id))]
+      const studentIdsFromClassStudents = affectedClassStudents.map(cs => cs.student_id)
 
-      if (affectedStudentIds.length > 0) {
+      const studentBooksByRemovedClasses = await this.studentBookRepository.find({
+        where: [
+          { book_id: bookId, class_id: In(removedClassIds) },
+          ...(studentIdsFromClassStudents.length > 0 ? [{ book_id: bookId, student_id: In(studentIdsFromClassStudents) }] : []),
+        ],
+      })
+
+      if (studentBooksByRemovedClasses.length > 0) {
         const bookWithClasses = await this.bookRepository.findOne({
           where: { id: bookId },
           relations: ['classes'],
         })
         const remainingClassIds = bookWithClasses?.classes?.map(c => c.id) || []
 
-        for (const studentId of affectedStudentIds) {
-          let stillHasOnlineClassForBook = false
+        for (const sb of studentBooksByRemovedClasses) {
+          let otherOnlineMembership: ClassStudents | null = null
           if (remainingClassIds.length > 0) {
-            stillHasOnlineClassForBook = await this.classStudentsRepository.exists({
+            otherOnlineMembership = await this.classStudentsRepository.findOne({
               where: {
-                student_id: studentId,
+                student_id: sb.student_id,
                 class_id: In(remainingClassIds),
                 learn_type: In([LearnType.VIDEO, LearnType.MEETING]),
               },
             })
           }
 
-          if (!stillHasOnlineClassForBook) {
-            await this.studentBookRepository.delete({
-              student_id: studentId,
-              book_id: bookId,
-              book_status: BookDeliveryStatus.NOT_SENT,
+          if (otherOnlineMembership) {
+            await this.studentBookRepository.update(sb.id, {
+              class_id: otherOnlineMembership.class_id,
+              change_status: StudentBookChangeStatus.NORMAL,
             })
+          } else {
+            if (sb.book_status === BookDeliveryStatus.NOT_SENT) {
+              await this.studentBookRepository.delete(sb.id)
+            } else {
+              // SENDING hoặc RECEIVED -> không xóa mà đánh dấu CLASS_REMOVED (1)
+              await this.studentBookRepository.update(sb.id, {
+                change_status: StudentBookChangeStatus.CLASS_REMOVED,
+              })
+            }
           }
         }
       }
@@ -324,13 +384,31 @@ export class BooksService {
   =================================================*/
 
   async getAllStudentBooks(pagination: PaginateStudentBookDto): Promise<{ data: IStudentBook[]; meta: PaginationMeta }> {
-    const { student_id, book_id, book_status, full_name, code, phone_number, book_name, book_code, shipping_address, ...rest } = pagination
+    const {
+      student_id,
+      book_id,
+      class_id,
+      semester_id,
+      scholastic_id,
+      book_status,
+      change_status,
+      full_name,
+      code,
+      phone_number,
+      book_name,
+      book_code,
+      shipping_address,
+      ...rest
+    } = pagination
 
     const queryBuilder = this.studentBookRepository
       .createQueryBuilder('student_books')
       .leftJoinAndSelect('student_books.student', 'student')
       .leftJoinAndSelect('student.user', 'user')
       .leftJoinAndSelect('student_books.book', 'book')
+      .leftJoinAndSelect('student_books.class', 'class')
+      .leftJoinAndSelect('class.semester', 'semester')
+      .leftJoinAndSelect('class.scholastic', 'scholastic')
       .where('student.deleted_at IS NULL')
       .andWhere('book.deleted_at IS NULL')
 
@@ -340,8 +418,20 @@ export class BooksService {
     if (book_id) {
       queryBuilder.andWhere('student_books.book_id = :book_id', { book_id })
     }
+    if (class_id) {
+      queryBuilder.andWhere('student_books.class_id = :class_id', { class_id })
+    }
+    if (semester_id) {
+      queryBuilder.andWhere('class.semester_id = :semester_id', { semester_id })
+    }
+    if (scholastic_id) {
+      queryBuilder.andWhere('class.scholastic_id = :scholastic_id', { scholastic_id })
+    }
     if (book_status) {
       queryBuilder.andWhere('student_books.book_status = :book_status', { book_status })
+    }
+    if (change_status !== undefined) {
+      queryBuilder.andWhere('student_books.change_status = :change_status', { change_status })
     }
     if (full_name) {
       const normalized = removeVietnameseTones(full_name).toLowerCase().trim()
@@ -378,7 +468,7 @@ export class BooksService {
   async getStudentBookById(id: number): Promise<IStudentBook> {
     const sb = await this.studentBookRepository.findOne({
       where: { id },
-      relations: ['student', 'student.user', 'book'],
+      relations: ['student', 'student.user', 'book', 'class', 'class.semester', 'class.scholastic'],
     })
     if (!sb) {
       throwAppException('STUDENT_BOOK_NOT_FOUND', ErrorCode.STUDENT_BOOK_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -394,7 +484,7 @@ export class BooksService {
 
     const list = await this.studentBookRepository.find({
       where: { student_id: studentId },
-      relations: ['book', 'student', 'student.user'],
+      relations: ['book', 'student', 'student.user', 'class', 'class.semester', 'class.scholastic'],
       order: { id: 'DESC' },
     })
     return list.map(sb => this.formatStudentBook(sb))
@@ -419,6 +509,13 @@ export class BooksService {
       throwAppException('BOOK_NOT_FOUND', ErrorCode.BOOK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
+    if (dto.class_id) {
+      const classExists = await this.classRepository.exists({ where: { id: dto.class_id } })
+      if (!classExists) {
+        throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+    }
+
     const existing = await this.studentBookRepository.findOne({
       where: { student_id: dto.student_id, book_id: dto.book_id },
     })
@@ -436,7 +533,9 @@ export class BooksService {
     const entity = this.studentBookRepository.create({
       student_id: dto.student_id,
       book_id: dto.book_id,
+      class_id: dto.class_id ?? null,
       book_status: dto.book_status ?? BookDeliveryStatus.NOT_SENT,
+      change_status: dto.change_status ?? StudentBookChangeStatus.NORMAL,
       shipping_address: dto.shipping_address ?? null,
       book_delivery_note: dto.book_delivery_note ?? null,
       book_received_date: receivedDate,
@@ -452,9 +551,22 @@ export class BooksService {
       throwAppException('STUDENT_BOOK_NOT_FOUND', ErrorCode.STUDENT_BOOK_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
+    if (dto.class_id) {
+      const classExists = await this.classRepository.exists({ where: { id: dto.class_id } })
+      if (!classExists) {
+        throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+    }
+
     const updateData: Partial<StudentBook> = {}
+    if (dto.class_id !== undefined) {
+      updateData.class_id = dto.class_id
+    }
     if (dto.book_status !== undefined) {
       updateData.book_status = dto.book_status
+    }
+    if (dto.change_status !== undefined) {
+      updateData.change_status = dto.change_status
     }
     if (dto.shipping_address !== undefined) {
       updateData.shipping_address = dto.shipping_address

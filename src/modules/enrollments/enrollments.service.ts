@@ -11,7 +11,7 @@ import {
   renderPdfFromTemplate,
   throwAppException,
 } from '@common/utils'
-import { BookDeliveryStatus, LearnType, PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
+import { BookDeliveryStatus, LearnType, PaymentMethod, PaymentStatus, StatusEnrollment, StudentBookChangeStatus } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -69,7 +69,10 @@ export class EnrollmentsService {
 
   /**
    * Đồng bộ giáo trình / sách (student_books) cho học viên dựa trên các lớp học online (VIDEO / MEETING) đã được duyệt.
-   * Sách gắn trực tiếp với học viên (student_books), không gắn với class_students, và lấy shipping_address mới.
+   * - Lưu thêm class_id để biết học viên nhận sách từ lớp nào.
+   * - Khi học viên đổi lớp / rời lớp:
+   *   + Nếu trạng thái sách là NOT_SENT -> xóa bản ghi student_books.
+   *   + Nếu trạng thái sách là SENDING hoặc RECEIVED -> không xóa mà đánh dấu change_status = STUDENT_CHANGED_CLASS (2).
    */
   private async syncStudentBooksForStudent(
     manager: EntityManager,
@@ -93,14 +96,43 @@ export class EnrollmentsService {
     })
     const activeOnlineClassIds = [...new Set(activeOnlineMemberships.map(m => m.class_id))]
 
-    let requiredBookIds: number[] = []
+    const currentOnlineClassIds = (currentEnrollmentClassItems || [])
+      .filter(item => item.learn_type === LearnType.VIDEO || item.learn_type === LearnType.MEETING)
+      .map(item => item.class_id)
+    const currentOnlineClassIdSet = new Set(currentOnlineClassIds)
+
+    // Map: book_id -> danh sách các class_id online hiện tại của học viên có gắn sách đó
+    const bookToOnlineClassIdsMap = new Map<number, number[]>()
+    const currentEnrollmentBookIdSet = new Set<number>()
+
     if (activeOnlineClassIds.length > 0) {
       const onlineClasses = await classRepo.find({
         where: { id: In(activeOnlineClassIds) },
         relations: ['books'],
       })
-      requiredBookIds = [...new Set(onlineClasses.flatMap(c => (c.books || []).map(b => b.id)))]
+
+      // Ưu tiên các lớp nằm trong đơn đăng ký hiện tại đứng trước
+      const sortedOnlineClasses = [...onlineClasses].sort((a, b) => {
+        const aInCurrent = currentOnlineClassIdSet.has(a.id) ? 0 : 1
+        const bInCurrent = currentOnlineClassIdSet.has(b.id) ? 0 : 1
+        return aInCurrent - bInCurrent
+      })
+
+      for (const cls of sortedOnlineClasses) {
+        const isCurrentEnrollmentClass = currentOnlineClassIdSet.has(cls.id)
+        for (const book of cls.books || []) {
+          if (!bookToOnlineClassIdsMap.has(book.id)) {
+            bookToOnlineClassIdsMap.set(book.id, [])
+          }
+          bookToOnlineClassIdsMap.get(book.id).push(cls.id)
+          if (isCurrentEnrollmentClass) {
+            currentEnrollmentBookIdSet.add(book.id)
+          }
+        }
+      }
     }
+
+    const requiredBookIds = [...bookToOnlineClassIdsMap.keys()]
 
     // 2. Xác định các sách thuộc các lớp cũ của đơn này mà học viên không còn học online ở bất kỳ lớp nào nữa
     if (oldClassIds.length > 0) {
@@ -109,33 +141,41 @@ export class EnrollmentsService {
         relations: ['books'],
       })
       const oldBookIds = [...new Set(oldClasses.flatMap(c => (c.books || []).map(b => b.id)))]
-      const obsoleteBookIds = oldBookIds.filter(bid => !requiredBookIds.includes(bid))
+      const obsoleteBookIds = oldBookIds.filter(bid => !bookToOnlineClassIdsMap.has(bid))
 
       if (obsoleteBookIds.length > 0) {
-        // Chỉ xóa những sách chưa gửi (NOT_SENT)
-        await studentBookRepo.delete({
-          student_id: studentId,
-          book_id: In(obsoleteBookIds),
-          book_status: BookDeliveryStatus.NOT_SENT,
+        const obsoleteRecords = await studentBookRepo.find({
+          where: {
+            student_id: studentId,
+            book_id: In(obsoleteBookIds),
+          },
         })
+
+        const idsToDelete: number[] = []
+        const idsToMarkChangedClass: number[] = []
+
+        for (const sb of obsoleteRecords) {
+          if (sb.book_status === BookDeliveryStatus.NOT_SENT) {
+            idsToDelete.push(sb.id)
+          } else {
+            idsToMarkChangedClass.push(sb.id)
+          }
+        }
+
+        if (idsToDelete.length > 0) {
+          await studentBookRepo.delete(idsToDelete)
+        }
+        if (idsToMarkChangedClass.length > 0) {
+          await studentBookRepo.update(
+            { id: In(idsToMarkChangedClass) },
+            { change_status: StudentBookChangeStatus.STUDENT_CHANGED_CLASS },
+          )
+        }
       }
     }
 
-    // 3. Tạo mới hoặc cập nhật địa chỉ nhận sách cho các sách thuộc lớp online
+    // 3. Tạo mới hoặc cập nhật thông tin lớp / địa chỉ nhận sách cho các sách thuộc lớp online hiện tại
     if (requiredBookIds.length > 0) {
-      const currentOnlineClassIds = (currentEnrollmentClassItems || [])
-        .filter(item => item.learn_type === LearnType.VIDEO || item.learn_type === LearnType.MEETING)
-        .map(item => item.class_id)
-
-      let currentEnrollmentBookIds: number[] = []
-      if (currentOnlineClassIds.length > 0) {
-        const currentOnlineClasses = await classRepo.find({
-          where: { id: In(currentOnlineClassIds) },
-          relations: ['books'],
-        })
-        currentEnrollmentBookIds = [...new Set(currentOnlineClasses.flatMap(c => (c.books || []).map(b => b.id)))]
-      }
-
       const existingStudentBooks = await studentBookRepo.find({
         where: {
           student_id: studentId,
@@ -145,24 +185,48 @@ export class EnrollmentsService {
       const existingByBookId = new Map<number, StudentBook>(existingStudentBooks.map(sb => [sb.book_id, sb]))
 
       for (const bookId of requiredBookIds) {
+        const candidateClassIds = bookToOnlineClassIdsMap.get(bookId) || []
+        const defaultClassId = candidateClassIds[0] ?? null
         const existing = existingByBookId.get(bookId)
+
         if (!existing) {
           const newStudentBook = studentBookRepo.create({
             student_id: studentId,
             book_id: bookId,
+            class_id: defaultClassId,
             book_status: BookDeliveryStatus.NOT_SENT,
+            change_status: StudentBookChangeStatus.NORMAL,
             shipping_address: shippingAddress ?? null,
           })
           await studentBookRepo.save(newStudentBook)
-        } else if (
-          existing.book_status === BookDeliveryStatus.NOT_SENT &&
-          shippingAddress !== undefined &&
-          shippingAddress !== null &&
-          (currentEnrollmentBookIds.includes(bookId) || !existing.shipping_address)
-        ) {
-          await studentBookRepo.update(existing.id, {
-            shipping_address: shippingAddress,
-          })
+        } else {
+          // Nếu class_id hiện tại của bản ghi vẫn nằm trong danh sách lớp online hợp lệ của sách này thì giữ nguyên,
+          // ngược lại cập nhật sang lớp mới (defaultClassId)
+          const resolvedClassId =
+            existing.class_id && candidateClassIds.includes(existing.class_id) ? existing.class_id : defaultClassId
+
+          const updatePayload: Partial<StudentBook> = {}
+
+          if (existing.class_id !== resolvedClassId) {
+            updatePayload.class_id = resolvedClassId
+          }
+
+          if (existing.change_status !== StudentBookChangeStatus.NORMAL) {
+            updatePayload.change_status = StudentBookChangeStatus.NORMAL
+          }
+
+          if (
+            existing.book_status === BookDeliveryStatus.NOT_SENT &&
+            shippingAddress !== undefined &&
+            shippingAddress !== null &&
+            (currentEnrollmentBookIdSet.has(bookId) || !existing.shipping_address)
+          ) {
+            updatePayload.shipping_address = shippingAddress
+          }
+
+          if (Object.keys(updatePayload).length > 0) {
+            await studentBookRepo.update(existing.id, updatePayload)
+          }
         }
       }
     }

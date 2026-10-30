@@ -11,9 +11,10 @@ import { ClassStudents } from './class-students/class-student.entity'
 import { Student } from '@modules/students/students.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
 import { Book } from '@modules/books/books.entity'
+import { StudentBook } from '@modules/books/student-books.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Classes, Subject, Teacher, Semester, Scholastic, ClassStudents, Student, Enrollments, Book])],
+  imports: [TypeOrmModule.forFeature([Classes, Subject, Teacher, Semester, Scholastic, ClassStudents, Student, Enrollments, Book, StudentBook])],
   controllers: [AdminClassController, UserClassController, StudentClassController],
   providers: [ClassService],
 })
