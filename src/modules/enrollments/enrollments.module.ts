@@ -15,10 +15,12 @@ import { ClassStudents } from '@modules/class/class-students/class-student.entit
 import { LibrarySyncService } from '@services/library-sync/library-sync.service'
 import { EnrollmentClasses } from './enrollment-classes.entity'
 import { EnrollmentClassesBackfill } from './enrollment-classes.backfill'
+import { Book } from '@modules/books/books.entity'
+import { StudentBook } from '@modules/books/student-books.entity'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Enrollments, EnrollmentClasses, Student, Classes, User, Voucher, Footer, ClassStudents]),
+    TypeOrmModule.forFeature([Enrollments, EnrollmentClasses, Student, Classes, User, Voucher, Footer, ClassStudents, Book, StudentBook]),
     ScheduleModule.forRoot(),
     HttpModule,
   ],

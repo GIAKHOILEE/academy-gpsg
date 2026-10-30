@@ -1,5 +1,6 @@
 import { Classes } from '@modules/class/class.entity'
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { StudentBook } from './student-books.entity'
 
 @Entity('books')
 export class Book {
@@ -27,8 +28,16 @@ export class Book {
   @Column({ type: 'text', nullable: true })
   description: string
 
-  @ManyToMany(() => Classes, classes => classes.books)
+  @ManyToMany(() => Classes, classes => classes.books, { cascade: true })
+  @JoinTable({
+    name: 'class_books',
+    joinColumn: { name: 'book_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'class_id', referencedColumnName: 'id' },
+  })
   classes: Classes[]
+
+  @OneToMany(() => StudentBook, studentBook => studentBook.book, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  student_books: StudentBook[]
 
   @CreateDateColumn()
   created_at: Date

@@ -88,6 +88,10 @@ export class Enrollments {
   @Column({ nullable: true })
   address: string
 
+  // Địa chỉ nhận sách mới (dành cho học viên đăng ký học online)
+  @Column({ type: 'text', nullable: true })
+  shipping_address: string
+
   // nơi sinh
   @Column({ nullable: true })
   birth_place: string

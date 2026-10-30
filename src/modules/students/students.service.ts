@@ -40,17 +40,6 @@ export class StudentsService {
       const { image_4x6, diploma_image, transcript_image, other_document, card_code, ...userData } = createStudentDto
       const { password, email, code, full_name, birth_date, ...rest } = userData
 
-      // Kiểm tra email đã tồn tại
-      // if (email) {
-      //   const existingUser = await queryRunner.manager
-      //     .getRepository(User)
-      //     .createQueryBuilder('users')
-      //     .where('users.email = :email', { email })
-      //     .getOne()
-
-      //   if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
-      // }
-
       // Kiểm tra code đã tồn tại
       if (!code) throwAppException('CODE_IS_REQUIRED', ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
       if (code) {
@@ -175,19 +164,7 @@ export class StudentsService {
       }
       const isAvatarUpdated = (rest.avatar && rest.avatar !== user.avatar) || (image_4x6 && image_4x6 !== student.image_4x6)
 
-      // // Check duplicate email
-      // if (email) {
-      //   const existingUser = await userRepo
-      //     .createQueryBuilder('users')
-      //     .where('users.email = :email', { email })
-      //     .andWhere('users.id != :id', { id: user.id })
-      //     .getOne()
-      //   if (existingUser) throwAppException('EMAIL_ALREADY_EXISTS', ErrorCode.EMAIL_ALREADY_EXISTS, HttpStatus.CONFLICT)
-      // }
-
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
-      // tách full_name thành first_name và last_name
-
       const hashedPassword = password ? await hashPassword(password) : user.password
       const first_name = full_name ? full_name.trim().split(/\s+/).pop() : user.first_name
       const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : user.full_name_normalized
@@ -241,9 +218,6 @@ export class StudentsService {
       })
       await studentRepo.save(updatedStudent)
 
-      // Email thẻ học viên gửi SAU khi commit (xem bên dưới). Trước đây gửi ngay trong
-      // transaction: Brevo lỗi (key tắt, hết hạn mức, mạng chập) là cả lần lưu bị rollback,
-      // admin nhận 500 và ảnh đại diện mới không bao giờ được lưu.
       const cardMail =
         isAvatarUpdated && updatedUser.email
           ? {
@@ -326,6 +300,8 @@ export class StudentsService {
     const student = await this.studentRepository
       .createQueryBuilder('students')
       .leftJoinAndSelect('students.user', 'user')
+      .leftJoinAndSelect('students.student_books', 'student_books')
+      .leftJoinAndSelect('student_books.book', 'book')
       .select([
         'students.id',
         'students.card_code',
@@ -353,6 +329,23 @@ export class StudentsService {
         'user.status',
         'students.graduate',
         'students.graduate_year',
+        'student_books.id',
+        'student_books.student_id',
+        'student_books.book_id',
+        'student_books.book_status',
+        'student_books.shipping_address',
+        'student_books.book_delivery_note',
+        'student_books.book_received_date',
+        'student_books.created_at',
+        'student_books.updated_at',
+        'book.id',
+        'book.code',
+        'book.name',
+        'book.author',
+        'book.publisher',
+        'book.publication_year',
+        'book.image',
+        'book.description',
       ])
       .where('students.id = :id', { id })
       .getOne()
@@ -385,6 +378,29 @@ export class StudentsService {
       graduate_year: student.graduate_year,
       card_status: student.card_status,
       note: student.note,
+      books: (student.student_books || []).map(sb => ({
+        id: sb.id,
+        student_id: sb.student_id,
+        book_id: sb.book_id,
+        book_status: sb.book_status,
+        shipping_address: sb.shipping_address,
+        book_delivery_note: sb.book_delivery_note,
+        book_received_date: sb.book_received_date,
+        created_at: sb.created_at,
+        updated_at: sb.updated_at,
+        book: sb.book
+          ? {
+              id: sb.book.id,
+              code: sb.book.code,
+              name: sb.book.name,
+              author: sb.book.author,
+              publisher: sb.book.publisher,
+              publication_year: sb.book.publication_year,
+              image: sb.book.image,
+              description: sb.book.description,
+            }
+          : undefined,
+      })),
     }
     return formattedStudent
   }
@@ -499,9 +515,7 @@ export class StudentsService {
     }
 
     if (department_id) {
-      // department_id sits on subject.department_id
       query.andWhere('subject.department_id = :department_id', { department_id })
-      // or if you joined department entity: `department.id = :department_id`
     }
 
     if (first_name) {

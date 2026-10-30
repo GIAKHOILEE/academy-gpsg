@@ -7,7 +7,6 @@ import {
   Entity,
   Index,
   JoinColumn,
-  JoinTable,
   ManyToMany,
   ManyToOne,
   OneToMany,
@@ -182,12 +181,7 @@ export class Classes {
   @OneToMany(() => ClassNotification, notification => notification.class, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   notifications: ClassNotification[]
 
-  @ManyToMany(() => Book, book => book.classes, { cascade: true })
-  @JoinTable({
-    name: 'class_books',
-    joinColumn: { name: 'class_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'book_id', referencedColumnName: 'id' },
-  })
+  @ManyToMany(() => Book, book => book.classes)
   books: Book[]
 
   @CreateDateColumn()

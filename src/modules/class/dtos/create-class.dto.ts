@@ -142,17 +142,6 @@ export class CreateClassDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Lớp miễn phí', example: true, default: false })
   is_free: boolean
-
-  @IsArray()
-  @IsNumber({}, { each: true })
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'Danh sách ID giáo trình/sách của lớp', example: [1, 2], type: [Number] })
-  book_ids?: number[]
-
-  // @IsNumber()
-  // @IsOptional()
-  // @ApiPropertyOptional({ description: 'Khoa', example: 1 })
-  // department_id: number
 }
 
 // add student to class
