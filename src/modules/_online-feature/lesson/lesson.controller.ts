@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, Req } from '@nestjs/common'
+import { Controller, Delete, Get, HttpStatus, Param, ParseIntPipe, Post, Put, Query, Req } from '@nestjs/common'
 import { Body } from '@nestjs/common'
 import { ResponseDto } from '@common/response.dto'
 import { PaginateLessonDto } from './dtos/paginate-lesson.dto'
@@ -7,8 +7,9 @@ import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { CreateLessonDto } from './dtos/create-lesson.dto'
 import { UpdateLessonDto } from './dtos/update-lesson.dto'
-import { UpdateVideoProgressDto } from './dtos/update-video-progress.dto'
+import { AnswerVideoCheckDto, GetVideoProgressDto, UpdateVideoProgressDto } from './dtos/update-video-progress.dto'
 import { LessonService } from './lesson.service'
+import { VideoAttendanceService } from '../video-attendance/video-attendance.service'
 
 @Controller('admin/lessons')
 @ApiTags('Admin Lesson')
@@ -161,7 +162,10 @@ export class TeacherLessonController {
 @ApiBearerAuth()
 @Auth(Role.STUDENT, Role.TEACHER)
 export class UserLessonController {
-  constructor(private readonly lessonService: LessonService) {}
+  constructor(
+    private readonly lessonService: LessonService,
+    private readonly videoAttendanceService: VideoAttendanceService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all lessons' })
@@ -187,9 +191,9 @@ export class UserLessonController {
   }
 
   @Post(':id/video-progress')
-  @ApiOperation({ summary: 'Cập nhật tiến trình xem video bài học và tự động điểm danh' })
-  async updateVideoProgress(@Param('id') id: number, @Body() updateVideoProgressDto: UpdateVideoProgressDto, @Req() req): Promise<ResponseDto> {
-    const progress = await this.lessonService.updateVideoProgress(id, req.user.userId, updateVideoProgressDto)
+  @ApiOperation({ summary: 'Gửi tiến độ xem video (các đoạn đã xem) — server tự điểm danh theo cấu hình của lớp' })
+  async updateVideoProgress(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateVideoProgressDto, @Req() req): Promise<ResponseDto> {
+    const progress = await this.videoAttendanceService.heartbeat(id, req.user.userId, dto)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_VIDEO_PROGRESS_UPDATED_SUCCESSFULLY',
@@ -197,10 +201,21 @@ export class UserLessonController {
     })
   }
 
+  @Post(':id/video-progress/check')
+  @ApiOperation({ summary: 'Trả lời bài kiểm tra "còn đang học" bật lên khi xem video' })
+  async answerVideoCheck(@Param('id', ParseIntPipe) id: number, @Body() dto: AnswerVideoCheckDto, @Req() req): Promise<ResponseDto> {
+    const progress = await this.videoAttendanceService.answerCheck(id, req.user.userId, dto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'LESSON_VIDEO_CHECK_ANSWERED',
+      data: progress,
+    })
+  }
+
   @Get(':id/video-progress')
-  @ApiOperation({ summary: 'Lấy tiến trình xem video bài học' })
-  async getVideoProgress(@Param('id') id: number, @Req() req): Promise<ResponseDto> {
-    const progress = await this.lessonService.getVideoProgress(id, req.user.userId)
+  @ApiOperation({ summary: 'Lấy tiến độ xem video bài học + quy tắc điểm danh của lớp' })
+  async getVideoProgress(@Param('id', ParseIntPipe) id: number, @Query() query: GetVideoProgressDto, @Req() req): Promise<ResponseDto> {
+    const progress = await this.videoAttendanceService.getProgress(id, req.user.userId, query.video_url)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_VIDEO_PROGRESS_GET_SUCCESSFULLY',
