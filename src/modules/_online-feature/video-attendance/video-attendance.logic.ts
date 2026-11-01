@@ -227,7 +227,7 @@ export function isTrackableVideoUrl(url: string | null | undefined): boolean {
   if (!url || typeof url !== 'string') return false
   const u = url.trim()
   if (!/^https?:\/\//i.test(u)) return false
-  return !/youtube\.com|youtu\.be|drive\.google\.com/i.test(u)
+  return !/youtube\.com|youtu\.be|drive\.google\.com|vimeo\.com/i.test(u)
 }
 
 export function videoKeyOf(url: string | null | undefined): string {

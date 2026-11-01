@@ -152,6 +152,8 @@ describe('video-attendance.logic', () => {
     expect(isTrackableVideoUrl('https://www.youtube.com/watch?v=x')).toBe(false)
     expect(isTrackableVideoUrl('https://youtu.be/x')).toBe(false)
     expect(isTrackableVideoUrl('https://drive.google.com/file/d/x/view')).toBe(false)
+    expect(isTrackableVideoUrl('https://vimeo.com/123456')).toBe(false)
+    expect(isTrackableVideoUrl('https://player.vimeo.com/video/123456')).toBe(false)
     expect(isTrackableVideoUrl('')).toBe(false)
     expect(isTrackableVideoUrl('abc')).toBe(false)
   })
