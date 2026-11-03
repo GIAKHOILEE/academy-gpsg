@@ -233,6 +233,79 @@ describe('LessonMeetingService.joinLesson', () => {
     expect(upsertRoom).toHaveBeenCalledTimes(2)
   })
 
+  describe('link công khai: kiểm mã học viên (verifyJoinCode)', () => {
+    // mã → tài khoản: 2026-0001 học MEETING (user 101), 2026-0002 học VIDEO (102),
+    // 2026-0003 không thuộc lớp (103), 2026-0009 bị khoá, GV-50 giảng viên lớp, AD-1 admin
+    const users: Record<string, any> = {
+      '2026-0001': { id: 101, code: '2026-0001', role: Role.STUDENT, status: 1, full_name: 'Nguyễn Văn A', saint_name: 'Maria' },
+      '2026-0002': { id: 102, code: '2026-0002', role: Role.STUDENT, status: 1, full_name: 'Trần B', saint_name: null },
+      '2026-0003': { id: 103, code: '2026-0003', role: Role.STUDENT, status: 1, full_name: 'Lê C', saint_name: null },
+      '2026-0009': { id: 101, code: '2026-0009', role: Role.STUDENT, status: 2, full_name: 'Khoá', saint_name: null },
+      'GV-50': { id: 50, code: 'GV-50', role: Role.TEACHER, status: 1, full_name: 'Phêrô', saint_name: null },
+      'AD-1': { id: 1, code: 'AD-1', role: Role.ADMIN, status: 1, full_name: 'Quản trị', saint_name: null },
+    }
+    beforeEach(() => {
+      userRepository.findOne = jest.fn(async ({ where }) => users[where.code] ?? null)
+    })
+
+    it.each([
+      ['học viên học trực tuyến', '2026-0001', { ok: true, roleKey: HvmMeetRole.PARTICIPANT, identity: 'academy:user:101' }],
+      ['giảng viên của lớp', 'GV-50', { ok: true, roleKey: HvmMeetRole.HOST, identity: 'academy:user:50' }],
+      ['admin', 'AD-1', { ok: true, roleKey: HvmMeetRole.COHOST }],
+      ['học viên học qua video', '2026-0002', { ok: false, reason: 'NOT_ALLOWED' }],
+      ['học viên không thuộc lớp', '2026-0003', { ok: false, reason: 'NOT_ALLOWED' }],
+      ['tài khoản bị khoá', '2026-0009', { ok: false, reason: 'INACTIVE' }],
+      ['mã không tồn tại', '2026-9999', { ok: false, reason: 'NOT_FOUND' }],
+      ['mã rỗng', '   ', { ok: false, reason: 'NOT_FOUND' }],
+    ])('phòng buổi học: %s', async (_label, code, expected) => {
+      expect(await service.verifyJoinCode('lesson-12', code)).toMatchObject(expected)
+    })
+
+    it('trả tên hiển thị "Tên thánh Họ tên" giống lúc vào qua học viện, bỏ khoảng trắng thừa của mã', async () => {
+      expect(await service.verifyJoinCode('lesson-12', ' 2026-0001 ')).toEqual({
+        ok: true,
+        identity: 'academy:user:101',
+        externalUserId: '101',
+        name: 'Maria Nguyễn Văn A',
+        roleKey: HvmMeetRole.PARTICIPANT,
+      })
+    })
+
+    it('phòng không phải buổi học: mọi tài khoản đang hoạt động, cán bộ là cohost', async () => {
+      expect(await service.verifyJoinCode('hop-giao-vien', '2026-0003')).toMatchObject({ ok: true, roleKey: HvmMeetRole.PARTICIPANT })
+      expect(await service.verifyJoinCode('hop-giao-vien', 'AD-1')).toMatchObject({ ok: true, roleKey: HvmMeetRole.COHOST })
+      expect(await service.verifyJoinCode('hop-giao-vien', '2026-0009')).toEqual({ ok: false, reason: 'INACTIVE' })
+    })
+
+    describe('xác thực thêm bằng ngày sinh', () => {
+      beforeEach(() => {
+        users['2026-0001'].birth_date = '2001-09-23'
+        users['2026-0009'].birth_date = new Date(2000, 0, 5) // Date lúc 00:00 giờ máy chủ (driver mysql)
+        users['2026-0003'].birth_date = null
+      })
+      const bd = (birthDate: string) => ({ kind: 'birthdate', birthDate })
+
+      it('đúng mã + đúng ngày sinh → vào được', async () => {
+        expect(await service.verifyJoinCode('lesson-12', '2026-0001', bd('2001-09-23'))).toMatchObject({ ok: true, identity: 'academy:user:101' })
+      })
+      it('sai ngày sinh → SECOND_FACTOR_MISMATCH', async () => {
+        expect(await service.verifyJoinCode('lesson-12', '2026-0001', bd('2001-09-24'))).toEqual({ ok: false, reason: 'SECOND_FACTOR_MISMATCH' })
+      })
+      it('ngày sinh kiểu Date đọc theo giờ địa phương (không lệch ngày vì UTC)', async () => {
+        // tài khoản bị khoá: chỉ báo INACTIVE khi đã đúng ngày sinh
+        expect(await service.verifyJoinCode('lesson-12', '2026-0009', bd('2000-01-05'))).toEqual({ ok: false, reason: 'INACTIVE' })
+        expect(await service.verifyJoinCode('lesson-12', '2026-0009', bd('2000-01-04'))).toEqual({ ok: false, reason: 'SECOND_FACTOR_MISMATCH' })
+      })
+      it('hồ sơ chưa có ngày sinh → NO_SECOND_FACTOR', async () => {
+        expect(await service.verifyJoinCode('lesson-12', '2026-0003', bd('2001-01-01'))).toEqual({ ok: false, reason: 'NO_SECOND_FACTOR' })
+      })
+    })
+
+    it('buổi học không tồn tại → NOT_ALLOWED', async () => {
+      expect(await service.verifyJoinCode('lesson-404', '2026-0001')).toEqual({ ok: false, reason: 'NOT_ALLOWED' })
+    })
+  })
+
   describe('xem lại buổi học', () => {
     const replayTicket = { ticket: 'r1', joinUrl: 'https://meet.test/replay/r1', expiresAt: '2026-10-27T01:02:00Z' }
 

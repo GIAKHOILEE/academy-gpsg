@@ -180,3 +180,11 @@ export interface LessonMeetingJoinResult {
     class_name: string
   }
 }
+
+/**
+ * Trả lời HVM Meet khi có người vào bằng link công khai + mã học viên
+ * (POST webhooks/hvm-meet/verify-code). Hợp đồng: hvm-meet docs/INTEGRATION.md.
+ */
+export type HvmMeetCodeVerification =
+  | { ok: true; identity: string; externalUserId: string; name: string; roleKey: string }
+  | { ok: false; reason: 'NOT_FOUND' | 'INACTIVE' | 'NOT_ALLOWED' | 'NO_SECOND_FACTOR' | 'SECOND_FACTOR_MISMATCH' }

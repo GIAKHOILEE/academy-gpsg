@@ -6,6 +6,7 @@ import { HvmMeetWebhookEnvelope } from '../hvm-meet.types'
 import { verifyHvmMeetSignature } from '../hvm-meet.signature'
 import { HvmMeetSettingService } from '../services/hvm-meet-setting.service'
 import { HvmMeetWebhookService } from '../services/hvm-meet-webhook.service'
+import { LessonMeetingService } from '../services/lesson-meeting.service'
 
 /**
  * Nhận webhook từ HVM Meet. Không đăng nhập, xác thực bằng chữ ký HMAC trên raw body
@@ -19,7 +20,35 @@ export class HvmMeetWebhookController {
   constructor(
     private readonly settingService: HvmMeetSettingService,
     private readonly webhookService: HvmMeetWebhookService,
+    private readonly meetingService: LessonMeetingService,
   ) {}
+
+  /**
+   * HVM Meet hỏi ĐỒNG BỘ khi có người vào bằng link công khai: mã học viên (+ ngày sinh) này có
+   * được vào phòng không. Cùng chữ ký HMAC với webhook. Body: { roomExternalId, code, factor, birthDate? }.
+   * Hợp đồng: hvm-meet docs/INTEGRATION.md mục 4b.
+   */
+  @Post('verify-code')
+  @HttpCode(HttpStatus.OK)
+  async verifyCode(@Req() req, @Headers('x-hvm-signature') signature: string) {
+    const rawBody: Buffer | null = Buffer.isBuffer(req.body) ? req.body : null
+    const secret = await this.settingService.getWebhookSecret()
+    const verification = verifyHvmMeetSignature(signature, rawBody ?? '', secret)
+    if (!rawBody || verification.ok === false) {
+      this.logger.warn(`Từ chối kiểm mã từ HVM Meet: chữ ký không hợp lệ (${verification.ok === false ? verification.reason : 'no_body'})`)
+      throwAppException('HVM_MEET_WEBHOOK_INVALID_SIGNATURE', ErrorCode.HVM_MEET_WEBHOOK_INVALID_SIGNATURE, HttpStatus.UNAUTHORIZED)
+    }
+    let body: { roomExternalId?: string; code?: string; factor?: string; birthDate?: string }
+    try {
+      body = JSON.parse(rawBody.toString('utf8'))
+    } catch {
+      return { ok: false, reason: 'NOT_FOUND' }
+    }
+    return this.meetingService.verifyJoinCode(String(body?.roomExternalId ?? ''), String(body?.code ?? ''), {
+      kind: body?.factor,
+      birthDate: body?.birthDate,
+    })
+  }
 
   @Post()
   @HttpCode(HttpStatus.OK)

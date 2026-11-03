@@ -3,6 +3,7 @@ import { LearnType } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { HvmMeetRole, MeetingProvider } from '@enums/meeting.enum'
 import { Role } from '@enums/role.enum'
+import { UserStatus } from '@enums/status.enum'
 import { Lesson } from '@modules/_online-feature/lesson/lesson.entity'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
 import { Student } from '@modules/students/students.entity'
@@ -12,9 +13,10 @@ import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as crypto from 'crypto'
 import { Repository } from 'typeorm'
-import { academyIdentity, HVM_MEET_ROOM_SYNC_TTL_MS, lessonExternalId } from '../hvm-meet.constants'
+import { academyIdentity, HVM_MEET_ROOM_SYNC_TTL_MS, lessonExternalId, parseLessonExternalId } from '../hvm-meet.constants'
 import { buildLessonSchedule } from '../hvm-meet.mapping'
 import {
+  HvmMeetCodeVerification,
   HvmMeetConnectionConfig,
   HvmMeetRosterEntry,
   HvmMeetSessionArchive,
@@ -63,6 +65,18 @@ export function decideReplayAccess(input: { role: Role; isClassTeacher: boolean;
   if (STAFF_ROLES.includes(role)) return true
   if (role === Role.STUDENT) return input.learnType !== null
   return false
+}
+
+/**
+ * Cột DATE của MySQL về tới đây có thể là chuỗi 'YYYY-MM-DD' hoặc Date lúc 00:00 giờ máy chủ (tuỳ
+ * cấu hình driver) — đọc bằng giờ địa phương, KHÔNG dùng toISOString() (lệch về ngày hôm trước ở UTC+7).
+ */
+export function birthDateString(value: Date | string | null | undefined): string | null {
+  if (!value) return null
+  if (typeof value === 'string') return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null
+  if (Number.isNaN(value.getTime())) return null
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`
 }
 
 /** Tên hiển thị trong phòng: "Tên thánh Họ tên", tối đa 120 ký tự theo hợp đồng HVM Meet. */
@@ -294,6 +308,54 @@ export class LessonMeetingService {
     throwAppException('LESSON_MEETING_SESSION_NOT_FOUND', ErrorCode.LESSON_MEETING_SESSION_NOT_FOUND, HttpStatus.NOT_FOUND, {
       reason: 'SESSION_NOT_FOUND',
     })
+  }
+
+  /**
+   * HVM Meet hỏi khi có người vào bằng LINK CÔNG KHAI và gõ mã học viên (`user.code`).
+   * Trả về danh tính GIỐNG HỆT lúc vào qua học viện (academy:user:<id>) để điểm danh/roster
+   * khớp, và cùng quy tắc vai trò với joinLesson. Không ném lỗi: meet cần lý do để báo cho
+   * người gõ (mã sai / không thuộc lớp / tài khoản bị khoá).
+   *
+   * Phòng của buổi học (lesson-<id>): chỉ người có quyền vào buổi đó. Phòng khác (họp chung
+   * do học viện tạo): mọi tài khoản đang hoạt động, cán bộ là cohost.
+   */
+  async verifyJoinCode(
+    roomExternalId: string,
+    rawCode: string,
+    factor: { kind?: string; birthDate?: string } = {},
+  ): Promise<HvmMeetCodeVerification> {
+    const code = String(rawCode ?? '').trim()
+    if (!code || code.length > 64) return { ok: false, reason: 'NOT_FOUND' }
+
+    const user = await this.userRepository.findOne({ where: { code } })
+    if (!user) return { ok: false, reason: 'NOT_FOUND' }
+    // Xác thực thêm bằng ngày sinh (meet chọn theo setting room.publicJoinFactor): mã học viên đánh
+    // số liên tục và là mật khẩu mặc định nên một mình nó không đủ. Kiểm TRƯỚC trạng thái tài khoản
+    // để người không biết ngày sinh không dò được tài khoản nào đang bị khoá.
+    if (factor.kind === 'birthdate') {
+      const stored = birthDateString(user.birth_date)
+      if (!stored) return { ok: false, reason: 'NO_SECOND_FACTOR' }
+      if (stored !== String(factor.birthDate ?? '').trim()) return { ok: false, reason: 'SECOND_FACTOR_MISMATCH' }
+    }
+    if (Number(user.status) !== UserStatus.ACTIVE) return { ok: false, reason: 'INACTIVE' }
+
+    const identity = {
+      identity: academyIdentity(user.id),
+      externalUserId: String(user.id),
+      name: meetingDisplayName(user, code),
+    }
+
+    const lessonId = parseLessonExternalId(roomExternalId)
+    if (lessonId === null) {
+      const role = STAFF_ROLES.includes(Number(user.role) as Role) ? HvmMeetRole.COHOST : HvmMeetRole.PARTICIPANT
+      return { ok: true, ...identity, roleKey: role }
+    }
+
+    const lesson = await this.lessonRepository.findOne({ where: { id: lessonId }, relations: ['class'] })
+    if (!lesson) return { ok: false, reason: 'NOT_ALLOWED' }
+    const context = await this.loadAccessContext(lesson, { userId: user.id, role: user.role })
+    const role = context ? decideMeetingRole(context) : null
+    return role ? { ok: true, ...identity, roleKey: role } : { ok: false, reason: 'NOT_ALLOWED' }
   }
 
   /** Dữ kiện để quyết định quyền: vai trò, có phải giảng viên của lớp, hình thức học trong lớp. */

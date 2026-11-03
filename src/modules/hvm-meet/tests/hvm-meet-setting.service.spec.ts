@@ -169,7 +169,7 @@ describe('HvmMeetWebhookController', () => {
 
   beforeEach(() => {
     webhookService = { handle: jest.fn(async envelope => ({ event: envelope.event, handled: false, skipped: 'event_ignored' })) }
-    controller = new HvmMeetWebhookController({ getWebhookSecret: jest.fn(async () => secret) } as any, webhookService)
+    controller = new HvmMeetWebhookController({ getWebhookSecret: jest.fn(async () => secret) } as any, webhookService, {} as any)
     jest.spyOn(controller['logger'], 'warn').mockImplementation(() => undefined)
     jest.spyOn(controller['logger'], 'error').mockImplementation(() => undefined)
   })
