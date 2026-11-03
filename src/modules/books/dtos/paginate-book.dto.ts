@@ -1,6 +1,7 @@
 import { PaginationDto } from '@common/pagination'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsOptional, IsString } from 'class-validator'
+import { Type } from 'class-transformer'
+import { IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class PaginateBookDto extends PaginationDto {
   @IsString()
@@ -22,4 +23,10 @@ export class PaginateBookDto extends PaginationDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tìm kiếm theo nhà xuất bản' })
   publisher?: string
+
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  @ApiPropertyOptional({ description: 'Lọc theo ID lớp học gắn với sách' })
+  class_id?: number
 }

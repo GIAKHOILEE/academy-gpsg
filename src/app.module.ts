@@ -69,6 +69,8 @@ import { StorageModule } from '@modules/storage/storage.module'
 import { BooksModule } from '@modules/books/books.module'
 import { StorageHubModule } from '@modules/storage/hub/storage-hub.module'
 import { HvmMeetModule } from '@modules/hvm-meet/hvm-meet.module'
+import { SmsGatewayModule } from '@modules/sms-gateway/sms-gateway.module'
+import { ScheduleModule } from '@nestjs/schedule'
 
 @Module({
   imports: [
@@ -133,6 +135,8 @@ import { HvmMeetModule } from '@modules/hvm-meet/hvm-meet.module'
     BooksModule,
     StorageHubModule,
     HvmMeetModule,
+    ScheduleModule.forRoot(),
+    SmsGatewayModule,
   ],
   controllers: [AppController],
   providers: [

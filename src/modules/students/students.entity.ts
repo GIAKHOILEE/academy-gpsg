@@ -7,6 +7,7 @@ import { Answers } from '@modules/evaluation/answers/answers.entity'
 import { IFile } from '@common/file'
 import { StudentCardStatus } from '@enums/user.enum'
 import { Certificates } from '@modules/certificates/certificates.entity'
+import { StudentBook } from '@modules/books/student-books.entity'
 
 @Entity({ name: 'students' })
 export class Student {
@@ -69,6 +70,10 @@ export class Student {
 
   @OneToMany(() => Certificates, certificates => certificates.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   certificates: Certificates[]
+
+  // danh sách sách / giáo trình
+  @OneToMany(() => StudentBook, studentBook => studentBook.student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  student_books: StudentBook[]
 
   @CreateDateColumn()
   created_at: Date

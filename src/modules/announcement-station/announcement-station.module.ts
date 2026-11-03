@@ -3,12 +3,15 @@ import { AnnouncementStationService } from './announcement-station.service'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Student } from '@modules/students/students.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
+import { SmsGatewayModule } from '@modules/sms-gateway/sms-gateway.module'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import { AdminAnnouncementStationController } from './announcement-station.controller'
 import { HttpModule } from '@nestjs/axios'
 
+import { AnnouncementStation } from './announcement-station.entity'
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, Teacher]), HttpModule],
+  imports: [TypeOrmModule.forFeature([Student, Teacher, AnnouncementStation]), HttpModule, SmsGatewayModule],
   providers: [AnnouncementStationService, BrevoMailerService],
   controllers: [AdminAnnouncementStationController],
 })

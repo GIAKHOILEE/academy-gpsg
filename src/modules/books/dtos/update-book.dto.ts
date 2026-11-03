@@ -1,5 +1,5 @@
-import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateBookDto {
   @IsString()
@@ -36,4 +36,18 @@ export class UpdateBookDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Mô tả giáo trình / sách', example: 'Tài liệu dành cho sinh viên năm nhất' })
   description?: string
+
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Danh sách ID các lớp học gắn với sách', example: [1, 2], type: [Number] })
+  class_ids?: number[]
+}
+
+export class UpdateBookClassesDto {
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Danh sách ID các lớp học gắn với sách', example: [1, 2], type: [Number] })
+  class_ids: number[]
 }

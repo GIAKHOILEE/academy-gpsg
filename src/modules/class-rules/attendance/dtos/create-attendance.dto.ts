@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsNotEmpty, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class CreateAttendanceDto {
   @IsNotEmpty()
@@ -11,4 +11,9 @@ export class CreateAttendanceDto {
   @IsString()
   @ApiProperty({ description: 'Mã thẻ học viên', example: '123456' })
   card_code: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Ghi chú nếu cần', example: 'Xin phép vào trễ' })
+  note?: string
 }

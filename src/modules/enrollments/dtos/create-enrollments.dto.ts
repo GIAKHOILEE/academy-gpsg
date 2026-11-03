@@ -74,6 +74,11 @@ export class CreateEnrollmentsDto {
   @IsOptional()
   address: string
 
+  @ApiPropertyOptional({ description: 'Địa chỉ mới để nhận sách (khi đăng ký học online)', example: '123 Nguyễn Trãi, Q.1, TP.HCM' })
+  @IsString()
+  @IsOptional()
+  shipping_address?: string
+
   @ApiPropertyOptional({ description: 'Nơi sinh', example: 'Nơi sinh' })
   @IsString()
   @IsOptional()

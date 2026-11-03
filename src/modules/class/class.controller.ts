@@ -7,7 +7,6 @@ import { ClassService } from './class.service'
 import { AddStudentToClassDto, CreateClassDto } from './dtos/create-class.dto'
 import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } from './dtos/paginate-class.dto'
 import { UpdateClassDto } from './dtos/update-class.dto'
-import { UpdateClassBooksDto, UpdateStudentBookStatusDto } from './dtos/update-student-book-status.dto'
 
 @ApiTags('Admin Classes')
 @ApiBearerAuth()
@@ -99,33 +98,6 @@ export class AdminClassController {
       messageCode: 'STUDENTS_FETCHED_SUCCESSFULLY',
       data: students.data,
       meta: students.meta,
-    })
-  }
-
-  @Patch(':classId/students/:studentId/book-status')
-  @ApiOperation({ summary: 'Cập nhật trạng thái nhận sách của một học sinh trong lớp' })
-  @ApiParam({ name: 'classId', type: Number, description: 'ID lớp học' })
-  @ApiParam({ name: 'studentId', type: Number, description: 'ID học sinh' })
-  async updateStudentBookStatus(
-    @Param('classId') classId: number,
-    @Param('studentId') studentId: number,
-    @Body() dto: UpdateStudentBookStatusDto,
-  ): Promise<ResponseDto> {
-    await this.classService.updateStudentBookStatus(Number(classId), Number(studentId), dto)
-    return new ResponseDto({
-      statusCode: HttpStatus.OK,
-      messageCode: 'STUDENT_BOOK_STATUS_UPDATED_SUCCESSFULLY',
-    })
-  }
-
-  @Patch(':id/books')
-  @ApiOperation({ summary: 'Cập nhật danh sách sách/giáo trình gán vào lớp học' })
-  @ApiParam({ name: 'id', type: Number, description: 'ID lớp học' })
-  async updateClassBooks(@Param('id') id: number, @Body() dto: UpdateClassBooksDto): Promise<ResponseDto> {
-    await this.classService.updateClassBooks(Number(id), dto.book_ids)
-    return new ResponseDto({
-      statusCode: HttpStatus.OK,
-      messageCode: 'CLASS_BOOKS_UPDATED_SUCCESSFULLY',
     })
   }
 

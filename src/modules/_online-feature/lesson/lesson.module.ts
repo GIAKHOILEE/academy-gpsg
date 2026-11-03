@@ -11,9 +11,13 @@ import { Discuss } from '../discuss/discuss.entity'
 import { LessonVideoProgress } from './lesson-video-progress.entity'
 import { Attendance } from '@modules/class-rules/attendance/attendance.entity'
 import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
+import { VideoAttendanceModule } from '../video-attendance/video-attendance.module'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Lesson, Classes, User, Student, ClassStudents, Discuss, LessonVideoProgress, Attendance, AttendanceRule])],
+  imports: [
+    TypeOrmModule.forFeature([Lesson, Classes, User, Student, ClassStudents, Discuss, LessonVideoProgress, Attendance, AttendanceRule]),
+    VideoAttendanceModule,
+  ],
   controllers: [AdminLessonController, TeacherLessonController, UserLessonController],
   providers: [LessonService],
   exports: [LessonService],

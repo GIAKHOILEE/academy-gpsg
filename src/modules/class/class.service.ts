@@ -15,12 +15,11 @@ import { GetStudentsOfClassDto, PaginateClassDto, PaginateClassOfStudentDto } fr
 import { UpdateClassDto } from './dtos/update-class.dto'
 import { IStudent } from '@modules/students/students.interface'
 import { ClassStudents } from './class-students/class-student.entity'
-import { BookDeliveryStatus, ClassStatus } from '@enums/class.enum'
+import { BookDeliveryStatus, ClassStatus, LearnType, StudentBookChangeStatus } from '@enums/class.enum'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { Student } from '@modules/students/students.entity'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
-import { Book } from '@modules/books/books.entity'
-import { UpdateStudentBookStatusDto } from './dtos/update-student-book-status.dto'
+import { StudentBook } from '@modules/books/student-books.entity'
 
 @Injectable()
 export class ClassService {
@@ -41,12 +40,12 @@ export class ClassService {
     private studentRepository: Repository<Student>,
     @InjectRepository(Enrollments)
     private enrollmentRepository: Repository<Enrollments>,
-    @InjectRepository(Book)
-    private bookRepository: Repository<Book>,
+    @InjectRepository(StudentBook)
+    private studentBookRepository: Repository<StudentBook>,
   ) {}
 
   async createClass(createClassDto: CreateClassDto): Promise<IClasses> {
-    const { code, subject_id, teacher_id, scholastic_id, semester_id, book_ids, ...rest } = createClassDto
+    const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = createClassDto
 
     const existingClass = await this.classRepository.findOne({ where: { code } })
     if (existingClass) throwAppException('CLASS_CODE_ALREADY_EXISTS', ErrorCode.CLASS_CODE_ALREADY_EXISTS, HttpStatus.BAD_REQUEST)
@@ -76,17 +75,6 @@ export class ClassService {
       .where('semesters.id = :id', { id: semester_id })
       .getOne()
     if (!semester) throwAppException('SEMESTER_NOT_FOUND', ErrorCode.SEMESTER_NOT_FOUND, HttpStatus.NOT_FOUND)
-
-    // ngày khai giảng phải sau ngày kết thúc ghi danh
-    // if (rest.opening_day && rest.end_enrollment_day) {
-    //   if (new Date(rest.opening_day) < new Date(rest.end_enrollment_day)) {
-    //     throwAppException(
-    //       'OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY',
-    //       ErrorCode.OPENING_DAY_MUST_BE_AFTER_END_ENROLLMENT_DAY,
-    //       HttpStatus.BAD_REQUEST,
-    //     )
-    //   }
-    // }
 
     // chỉ cần có 1 trong 2 là true thì mới được tạo lớp online
     let is_online = false
@@ -125,12 +113,17 @@ export class ClassService {
       status = ClassStatus.ENROLLING
     }
 
-    let books: Book[] = []
-    if (book_ids && book_ids.length > 0) {
-      books = await this.bookRepository.findBy({ id: In(book_ids) })
-    }
-
-    const classEntity = this.classRepository.create({ ...rest, code, subject, teacher, scholastic, semester, name: subject.name, status, is_online, books })
+    const classEntity = this.classRepository.create({
+      ...rest,
+      code,
+      subject,
+      teacher,
+      scholastic,
+      semester,
+      name: subject.name,
+      status,
+      is_online,
+    })
     const savedClass = await this.classRepository.save(classEntity)
 
     const formattedClass: IClasses = {
@@ -161,16 +154,6 @@ export class ClassService {
       learn_meeting: savedClass.learn_meeting,
       is_online: savedClass.is_online,
       content: savedClass.content,
-      books: books.map(b => ({
-        id: b.id,
-        name: b.name,
-        code: b.code,
-        author: b.author,
-        publisher: b.publisher,
-        publication_year: b.publication_year,
-        image: b.image,
-        description: b.description,
-      })),
       subject: {
         id: subject.id,
         code: subject.code,
@@ -196,8 +179,8 @@ export class ClassService {
   }
 
   async updateClass(id: number, updateClassDto: UpdateClassDto): Promise<void> {
-    const { code, subject_id, teacher_id, scholastic_id, semester_id, book_ids, ...rest } = updateClassDto
-    const existingClass = await this.classRepository.findOne({ where: { id }, relations: ['books'] })
+    const { code, subject_id, teacher_id, scholastic_id, semester_id, ...rest } = updateClassDto
+    const existingClass = await this.classRepository.findOne({ where: { id } })
     if (!existingClass) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
 
     if (subject_id) {
@@ -253,12 +236,6 @@ export class ClassService {
       is_online = true
     } else {
       is_online = false
-    }
-
-    if (book_ids !== undefined) {
-      const books = book_ids.length > 0 ? await this.bookRepository.findBy({ id: In(book_ids) }) : []
-      existingClass.books = books
-      await this.classRepository.save(existingClass)
     }
 
     await this.classRepository.update(id, { ...rest, code, subject_id, teacher_id, scholastic_id, semester_id, status, is_online })
@@ -406,10 +383,6 @@ export class ClassService {
       .leftJoinAndSelect('classes.scholastic', 'scholastic')
       .leftJoinAndSelect('classes.semester', 'semester')
 
-    // nếu không có status thì mặc định lấy hết trừ status số 4
-    // if (!paginateClassDto.status) {
-    //   query.andWhere('classes.status != :status', { status: ClassStatus.END_CLASS })
-    // }
     if (subject_id) {
       query.andWhere('subject.id = :subject_id', { subject_id })
     }
@@ -525,7 +498,7 @@ export class ClassService {
 
   //lấy danh sách học sinh của lớp
   async getStudentsOfClass(class_id: number, getStudentsOfClassDto: GetStudentsOfClassDto): Promise<{ data: IStudent[]; meta: PaginationMeta }> {
-    const { full_name, code, first_name, learn_type, book_status, ...rest } = getStudentsOfClassDto
+    const { full_name, code, first_name, learn_type, ...rest } = getStudentsOfClassDto
 
     const classEntity = await this.classRepository.findOne({ where: { id: class_id }, select: ['id'] })
     if (!classEntity) throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
@@ -536,9 +509,6 @@ export class ClassService {
         'class_students.id',
         'class_students.score',
         'class_students.learn_type',
-        'class_students.book_status',
-        'class_students.book_delivery_note',
-        'class_students.book_received_date',
         'class_students.updated_at',
         'student.id',
         'user.code',
@@ -585,9 +555,6 @@ export class ClassService {
     if (learn_type) {
       classStudents.andWhere('class_students.learn_type = :learn_type', { learn_type })
     }
-    if (book_status) {
-      classStudents.andWhere('class_students.book_status = :book_status', { book_status })
-    }
 
     if (rest.orderBy === 'first_name') {
       rest.anotherOrderBy = 'user.first_name'
@@ -598,9 +565,6 @@ export class ClassService {
       id: classStudent.student.id,
       class_student_id: classStudent.id,
       learn_type: classStudent.learn_type,
-      book_status: classStudent.book_status,
-      book_delivery_note: classStudent.book_delivery_note,
-      book_received_date: classStudent.book_received_date,
       score: classStudent.score,
       date_of_issue: formatStringDate(classStudent.updated_at.toISOString(), true),
       code: classStudent.student.user.code,
@@ -864,12 +828,16 @@ export class ClassService {
 
     await this.classStudentsRepository.save(classStudents)
   }
+
   async removeStudentFromClass(classId: number, studentIds: number[]): Promise<void> {
     const uniqueStudentIds = [...new Set(studentIds)]
     if (uniqueStudentIds.length === 0) return
 
-    const classExists = await this.classRepository.exists({ where: { id: classId } })
-    if (!classExists) {
+    const classEntity = await this.classRepository.findOne({
+      where: { id: classId },
+      relations: ['books'],
+    })
+    if (!classEntity) {
       throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
@@ -885,42 +853,89 @@ export class ClassService {
       class_id: classId,
       student_id: In(uniqueStudentIds),
     })
+
+    // Đồng bộ student_books khi xóa học sinh khỏi lớp:
+    // - Nếu học sinh vẫn còn học online lớp khác có cùng sách -> cập nhật class_id sang lớp đó, giữ NORMAL.
+    // - Nếu không còn học online lớp nào có sách đó:
+    //   + book_status = NOT_SENT -> xóa bản ghi student_books.
+    //   + book_status = SENDING / RECEIVED -> không xóa, đánh dấu change_status = STUDENT_CHANGED_CLASS (2).
+    const classBookIds = (classEntity.books || []).map(b => b.id)
+    const whereConditions: any[] = [{ student_id: In(uniqueStudentIds), class_id: classId }]
+    if (classBookIds.length > 0) {
+      whereConditions.push({ student_id: In(uniqueStudentIds), book_id: In(classBookIds) })
+    }
+
+    const affectedStudentBooks = await this.studentBookRepository.find({
+      where: whereConditions,
+    })
+
+    if (affectedStudentBooks.length > 0) {
+      const remainingOnlineMemberships = await this.classStudentsRepository.find({
+        where: {
+          student_id: In(uniqueStudentIds),
+          learn_type: In([LearnType.VIDEO, LearnType.MEETING]),
+        },
+      })
+
+      const remainingOnlineClassIds = [...new Set(remainingOnlineMemberships.map(m => m.class_id))]
+      const classBooksMap = new Map<number, number[]>()
+      if (remainingOnlineClassIds.length > 0) {
+        const remainingClasses = await this.classRepository.find({
+          where: { id: In(remainingOnlineClassIds) },
+          relations: ['books'],
+        })
+        for (const cls of remainingClasses) {
+          classBooksMap.set(
+            cls.id,
+            (cls.books || []).map(b => b.id),
+          )
+        }
+      }
+
+      // Map: `${student_id}_${book_id}` -> remaining online class_id
+      const studentBookToRemainingClass = new Map<string, number>()
+      for (const m of remainingOnlineMemberships) {
+        const bookIdsOfClass = classBooksMap.get(m.class_id) || []
+        for (const bid of bookIdsOfClass) {
+          const key = `${m.student_id}_${bid}`
+          if (!studentBookToRemainingClass.has(key)) {
+            studentBookToRemainingClass.set(key, m.class_id)
+          }
+        }
+      }
+
+      const idsToDelete: number[] = []
+      const idsToMarkChangedClass: number[] = []
+
+      for (const sb of affectedStudentBooks) {
+        const alternativeClassId = studentBookToRemainingClass.get(`${sb.student_id}_${sb.book_id}`)
+        if (alternativeClassId) {
+          if (sb.class_id === classId || sb.change_status !== StudentBookChangeStatus.NORMAL) {
+            await this.studentBookRepository.update(sb.id, {
+              class_id: alternativeClassId,
+              change_status: StudentBookChangeStatus.NORMAL,
+            })
+          }
+        } else {
+          if (sb.book_status === BookDeliveryStatus.NOT_SENT) {
+            idsToDelete.push(sb.id)
+          } else {
+            idsToMarkChangedClass.push(sb.id)
+          }
+        }
+      }
+
+      if (idsToDelete.length > 0) {
+        await this.studentBookRepository.delete(idsToDelete)
+      }
+      if (idsToMarkChangedClass.length > 0) {
+        await this.studentBookRepository.update(
+          { id: In(idsToMarkChangedClass) },
+          { change_status: StudentBookChangeStatus.STUDENT_CHANGED_CLASS },
+        )
+      }
+    }
   }
-  // // cronjob cuối ngày closing_day chuyển status qua END_CLASS
-  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  // async cronjobUpdateClassStatus(): Promise<void> {
-  //   const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.closing_day']).getMany()
-  //   for (const classEntity of classes) {
-  //     if (classEntity.closing_day < new Date().toISOString()) {
-  //       await this.classRepository.update(classEntity.id, { status: ClassStatus.END_CLASS })
-  //     }
-  //   }
-  // }
-
-  // // cronjob cuối ngày end_enrollment_day chuyển status qua END_CLASS
-  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  // async cronjobUpdateEndEnrollmentClass(): Promise<void> {
-  //   const classes = await this.classRepository
-  //     .createQueryBuilder('classes')
-  //     .select(['classes.id', 'classes.closing_day', 'classes.end_enrollment_day'])
-  //     .getMany()
-  //   for (const classEntity of classes) {
-  //     if (classEntity.end_enrollment_day < new Date().toISOString()) {
-  //       await this.classRepository.update(classEntity.id, { status: ClassStatus.END_ENROLLING })
-  //     }
-  //   }
-  // }
-
-  // // cronjob đầu ngày opening_day chuyển status qua HAS_BEGUN
-  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  // async cronjobUpdateOpeningClass(): Promise<void> {
-  //   const classes = await this.classRepository.createQueryBuilder('classes').select(['classes.id', 'classes.opening_day']).getMany()
-  //   for (const classEntity of classes) {
-  //     if (classEntity.opening_day < new Date().toISOString()) {
-  //       await this.classRepository.update(classEntity.id, { status: ClassStatus.HAS_BEGUN })
-  //     }
-  //   }
-  // }
 
   // Cronjob: cập nhật status lớp học mỗi ngày lúc 00:00
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
@@ -974,41 +989,5 @@ export class ClassService {
         await this.classRepository.update(classEntity.id, { status: newStatus })
       }
     }
-  }
-
-  // Cập nhật trạng thái nhận sách của học sinh trong lớp
-  async updateStudentBookStatus(classId: number, studentId: number, dto: UpdateStudentBookStatusDto): Promise<void> {
-    const classStudent = await this.classStudentsRepository.findOne({
-      where: { class_id: classId, student_id: studentId },
-    })
-    if (!classStudent) {
-      throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
-    }
-
-    const updateData: Partial<ClassStudents> = {
-      book_status: dto.book_status,
-    }
-    if (dto.book_delivery_note !== undefined) {
-      updateData.book_delivery_note = dto.book_delivery_note
-    }
-    if (dto.book_received_date !== undefined) {
-      updateData.book_received_date = dto.book_received_date
-    } else if (dto.book_status === BookDeliveryStatus.RECEIVED && !classStudent.book_received_date) {
-      updateData.book_received_date = new Date().toISOString().split('T')[0]
-    }
-
-    await this.classStudentsRepository.update(classStudent.id, updateData)
-  }
-
-  // Cập nhật danh sách sách gắn vào lớp
-  async updateClassBooks(classId: number, bookIds: number[]): Promise<void> {
-    const classEntity = await this.classRepository.findOne({ where: { id: classId }, relations: ['books'] })
-    if (!classEntity) {
-      throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
-    }
-
-    const books = bookIds && bookIds.length > 0 ? await this.bookRepository.findBy({ id: In(bookIds) }) : []
-    classEntity.books = books
-    await this.classRepository.save(classEntity)
   }
 }

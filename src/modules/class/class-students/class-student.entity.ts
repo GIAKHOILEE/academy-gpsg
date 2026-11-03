@@ -4,7 +4,7 @@ import { Classes } from '../class.entity'
 import { ExamScore } from '@modules/class-rules/exam/exam-scores/exam-scores.entity'
 import { Attendance } from '@modules/class-rules/attendance/attendance.entity'
 import { TeacherEvaluation } from '@modules/class-rules/teacher-evaluations/teacher-evaluations.entity'
-import { BookDeliveryStatus, LearnType } from '@enums/class.enum'
+import { LearnType } from '@enums/class.enum'
 
 @Entity({ name: 'class_students' })
 @Unique('uniq_class_student', ['class_id', 'student_id']) // unique constraint cho cặp class_id và student_id
@@ -32,15 +32,6 @@ export class ClassStudents {
 
   @Column({ type: 'enum', enum: LearnType, default: LearnType.OFFLINE })
   learn_type: LearnType
-
-  @Column({ type: 'enum', enum: BookDeliveryStatus, default: BookDeliveryStatus.NOT_SENT })
-  book_status: BookDeliveryStatus
-
-  @Column({ type: 'text', nullable: true })
-  book_delivery_note: string
-
-  @Column({ nullable: true })
-  book_received_date: string
 
   @OneToMany(() => ExamScore, examScore => examScore.class_student, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   exam_scores: ExamScore[]
