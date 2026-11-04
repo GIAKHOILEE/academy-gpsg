@@ -1,6 +1,7 @@
 import { IFile } from '@common/file'
 import { IClasses } from '@modules/class/class.interface'
 import { MeetingProvider } from '@enums/meeting.enum'
+import { LessonMeetPolicy } from '@modules/hvm-meet/hvm-meet.policy'
 
 export interface ILesson {
   id?: number
@@ -16,6 +17,8 @@ export interface ILesson {
   document_url?: IFile[]
   meeting_url?: string
   meeting_provider?: MeetingProvider
+  /** Ghi đè cách vào phòng / điểm danh HVM Meet của buổi này; null = theo cấu hình chung. */
+  meet_policy?: LessonMeetPolicy | null
   class_id?: number
   class?: IClasses
   attendance_rule_id?: number
