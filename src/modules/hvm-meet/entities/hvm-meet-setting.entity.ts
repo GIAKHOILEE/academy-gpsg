@@ -1,6 +1,7 @@
 import { HvmMeetStatus } from '@enums/meeting.enum'
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { HVM_MEET_DEFAULT_TEMPLATE_KEY } from '../hvm-meet.constants'
+import { HvmMeetRoomPolicy } from '../hvm-meet.policy'
 
 /**
  * Bảng chỉ có 1 dòng (id = 1): cấu hình tích hợp phòng học HVM Meet.
@@ -25,6 +26,14 @@ export class HvmMeetSettingEntity {
   /** Mẫu phòng bên HVM Meet dùng khi tạo phòng cho buổi học. */
   @Column({ type: 'varchar', length: 40, default: HVM_MEET_DEFAULT_TEMPLATE_KEY })
   default_template_key: string
+
+  /**
+   * Cách vào phòng + điểm danh tự động mặc định cho mọi buổi học HVM Meet (buổi học có thể ghi đè).
+   * null = chưa lưu lần nào: meet dùng giá trị kế thừa của nó. simple-json (text), KHÔNG dùng `json`:
+   * MariaDB + synchronize tạo lại cột json mỗi lần khởi động và làm mất dữ liệu.
+   */
+  @Column({ type: 'simple-json', nullable: true })
+  room_policy: HvmMeetRoomPolicy | null
 
   @Column({ type: 'varchar', length: 30, default: HvmMeetStatus.UNKNOWN })
   status: HvmMeetStatus

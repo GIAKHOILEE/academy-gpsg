@@ -4,7 +4,9 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { HVM_MEET_REQUEST_TIMEOUT_MS } from '../hvm-meet.constants'
 import {
   HvmMeetCreateTicketRequest,
+  HvmMeetAttendanceSummary,
   HvmMeetIntegrationMe,
+  HvmMeetPublicLink,
   HvmMeetReplayTicketRequest,
   HvmMeetRoom,
   HvmMeetSession,
@@ -75,7 +77,15 @@ export class HvmMeetClientService {
     return this.request(conn, 'GET', `/v1/integration/rooms/${encodeURIComponent(externalId)}/recordings`, { action: 'lấy danh sách bản ghi' })
   }
 
-  getAttendance(conn: HvmMeetConnection, sessionId: string): Promise<any> {
+  /** Link /p/ của phòng (tạo nếu chưa có). rotate = đổi link, link cũ chết ngay. */
+  getPublicLink(conn: HvmMeetConnection, externalId: string, rotate = false): Promise<HvmMeetPublicLink> {
+    return this.request(conn, 'POST', `/v1/integration/rooms/${encodeURIComponent(externalId)}/public-link`, {
+      body: { rotate: Boolean(rotate) },
+      action: rotate ? 'đổi link công khai' : 'lấy link công khai',
+    })
+  }
+
+  getAttendance(conn: HvmMeetConnection, sessionId: string): Promise<HvmMeetAttendanceSummary> {
     return this.request(conn, 'GET', `/v1/integration/sessions/${encodeURIComponent(sessionId)}/attendance`, { action: 'lấy báo cáo điểm danh' })
   }
 
