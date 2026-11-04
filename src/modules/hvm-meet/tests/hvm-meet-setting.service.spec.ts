@@ -3,6 +3,7 @@ import { StorageCryptoService } from '@modules/storage/services/storage-crypto.s
 import { SECRET_MASK } from '@modules/storage/storage.constants'
 import { HvmMeetSettingEntity } from '../entities/hvm-meet-setting.entity'
 import { HvmMeetWebhookController } from '../controllers/hvm-meet-webhook.controller'
+import { DEFAULT_ROOM_POLICY } from '../hvm-meet.policy'
 import { signHvmMeetPayload } from '../hvm-meet.signature'
 import { HvmMeetApiError, HvmMeetClientService } from '../services/hvm-meet-client.service'
 import { HvmMeetSettingSeeder } from '../services/hvm-meet-setting.seeder'
@@ -157,6 +158,35 @@ describe('Cấu hình HVM Meet', () => {
 
       expect(client.me).toHaveBeenCalledWith({ baseUrl: 'https://meet-khac.test', apiKey: 'k' })
       expect(row.status).toBe(HvmMeetStatus.UNKNOWN)
+    })
+  })
+
+  describe('cách vào phòng + điểm danh mặc định (room_policy)', () => {
+    const custom = {
+      access: { ...DEFAULT_ROOM_POLICY.access, mode: 'account_or_guest' as const, waiting_room: true },
+      attendance: { ...DEFAULT_ROOM_POLICY.attendance, random_check_count: 2 },
+    }
+
+    it('chưa lưu lần nào → policy null + defaults', async () => {
+      seedRow({ base_url: 'https://meet.test', api_key: 'k' })
+      await expect(service.getRoomPolicy()).resolves.toEqual({ policy: null, defaults: DEFAULT_ROOM_POLICY })
+      await expect(service.getStoredRoomPolicy()).resolves.toBeNull()
+    })
+
+    it('lưu → đọc lại đúng; không đụng cấu hình kết nối', async () => {
+      seedRow({ base_url: 'https://meet.test', api_key: 'k' })
+      const encrypted = row.config_encrypted
+
+      await expect(service.updateRoomPolicy({ policy: custom as any })).resolves.toEqual({ policy: custom, defaults: DEFAULT_ROOM_POLICY })
+      expect(row.room_policy).toEqual(custom)
+      expect(row.config_encrypted).toBe(encrypted)
+      await expect(service.getStoredRoomPolicy()).resolves.toEqual(custom)
+    })
+
+    it('policy: null → khôi phục mặc định', async () => {
+      seedRow({ base_url: 'https://meet.test', api_key: 'k' }, { room_policy: custom })
+      await expect(service.updateRoomPolicy({ policy: null })).resolves.toEqual({ policy: null, defaults: DEFAULT_ROOM_POLICY })
+      expect(row.room_policy).toBeNull()
     })
   })
 })

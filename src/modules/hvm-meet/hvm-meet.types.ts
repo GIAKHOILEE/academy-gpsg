@@ -1,4 +1,5 @@
 import { HvmMeetRole } from '@enums/meeting.enum'
+import { MeetAccessMode } from './hvm-meet.policy'
 
 /* ------------------------------------------------------------------ *
  *  DTO theo hợp đồng hvm-meet/apps/server/api/openapi.yaml (tag integration)
@@ -90,6 +91,14 @@ export interface HvmMeetSessionArchive {
   recordings: { recording: any; playback?: { kind: 'embed' | 'file'; url: string } }[]
 }
 
+/** POST /v1/integration/rooms/{externalId}/public-link. `factor` có từ bản meet hỗ trợ khách. */
+export interface HvmMeetPublicLink {
+  url: string
+  enabled: boolean
+  verifyConfigured: boolean
+  factor?: 'none' | 'birthdate' | 'guest'
+}
+
 /* ------------------------------ Webhook ------------------------------ */
 
 /** room.started / room.ended */
@@ -127,6 +136,13 @@ export interface HvmMeetAttendanceReport {
   checksPassed: number
   firstJoinedAt?: string | null
   lastLeftAt?: string | null
+}
+
+/** GET /v1/integration/sessions/{id}/attendance */
+export interface HvmMeetAttendanceSummary {
+  sessionId: string
+  finalized: boolean
+  reports: (HvmMeetAttendanceReport & Record<string, any>)[]
 }
 
 export interface HvmMeetAttendanceFinalizedData {
@@ -179,6 +195,21 @@ export interface LessonMeetingJoinResult {
     class_id: number
     class_name: string
   }
+}
+
+/** POST /lessons/:id/meeting/public-link */
+export interface LessonMeetingPublicLinkResult {
+  url: string
+  enabled: boolean
+  factor: 'none' | 'birthdate' | 'guest' | null
+  verify_configured: boolean
+  /** Cách vào hiệu lực theo academy; account = link có nhưng báo "không mở". */
+  access_mode: MeetAccessMode
+}
+
+/** GET /lessons/:id/meeting/sessions/:sessionId/attendance — báo cáo của meet + đã ghi vào sổ điểm danh lớp chưa. */
+export interface LessonMeetingAttendanceResult extends HvmMeetAttendanceSummary {
+  academySynced: boolean
 }
 
 /**

@@ -9,19 +9,35 @@ import { ClassStudents } from '@modules/class/class-students/class-student.entit
 import { Student } from '@modules/students/students.entity'
 import { Teacher } from '@modules/teachers/teachers.entity'
 import { User } from '@modules/users/user.entity'
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import * as crypto from 'crypto'
 import { Repository } from 'typeorm'
-import { academyIdentity, HVM_MEET_ROOM_SYNC_TTL_MS, lessonExternalId, parseLessonExternalId } from '../hvm-meet.constants'
-import { buildLessonSchedule } from '../hvm-meet.mapping'
+import {
+  academyIdentity,
+  HVM_MEET_ROOM_SYNC_TTL_MS,
+  LESSON_TIMEZONE_OFFSET_MINUTES,
+  lessonExternalId,
+  parseLessonExternalId,
+} from '../hvm-meet.constants'
+import { buildLessonSchedule, normalizeLessonDate } from '../hvm-meet.mapping'
+import {
+  DEFAULT_ROOM_POLICY,
+  HvmMeetRoomPolicy,
+  meetFactorOfMode,
+  normalizeLessonMeetPolicy,
+  resolveSections,
+  toMeetSettings,
+} from '../hvm-meet.policy'
 import {
   HvmMeetCodeVerification,
   HvmMeetConnectionConfig,
   HvmMeetRosterEntry,
   HvmMeetSessionArchive,
   HvmMeetUpsertRoomRequest,
+  LessonMeetingAttendanceResult,
   LessonMeetingJoinResult,
+  LessonMeetingPublicLinkResult,
 } from '../hvm-meet.types'
 import { HvmMeetApiError, HvmMeetClientService, HvmMeetConnection } from './hvm-meet-client.service'
 import { HvmMeetSettingService } from './hvm-meet-setting.service'
@@ -35,6 +51,31 @@ export interface MeetingUser {
 
 /** Vai trò cán bộ học viện vào phòng với quyền điều hành phụ (cohost). */
 const STAFF_ROLES = [Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF]
+
+/** Đồng bộ lại tối đa bấy nhiêu phòng sắp tới khi đổi cấu hình chung (gần nhất trước). */
+export const HVM_MEET_RESYNC_MAX_ROOMS = 500
+
+/** Ngày hôm nay theo giờ Việt Nam, dạng YYYY-MM-DD (so sánh chuỗi được với normalizeLessonDate). */
+export function vietnamToday(now: number = Date.now()): string {
+  return new Date(now + LESSON_TIMEZONE_OFFSET_MINUTES * 60 * 1000).toISOString().slice(0, 10)
+}
+
+/**
+ * Buổi học cần đẩy lại chính sách phòng: hôm nay trở đi theo giờ VN, hoặc chưa có ngày.
+ * Gần nhất trước, buổi chưa có ngày sau cùng; tối đa `limit`.
+ */
+export function pickUpcomingLessonIds(
+  lessons: { id: number; start_date?: string | null }[],
+  today: string,
+  limit = HVM_MEET_RESYNC_MAX_ROOMS,
+): number[] {
+  return lessons
+    .map(lesson => ({ id: lesson.id, date: normalizeLessonDate(lesson.start_date) }))
+    .filter(item => item.date === null || item.date >= today)
+    .sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99') || a.id - b.id)
+    .slice(0, limit)
+    .map(item => item.id)
+}
 
 /**
  * Quy tắc vai trò trong phòng của một buổi học:
@@ -90,8 +131,14 @@ export function meetingDisplayName(user: Pick<User, 'full_name' | 'saint_name' |
 
 @Injectable()
 export class LessonMeetingService {
+  private readonly logger = new Logger(LessonMeetingService.name)
+
   /** Lần PUT phòng gần nhất theo externalId, để không gửi lại roster y hệt mỗi lần có người vào. */
   private readonly roomSyncCache = new Map<string, { hash: string; at: number }>()
+
+  /** Chống chạy chồng resyncUpcomingRooms: lưu cấu hình 2 lần liên tiếp thì chạy thêm 1 lượt sau lượt đang chạy. */
+  private resyncRunning: Promise<void> | null = null
+  private resyncPending = false
 
   constructor(
     @InjectRepository(Lesson)
@@ -138,7 +185,7 @@ export class LessonMeetingService {
     const account = await this.userRepository.findOne({ where: { id: userId } })
     const externalId = lessonExternalId(lesson.id)
     const conn: HvmMeetConnection = { baseUrl: config.base_url, apiKey: config.api_key }
-    const roomRequest = await this.buildRoomRequest(lesson, config)
+    const roomRequest = await this.buildRoomRequest(lesson, config, await this.settingService.getStoredRoomPolicy())
     const ticketRequest = {
       identity: academyIdentity(userId),
       name: meetingDisplayName(account, `Người dùng ${userId}`),
@@ -217,6 +264,154 @@ export class LessonMeetingService {
     return roster
   }
 
+  /* ----------------------- Đồng bộ phòng chủ động ----------------------- */
+
+  /**
+   * Tạo / cập nhật phòng HVM Meet của buổi học ngay (lịch, roster, chính sách vào phòng + điểm danh),
+   * không chờ ai bấm vào phòng. Gọi sau khi lưu buổi học. Không bao giờ ném lỗi ra ngoài: lưu buổi
+   * học không được hỏng vì HVM Meet. Trả true nếu đã đẩy sang meet.
+   */
+  async syncLessonRoom(lessonId: number): Promise<boolean> {
+    try {
+      const lesson = await this.lessonRepository.findOne({ where: { id: lessonId }, relations: ['class'] })
+      if (!lesson || lesson.meeting_provider !== MeetingProvider.HVM_MEET) return false
+      const config = await this.settingService.getActiveConfig()
+      if (!config) return false
+      await this.pushRoom(lesson, config, await this.settingService.getStoredRoomPolicy(), true)
+      return true
+    } catch (error: any) {
+      this.logger.error(`Không đồng bộ được phòng HVM Meet của buổi học ${lessonId}: ${error?.message}`)
+      return false
+    }
+  }
+
+  /**
+   * Đẩy lại chính sách phòng cho các buổi HVM Meet từ hôm nay trở đi (giờ VN) hoặc chưa có ngày,
+   * sau khi đổi cấu hình chung. Tuần tự, tối đa HVM_MEET_RESYNC_MAX_ROOMS phòng. Không ném lỗi.
+   */
+  async resyncUpcomingRooms(): Promise<void> {
+    if (this.resyncRunning) {
+      this.resyncPending = true
+      return this.resyncRunning
+    }
+    this.resyncRunning = (async () => {
+      try {
+        do {
+          this.resyncPending = false
+          await this.resyncUpcomingRoomsOnce()
+        } while (this.resyncPending)
+      } finally {
+        this.resyncRunning = null
+      }
+    })()
+    return this.resyncRunning
+  }
+
+  private async resyncUpcomingRoomsOnce(): Promise<void> {
+    try {
+      const config = await this.settingService.getActiveConfig()
+      if (!config) return
+      const globalPolicy = await this.settingService.getStoredRoomPolicy()
+
+      const lessons = await this.lessonRepository.find({
+        where: { meeting_provider: MeetingProvider.HVM_MEET },
+        select: { id: true, start_date: true },
+      })
+      const ids = pickUpcomingLessonIds(lessons, vietnamToday())
+
+      let synced = 0
+      let failed = 0
+      for (const id of ids) {
+        try {
+          const lesson = await this.lessonRepository.findOne({ where: { id }, relations: ['class'] })
+          if (!lesson || lesson.meeting_provider !== MeetingProvider.HVM_MEET) continue
+          await this.pushRoom(lesson, config, globalPolicy, true)
+          synced++
+        } catch (error: any) {
+          failed++
+          this.logger.error(`Không đồng bộ được phòng HVM Meet của buổi học ${id}: ${error?.message}`)
+        }
+      }
+      this.logger.log(
+        `Đồng bộ chính sách phòng HVM Meet: ${synced} phòng thành công, ${failed} lỗi ` +
+          `(${ids.length}/${lessons.length} buổi HVM Meet là buổi sắp tới, tối đa ${HVM_MEET_RESYNC_MAX_ROOMS})`,
+      )
+    } catch (error: any) {
+      this.logger.error(`Đồng bộ chính sách phòng HVM Meet thất bại: ${error?.message}`)
+    }
+  }
+
+  /* --------------------------- Link công khai --------------------------- */
+
+  /**
+   * Link /p/ của phòng buổi học. Admin / giáo vụ hoặc giảng viên của lớp xem được; chỉ admin / giáo vụ
+   * đổi được link. Đồng bộ phòng trước để phòng tồn tại với chính sách hiện tại.
+   */
+  async getPublicLink(lessonId: number, user: MeetingUser, rotate = false): Promise<LessonMeetingPublicLinkResult> {
+    const lesson = await this.lessonRepository.findOne({ where: { id: lessonId }, relations: ['class'] })
+    if (!lesson) {
+      throwAppException('LESSON_NOT_FOUND', ErrorCode.LESSON_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    if (lesson.meeting_provider !== MeetingProvider.HVM_MEET) {
+      throwAppException('LESSON_MEETING_NOT_HVM', ErrorCode.LESSON_MEETING_NOT_HVM, HttpStatus.BAD_REQUEST, { reason: 'NOT_HVM_MEET' })
+    }
+    const isStaff = await this.assertStaffOrClassTeacher(lesson, user)
+    if (rotate && !isStaff) {
+      throwAppException('LESSON_MEETING_FORBIDDEN', ErrorCode.LESSON_MEETING_FORBIDDEN, HttpStatus.FORBIDDEN, { reason: 'NOT_ALLOWED' })
+    }
+    const config = await this.requireActiveConfig()
+    const conn: HvmMeetConnection = { baseUrl: config.base_url, apiKey: config.api_key }
+    const globalPolicy = await this.settingService.getStoredRoomPolicy()
+    const externalId = lessonExternalId(lesson.id)
+    const accessMode = resolveSections(globalPolicy, normalizeLessonMeetPolicy(lesson.meet_policy)).access?.mode ?? DEFAULT_ROOM_POLICY.access.mode
+
+    try {
+      await this.pushRoom(lesson, config, globalPolicy, true)
+      const link = await this.client.getPublicLink(conn, externalId, rotate)
+      if (rotate) this.logger.log(`Đổi link công khai phòng ${externalId} (user ${user?.userId})`)
+      return {
+        url: link.url,
+        enabled: Boolean(link.enabled),
+        factor: link.factor ?? meetFactorOfMode(accessMode),
+        verify_configured: Boolean(link.verifyConfigured),
+        access_mode: accessMode,
+      }
+    } catch (error) {
+      this.client.rethrowAsAppException(error)
+    }
+  }
+
+  /* ------------------------ Điểm danh từng buổi ------------------------ */
+
+  /**
+   * Báo cáo điểm danh HVM Meet của một buổi (admin / giáo vụ, giảng viên của lớp), kèm
+   * `academySynced` = đã ghi vào sổ điểm danh lớp (webhook attendance.finalized) chưa.
+   */
+  async getSessionAttendance(lessonId: number, sessionId: string, user: MeetingUser): Promise<LessonMeetingAttendanceResult> {
+    const lesson = await this.lessonRepository.findOne({ where: { id: lessonId }, relations: ['class'] })
+    if (!lesson) {
+      throwAppException('LESSON_NOT_FOUND', ErrorCode.LESSON_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+    await this.assertStaffOrClassTeacher(lesson, user)
+    const config = await this.requireActiveConfig()
+    const conn: HvmMeetConnection = { baseUrl: config.base_url, apiKey: config.api_key }
+    await this.assertSessionOfLesson(conn, lesson.id, sessionId)
+
+    try {
+      const summary = await this.client.getAttendance(conn, sessionId)
+      const row = await this.sessionService.findForLesson(lesson.id, sessionId)
+      return {
+        ...summary,
+        sessionId: summary?.sessionId ?? sessionId,
+        finalized: Boolean(summary?.finalized),
+        reports: Array.isArray(summary?.reports) ? summary.reports : [],
+        academySynced: Boolean(row?.attendance_finalized),
+      }
+    } catch (error) {
+      this.client.rethrowAsAppException(error)
+    }
+  }
+
   /* --------------------------- Xem lại buổi học --------------------------- */
 
   /**
@@ -285,6 +480,14 @@ export class LessonMeetingService {
       throwAppException('LESSON_MEETING_FORBIDDEN', ErrorCode.LESSON_MEETING_FORBIDDEN, HttpStatus.FORBIDDEN, { reason: 'NOT_ALLOWED' })
     }
     return lesson
+  }
+
+  /** Admin / giáo vụ → true; giảng viên của lớp → false; người khác → 403. */
+  private async assertStaffOrClassTeacher(lesson: Lesson, user: MeetingUser): Promise<boolean> {
+    if (STAFF_ROLES.includes(Number(user?.role) as Role)) return true
+    const context = await this.loadAccessContext(lesson, user)
+    if (context?.role === Role.TEACHER && context.isClassTeacher) return false
+    throwAppException('LESSON_MEETING_FORBIDDEN', ErrorCode.LESSON_MEETING_FORBIDDEN, HttpStatus.FORBIDDEN, { reason: 'NOT_ALLOWED' })
   }
 
   private async requireActiveConfig(): Promise<HvmMeetConnectionConfig> {
@@ -384,7 +587,17 @@ export class LessonMeetingService {
     return { role, isClassTeacher, learnType }
   }
 
-  private async buildRoomRequest(lesson: Lesson, config: HvmMeetConnectionConfig): Promise<HvmMeetUpsertRoomRequest> {
+  /** Dựng body rồi PUT phòng của buổi học. */
+  private async pushRoom(lesson: Lesson, config: HvmMeetConnectionConfig, globalPolicy: HvmMeetRoomPolicy | null, force: boolean) {
+    const conn: HvmMeetConnection = { baseUrl: config.base_url, apiKey: config.api_key }
+    await this.syncRoom(conn, lessonExternalId(lesson.id), await this.buildRoomRequest(lesson, config, globalPolicy), force)
+  }
+
+  /**
+   * Body PUT phòng: lịch, tiêu đề, roster, metadata và setting cấp phòng do academy quản lý
+   * (luôn đủ MANAGED_MEET_KEYS; null = về giá trị kế thừa của meet).
+   */
+  async buildRoomRequest(lesson: Lesson, config: HvmMeetConnectionConfig, globalPolicy: HvmMeetRoomPolicy | null): Promise<HvmMeetUpsertRoomRequest> {
     const { scheduledStart, scheduledEnd } = buildLessonSchedule(lesson)
     const className = lesson.class?.name?.trim()
     const title = (className ? `${className} — ${lesson.title}` : lesson.title || `Buổi học ${lesson.id}`).slice(0, 300)
@@ -395,19 +608,38 @@ export class LessonMeetingService {
       scheduledStart,
       scheduledEnd,
       metadata: { classId: lesson.class?.id, lessonId: lesson.id },
+      settings: toMeetSettings(resolveSections(globalPolicy, normalizeLessonMeetPolicy(lesson.meet_policy))),
       roster: await this.buildRoster(lesson),
     }
   }
 
-  /** PUT phòng (idempotent). Bỏ qua nếu nội dung y hệt lần gửi gần nhất và chưa quá 10 phút. */
-  private async syncRoom(conn: HvmMeetConnection, externalId: string, body: HvmMeetUpsertRoomRequest, force = false) {
+  /**
+   * PUT phòng (idempotent). Bỏ qua nếu nội dung y hệt lần gửi gần nhất và chưa quá 10 phút.
+   *
+   * Fail-safe: meet trả 422 SETTINGS_INVALID (meet cũ chưa biết key mới, hoặc giá trị bị từ chối) thì
+   * ghi log rồi gửi lại KHÔNG kèm settings — lớp học không bao giờ bị chặn vì chính sách; mặc định
+   * của meet là trạng thái đóng hơn (publicJoin tắt).
+   */
+  async syncRoom(conn: HvmMeetConnection, externalId: string, body: HvmMeetUpsertRoomRequest, force = false) {
     const cacheKey = `${conn.baseUrl}|${externalId}`
     const hash = crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex')
     const cached = this.roomSyncCache.get(cacheKey)
     const now = Date.now()
     if (!force && cached && cached.hash === hash && now - cached.at < HVM_MEET_ROOM_SYNC_TTL_MS) return
 
-    await this.client.upsertRoom(conn, externalId, body)
+    try {
+      await this.client.upsertRoom(conn, externalId, body)
+    } catch (error) {
+      if (!(error instanceof HvmMeetApiError) || error.status !== 422 || error.code !== 'SETTINGS_INVALID' || !body.settings) throw error
+      this.logger.error(
+        `HVM Meet từ chối setting của phòng ${externalId} (${error.message}` +
+          `${error.details ? ` ${JSON.stringify(error.details)}` : ''}). Gửi lại không kèm setting: chính sách vào phòng / ` +
+          'điểm danh của academy CHƯA được áp dụng. Kiểm tra phiên bản HVM Meet và các key bị khoá trong trang quản trị meet.',
+      )
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { settings, ...withoutSettings } = body
+      await this.client.upsertRoom(conn, externalId, withoutSettings)
+    }
     this.roomSyncCache.set(cacheKey, { hash, at: now })
     if (this.roomSyncCache.size > 1000) this.roomSyncCache.delete(this.roomSyncCache.keys().next().value)
   }
