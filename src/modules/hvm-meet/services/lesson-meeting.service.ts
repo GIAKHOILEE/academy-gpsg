@@ -372,7 +372,8 @@ export class LessonMeetingService {
       return {
         url: link.url,
         enabled: Boolean(link.enabled),
-        factor: link.factor ?? meetFactorOfMode(accessMode),
+        // link chưa mở (vd. mode account): meet vẫn trả factor kế thừa, bỏ đi để khớp access_mode
+        factor: (link.enabled ? link.factor : undefined) ?? meetFactorOfMode(accessMode),
         verify_configured: Boolean(link.verifyConfigured),
         access_mode: accessMode,
       }

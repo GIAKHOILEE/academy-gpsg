@@ -574,6 +574,15 @@ describe('LessonMeetingService.joinLesson', () => {
       })
     })
 
+    it('chỉ vào bằng tài khoản: link chưa mở thì bỏ factor kế thừa của meet → null', async () => {
+      ;(client.getPublicLink as jest.Mock).mockResolvedValue({ ...link, enabled: false, factor: 'birthdate' })
+      await expect(service.getPublicLink(12, { userId: 50, role: Role.TEACHER })).resolves.toMatchObject({
+        enabled: false,
+        factor: null,
+        access_mode: 'account',
+      })
+    })
+
     it('ghi đè của buổi học thắng cấu hình chung; meet cũ thiếu factor thì suy từ mode', async () => {
       ;(client.getPublicLink as jest.Mock).mockResolvedValue({ url: link.url, enabled: true, verifyConfigured: true })
       lesson.meet_policy = { access: { ...DEFAULT_ROOM_POLICY.access, mode: 'account_or_guest' } }
