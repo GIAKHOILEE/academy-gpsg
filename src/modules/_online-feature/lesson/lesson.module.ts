@@ -12,11 +12,14 @@ import { LessonVideoProgress } from './lesson-video-progress.entity'
 import { Attendance } from '@modules/class-rules/attendance/attendance.entity'
 import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
 import { VideoAttendanceModule } from '../video-attendance/video-attendance.module'
+import { HvmMeetModule } from '@modules/hvm-meet/hvm-meet.module'
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Lesson, Classes, User, Student, ClassStudents, Discuss, LessonVideoProgress, Attendance, AttendanceRule]),
     VideoAttendanceModule,
+    // Đồng bộ phòng HVM Meet ngay khi lưu buổi học (HvmMeetModule không import LessonModule: không vòng)
+    HvmMeetModule,
   ],
   controllers: [AdminLessonController, TeacherLessonController, UserLessonController],
   providers: [LessonService],

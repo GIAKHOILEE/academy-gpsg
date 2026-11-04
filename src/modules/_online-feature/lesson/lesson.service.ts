@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { In, Repository } from 'typeorm'
 import { Lesson } from './lesson.entity'
@@ -20,9 +20,14 @@ import { LessonVideoProgress } from './lesson-video-progress.entity'
 import { Attendance } from '@modules/class-rules/attendance/attendance.entity'
 import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
 import { AttendanceStatus, LearnType } from '@enums/class.enum'
+import { MeetingProvider } from '@enums/meeting.enum'
+import { normalizeLessonMeetPolicy } from '@modules/hvm-meet/hvm-meet.policy'
+import { LessonMeetingService } from '@modules/hvm-meet/services/lesson-meeting.service'
 
 @Injectable()
 export class LessonService {
+  private readonly logger = new Logger(LessonService.name)
+
   constructor(
     @InjectRepository(Lesson)
     private lessonRepository: Repository<Lesson>,
@@ -42,7 +47,19 @@ export class LessonService {
     private attendanceRepository: Repository<Attendance>,
     @InjectRepository(AttendanceRule)
     private attendanceRuleRepository: Repository<AttendanceRule>,
+    private lessonMeetingService: LessonMeetingService,
   ) {}
+
+  /**
+   * Buổi HVM Meet vừa lưu: tạo / cập nhật phòng bên HVM Meet ở nền (lịch, roster, cách vào phòng,
+   * điểm danh) để phòng có sẵn và đúng chính sách mà không cần ai bấm vào phòng trước.
+   * Không chờ, không ném lỗi: lưu buổi học không bao giờ hỏng vì HVM Meet.
+   */
+  private syncMeetRoomInBackground(lessonId: number) {
+    void this.lessonMeetingService
+      .syncLessonRoom(lessonId)
+      .catch(error => this.logger.error(`Đồng bộ phòng HVM Meet của buổi học ${lessonId} lỗi: ${error?.message}`))
+  }
 
   async createLesson(createLessonDto: CreateLessonDto): Promise<ILesson> {
     const lessonMaxIndex = await this.lessonRepository.createQueryBuilder('lesson').select('MAX(lesson.index) as maxIndex').getRawOne()
@@ -66,12 +83,14 @@ export class LessonService {
 
     const lesson = this.lessonRepository.create({
       ...createLessonDto,
+      meet_policy: normalizeLessonMeetPolicy(createLessonDto.meet_policy),
       attendance_percent: createLessonDto.attendance_percent ?? 50,
       class: classExists,
       index: maxIndex,
     })
 
     const savedLesson = await this.lessonRepository.save(lesson)
+    if (savedLesson.meeting_provider === MeetingProvider.HVM_MEET) this.syncMeetRoomInBackground(savedLesson.id)
 
     const formattedLesson: ILesson = {
       id: savedLesson.id,
@@ -87,6 +106,7 @@ export class LessonService {
       document_url: savedLesson.document_url,
       meeting_url: savedLesson.meeting_url,
       meeting_provider: savedLesson.meeting_provider,
+      meet_policy: savedLesson.meet_policy ?? null,
       class_id: savedLesson.class.id,
       attendance_rule_id: savedLesson.attendance_rule_id,
       attendance_percent: savedLesson.attendance_percent,
@@ -108,12 +128,17 @@ export class LessonService {
       throwAppException('LESSON_NOT_FOUND', ErrorCode.LESSON_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
-    await this.lessonRepository
-      .createQueryBuilder('lesson')
-      .update(Lesson)
-      .set({ ...updateLessonDto })
-      .where('id = :id', { id })
-      .execute()
+    // meet_policy: không gửi = giữ nguyên (form giảng viên bên hvm-home không biết trường này), null = bỏ ghi đè
+    const { meet_policy, ...rest } = updateLessonDto
+    const patch: Partial<Lesson> = { ...rest }
+    if (meet_policy !== undefined) patch.meet_policy = normalizeLessonMeetPolicy(meet_policy)
+
+    if (Object.keys(patch).length > 0) {
+      await this.lessonRepository.createQueryBuilder('lesson').update(Lesson).set(patch).where('id = :id', { id }).execute()
+    }
+
+    const provider = updateLessonDto.meeting_provider ?? lesson.meeting_provider
+    if (provider === MeetingProvider.HVM_MEET) this.syncMeetRoomInBackground(lesson.id)
   }
 
   async deleteLesson(id: number): Promise<void> {
@@ -162,6 +187,7 @@ export class LessonService {
         'lesson.document_url',
         'lesson.meeting_url',
         'lesson.meeting_provider',
+        'lesson.meet_policy',
         'lesson.attendance_rule_id',
         'lesson.attendance_percent',
         'attendance_rule.id',
@@ -264,6 +290,7 @@ export class LessonService {
         document_url: lesson.document_url,
         meeting_url: lesson.meeting_url,
         meeting_provider: lesson.meeting_provider,
+        meet_policy: lesson.meet_policy ?? null,
         attendance_rule_id: lesson.attendance_rule_id,
         attendance_percent: lesson.attendance_percent ?? 50,
         attendance_rule: lesson.attendance_rule
@@ -334,6 +361,7 @@ export class LessonService {
       document_url: lesson.document_url,
       meeting_url: lesson.meeting_url,
       meeting_provider: lesson.meeting_provider,
+      meet_policy: lesson.meet_policy ?? null,
       attendance_rule_id: lesson.attendance_rule_id,
       attendance_percent: lesson.attendance_percent ?? 50,
       attendance_rule: lesson.attendance_rule

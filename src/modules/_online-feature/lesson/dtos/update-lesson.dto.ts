@@ -1,4 +1,6 @@
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator'
+import { Type } from 'class-transformer'
+import { LessonMeetPolicyDto } from '@modules/hvm-meet/dtos/hvm-meet-room-policy.dto'
+import { IsArray, IsEnum, IsObject, ValidateNested, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator'
 import { MeetingProvider } from '@enums/meeting.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IFile } from '@common/file'
@@ -116,4 +118,17 @@ export class UpdateLessonDto {
     example: 50,
   })
   attendance_percent?: number
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => LessonMeetPolicyDto)
+  @ApiPropertyOptional({
+    type: LessonMeetPolicyDto,
+    nullable: true,
+    description:
+      'Chỉ cho buổi HVM Meet: ghi đè cách vào phòng / điểm danh tự động cho riêng buổi này (từng phần, null = theo cấu hình chung). ' +
+      'Không gửi = giữ nguyên; null = bỏ cả hai phần ghi đè.',
+  })
+  meet_policy?: LessonMeetPolicyDto | null
 }

@@ -7,6 +7,7 @@ import { Homeworks } from '../homeworks/entities/homeworks.entity'
 import { ClassNotification } from '@modules/class/notifications/notifications.entity'
 import { IFile } from '@common/file'
 import { MeetingProvider } from '@enums/meeting.enum'
+import { LessonMeetPolicy } from '@modules/hvm-meet/hvm-meet.policy'
 
 @Entity('lesson')
 export class Lesson {
@@ -48,6 +49,11 @@ export class Lesson {
   // Phòng học của buổi: link ngoài (meeting_url) hay phòng HVM Meet tích hợp
   @Column({ type: 'varchar', length: 20, default: MeetingProvider.EXTERNAL })
   meeting_provider: MeetingProvider
+
+  // Ghi đè cách vào phòng / điểm danh HVM Meet cho riêng buổi này (từng phần). null = theo cấu hình chung.
+  // simple-json (text), không dùng `json`: MariaDB + synchronize làm mất dữ liệu cột json mỗi lần khởi động.
+  @Column({ type: 'simple-json', nullable: true })
+  meet_policy: LessonMeetPolicy | null
 
   @ManyToOne(() => Classes, classes => classes.lessons, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'class_id' })

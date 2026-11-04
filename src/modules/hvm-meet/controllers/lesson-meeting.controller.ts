@@ -1,8 +1,9 @@
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
-import { Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, ParseUUIDPipe, Post, Req } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, ParseUUIDPipe, Post, Req } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { PublicLinkRequestDto } from '../dtos/hvm-meet-room-policy.dto'
 import { LessonMeetingService } from '../services/lesson-meeting.service'
 
 @Controller('lessons')
@@ -70,6 +71,39 @@ export class LessonMeetingController {
       statusCode: HttpStatus.OK,
       messageCode: 'LESSON_MEETING_ARCHIVE_FETCHED_SUCCESSFULLY',
       data: await this.lessonMeetingService.getArchive(id, sessionId, req.user),
+    })
+  }
+
+  @Post(':id/meeting/public-link')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Link công khai (/p/...) của phòng HVM Meet của buổi học',
+    description:
+      'Admin/giáo vụ hoặc giảng viên của lớp. rotate = true đổi link (link cũ chết ngay), chỉ admin/giáo vụ. ' +
+      'Đồng bộ phòng trước khi lấy link. access_mode = account nghĩa là link có nhưng báo "không mở".',
+  })
+  async getPublicLink(@Param('id', ParseIntPipe) id: number, @Body() dto: PublicLinkRequestDto, @Req() req): Promise<ResponseDto> {
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'LESSON_MEETING_PUBLIC_LINK_FETCHED_SUCCESSFULLY',
+      data: await this.lessonMeetingService.getPublicLink(id, req.user, Boolean(dto?.rotate)),
+    })
+  }
+
+  @Get(':id/meeting/sessions/:sessionId/attendance')
+  @ApiOperation({
+    summary: 'Báo cáo điểm danh HVM Meet của một buổi (admin/giáo vụ, giảng viên của lớp)',
+    description: 'Chuyển tiếp báo cáo của HVM Meet, kèm academySynced = đã ghi vào sổ điểm danh lớp.',
+  })
+  async getSessionAttendance(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('sessionId', new ParseUUIDPipe()) sessionId: string,
+    @Req() req,
+  ): Promise<ResponseDto> {
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'LESSON_MEETING_ATTENDANCE_FETCHED_SUCCESSFULLY',
+      data: await this.lessonMeetingService.getSessionAttendance(id, sessionId, req.user),
     })
   }
 }
