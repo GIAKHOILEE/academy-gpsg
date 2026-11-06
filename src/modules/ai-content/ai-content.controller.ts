@@ -4,6 +4,7 @@ import { Role } from '@enums/role.enum'
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AiContentService } from './ai-content.service'
+import { AiEditContentDto } from './dtos/ai-edit-content.dto'
 import { CreateAiBatchDto } from './dtos/create-ai-batch.dto'
 import { PaginateAiArticleDto } from './dtos/paginate-ai-article.dto'
 import { PaginateAiBatchDto } from './dtos/paginate-ai-batch.dto'
@@ -160,6 +161,35 @@ export class AiContentController {
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'AI_ARTICLE_UPDATED_SUCCESS',
+      data,
+    })
+  }
+
+  @Post('articles/:id/ai-edit')
+  @ApiOperation({
+    summary:
+      'Dùng AI để chỉnh sửa nội dung bài viết AI đã gen (đổi màu chữ, đổi căn lề, đổi cỡ chữ, sửa lại đoạn văn cụ thể hoặc toàn bài) và tự động đồng bộ sang module',
+  })
+  @ApiParam({ name: 'id', type: Number, description: 'ID bài viết AI trong bảng ai_content_items' })
+  async aiEditArticle(@Param('id') id: number, @Body() dto: AiEditContentDto): Promise<ResponseDto> {
+    const data = await this.aiContentService.aiEditArticleById(Number(id), dto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'AI_ARTICLE_EDITED_BY_AI_SUCCESS',
+      data,
+    })
+  }
+
+  @Post('ai-edit')
+  @ApiOperation({
+    summary:
+      'Công cụ AI biên tập nội dung linh hoạt cho FE Editor (sửa theo selected_html, theo article_id, hoặc theo module_type + target_record_id)',
+  })
+  async aiEditFlexible(@Body() dto: AiEditContentDto): Promise<ResponseDto> {
+    const data = await this.aiContentService.aiEditFlexible(dto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'AI_CONTENT_EDITED_BY_AI_SUCCESS',
       data,
     })
   }

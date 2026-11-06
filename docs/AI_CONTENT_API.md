@@ -67,6 +67,7 @@ Tài liệu này mô tả chi tiết luồng hoạt động, các trường (fie
   | :--- | :--- | :--- |
   | `ai_status` | `AiStatus \| null` | Trạng thái AI của bài truyện (`null`, `"PENDING"`, `"PROCESSING"`, `"COMPLETED"`, `"FAILED"`) |
   | `ai_batch_id` | `number \| null` | ID đợt gen AI hàng loạt đã tạo ra bài truyện này (dùng để dẫn link sang chi tiết đợt nếu cần) |
+  | `ai_request_count` | `number` | **Tổng số request AI** mà bài viết này đã sử dụng (tạo bài, mở rộng từ, tạo ảnh, gen lại, dùng AI chỉnh sửa...) |
 - **Query filter mới cho `GET /admin/stories`:**
   | Query Param | Kiểu | Mô tả |
   | :--- | :--- | :--- |
@@ -84,6 +85,7 @@ Tài liệu này mô tả chi tiết luồng hoạt động, các trường (fie
   | :--- | :--- | :--- |
   | `ai_status` | `AiStatus \| null` | Trạng thái AI của bài viết chứng nhân đức tin |
   | `ai_batch_id` | `number \| null` | ID đợt gen AI hàng loạt |
+  | `ai_request_count` | `number` | **Tổng số request AI** mà bài viết này đã sử dụng |
   | `created_at` | `string (ISO)` | Thời gian tạo bài viết (đã bổ sung vào danh sách trả về) |
 - **Query filter mới cho `GET /admin/witness-faiths`:**
   | Query Param | Kiểu | Mô tả |
@@ -110,6 +112,7 @@ Tài liệu này mô tả chi tiết luồng hoạt động, các trường (fie
   | :--- | :--- | :--- |
   | `ai_status` | `AiStatus \| null` | Trạng thái AI của bài viết |
   | `ai_batch_id` | `number \| null` | ID đợt gen AI hàng loạt |
+  | `ai_request_count` | `number` | **Tổng số request AI** mà bài viết này đã sử dụng |
   | `created_at` | `string (ISO)` | Thời gian tạo bài viết |
   | `post_catalog.ai_status` | `AiStatus \| null` | Trạng thái AI của danh mục chứa bài viết |
 - **Query filter mới cho `GET /admin/post/top` và `GET /admin/post`:**
@@ -385,6 +388,7 @@ Dành cho màn hình **Quản lý Nội dung AI** để Admin theo dõi tiến �
 | `started_at` | `string (ISO) \| null` | Thời điểm bắt đầu gọi AI |
 | `completed_at` | `string (ISO) \| null` | Thời điểm AI tạo xong bài viết |
 | `retry_count` | `number` | Số lần đã thử lại nếu gặp lỗi |
+| `ai_request_count` | `number` | **Tổng số request AI** mà bài viết này đã dùng (tính cộng dồn tất cả các lần gen nội dung, mở rộng bài, tạo ảnh, gen lại và dùng AI chỉnh sửa) |
 | `error_message` | `string \| null` | Chi tiết lỗi nếu quá trình gọi AI bị thất bại |
 | `created_at` | `string` | Thời gian tạo bản ghi (`DD/MM/YYYY HH:mm`) |
 | `batch` | `object` | Thông tin tóm tắt của đợt (`id`, `prompt`, `quantity`, `completed_count`, `status`) |
@@ -426,6 +430,85 @@ Khi Admin chỉnh sửa tại đây, hệ thống **tự động cập nhật đ
 | `POST` | `/admin/ai-content/articles/:id/regenerate` | Yêu cầu AI **gen ngay lập tức** (hoặc viết lại mới hoàn toàn) nội dung 1000-3000 từ + ảnh cho bài viết này và cập nhật thẳng vào module. |
 | `POST` | `/admin/ai-content/articles/:id/regenerate-image` | Giữ nguyên nội dung chữ, chỉ yêu cầu AI **tạo lại hình ảnh mới** (upload lên server hoặc tìm ảnh fallback) và gắn lại vào bài viết trong module. |
 | `DELETE` | `/admin/ai-content/articles/:id` | Xóa bài viết AI và **xóa luôn** bản ghi tương ứng trong bảng `stories` / `witness_faiths` / `posts`. |
+
+---
+
+### 5.11. Dùng AI để Chỉnh sửa Nội dung Bài viết đã gen (Đổi màu, Đổi nội dung đoạn, Đổi căn lề, Cỡ chữ...)
+
+FE có thể gọi tính năng **AI Chỉnh sửa nội dung** ở cả màn hình Quản lý AI tập trung lẫn trực tiếp tại màn hình chỉnh sửa của 3 module hoặc ngay trên thanh công cụ của Rich Text Editor (CKEditor / TinyMCE / Quill):
+
+#### A. Các Endpoint hỗ trợ (Tất cả đều nhận cùng 1 cấu trúc Request Body bên dưới):
+| Phương thức | Endpoint | Khi nào FE sử dụng? |
+| :--- | :--- | :--- |
+| `POST` | `/admin/ai-content/articles/:id/ai-edit` | Khi đang mở chi tiết bài viết AI theo `id` của bảng `ai_content_items` |
+| `POST` | `/admin/stories/:id/ai-edit` | Khi đang sửa bài viết bên module **Story** (`:id` là ID của Story) |
+| `POST` | `/admin/witness-faiths/:id/ai-edit` | Khi đang sửa bài viết bên module **Witness Faiths** (`:id` là ID của WitnessFaith) |
+| `POST` | `/admin/post/top/:id/ai-edit` *(hoặc `/admin/post/:id/ai-edit`, `/admin/post-catalog-top/posts/:id/ai-edit`)* | Khi đang sửa bài viết bên module **Post Catalog Top / Post** (`:id` là ID của Post) |
+| `POST` | `/admin/ai-content/ai-edit` | Endpoint đa năng cho **Rich Text Editor** (có thể truyền `content` + `selected_html` đang soạn thảo để lấy kết quả preview mà chưa cần lưu DB, hoặc truyền kèm `article_id` / `module_type` + `target_record_id`) |
+
+#### B. Các trường (Fields) trong Request Body (`AiEditContentDto`):
+| Field | Kiểu | Bắt buộc | Mặc định | Mô tả chi tiết |
+| :--- | :--- | :---: | :---: | :--- |
+| `prompt` *(hoặc `promt`, `instruction`)* | `string` | Tùy chọn* | — | Yêu cầu chỉnh sửa bằng ngôn ngữ tự nhiên cho AI. Ví dụ: *"Đổi màu đoạn này sang xanh dương, căn giữa và viết lại cho sâu sắc hơn"* hoặc *"Đổi màu tất cả tiêu đề lớn sang đỏ đô, rút gọn đoạn kết"*. (*Bắt buộc phải có `prompt` hoặc ít nhất 1 tùy chọn định dạng bên dưới*). |
+| `selected_html` *(hoặc `selected_text`)* | `string` | Không | — | **Đoạn HTML hoặc văn bản mà Admin đang bôi đen trên Editor** để yêu cầu AI chỉ sửa riêng đoạn đó. Hệ thống sẽ sửa đoạn này rồi **tự động ghép vào đúng vị trí trong bài viết tổng thể**. Nếu không truyền, AI sẽ sửa trên toàn bộ bài viết. |
+| `text_color` | `string` | Không | — | Đổi màu chữ nhanh: truyền mã HEX (`"#cc0000"`), RGB (`"rgb(0, 85, 255)"`) hoặc tên màu tiếng Việt (`"đỏ đô"`, `"xanh dương"`, `"xanh ngọc"`, `"nâu đỏ"`, `"xanh lá"`, `"tím"`, `"đen"`, `"xám"`). |
+| `background_color` | `string` | Không | — | Đổi màu nền / đóng khung màu nền cho đoạn văn hoặc trích dẫn (VD: `"#fdfaf6"`, `"#fff3cd"`, `"kem"`). |
+| `text_align` | `string` | Không | — | Đổi căn lề nhanh: `"left"` (căn trái), `"center"` (căn giữa), `"right"` (căn phải), `"justify"` (căn đều 2 bên). |
+| `font_size` | `string` | Không | — | Đổi kích thước chữ nhanh (VD: `"18px"`, `"20px"`, `"22px"`, `"24px"`, `"30px"` hoặc truyền số `"22"`). |
+| `bold` | `boolean` | Không | — | `true`: In đậm (`<strong>`), `false`: Bỏ in đậm. |
+| `italic` | `boolean` | Không | — | `true`: In nghiêng (`<em>`), `false`: Bỏ in nghiêng. |
+| `underline` | `boolean` | Không | — | `true`: Gạch chân (`<u>`), `false`: Bỏ gạch chân. |
+| `content` | `string` | Không | Lấy từ DB | Nội dung HTML hiện tại trên Editor (nếu Admin vừa sửa tay trên Editor chưa bấm lưu nhưng muốn gọi AI sửa tiếp trên bản nháp đó). |
+| `title` | `string` | Không | Lấy từ DB | Tiêu đề hiện tại trên Editor. |
+| `description` | `string` | Không | Lấy từ DB | Mô tả ngắn hiện tại trên Editor. |
+| `auto_save` | `boolean` | Không | `true` | `true`: Tự động lưu đè nội dung mới vào DB và đồng bộ sang bảng module (`stories`, `witness_faiths`, `posts`). `false`: Chỉ trả về HTML kết quả để FE hiển thị xem trước (Preview) trên Editor. |
+
+#### C. Ví dụ 1: Bôi đen 1 đoạn trên Editor để đổi nội dung + đổi màu + đổi căn lề
+```json
+{
+  "selected_html": "<p style=\"text-align: justify;\"><span style=\"font-size: 20px;\">Đoạn văn gốc cần chỉnh sửa...</span></p>",
+  "prompt": "Viết lại đoạn này cho truyền cảm hứng hơn và nhấn mạnh ý nghĩa đức tin",
+  "text_color": "xanh dương",
+  "text_align": "center",
+  "font_size": "22px",
+  "italic": true,
+  "auto_save": true
+}
+```
+
+#### D. Ví dụ 2: Yêu cầu AI sửa trực tiếp trên toàn bài viết (không cần bôi đen)
+```json
+{
+  "prompt": "Đổi màu tất cả các tiêu đề mục lớn sang màu đỏ đô, sửa đoạn mở đầu ngắn gọn hơn và căn phải dòng ký tên cuối bài",
+  "auto_save": true
+}
+```
+
+#### E. Cấu trúc Response trả về (HTTP `200`):
+```json
+{
+  "statusCode": 200,
+  "messageCode": "AI_ARTICLE_EDITED_BY_AI_SUCCESS",
+  "data": {
+    "edit_mode": "selection",
+    "auto_saved": true,
+    "edited_selection_html": "<p style=\"text-align: center; line-height: 1.75; margin-bottom: 14px;\"><em><span style=\"font-size: 22px; color: rgb(0, 85, 255);\">Đoạn văn sau khi đã được AI biên tập lại...</span></em></p>",
+    "title": "Nghệ Thuật Đồng Hành Mục Vụ",
+    "description": "Mô tả ngắn của bài viết...",
+    "content": "<p style=\"text-align: center; ...\">...(Toàn bộ HTML bài viết đã ghép đoạn mới vào)...</p>",
+    "word_count": 1485,
+    "article": {
+      "id": 2,
+      "module_type": "post-catalog-top",
+      "target_record_id": 3233,
+      "status": "COMPLETED"
+    }
+  }
+}
+```
+> **Mẹo cho FE:**
+> - Nếu FE chỉ muốn thay thế nhanh vùng đang bôi đen trên Editor thì lấy trường `data.edited_selection_html`.
+> - Hoặc FE có thể gán thẳng `editor.setData(data.content)` vì `data.content` đã tự động ghép đoạn vừa sửa vào đúng vị trí trong bài viết hoàn chỉnh!
 
 ---
 

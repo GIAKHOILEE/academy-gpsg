@@ -251,5 +251,79 @@ describe('AiContentModule (GeminiAiService & AiContentService)', () => {
     expect(postRecord.image).toBe('https://example.com/course.jpg')
     expect(postRecord.post_catalog_id).toBe(5)
   })
+
+  it('edits generated article content by AI (color, alignment, font size, selected paragraph) and syncs to module', async () => {
+    jest.spyOn(aiContentService, 'processNextQueuedItemIfReady').mockResolvedValue(null)
+    await postCatalogRepo.save({
+      id: 6,
+      name: 'Đào tạo Mục vụ',
+      slug: 'dao-tao-muc-vu',
+      type: PostCatalogType.TOP,
+    })
+
+    const created = await aiContentService.createPostCatalogTopBatch({
+      post_catalog_id: 6,
+      start_day: '2026-11-06',
+      end_day: '2026-11-10',
+      quantity: 1,
+      is_image: false,
+      prompt: 'Viết bài về mục vụ',
+    })
+
+    const articleId = created.items[0].id
+    await aiContentService.updateArticle(articleId, {
+      title: 'Đồng Hành Mục Vụ',
+      description: 'Mô tả ngắn',
+      content:
+        '<p style="text-align: justify;"><span style="font-size: 20px; color: #222222;">Đoạn một giữ nguyên.</span></p>\n<p style="text-align: justify;"><span style="font-size: 20px; color: #222222;">Đoạn hai cần đổi màu và căn giữa.</span></p>',
+    })
+
+    const editRes = await aiContentService.aiEditArticleById(articleId, {
+      selected_text: 'Đoạn hai cần đổi màu và căn giữa.',
+      text_color: 'đỏ đô',
+      text_align: 'center',
+      font_size: '24px',
+      bold: true,
+      auto_save: true,
+    })
+
+    expect(editRes.edit_mode).toBe('selection')
+    expect(editRes.auto_saved).toBe(true)
+    expect(editRes.edited_selection_html).toContain('text-align: center')
+    expect(editRes.edited_selection_html).toContain('color: rgb(204, 0, 0)')
+    expect(editRes.edited_selection_html).toContain('font-size: 24px')
+    expect(editRes.edited_selection_html).toContain('<strong>')
+    expect(editRes.content).toContain('Đoạn một giữ nguyên.')
+    expect(editRes.content).toContain('color: rgb(204, 0, 0)')
+    expect(editRes.ai_request_count).toBeGreaterThanOrEqual(1)
+
+    // Kiểm tra bản ghi trong bảng posts đã được đồng bộ nội dung mới và ai_request_count
+    const postRecord = postRepo._store[0]
+    expect(postRecord.content).toContain('color: rgb(204, 0, 0)')
+    expect(postRecord.content).toContain('text-align: center')
+    expect(postRecord.ai_request_count).toBe(editRes.ai_request_count)
+  })
+
+  it('handles prompts starting with very long URLs (>250 chars) without exceeding column name/title length', async () => {
+    jest.spyOn(aiContentService, 'processNextQueuedItemIfReady').mockResolvedValue(null)
+    await witnessFaithMenuRepo.save({ id: 3, name: 'Gương Chứng Nhân' })
+
+    const res = await aiContentService.createBatch({
+      module_type: AiModuleType.WITNESS_FAITH,
+      category_id: 3,
+      start_day: '2026-11-06',
+      end_day: '2026-11-13',
+      quantity: 1,
+      is_image: false,
+      prompt:
+        'https://hdgmvietnam.com/tin-tuc/guong-chung-nhan?fbclid=IwY2xjawVajoxleHRuA2FlbQIxMABwZG9mBWJyaWQRMWhOMThtUng2YUo4VWVMOTZzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEf2-WO4mMKOuRWR4LT5bbVjgw2m_aPxGceeQlvBeMGIjjOiVU5D3KZ74na5YU_aem_6U_T77OlkVT6LJ8_T_zKvg\n\nBạn vô trang web link phía trên đọc 1 bài Thánh có tiêu đề về một vị thánh cụ thể. Có thể copy title y chang bài viết trong web đó từ định dạng màu sắc bài viết đó. Chốt cuối bài nhớ ghi nguồn đã lấy từ đâu nhé',
+      interval_minutes: 1,
+    })
+
+    expect(res.items).toHaveLength(1)
+    expect(res.items[0].title.length).toBeLessThanOrEqual(120)
+    expect(res.items[0].title).not.toContain('http')
+    expect(witnessFaithRepo._store[0].name.length).toBeLessThanOrEqual(120)
+  })
 })
 

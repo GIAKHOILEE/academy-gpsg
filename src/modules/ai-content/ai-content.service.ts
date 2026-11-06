@@ -21,6 +21,7 @@ import {
 } from './dtos/create-ai-batch.dto'
 import { PaginateAiArticleDto } from './dtos/paginate-ai-article.dto'
 import { PaginateAiBatchDto } from './dtos/paginate-ai-batch.dto'
+import { AiEditContentDto } from './dtos/ai-edit-content.dto'
 import { UpdateAiArticleDto } from './dtos/update-ai-article.dto'
 import { UpdateAiBatchDto } from './dtos/update-ai-batch.dto'
 import { AiContentBatch } from './entities/ai-content-batch.entity'
@@ -153,8 +154,7 @@ export class AiContentService implements OnModuleInit {
     const createdItems: AiContentItem[] = []
     for (let i = 0; i < quantity; i++) {
       const seq = i + 1
-      const shortPromptPreview = promptText.split(/\s+/).slice(0, 6).join(' ')
-      const placeholderTitle = `[Chờ AI #${seq}/${quantity}] ${shortPromptPreview}`
+      const placeholderTitle = this.buildShortPlaceholderTitle(promptText, categoryName, seq, quantity)
 
       // Tạo bản ghi giữ chỗ có ai_status = PENDING ngay trong module đích để Admin theo dõi trực tiếp ở 3 module
       const targetRecordId = await this.createPlaceholderInModule({
@@ -317,6 +317,7 @@ export class AiContentService implements OnModuleInit {
       let imageUrl: string | null = item.image_url
       let imageSource: AiImageSource = item.image_source || AiImageSource.NONE
       let imagePrompt: string | null = generatedArticle.imagePrompt
+      let requestsUsedThisRun = generatedArticle.aiRequestsUsed ?? 1
 
       if (item.is_image) {
         const imageResult = await this.geminiAiService.generateOrFallbackImage({
@@ -329,10 +330,13 @@ export class AiContentService implements OnModuleInit {
         imageUrl = imageResult.imageUrl
         imageSource = imageResult.imageSource
         imagePrompt = imageResult.imagePrompt
+        requestsUsedThisRun += imageResult.aiRequestsUsed ?? 1
       } else {
         imageUrl = null
         imageSource = AiImageSource.NONE
       }
+
+      const nextAiRequestCount = (item.ai_request_count || 0) + requestsUsedThisRun
 
       // 5. Lưu / Insert nội dung và ảnh vừa tạo vào bảng của module tương ứng (stories, witness_faiths, posts)
       const savedTargetId = await this.upsertModuleRecord({
@@ -345,6 +349,7 @@ export class AiContentService implements OnModuleInit {
         content: generatedArticle.content,
         imageUrl,
         aiStatus: AiStatus.COMPLETED,
+        aiRequestCount: nextAiRequestCount,
       })
 
       // 6. Cập nhật AiContentItem sang COMPLETED
@@ -357,6 +362,7 @@ export class AiContentService implements OnModuleInit {
       item.image_url = imageUrl
       item.image_source = imageSource
       item.image_prompt = imagePrompt
+      item.ai_request_count = nextAiRequestCount
       item.status = AiStatus.COMPLETED
       item.completed_at = completedAt
       item.error_message = null
@@ -380,6 +386,7 @@ export class AiContentService implements OnModuleInit {
       this.logger.error(`[AI ERROR] Item #${item.id} (Batch #${item.batch_id}): ${errMsg}`)
 
       item.retry_count = (item.retry_count || 0) + 1
+      item.ai_request_count = (item.ai_request_count || 0) + 1
       item.error_message = errMsg
 
       // Tự động đưa về PENDING để thử lại ở các chu kỳ cron tiếp theo nếu chưa vượt quá 3 lần thử
@@ -459,6 +466,12 @@ export class AiContentService implements OnModuleInit {
       .where('item.status = :status', { status: AiStatus.COMPLETED })
       .getRawOne()
 
+    const totalAiRequestsRow = await this.itemRepository
+      .createQueryBuilder('item')
+      .select('SUM(item.ai_request_count)', 'totalAiRequests')
+      .getRawOne()
+    const totalAiRequests = Number(totalAiRequestsRow?.totalAiRequests) || 0
+
     const lastCompletedAt = lastCompletedRow?.lastCompletedAt ? new Date(lastCompletedRow.lastCompletedAt) : null
     const nextPendingItem = await this.itemRepository.findOne({
       where: { status: AiStatus.PENDING },
@@ -497,6 +510,7 @@ export class AiContentService implements OnModuleInit {
         processing: processingArticles,
         completed: completedArticles,
         failed: failedArticles,
+        total_ai_requests: totalAiRequests,
       },
       by_module: moduleBreakdown,
     }
@@ -830,6 +844,7 @@ export class AiContentService implements OnModuleInit {
     item.image_url = imageResult.imageUrl
     item.image_source = imageResult.imageSource
     item.is_image = true
+    item.ai_request_count = (item.ai_request_count || 0) + (imageResult.aiRequestsUsed ?? 1)
     await this.itemRepository.save(item)
 
     if (item.target_record_id) {
@@ -843,6 +858,7 @@ export class AiContentService implements OnModuleInit {
         content: item.content || '',
         imageUrl: item.image_url,
         aiStatus: item.status,
+        aiRequestCount: item.ai_request_count,
       })
     }
 
@@ -863,9 +879,265 @@ export class AiContentService implements OnModuleInit {
     await this.syncBatchAndCategoryStatus(item.batch_id)
   }
 
+  /**
+   * Dùng AI chỉnh sửa nội dung (đổi màu, đổi nội dung đoạn, đổi căn lề, đổi cỡ chữ...) cho 1 bài viết AI theo ID.
+   * Tự động lưu vào ai_content_items và đồng bộ sang bảng của module tương ứng (trừ khi auto_save = false).
+   */
+  async aiEditArticleById(id: number, dto: AiEditContentDto) {
+    const item = await this.itemRepository.findOne({
+      where: { id },
+      relations: ['batch'],
+    })
+    if (!item) {
+      throwAppException('AI_ARTICLE_NOT_FOUND', ErrorCode.AI_ARTICLE_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
+
+    const instruction = (dto.prompt || dto.promt || dto.instruction || '').trim()
+    const selectedHtml = (dto.selected_html || dto.selected_text || '').trim()
+    this.ensureEditInstructionOrStyle(instruction, dto)
+
+    const currentContent = (dto.content !== undefined ? dto.content : item.content) || ''
+    if (!currentContent && !selectedHtml) {
+      throwAppException('AI_EDIT_CONTENT_EMPTY', ErrorCode.AI_EDIT_CONTENT_EMPTY, HttpStatus.BAD_REQUEST)
+    }
+
+    const editedResult = await this.geminiAiService.editArticleContent({
+      title: dto.title !== undefined ? dto.title : item.title || '',
+      description: dto.description !== undefined ? dto.description : item.description || '',
+      content: currentContent,
+      selectedHtml: selectedHtml || undefined,
+      instruction,
+      styleOptions: {
+        textColor: dto.text_color,
+        backgroundColor: dto.background_color,
+        textAlign: dto.text_align,
+        fontSize: dto.font_size,
+        bold: dto.bold,
+        italic: dto.italic,
+        underline: dto.underline,
+      },
+    })
+
+    const nextAiRequestCount = (item.ai_request_count || 0) + (editedResult.aiRequestsUsed || 1)
+    item.ai_request_count = nextAiRequestCount
+
+    const autoSave = dto.auto_save !== undefined ? Boolean(dto.auto_save) : true
+    if (autoSave) {
+      if (editedResult.title) {
+        item.title = editedResult.title
+      }
+      if (editedResult.description) {
+        item.description = editedResult.description
+      }
+      item.content = editedResult.content
+      item.word_count = editedResult.wordCount
+      if (item.status !== AiStatus.COMPLETED && editedResult.content) {
+        item.status = AiStatus.COMPLETED
+        item.completed_at = item.completed_at || new Date()
+      }
+      await this.itemRepository.save(item)
+
+      if (item.target_record_id || item.status === AiStatus.COMPLETED) {
+        const targetId = await this.upsertModuleRecord({
+          moduleType: item.module_type,
+          targetRecordId: item.target_record_id,
+          categoryId: item.category_id,
+          batchId: item.batch_id,
+          title: item.title || 'Bài viết AI',
+          description: item.description || '',
+          content: item.content || '',
+          imageUrl: item.image_url,
+          aiStatus: item.status,
+          aiRequestCount: item.ai_request_count,
+        })
+        if (targetId !== item.target_record_id) {
+          item.target_record_id = targetId
+          await this.itemRepository.save(item)
+        }
+      }
+    } else {
+      await this.itemRepository.save(item)
+    }
+
+    return {
+      edit_mode: editedResult.editMode,
+      auto_saved: autoSave,
+      edited_selection_html: editedResult.editedSelectionHtml,
+      title: editedResult.title || item.title,
+      description: editedResult.description || item.description,
+      content: editedResult.content,
+      word_count: editedResult.wordCount,
+      ai_request_count: item.ai_request_count,
+      article: await this.getArticleById(item.id),
+    }
+  }
+
+  /**
+   * Dùng AI chỉnh sửa trực tiếp bản ghi theo ID bên bảng của từng module (stories / witness_faiths / posts),
+   * đồng thời tự động đồng bộ ngược về bảng ai_content_items nếu bài viết đó do AI tạo.
+   */
+  async aiEditModuleRecord(moduleType: AiModuleType, targetRecordId: number, dto: AiEditContentDto) {
+    const linkedItem = await this.itemRepository.findOne({
+      where: {
+        module_type: moduleType,
+        target_record_id: Number(targetRecordId),
+      },
+    })
+
+    // Nếu bản ghi này có liên kết với ai_content_items thì uỷ quyền qua aiEditArticleById để đồng bộ cả 2 nơi
+    if (linkedItem) {
+      return this.aiEditArticleById(linkedItem.id, dto)
+    }
+
+    const instruction = (dto.prompt || dto.promt || dto.instruction || '').trim()
+    const selectedHtml = (dto.selected_html || dto.selected_text || '').trim()
+    this.ensureEditInstructionOrStyle(instruction, dto)
+
+    const existingRecord = await this.getModuleRecord(moduleType, Number(targetRecordId))
+    if (!existingRecord) {
+      if (moduleType === AiModuleType.STORY) {
+        throwAppException('STORY_NOT_FOUND', ErrorCode.STORY_NOT_FOUND, HttpStatus.NOT_FOUND)
+      } else if (moduleType === AiModuleType.WITNESS_FAITH) {
+        throwAppException('WITNESS_FAITH_NOT_FOUND', ErrorCode.WITNESS_FAITH_NOT_FOUND, HttpStatus.NOT_FOUND)
+      } else {
+        throwAppException('POST_NOT_FOUND', ErrorCode.POST_NOT_FOUND, HttpStatus.NOT_FOUND)
+      }
+    }
+
+    const recordTitle = dto.title ?? existingRecord.title ?? existingRecord.name ?? ''
+    const recordDesc = dto.description ?? existingRecord.description ?? ''
+    const recordContent = dto.content ?? existingRecord.content ?? ''
+
+    if (!recordContent && !selectedHtml) {
+      throwAppException('AI_EDIT_CONTENT_EMPTY', ErrorCode.AI_EDIT_CONTENT_EMPTY, HttpStatus.BAD_REQUEST)
+    }
+
+    const editedResult = await this.geminiAiService.editArticleContent({
+      title: recordTitle,
+      description: recordDesc,
+      content: recordContent,
+      selectedHtml: selectedHtml || undefined,
+      instruction,
+      styleOptions: {
+        textColor: dto.text_color,
+        backgroundColor: dto.background_color,
+        textAlign: dto.text_align,
+        fontSize: dto.font_size,
+        bold: dto.bold,
+        italic: dto.italic,
+        underline: dto.underline,
+      },
+    })
+
+    const nextAiRequestCount = (existingRecord.ai_request_count || 0) + (editedResult.aiRequestsUsed || 1)
+    const autoSave = dto.auto_save !== undefined ? Boolean(dto.auto_save) : true
+    if (autoSave) {
+      await this.upsertModuleRecord({
+        moduleType,
+        targetRecordId: Number(targetRecordId),
+        categoryId: existingRecord.topic_id || existingRecord.witness_faith_menu_id || existingRecord.post_catalog_id,
+        batchId: existingRecord.ai_batch_id || 0,
+        title: editedResult.title || recordTitle,
+        description: editedResult.description || recordDesc,
+        content: editedResult.content,
+        imageUrl: existingRecord.thumbnail ?? existingRecord.image ?? null,
+        aiStatus: existingRecord.ai_status || AiStatus.COMPLETED,
+        aiRequestCount: nextAiRequestCount,
+      })
+    }
+
+    return {
+      edit_mode: editedResult.editMode,
+      auto_saved: autoSave,
+      edited_selection_html: editedResult.editedSelectionHtml,
+      title: editedResult.title || recordTitle,
+      description: editedResult.description || recordDesc,
+      content: editedResult.content,
+      word_count: editedResult.wordCount,
+      ai_request_count: nextAiRequestCount,
+      module_record: await this.getModuleRecord(moduleType, Number(targetRecordId)),
+    }
+  }
+
+  /**
+   * Công cụ AI chỉnh sửa nội dung linh hoạt cho FE Rich Text Editor:
+   * - Nếu truyền article_id -> sửa bài viết AI và đồng bộ.
+   * - Nếu truyền module_type + target_record_id -> sửa bản ghi trong module và đồng bộ.
+   * - Nếu chỉ truyền content / selected_html trực tiếp từ Editor -> trả về HTML đã sửa để FE gắn vào Editor.
+   */
+  async aiEditFlexible(dto: AiEditContentDto) {
+    if (dto.article_id) {
+      return this.aiEditArticleById(Number(dto.article_id), dto)
+    }
+    if (dto.module_type && dto.target_record_id) {
+      return this.aiEditModuleRecord(dto.module_type, Number(dto.target_record_id), dto)
+    }
+
+    const instruction = (dto.prompt || dto.promt || dto.instruction || '').trim()
+    const selectedHtml = (dto.selected_html || dto.selected_text || '').trim()
+    this.ensureEditInstructionOrStyle(instruction, dto)
+
+    const currentContent = dto.content || ''
+    if (!currentContent && !selectedHtml) {
+      throwAppException('AI_EDIT_CONTENT_EMPTY', ErrorCode.AI_EDIT_CONTENT_EMPTY, HttpStatus.BAD_REQUEST)
+    }
+
+    const editedResult = await this.geminiAiService.editArticleContent({
+      title: dto.title || '',
+      description: dto.description || '',
+      content: currentContent,
+      selectedHtml: selectedHtml || undefined,
+      instruction,
+      styleOptions: {
+        textColor: dto.text_color,
+        backgroundColor: dto.background_color,
+        textAlign: dto.text_align,
+        fontSize: dto.font_size,
+        bold: dto.bold,
+        italic: dto.italic,
+        underline: dto.underline,
+      },
+    })
+
+    return {
+      edit_mode: editedResult.editMode,
+      auto_saved: false,
+      edited_selection_html: editedResult.editedSelectionHtml,
+      title: editedResult.title,
+      description: editedResult.description,
+      content: editedResult.content,
+      word_count: editedResult.wordCount,
+    }
+  }
+
+  private ensureEditInstructionOrStyle(instruction: string, dto: AiEditContentDto) {
+    const hasStyleOption =
+      Boolean(dto.text_color) ||
+      Boolean(dto.background_color) ||
+      Boolean(dto.text_align) ||
+      Boolean(dto.font_size) ||
+      dto.bold !== undefined ||
+      dto.italic !== undefined ||
+      dto.underline !== undefined
+
+    if (!instruction && !hasStyleOption) {
+      throwAppException('AI_EDIT_INSTRUCTION_REQUIRED', ErrorCode.AI_EDIT_INSTRUCTION_REQUIRED, HttpStatus.BAD_REQUEST)
+    }
+  }
+
   /* ============================================================================
    * 5. ĐỒNG BỘ DỮ LIỆU VÀ TRẠNG THÁI VỚI 3 MODULE (STORY, WITNESS-FAITHS, POST-CATALOG-TOP)
    * ============================================================================ */
+
+  private buildShortPlaceholderTitle(promptText: string, categoryName: string, seq: number, quantity: number): string {
+    const cleanTextWithoutUrls = (promptText || '')
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    const baseText = cleanTextWithoutUrls || categoryName || 'Bài viết AI'
+    const shortPreview = baseText.split(/\s+/).slice(0, 6).join(' ').slice(0, 45).trim()
+    return `[Chờ AI #${seq}/${quantity}] ${shortPreview}`.slice(0, 120)
+  }
 
   private async createPlaceholderInModule(params: {
     moduleType: AiModuleType
@@ -874,13 +1146,14 @@ export class AiContentService implements OnModuleInit {
     placeholderTitle: string
   }): Promise<number> {
     const { moduleType, categoryId, batchId, placeholderTitle } = params
+    const safeTitle = (placeholderTitle || 'Bài viết AI').slice(0, 180)
 
     switch (moduleType) {
       case AiModuleType.STORY: {
         const storyMaxIndex = await this.storyRepository.createQueryBuilder('story').select('MAX(story.index) as maxIndex').getRawOne()
         const maxIndex = storyMaxIndex?.maxIndex ? Number(storyMaxIndex.maxIndex) + 100 : 1.0001
         const story = this.storyRepository.create({
-          title: placeholderTitle,
+          title: safeTitle,
           thumbnail: null,
           content: '',
           topic_id: categoryId,
@@ -894,7 +1167,7 @@ export class AiContentService implements OnModuleInit {
 
       case AiModuleType.WITNESS_FAITH: {
         const wf = this.witnessFaithRepository.create({
-          name: placeholderTitle,
+          name: safeTitle,
           image: null,
           description: null,
           content: '',
@@ -909,10 +1182,11 @@ export class AiContentService implements OnModuleInit {
       case AiModuleType.POST_CATALOG_TOP: {
         const postMaxIndex = await this.postRepository.createQueryBuilder('post').select('MAX(post.index) as maxIndex').getRawOne()
         const maxIndex = postMaxIndex?.maxIndex ? Number(postMaxIndex.maxIndex) + 100 : 1.0001
-        const slug = `${convertToSlug(placeholderTitle)}-${Date.now()}`
+        const baseSlug = convertToSlug(safeTitle).slice(0, 180) || 'bai-viet-ai'
+        const slug = `${baseSlug}-${Date.now()}`
         const post = this.postRepository.create({
-          title: placeholderTitle,
-          slug: slug.slice(0, 250),
+          title: safeTitle,
+          slug: slug.slice(0, 240),
           description: null,
           content: '',
           image: null,
@@ -940,8 +1214,10 @@ export class AiContentService implements OnModuleInit {
     content: string
     imageUrl: string | null
     aiStatus: AiStatus
+    aiRequestCount?: number
   }): Promise<number> {
-    const { moduleType, targetRecordId, categoryId, batchId, title, description, content, imageUrl, aiStatus } = params
+    const { moduleType, targetRecordId, categoryId, batchId, title, description, content, imageUrl, aiStatus, aiRequestCount } = params
+    const safeTitle = (title || 'Bài viết AI').slice(0, 200)
 
     switch (moduleType) {
       case AiModuleType.STORY: {
@@ -955,12 +1231,15 @@ export class AiContentService implements OnModuleInit {
             ai_batch_id: batchId,
           })
         }
-        story.title = title
+        story.title = safeTitle
         story.thumbnail = imageUrl || ''
         story.content = content
         story.topic_id = categoryId
         story.ai_status = aiStatus
         story.ai_batch_id = batchId
+        if (aiRequestCount !== undefined) {
+          story.ai_request_count = aiRequestCount
+        }
         const saved = await this.storyRepository.save(story)
         return saved.id
       }
@@ -973,13 +1252,16 @@ export class AiContentService implements OnModuleInit {
             ai_batch_id: batchId,
           })
         }
-        wf.name = title
+        wf.name = safeTitle
         wf.image = imageUrl
         wf.description = description
         wf.content = content
         wf.witness_faith_menu_id = categoryId
         wf.ai_status = aiStatus
         wf.ai_batch_id = batchId
+        if (aiRequestCount !== undefined) {
+          wf.ai_request_count = aiRequestCount
+        }
         const saved = await this.witnessFaithRepository.save(wf)
         return saved.id
       }
@@ -997,8 +1279,8 @@ export class AiContentService implements OnModuleInit {
             ai_batch_id: batchId,
           })
         }
-        post.title = title
-        post.slug = convertToSlug(title).slice(0, 250)
+        post.title = safeTitle
+        post.slug = (convertToSlug(safeTitle).slice(0, 220) || `post-${Date.now()}`).slice(0, 240)
         post.description = description
         post.content = content
         post.image = imageUrl
@@ -1006,6 +1288,9 @@ export class AiContentService implements OnModuleInit {
         post.is_active = aiStatus === AiStatus.COMPLETED
         post.ai_status = aiStatus
         post.ai_batch_id = batchId
+        if (aiRequestCount !== undefined) {
+          post.ai_request_count = aiRequestCount
+        }
         const saved = await this.postRepository.save(post)
         return saved.id
       }
@@ -1286,6 +1571,7 @@ export class AiContentService implements OnModuleInit {
       started_at: item.started_at ? item.started_at.toISOString() : null,
       completed_at: item.completed_at ? item.completed_at.toISOString() : null,
       retry_count: item.retry_count,
+      ai_request_count: item.ai_request_count ?? 0,
       error_message: item.error_message,
       created_at: item.created_at ? formatStringDate(item.created_at.toISOString()) : null,
       ...(includeBatchInfo && item.batch

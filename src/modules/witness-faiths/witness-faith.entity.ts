@@ -32,6 +32,9 @@ export class WitnessFaith {
   @Column({ nullable: true, default: null })
   ai_batch_id: number | null
 
+  @Column({ type: 'int', default: 0 })
+  ai_request_count: number
+
   @CreateDateColumn()
   created_at: Date
 

@@ -11,5 +11,6 @@ export interface IStory {
   topic?: ITopic
   ai_status?: AiStatus | null
   ai_batch_id?: number | null
+  ai_request_count?: number
   created_at: string
 }

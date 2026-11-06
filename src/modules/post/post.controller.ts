@@ -8,6 +8,7 @@ import { PostService } from './post.service'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { PostCatalogType } from '@enums/post.enum'
+import { AiEditContentDto } from '@modules/ai-content/dtos/ai-edit-content.dto'
 import { CreatePostCatalogTopAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 
 /*===============================================
@@ -29,6 +30,30 @@ export class PostControllerAdmin {
       statusCode: 201,
       messageCode: 'POST_CATALOG_TOP_AI_BATCH_CREATED',
       data: result,
+    })
+  }
+
+  @Post('top/:id/ai-edit')
+  @ApiOperation({ summary: 'Dùng AI chỉnh sửa nội dung bài viết Post Catalog Top (đổi màu, đổi căn lề, đổi cỡ chữ, viết lại đoạn văn...)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID của bài viết Post' })
+  async editPostTopByAi(@Param('id') id: number, @Body() dto: AiEditContentDto): Promise<ResponseDto> {
+    const data = await this.postService.editPostByAi(Number(id), dto)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'POST_AI_EDITED_SUCCESS',
+      data,
+    })
+  }
+
+  @Post(':id/ai-edit')
+  @ApiOperation({ summary: 'Dùng AI chỉnh sửa nội dung bài viết Post (đổi màu, đổi căn lề, đổi cỡ chữ, viết lại đoạn văn...)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID của bài viết Post' })
+  async editPostByAi(@Param('id') id: number, @Body() dto: AiEditContentDto): Promise<ResponseDto> {
+    const data = await this.postService.editPostByAi(Number(id), dto)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'POST_AI_EDITED_SUCCESS',
+      data,
     })
   }
 

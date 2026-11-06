@@ -68,6 +68,9 @@ export class AiContentItem {
   @Column({ type: 'int', default: 0 })
   retry_count: number
 
+  @Column({ type: 'int', default: 0 })
+  ai_request_count: number
+
   @Column({ type: 'text', nullable: true, default: null })
   error_message: string | null
 

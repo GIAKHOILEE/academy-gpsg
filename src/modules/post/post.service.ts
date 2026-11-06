@@ -9,10 +9,11 @@ import { UpdatePostDto } from './dtos/update-post.dto'
 import { Post } from './post.entity'
 import { IPost } from './post.interface'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
-import { AiStatus } from '@enums/ai-content.enum'
+import { AiModuleType, AiStatus } from '@enums/ai-content.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { PostCatalogType } from '@enums/post.enum'
 import { AiContentService } from '@modules/ai-content/ai-content.service'
+import { AiEditContentDto } from '@modules/ai-content/dtos/ai-edit-content.dto'
 import { CreatePostCatalogTopAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { DataSource } from 'typeorm'
 
@@ -29,6 +30,10 @@ export class PostService {
 
   async generatePostsTopByAi(dto: CreatePostCatalogTopAiBatchDto) {
     return this.aiContentService.createPostCatalogTopBatch(dto)
+  }
+
+  async editPostByAi(id: number, dto: AiEditContentDto) {
+    return this.aiContentService.aiEditModuleRecord(AiModuleType.POST_CATALOG_TOP, Number(id), dto)
   }
 
   async create(createPostDto: CreatePostDto): Promise<IPost> {
@@ -99,6 +104,7 @@ export class PostService {
         'post.description',
         'post.ai_status',
         'post.ai_batch_id',
+        'post.ai_request_count',
         'post.created_at',
         'post_catalog.id',
         'post_catalog.name',
@@ -143,6 +149,7 @@ export class PostService {
         description: post.description,
         ai_status: post.ai_status,
         ai_batch_id: post.ai_batch_id,
+        ai_request_count: post.ai_request_count ?? 0,
         created_at: post.created_at,
         post_catalog: post.post_catalog
           ? {
@@ -184,6 +191,7 @@ export class PostService {
       description: post.description,
       ai_status: post.ai_status,
       ai_batch_id: post.ai_batch_id,
+      ai_request_count: post.ai_request_count ?? 0,
       post_catalog: post.post_catalog
         ? {
             id: post.post_catalog.id,

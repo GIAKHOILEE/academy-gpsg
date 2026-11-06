@@ -1,6 +1,7 @@
 import { Auth } from '@decorators/auth.decorator'
 import { PostCatalogType } from '@enums/post.enum'
 import { Role } from '@enums/role.enum'
+import { AiEditContentDto } from '@modules/ai-content/dtos/ai-edit-content.dto'
 import { CreatePostCatalogTopAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
@@ -28,6 +29,18 @@ export class PostCatalogTopAdminController {
       messageCode: 'POST_CATALOG_TOP_AI_BATCH_CREATED',
       statusCode: 201,
       data: result,
+    })
+  }
+
+  @Post('posts/:id/ai-edit')
+  @ApiOperation({ summary: 'Dùng AI chỉnh sửa nội dung bài viết thuộc Post Catalog Top (đổi màu, đổi căn lề, đổi cỡ chữ, viết lại đoạn văn...)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID của bài viết Post' })
+  async editPostTopByAi(@Param('id') id: number, @Body() dto: AiEditContentDto): Promise<ResponseDto> {
+    const data = await this.postCatalogService.editPostTopByAi(Number(id), dto)
+    return new ResponseDto({
+      messageCode: 'POST_CATALOG_TOP_AI_EDITED_SUCCESS',
+      statusCode: 200,
+      data,
     })
   }
 

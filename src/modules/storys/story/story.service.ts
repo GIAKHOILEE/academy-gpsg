@@ -3,9 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { formatStringDate, throwAppException } from '@common/utils'
-import { AiStatus } from '@enums/ai-content.enum'
+import { AiModuleType, AiStatus } from '@enums/ai-content.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { AiContentService } from '@modules/ai-content/ai-content.service'
+import { AiEditContentDto } from '@modules/ai-content/dtos/ai-edit-content.dto'
 import { CreateStoryAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { Topic } from '../topic/topic.entity'
 import { CreateStoryDto } from './dtos/create-story.dto'
@@ -26,6 +27,10 @@ export class StoryService {
 
   async generateStoriesByAi(dto: CreateStoryAiBatchDto) {
     return this.aiContentService.createStoryBatch(dto)
+  }
+
+  async editStoryByAi(id: number, dto: AiEditContentDto) {
+    return this.aiContentService.aiEditModuleRecord(AiModuleType.STORY, Number(id), dto)
   }
 
   async createStory(createStoryDto: CreateStoryDto): Promise<IStory> {
@@ -55,6 +60,7 @@ export class StoryService {
       topic: topic,
       ai_status: savedStory.ai_status,
       ai_batch_id: savedStory.ai_batch_id,
+      ai_request_count: savedStory.ai_request_count ?? 0,
       created_at: formatStringDate(savedStory.created_at.toISOString()),
     }
 
@@ -108,6 +114,7 @@ export class StoryService {
       topic: story.topic,
       ai_status: story.ai_status,
       ai_batch_id: story.ai_batch_id,
+      ai_request_count: story.ai_request_count ?? 0,
       created_at: formatStringDate(story.created_at.toISOString()),
     }
 
@@ -127,6 +134,7 @@ export class StoryService {
         'story.topic_id',
         'story.ai_status',
         'story.ai_batch_id',
+        'story.ai_request_count',
         'story.created_at',
         'topic.id',
         'topic.name',
@@ -164,6 +172,7 @@ export class StoryService {
       topic_id: story.topic_id,
       ai_status: story.ai_status,
       ai_batch_id: story.ai_batch_id,
+      ai_request_count: story.ai_request_count ?? 0,
       created_at: formatStringDate(story.created_at.toISOString()),
       topic: story.topic
         ? {

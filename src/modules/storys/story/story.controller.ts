@@ -1,6 +1,7 @@
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
+import { AiEditContentDto } from '@modules/ai-content/dtos/ai-edit-content.dto'
 import { CreateStoryAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
@@ -24,6 +25,18 @@ export class AdminStoryController {
       statusCode: HttpStatus.CREATED,
       messageCode: 'STORY_AI_BATCH_CREATED',
       data: result,
+    })
+  }
+
+  @Post(':id/ai-edit')
+  @ApiOperation({ summary: 'Dùng AI chỉnh sửa nội dung bài viết Story (đổi màu, đổi căn lề, đổi cỡ chữ, viết lại đoạn văn...)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID của bài viết Story' })
+  async editStoryByAi(@Param('id') id: number, @Body() dto: AiEditContentDto): Promise<ResponseDto> {
+    const data = await this.storyService.editStoryByAi(Number(id), dto)
+    return new ResponseDto({
+      statusCode: HttpStatus.OK,
+      messageCode: 'STORY_AI_EDITED_SUCCESS',
+      data,
     })
   }
 

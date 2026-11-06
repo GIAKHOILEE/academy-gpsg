@@ -1,7 +1,8 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { AiStatus } from '@enums/ai-content.enum'
+import { AiModuleType, AiStatus } from '@enums/ai-content.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { AiContentService } from '@modules/ai-content/ai-content.service'
+import { AiEditContentDto } from '@modules/ai-content/dtos/ai-edit-content.dto'
 import { CreateWitnessFaithAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -28,6 +29,10 @@ export class WitnessFaithService {
     return this.aiContentService.createWitnessFaithBatch(dto)
   }
 
+  async editWitnessFaithByAi(id: number, dto: AiEditContentDto) {
+    return this.aiContentService.aiEditModuleRecord(AiModuleType.WITNESS_FAITH, Number(id), dto)
+  }
+
   async createWitnessFaith(createWitnessFaithDto: CreateWitnessFaithDto): Promise<IWitnessFaith> {
     const { witness_faith_menu_id, ...rest } = createWitnessFaithDto
     const witnessFaithMenu = await this.witnessFaithMenuRepository.findOne({ where: { id: witness_faith_menu_id } })
@@ -48,6 +53,7 @@ export class WitnessFaithService {
       witness_faith_menu_id: savedWitnessFaith.witness_faith_menu_id,
       ai_status: savedWitnessFaith.ai_status,
       ai_batch_id: savedWitnessFaith.ai_batch_id,
+      ai_request_count: savedWitnessFaith.ai_request_count ?? 0,
       witness_faith_menu: {
         id: witnessFaithMenu.id,
         name: witnessFaithMenu.name,
@@ -100,6 +106,7 @@ export class WitnessFaithService {
       witness_faith_menu_id: witnessFaith.witness_faith_menu_id,
       ai_status: witnessFaith.ai_status,
       ai_batch_id: witnessFaith.ai_batch_id,
+      ai_request_count: witnessFaith.ai_request_count ?? 0,
       witness_faith_menu: witnessFaith.witness_faith_menu,
       created_at: witnessFaith.created_at,
     }
@@ -121,6 +128,7 @@ export class WitnessFaithService {
         'witness_faith.witness_faith_menu_id',
         'witness_faith.ai_status',
         'witness_faith.ai_batch_id',
+        'witness_faith.ai_request_count',
         'witness_faith.created_at',
       ])
       .leftJoinAndSelect('witness_faith.witness_faith_menu', 'witness_faith_menu')
@@ -147,6 +155,7 @@ export class WitnessFaithService {
       witness_faith_menu_id: item.witness_faith_menu_id,
       ai_status: item.ai_status,
       ai_batch_id: item.ai_batch_id,
+      ai_request_count: item.ai_request_count ?? 0,
       created_at: item.created_at,
       witness_faith_menu: item.witness_faith_menu
         ? {

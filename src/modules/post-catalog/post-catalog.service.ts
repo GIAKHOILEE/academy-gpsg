@@ -10,7 +10,9 @@ import { IPostCatalog } from './post-catalog.interface'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Post } from '@modules/post/post.entity'
 import { PostCatalogType } from '@enums/post.enum'
+import { AiModuleType } from '@enums/ai-content.enum'
 import { AiContentService } from '@modules/ai-content/ai-content.service'
+import { AiEditContentDto } from '@modules/ai-content/dtos/ai-edit-content.dto'
 import { CreatePostCatalogTopAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 
 @Injectable()
@@ -25,6 +27,10 @@ export class PostCatalogService {
 
   async generatePostsTopByAi(dto: CreatePostCatalogTopAiBatchDto) {
     return this.aiContentService.createPostCatalogTopBatch(dto)
+  }
+
+  async editPostTopByAi(postId: number, dto: AiEditContentDto) {
+    return this.aiContentService.aiEditModuleRecord(AiModuleType.POST_CATALOG_TOP, Number(postId), dto)
   }
 
   async create(createPostCatalogDto: CreatePostCatalogDto, type: PostCatalogType = PostCatalogType.BOTTOM): Promise<IPostCatalog> {

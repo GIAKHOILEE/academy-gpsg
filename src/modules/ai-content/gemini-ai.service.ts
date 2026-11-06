@@ -10,12 +10,34 @@ export interface GeneratedArticleResult {
   wordCount: number
   imagePrompt: string
   imageSearchKeywords: string
+  aiRequestsUsed?: number
 }
 
 export interface GeneratedImageResult {
   imageUrl: string | null
   imageSource: AiImageSource
   imagePrompt: string | null
+  aiRequestsUsed?: number
+}
+
+export interface AiEditStyleOptions {
+  textColor?: string
+  backgroundColor?: string
+  textAlign?: 'left' | 'center' | 'right' | 'justify'
+  fontSize?: string
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+}
+
+export interface AiEditedArticleResult {
+  title: string
+  description: string
+  content: string
+  editedSelectionHtml: string | null
+  wordCount: number
+  editMode: 'selection' | 'full'
+  aiRequestsUsed: number
 }
 
 const CURATED_FALLBACK_IMAGES: Record<AiModuleType, string[]> = {
@@ -153,12 +175,23 @@ YÊU CẦU ĐỊNH DẠNG ĐẦU RA (BẮT BUỘC GIỮ ĐÚNG CÁC NHÃN PHÂN 
 ===CONTENT===
 (Toàn bộ nội dung bài viết định dạng HTML đã được thiết kế inline style đẹp mắt, dài từ ${minWords} đến ${maxWords} từ)`
 
+    const webRef = await this.fetchWebReferenceFromPrompt(prompt, sequenceNumber)
+    const webReferenceBlock = webRef
+      ? `\nNỘI DUNG THAM KHẢO TỪ ĐƯỜNG LINK ADMIN CUNG CẤP:
+- Nguồn bài viết: ${webRef.sourceUrl}
+- Tiêu đề gốc trên trang web: "${webRef.referenceTitle}"
+- Nội dung trích xuất từ trang web:
+${webRef.referenceText}
+(Lưu ý: Hãy bám sát thông tin, nhân vật, sự kiện từ bài viết trên trang web này; nếu Admin yêu cầu giữ/copy tiêu đề hoặc ghi nguồn ở cuối bài thì thực hiện đúng theo yêu cầu).\n`
+      : ''
+
     const userPrompt = `Yêu cầu từ Admin (Prompt): "${prompt}"
 Danh mục / Chủ đề: "${categoryName || 'Chuyên mục Học viện'}"
-Bài số: ${sequenceNumber}/${totalQuantity}.
+Bài số: ${sequenceNumber}/${totalQuantity}.${webReferenceBlock}
 Hãy viết bài hoàn chỉnh ngay bây giờ theo đúng cấu trúc nhãn phân cách.`
 
     const rawText = await this.callGeminiText(systemInstruction, userPrompt)
+    let aiRequestsUsed = 1
     const parsed = this.parseStructuredOutput(rawText, prompt, sequenceNumber)
 
     let content = parsed.content
@@ -185,6 +218,7 @@ YÊU CẦU ĐỊNH DẠNG INLINE STYLE:
 Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần đã có, không dùng markdown \`\`\`).`
 
       try {
+        aiRequestsUsed++
         const extraHtml = await this.callGeminiText(
           'Bạn là biên tập viên chuyên nghiệp. Chỉ trả về nội dung HTML nối tiếp có đầy đủ inline style (text-align: justify, font-size: 20px, color) bằng tiếng Việt.',
           expansionPrompt,
@@ -205,8 +239,12 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
       content = this.trimHtmlToMaxWords(content, maxWords)
     }
 
-    const shortTitle = this.normalizeShortTitle(parsed.title)
+    const wantsOriginalWebTitle = Boolean(webRef && /copy\s*title|giữ\s*nguyên\s*tiêu\s*đề|y\s*chang/i.test(prompt))
+    const shortTitle = this.normalizeShortTitle(parsed.title || webRef?.referenceTitle || '', wantsOriginalWebTitle)
     content = this.beautifyArticleHtml(content, shortTitle)
+    if (webRef && /ghi\s*nguồn|nguồn/i.test(prompt) && !/nguồn\s*:/i.test(content.slice(-500))) {
+      content = `${content}\n<p style="text-align: right; margin-top: 18px;"><em><span style="font-size: 18px; color: #555555;">Nguồn: ${webRef.sourceUrl}</span></em></p>`
+    }
     wordCount = this.countWords(content)
 
     return {
@@ -216,6 +254,7 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
       wordCount,
       imagePrompt: parsed.imagePrompt,
       imageSearchKeywords: parsed.imageSearchKeywords,
+      aiRequestsUsed,
     }
   }
 
@@ -232,10 +271,12 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
     usedImageUrls?: string[]
   }): Promise<GeneratedImageResult> {
     const { imagePrompt, imageSearchKeywords, moduleType, sequenceNumber = 1, usedImageUrls = [] } = params
+    let aiRequestsUsed = 0
 
     // 1. Thử lần lượt các model gen ảnh (gemini-3.1-flash-lite-image -> gemini-2.5-flash-image)
     for (const model of this.imageModels) {
       try {
+        aiRequestsUsed++
         const generated = await this.callGeminiImageModel(model, imagePrompt)
         if (generated?.buffer) {
           const uploadedUrl = await this.uploadBufferToServer(generated.buffer, generated.mimeType, moduleType)
@@ -245,6 +286,7 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
               imageUrl: uploadedUrl,
               imageSource: AiImageSource.AI_GENERATED,
               imagePrompt,
+              aiRequestsUsed,
             }
           }
         }
@@ -261,6 +303,179 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
       imageUrl: fallbackUrl,
       imageSource: AiImageSource.WEB_FALLBACK,
       imagePrompt,
+      aiRequestsUsed,
+    }
+  }
+
+  /**
+   * Dùng AI chỉnh sửa nội dung bài viết (hoặc chỉnh sửa riêng 1 đoạn văn / vùng bôi đen từ FE):
+   * - Hỗ trợ đổi màu chữ, màu nền, đổi căn lề (left, center, right, justify), đổi cỡ chữ, in đậm/in nghiêng/gạch chân.
+   * - Hỗ trợ viết lại nội dung đoạn văn, mở rộng, rút gọn, đổi giọng văn theo prompt của Admin.
+   * - Nếu có truyền selectedHtml (hoặc selectedText), AI sẽ sửa đúng đoạn đó và tự động ghép lại vào bài viết tổng thể.
+   */
+  async editArticleContent(params: {
+    title?: string
+    description?: string
+    content: string
+    selectedHtml?: string
+    instruction?: string
+    styleOptions?: AiEditStyleOptions
+  }): Promise<AiEditedArticleResult> {
+    const {
+      title = '',
+      description = '',
+      content = '',
+      selectedHtml,
+      instruction = '',
+      styleOptions = {},
+    } = params
+
+    const resolvedStyles: AiEditStyleOptions = {
+      textColor: this.resolveCssColor(styleOptions.textColor),
+      backgroundColor: this.resolveCssColor(styleOptions.backgroundColor),
+      textAlign: styleOptions.textAlign,
+      fontSize: this.resolveCssFontSize(styleOptions.fontSize),
+      bold: styleOptions.bold,
+      italic: styleOptions.italic,
+      underline: styleOptions.underline,
+    }
+
+    const styleRequirementLines: string[] = []
+    if (resolvedStyles.textColor) styleRequirementLines.push(`- Đổi màu chữ (color) thành: ${resolvedStyles.textColor}`)
+    if (resolvedStyles.backgroundColor) styleRequirementLines.push(`- Đổi màu nền (background-color) thành: ${resolvedStyles.backgroundColor}`)
+    if (resolvedStyles.textAlign) styleRequirementLines.push(`- Đổi căn lề (text-align) thành: ${resolvedStyles.textAlign}`)
+    if (resolvedStyles.fontSize) styleRequirementLines.push(`- Đổi kích thước chữ (font-size) thành: ${resolvedStyles.fontSize}`)
+    if (resolvedStyles.bold !== undefined) styleRequirementLines.push(`- Định dạng in đậm (strong): ${resolvedStyles.bold ? 'Bật (bọc <strong>)' : 'Tắt (bỏ <strong>)'}`)
+    if (resolvedStyles.italic !== undefined) styleRequirementLines.push(`- Định dạng in nghiêng (em): ${resolvedStyles.italic ? 'Bật (bọc <em>)' : 'Tắt (bỏ <em>)'}`)
+    if (resolvedStyles.underline !== undefined) styleRequirementLines.push(`- Định dạng gạch chân (u): ${resolvedStyles.underline ? 'Bật (bọc <u>)' : 'Tắt (bỏ <u>)'}`)
+
+    const trimmedSelection = (selectedHtml || '').trim()
+    const trimmedInstruction = (instruction || '').trim()
+
+    // ==================== TRƯỜNG HỢP 1: CHỈNH SỬA RIÊNG 1 ĐOẠN ĐƯỢC CHỌN (SELECTION) ====================
+    if (trimmedSelection) {
+      const matchedBlock = this.findBlockBySelection(content, trimmedSelection)
+      const snippetToEdit = matchedBlock || trimmedSelection
+
+      let editedSnippet = snippetToEdit
+
+      if (trimmedInstruction) {
+        const systemPrompt = `Bạn là biên tập viên nội dung và chuyên gia thiết kế trình bày HTML cho Học Viện Công Giáo.
+Nhiệm vụ của bạn là chỉnh sửa ĐOẠN HTML ĐƯỢC CHỌN theo đúng yêu cầu của Admin (đổi nội dung, đổi màu sắc, đổi căn lề, đổi cỡ chữ, đóng khung trích dẫn...).
+Chỉ trả về duy nhất mã HTML của đoạn sau khi đã sửa (không dùng markdown \`\`\`html, không viết lời giải thích).`
+
+        const userPrompt = `Đoạn HTML hiện tại cần chỉnh sửa:
+${snippetToEdit}
+
+Yêu cầu chỉnh sửa từ Admin:
+"${trimmedInstruction}"
+${styleRequirementLines.length > 0 ? `\nCác thiết lập định dạng bắt buộc áp dụng thêm:\n${styleRequirementLines.join('\n')}` : ''}
+
+Quy tắc trình bày HTML:
+- Sử dụng inline CSS trực tiếp trên thẻ <p>, <blockquote>, <span> (ví dụ: style="text-align: justify; line-height: 1.75; margin-bottom: 14px;" và <span style="font-size: 20px; color: rgb(0, 85, 255);">).
+- Bảng màu chuẩn gợi ý nếu Admin nhắc tên màu:
+  + Đỏ đô / đỏ: rgb(204, 0, 0)
+  + Xanh dương / xanh đậm: rgb(0, 85, 255)
+  + Xanh ngọc / xanh lam: rgb(0, 130, 153)
+  + Nâu đỏ / nâu: rgb(153, 56, 0)
+  + Xanh lá: rgb(0, 128, 64)
+  + Tím: rgb(128, 0, 128)
+  + Đen / chữ thường: #222222
+- Nếu Admin chỉ yêu cầu đổi màu, căn lề hoặc cỡ chữ mà không yêu cầu sửa câu chữ, hãy giữ nguyên câu chữ gốc và chỉ cập nhật HTML/CSS.
+- Nếu Admin yêu cầu viết lại, mở rộng, rút gọn hoặc thay đổi nội dung đoạn đó, hãy biên tập lại bằng tiếng Việt chuẩn mực, sâu sắc, giàu cảm xúc và áp dụng đúng định dạng HTML/CSS.`
+
+        const rawEdited = await this.callGeminiText(systemPrompt, userPrompt)
+        const cleaned = this.cleanHtmlContent(rawEdited)
+        if (cleaned) {
+          editedSnippet = cleaned
+        }
+      }
+
+      // Đảm bảo áp dụng chính xác các tùy chọn style tường minh (nếu FE truyền kèm text_color, text_align, font_size...)
+      editedSnippet = this.applyExplicitStylesToHtml(editedSnippet, resolvedStyles)
+
+      const updatedFullContent = content
+        ? this.replaceSelectionInHtml(content, trimmedSelection, matchedBlock, editedSnippet)
+        : editedSnippet
+
+      return {
+        title: title ? this.normalizeShortTitle(title) : '',
+        description,
+        content: updatedFullContent,
+        editedSelectionHtml: editedSnippet,
+        wordCount: this.countWords(updatedFullContent),
+        editMode: 'selection',
+        aiRequestsUsed: 1,
+      }
+    }
+
+    // ==================== TRƯỜNG HỢP 2: CHỈNH SỬA TRÊN TOÀN BỘ BÀI VIẾT ====================
+    let nextTitle = title
+    let nextDescription = description
+    let nextContent = content
+
+    if (trimmedInstruction) {
+      const systemPrompt = `Bạn là Tổng biên tập và chuyên gia thiết kế HTML cho Học Viện Công Giáo.
+Nhiệm vụ của bạn là chỉnh sửa bài viết HTML hiện có theo đúng yêu cầu của Admin (ví dụ: đổi màu chữ, đổi căn lề, đổi cỡ chữ, sửa nội dung một đoạn cụ thể, thêm/sửa trích dẫn, hoặc đổi tiêu đề).
+Giữ nguyên các phần nội dung khác không nằm trong yêu cầu chỉnh sửa.`
+
+      const userPrompt = `Thông tin bài viết hiện tại:
+- TIÊU ĐỀ HIỆN TẠI: ${title || '(Chưa có)'}
+- MÔ TẢ NGẮN HIỆN TẠI: ${description || '(Chưa có)'}
+- NỘI DUNG HTML HIỆN TẠI:
+${content}
+
+YÊU CẦU CHỈNH SỬA TỪ ADMIN:
+"${trimmedInstruction}"
+${styleRequirementLines.length > 0 ? `\nCác thiết lập định dạng bắt buộc áp dụng:\n${styleRequirementLines.join('\n')}` : ''}
+
+Quy tắc thực hiện:
+1. Thực hiện chính xác yêu cầu của Admin (đổi màu sắc, căn lề left/center/right/justify, đổi kích thước font-size, sửa câu chữ đoạn được chỉ định, thêm trích dẫn...).
+2. Bảng màu chuẩn gợi ý nếu Admin gọi tên màu:
+   - Đỏ đô / đỏ: rgb(204, 0, 0)
+   - Xanh dương / xanh đậm: rgb(0, 85, 255)
+   - Xanh ngọc / xanh lam: rgb(0, 130, 153)
+   - Nâu đỏ / nâu: rgb(153, 56, 0)
+   - Xanh lá: rgb(0, 128, 64)
+   - Tím: rgb(128, 0, 128)
+   - Đen / chữ thường: #222222
+3. Nếu Admin KHÔNG yêu cầu đổi tiêu đề thì giữ nguyên TIÊU ĐỀ HIỆN TẠI (hoặc đảm bảo tiêu đề ngắn gọn 4-9 từ).
+4. Bảo toàn cấu trúc inline CSS đẹp mắt của toàn bộ bài viết. Không dùng markdown \`\`\`html.
+
+BẮT BUỘC trả về đúng cấu trúc đánh dấu sau:
+===TITLE===
+(Tiêu đề bài viết ngắn gọn)
+===DESCRIPTION===
+(Mô tả ngắn của bài viết)
+===CONTENT===
+(Toàn bộ nội dung HTML của bài viết sau khi đã chỉnh sửa)`
+
+      const rawResponse = await this.callGeminiText(systemPrompt, userPrompt)
+      const parsed = this.parseStructuredOutput(rawResponse, trimmedInstruction, 1)
+
+      if (parsed.title) {
+        nextTitle = this.normalizeShortTitle(parsed.title)
+      }
+      if (parsed.description) {
+        nextDescription = parsed.description
+      }
+      if (parsed.content) {
+        nextContent = parsed.content
+      }
+    }
+
+    if (styleRequirementLines.length > 0 && !trimmedInstruction) {
+      nextContent = this.applyExplicitStylesToHtml(nextContent, resolvedStyles)
+    }
+
+    return {
+      title: nextTitle ? this.normalizeShortTitle(nextTitle) : '',
+      description: nextDescription,
+      content: nextContent,
+      editedSelectionHtml: null,
+      wordCount: this.countWords(nextContent),
+      editMode: 'full',
+      aiRequestsUsed: 1,
     }
   }
 
@@ -516,7 +731,8 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
 
     if (!title) {
       const h1Match = content.match(/<h[12][^>]*>(.*?)<\/h[12]>/i)
-      title = h1Match ? h1Match[1].replace(/<[^>]+>/g, '').trim() : `${fallbackPrompt.slice(0, 80)} - Phần ${sequenceNumber}`
+      const cleanFallback = fallbackPrompt.replace(/https?:\/\/\S+/gi, '').replace(/\s+/g, ' ').trim()
+      title = h1Match ? h1Match[1].replace(/<[^>]+>/g, '').trim() : `${(cleanFallback || 'Bài viết chuyên đề').slice(0, 50)} - Phần ${sequenceNumber}`
     }
 
     description = description.replace(/<[^>]+>/g, '').trim()
@@ -548,17 +764,22 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
   }
 
   /**
-   * Chuẩn hóa tiêu đề ngắn gọn (4 - 10 từ, tối đa ~65 ký tự).
-   * Nếu AI sinh tiêu đề có dấu ":" hoặc "–" kèm vế phụ dài thì lấy vế chính súc tích.
+   * Chuẩn hóa tiêu đề ngắn gọn (4 - 10 từ, tối đa ~65 ký tự) hoặc giữ nguyên tiêu đề gốc từ trang web (tối đa 140 ký tự).
+   * Luôn loại bỏ URL thô nếu có và đảm bảo không bao giờ vượt quá độ dài cột VARCHAR(255).
    */
-  normalizeShortTitle(rawTitle: string): string {
+  normalizeShortTitle(rawTitle: string, preserveWebTitle = false): string {
     let title = (rawTitle || '')
+      .replace(/https?:\/\/\S+/gi, '')
       .replace(/^["'#*-\s]+|["'*]+$/g, '')
       .replace(/<[^>]+>/g, '')
       .replace(/\s+/g, ' ')
       .trim()
 
     if (!title) return 'Bài Viết Chuyên Đề Học Viện'
+
+    if (preserveWebTitle) {
+      return title.slice(0, 140).trim()
+    }
 
     // Nếu có dấu ":", " - ", " – " hoặc giới từ nối phụ dài khi tổng số từ > 10, ưu tiên lấy vế chính ngắn gọn tự nhiên
     const words = title.split(' ')
@@ -578,6 +799,175 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
     }
 
     return title.slice(0, 80).trim()
+  }
+
+  /**
+   * Tự động phát hiện đường link (http/https) trong prompt của Admin,
+   * tải nội dung bài viết (hoặc chọn bài viết cụ thể nếu link là trang danh mục) để cung cấp ngữ cảnh thực tế cho AI.
+   */
+  private async fetchWebReferenceFromPrompt(
+    prompt: string,
+    sequenceNumber = 1,
+  ): Promise<{ sourceUrl: string; referenceTitle: string; referenceText: string } | null> {
+    if (!prompt) return null
+    const urlMatches = prompt.match(/https?:\/\/[^\s"'<>]+/gi)
+    if (!urlMatches || urlMatches.length === 0) return null
+
+    const rawUrl = urlMatches[0].replace(/[.,;)]+$/, '')
+    let cleanUrl = rawUrl
+    try {
+      const parsedUrl = new URL(rawUrl)
+      parsedUrl.searchParams.delete('fbclid')
+      parsedUrl.searchParams.delete('gclid')
+      for (const key of Array.from(parsedUrl.searchParams.keys())) {
+        if (key.startsWith('utm_') || key.startsWith('_aem')) {
+          parsedUrl.searchParams.delete(key)
+        }
+      }
+      cleanUrl = parsedUrl.toString()
+    } catch {
+      cleanUrl = rawUrl
+    }
+
+    try {
+      const html = await this.fetchHtmlWithTimeout(cleanUrl, 8000)
+      if (!html) return null
+
+      let targetUrl = cleanUrl
+      let targetHtml = html
+
+      // Kiểm tra xem trang này có phải trang danh sách chuyên mục (nhiều link bài viết con) hay không
+      const articleLinks = this.extractArticleLinksFromListing(html, cleanUrl)
+      if (articleLinks.length > 0) {
+        const chosenLink = articleLinks[(Math.max(1, sequenceNumber) - 1) % articleLinks.length]
+        const detailHtml = await this.fetchHtmlWithTimeout(chosenLink, 8000)
+        if (detailHtml) {
+          targetUrl = chosenLink
+          targetHtml = detailHtml
+        }
+      }
+
+      const h1Match = targetHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)
+      const titleTagMatch = targetHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+      const extractedTitle = this.decodeHtmlEntities(
+        (h1Match?.[1] || titleTagMatch?.[1] || '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      )
+        .split(/\s*[|–—-]\s*(?:Hội đồng Giám mục|HDGM|Trang chủ)/i)[0]
+        .trim()
+
+      const paragraphs: string[] = []
+      const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi
+      let pMatch: RegExpExecArray | null
+      while ((pMatch = pRegex.exec(targetHtml)) !== null) {
+        const text = this.decodeHtmlEntities(
+          pMatch[1]
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim(),
+        )
+        if (text.length >= 40) {
+          paragraphs.push(text)
+        }
+      }
+
+      const bodyText =
+        paragraphs.length > 0
+          ? paragraphs.join('\n\n').slice(0, 6000)
+          : this.decodeHtmlEntities(
+              targetHtml
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim(),
+            ).slice(0, 4500)
+
+      if (!extractedTitle && !bodyText) return null
+
+      this.logger.log(`Đã đọc nội dung tham khảo từ link: ${targetUrl} (Tiêu đề: "${extractedTitle}")`)
+      return {
+        sourceUrl: targetUrl,
+        referenceTitle: extractedTitle || 'Bài viết tham khảo',
+        referenceText: bodyText,
+      }
+    } catch (err: any) {
+      this.logger.warn(`Không thể tải nội dung từ URL trong prompt (${cleanUrl}): ${err?.message}`)
+      return null
+    }
+  }
+
+  private async fetchHtmlWithTimeout(url: string, timeoutMs = 8000): Promise<string | null> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.8',
+        },
+        signal: controller.signal,
+      })
+      if (!response.ok) return null
+      return await response.text()
+    } catch {
+      return null
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  private extractArticleLinksFromListing(html: string, baseUrl: string): string[] {
+    try {
+      const base = new URL(baseUrl)
+      const basePath = base.pathname.replace(/\/$/, '')
+      const hrefRegex = /<a[^>]+href\s*=\s*["']([^"'#]+)["'][^>]*>/gi
+      const candidates: string[] = []
+      const seen = new Set<string>()
+
+      let match: RegExpExecArray | null
+      while ((match = hrefRegex.exec(html)) !== null) {
+        const rawHref = match[1].trim()
+        if (!rawHref || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) continue
+        try {
+          const resolved = new URL(rawHref, base.origin)
+          if (resolved.origin !== base.origin) continue
+          const path = resolved.pathname.replace(/\/$/, '')
+          if (!path || path === basePath) continue
+          // Nhận diện các đường dẫn bài viết chi tiết (có slug dài hoặc nằm dưới chuyên mục /tin-tuc/, /chi-tiet/, /bai-viet/)
+          const lastSegment = path.split('/').pop() || ''
+          const looksLikeArticle =
+            lastSegment.length > 18 &&
+            lastSegment.includes('-') &&
+            !/^page-\d+$/i.test(lastSegment) &&
+            (path.startsWith(basePath + '/') || /\/(tin-tuc|bai-viet|chi-tiet|guong-chung-nhan)\//i.test(path))
+          if (looksLikeArticle && !seen.has(resolved.toString())) {
+            seen.add(resolved.toString())
+            candidates.push(resolved.toString())
+          }
+        } catch {
+          // ignore invalid href
+        }
+      }
+      return candidates.slice(0, 25)
+    } catch {
+      return []
+    }
+  }
+
+  private decodeHtmlEntities(text: string): string {
+    if (!text) return ''
+    return text
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#039;|&apos;/gi, "'")
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
   }
 
   /**
@@ -653,6 +1043,285 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
     }
 
     return accumulated || html
+  }
+
+  /**
+   * Quy đổi tên màu tiếng Việt / tiếng Anh thông dụng hoặc mã HEX/RGB về mã màu CSS hợp lệ.
+   */
+  resolveCssColor(rawColor?: string): string | undefined {
+    if (!rawColor) return undefined
+    const cleaned = rawColor.trim()
+    if (!cleaned) return undefined
+
+    const lower = cleaned.toLowerCase()
+    const colorMap: Record<string, string> = {
+      'đỏ': 'rgb(204, 0, 0)',
+      'đỏ đô': 'rgb(204, 0, 0)',
+      'đỏ sẫm': 'rgb(180, 0, 0)',
+      'đỏ tươi': 'rgb(238, 0, 0)',
+      red: 'rgb(204, 0, 0)',
+      crimson: 'rgb(204, 0, 0)',
+      'xanh': 'rgb(0, 85, 255)',
+      'xanh dương': 'rgb(0, 85, 255)',
+      'xanh biển': 'rgb(0, 85, 255)',
+      'xanh đậm': 'rgb(0, 68, 204)',
+      blue: 'rgb(0, 85, 255)',
+      'xanh ngọc': 'rgb(0, 130, 153)',
+      'xanh lam': 'rgb(0, 130, 153)',
+      teal: 'rgb(0, 130, 153)',
+      'nâu': 'rgb(153, 56, 0)',
+      'nâu đỏ': 'rgb(153, 56, 0)',
+      'nâu đất': 'rgb(139, 69, 19)',
+      brown: 'rgb(153, 56, 0)',
+      'xanh lá': 'rgb(0, 128, 64)',
+      'xanh lục': 'rgb(0, 128, 64)',
+      green: 'rgb(0, 128, 64)',
+      'tím': 'rgb(128, 0, 128)',
+      purple: 'rgb(128, 0, 128)',
+      'cam': 'rgb(211, 84, 0)',
+      'vàng cam': 'rgb(211, 84, 0)',
+      orange: 'rgb(211, 84, 0)',
+      'vàng': 'rgb(184, 134, 11)',
+      'vàng đậm': 'rgb(184, 134, 11)',
+      'vàng nhạt': '#fdfaf6',
+      'kem': '#fdfaf6',
+      'đen': '#222222',
+      black: '#222222',
+      'xám': '#555555',
+      'ghi': '#555555',
+      gray: '#555555',
+      grey: '#555555',
+    }
+
+    return colorMap[lower] || cleaned
+  }
+
+  /**
+   * Chuẩn hóa cỡ chữ về dạng có đơn vị px (ví dụ "22" -> "22px").
+   */
+  resolveCssFontSize(rawSize?: string): string | undefined {
+    if (!rawSize) return undefined
+    const cleaned = String(rawSize).trim()
+    if (!cleaned) return undefined
+    if (/^\d+(\.\d+)?$/.test(cleaned)) {
+      return `${cleaned}px`
+    }
+    return cleaned
+  }
+
+  /**
+   * Tìm khối HTML (<p>, <blockquote>, <h2>, <h3>) trong bài viết khớp với vùng văn bản/HTML mà người dùng bôi đen.
+   */
+  private findBlockBySelection(fullContent: string, selection: string): string | null {
+    if (!fullContent || !selection) return null
+    if (fullContent.includes(selection)) {
+      // Nếu selection đã là thẻ block hoàn chỉnh thì dùng luôn
+      if (/^<(p|blockquote|h[1-6]|div|ul|ol)\b/i.test(selection.trim())) {
+        return selection
+      }
+    }
+
+    const plainSelection = selection
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    if (!plainSelection) return null
+
+    const blockRegex = /<(p|blockquote|h[1-6])[^>]*>[\s\S]*?<\/\1>/gi
+    let match: RegExpExecArray | null
+    while ((match = blockRegex.exec(fullContent)) !== null) {
+      const blockHtml = match[0]
+      const blockPlain = blockHtml
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (blockPlain && (blockPlain.includes(plainSelection) || plainSelection.includes(blockPlain))) {
+        return blockHtml
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Ghép đoạn HTML đã được AI chỉnh sửa vào lại vị trí tương ứng trong toàn bộ bài viết.
+   */
+  private replaceSelectionInHtml(
+    fullContent: string,
+    rawSelection: string,
+    matchedBlock: string | null,
+    editedSnippet: string,
+  ): string {
+    if (!fullContent) return editedSnippet
+
+    if (matchedBlock && fullContent.includes(matchedBlock)) {
+      return fullContent.replace(matchedBlock, editedSnippet)
+    }
+
+    if (fullContent.includes(rawSelection)) {
+      return fullContent.replace(rawSelection, editedSnippet)
+    }
+
+    // Fallback: so khớp theo plain text của từng đoạn
+    const plainSelection = rawSelection
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    if (plainSelection) {
+      const blockRegex = /<(p|blockquote|h[1-6])[^>]*>[\s\S]*?<\/\1>/gi
+      let replaced = false
+      const updated = fullContent.replace(blockRegex, blockHtml => {
+        if (replaced) return blockHtml
+        const blockPlain = blockHtml
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+        if (blockPlain && (blockPlain.includes(plainSelection) || plainSelection.includes(blockPlain))) {
+          replaced = true
+          return editedSnippet
+        }
+        return blockHtml
+      })
+      if (replaced) return updated
+    }
+
+    return `${fullContent}\n${editedSnippet}`
+  }
+
+  /**
+   * Áp dụng chính xác các tùy chọn định dạng tường minh (màu chữ, màu nền, căn lề, cỡ chữ, đậm, nghiêng, gạch chân)
+   * lên đoạn HTML hoặc bài viết.
+   */
+  applyExplicitStylesToHtml(rawHtml: string, styleOptions: AiEditStyleOptions): string {
+    const { textColor, backgroundColor, textAlign, fontSize, bold, italic, underline } = styleOptions
+    if (
+      !textColor &&
+      !backgroundColor &&
+      !textAlign &&
+      !fontSize &&
+      bold === undefined &&
+      italic === undefined &&
+      underline === undefined
+    ) {
+      return rawHtml
+    }
+
+    let html = rawHtml.trim()
+    if (!html) return html
+
+    // Nếu chuỗi truyền vào là plain text chưa có thẻ bao ngoài thì bọc vào <p><span>
+    if (!/<[a-z][\s\S]*>/i.test(html)) {
+      html = `<p style="text-align: ${textAlign || 'justify'}; line-height: 1.75; margin-bottom: 14px;"><span style="font-size: ${fontSize || '20px'}; color: ${textColor || '#222222'};">${html}</span></p>`
+    }
+
+    // 1. Cập nhật căn lề (text-align) và màu nền (background-color) trên các thẻ khối (<p>, <blockquote>, <h2>, <h3>, <div>)
+    if (textAlign || backgroundColor) {
+      html = html.replace(/<(p|blockquote|h[1-6]|div)([^>]*)>/gi, (fullMatch, tag, attrs) => {
+        let nextAttrs = attrs || ''
+        const styleMatch = nextAttrs.match(/style\s*=\s*"([^"]*)"/i)
+        let styleStr = styleMatch ? styleMatch[1].trim() : ''
+
+        if (textAlign) {
+          if (/text-align\s*:/i.test(styleStr)) {
+            styleStr = styleStr.replace(/text-align\s*:\s*[^;]+;?/gi, `text-align: ${textAlign};`)
+          } else {
+            styleStr = `text-align: ${textAlign}; ${styleStr}`.trim()
+          }
+        }
+
+        if (backgroundColor) {
+          if (/background-color\s*:/i.test(styleStr)) {
+            styleStr = styleStr.replace(/background-color\s*:\s*[^;]+;?/gi, `background-color: ${backgroundColor};`)
+          } else {
+            styleStr = `${styleStr}; background-color: ${backgroundColor}; padding: 10px 16px; border-radius: 4px;`.replace(/^;\s*/, '')
+          }
+        }
+
+        if (styleMatch) {
+          nextAttrs = nextAttrs.replace(/style\s*=\s*"[^"]*"/i, `style="${styleStr}"`)
+        } else {
+          nextAttrs = `${nextAttrs} style="${styleStr}"`
+        }
+        return `<${tag}${nextAttrs}>`
+      })
+
+      // Nếu căn giữa hoặc căn phải thì bỏ khoảng trắng thụt đầu dòng &nbsp; để căn chuẩn
+      if (textAlign === 'center' || textAlign === 'right') {
+        html = html.replace(/(<span[^>]*>)(?:&nbsp;\s*)+/gi, '$1')
+        html = html.replace(/(<p[^>]*>)(?:&nbsp;\s*)+/gi, '$1')
+      }
+    }
+
+    // 2. Cập nhật màu chữ (color) và kích thước chữ (font-size) trên các thẻ <span> (hoặc thêm <span> nếu chưa có)
+    if (textColor || fontSize) {
+      if (/<span\b/i.test(html)) {
+        html = html.replace(/<span([^>]*)>/gi, (fullMatch, attrs) => {
+          let nextAttrs = attrs || ''
+          const styleMatch = nextAttrs.match(/style\s*=\s*"([^"]*)"/i)
+          let styleStr = styleMatch ? styleMatch[1].trim() : ''
+
+          if (textColor) {
+            if (/(^|;|\s)color\s*:/i.test(styleStr)) {
+              styleStr = styleStr.replace(/(^|;|\s)color\s*:\s*[^;]+;?/gi, `$1color: ${textColor};`)
+            } else {
+              styleStr = `${styleStr}; color: ${textColor};`.replace(/^;\s*/, '')
+            }
+          }
+
+          if (fontSize) {
+            if (/font-size\s*:/i.test(styleStr)) {
+              styleStr = styleStr.replace(/font-size\s*:\s*[^;]+;?/gi, `font-size: ${fontSize};`)
+            } else {
+              styleStr = `${styleStr}; font-size: ${fontSize};`.replace(/^;\s*/, '')
+            }
+          }
+
+          if (styleMatch) {
+            nextAttrs = nextAttrs.replace(/style\s*=\s*"[^"]*"/i, `style="${styleStr}"`)
+          } else {
+            nextAttrs = `${nextAttrs} style="${styleStr}"`
+          }
+          return `<span${nextAttrs}>`
+        })
+      } else {
+        const spanStyles = [
+          fontSize ? `font-size: ${fontSize};` : '',
+          textColor ? `color: ${textColor};` : '',
+        ]
+          .filter(Boolean)
+          .join(' ')
+        html = html.replace(/<(p|blockquote|h[1-6])([^>]*)>([\s\S]*?)<\/\1>/gi, (_, tag, attrs, inner) => {
+          return `<${tag}${attrs}><span style="${spanStyles}">${inner}</span></${tag}>`
+        })
+      }
+    }
+
+    // 3. Xử lý in đậm (bold), in nghiêng (italic), gạch chân (underline)
+    if (bold === false) {
+      html = html.replace(/<\/?(strong|b)\b[^>]*>/gi, '')
+    } else if (bold === true && !/<(strong|b)\b/i.test(html)) {
+      html = html.replace(/<(p|blockquote|h[1-6])([^>]*)>([\s\S]*?)<\/\1>/gi, '<$1$2><strong>$3</strong></$1>')
+    }
+
+    if (italic === false) {
+      html = html.replace(/<\/?(em|i)\b[^>]*>/gi, '')
+    } else if (italic === true && !/<(em|i)\b/i.test(html)) {
+      html = html.replace(/<(p|blockquote|h[1-6])([^>]*)>([\s\S]*?)<\/\1>/gi, '<$1$2><em>$3</em></$1>')
+    }
+
+    if (underline === false) {
+      html = html.replace(/<\/?u\b[^>]*>/gi, '')
+    } else if (underline === true && !/<u\b/i.test(html)) {
+      html = html.replace(/<(p|blockquote|h[1-6])([^>]*)>([\s\S]*?)<\/\1>/gi, '<$1$2><u>$3</u></$1>')
+    }
+
+    return html
   }
 }
 

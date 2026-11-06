@@ -1,3 +1,4 @@
+import { AiEditContentDto } from '@modules/ai-content/dtos/ai-edit-content.dto'
 import { CreateWitnessFaithAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { WitnessFaithService } from './witness-faith.service'
@@ -29,6 +30,18 @@ export class WitnessFaithController {
     return {
       statusCode: 201,
       messageCode: 'WITNESS_FAITH_AI_BATCH_CREATED',
+      data,
+    }
+  }
+
+  @Post(':id/ai-edit')
+  @ApiOperation({ summary: 'Dùng AI chỉnh sửa nội dung bài viết Chứng nhân đức tin (đổi màu, đổi căn lề, đổi cỡ chữ, viết lại đoạn văn...)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID của bài viết Chứng nhân đức tin' })
+  async editWitnessFaithByAi(@Param('id') id: number, @Body() dto: AiEditContentDto): Promise<ResponseDto> {
+    const data = await this.witnessFaithService.editWitnessFaithByAi(Number(id), dto)
+    return {
+      statusCode: 200,
+      messageCode: 'WITNESS_FAITH_AI_EDITED_SUCCESS',
       data,
     }
   }
