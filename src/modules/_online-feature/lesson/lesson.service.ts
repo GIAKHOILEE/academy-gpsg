@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { In, Repository } from 'typeorm'
 import { Lesson } from './lesson.entity'
 import { CreateLessonDto } from './dtos/create-lesson.dto'
-import { ILesson } from './lesson.interface'
+import { ILesson, IVideoProgress } from './lesson.interface'
 import { Classes } from '@modules/class/class.entity'
 import { throwAppException } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
@@ -20,6 +20,7 @@ import { LessonVideoProgress } from './lesson-video-progress.entity'
 import { Attendance } from '@modules/class-rules/attendance/attendance.entity'
 import { AttendanceRule } from '@modules/class-rules/attendance-rule/attendance-rule.entity'
 import { AttendanceStatus, LearnType } from '@enums/class.enum'
+import { videoKeyOf } from '../video-attendance/video-attendance.logic'
 
 @Injectable()
 export class LessonService {
@@ -231,25 +232,40 @@ export class LessonService {
     }
 
     // Nếu là student, lấy danh sách tiến trình xem video tương ứng
-    const progressMap: Record<number, any> = {}
+    const progressMap: Record<number, any[]> = {}
     if (user.role === Role.STUDENT && student && lessonIds.length) {
       const progresses = await this.lessonVideoProgressRepository.find({
         where: { student_id: student.id, lesson_id: In(lessonIds) },
+        order: { id: 'ASC' },
       })
-      // Mỗi video một dòng — tóm tắt theo video xem được nhiều nhất của buổi
       for (const p of progresses) {
-        if (progressMap[p.lesson_id] && progressMap[p.lesson_id].watched_seconds >= p.watched_seconds) continue
-        progressMap[p.lesson_id] = {
+        if (!progressMap[p.lesson_id]) {
+          progressMap[p.lesson_id] = []
+        }
+        progressMap[p.lesson_id].push({
+          id: p.id,
+          video_key: p.video_key,
+          video_url: p.video_url,
           last_position: p.last_position,
           watched_seconds: Number(p.watched_seconds.toFixed(1)),
           total_duration: p.total_duration,
           is_completed: p.is_completed,
           progress_percentage: Number(((p.watched_seconds / (p.total_duration || 1)) * 100).toFixed(1)),
-        }
+        })
       }
     }
 
+    const isStudent = user.role === Role.STUDENT
     const formattedLessons: ILesson[] = data.map(lesson => {
+      const videoUrls = this.getVideoUrls(lesson.video_url)
+      const hasVideo = videoUrls.length > 0
+
+      let videoProgress: IVideoProgress[] | null = null
+      if (isStudent && hasVideo) {
+        const progresses = progressMap[lesson.id] || []
+        videoProgress = this.buildVideoProgressList(videoUrls, progresses, lesson.attendance_percent ?? 50)
+      }
+
       return {
         id: lesson.id,
         index: lesson.index,
@@ -273,12 +289,7 @@ export class LessonService {
               type: lesson.attendance_rule.type,
             }
           : null,
-        video_progress: progressMap[lesson.id]
-          ? {
-              ...progressMap[lesson.id],
-              attendance_percent: lesson.attendance_percent ?? 50,
-            }
-          : null,
+        video_progress: videoProgress,
         discuss: {
           admin_responded: discussStatusMap[lesson.id]?.admin_responded,
           user_responded: discussStatusMap[lesson.id]?.user_responded,
@@ -287,6 +298,63 @@ export class LessonService {
     })
 
     return { data: formattedLessons, meta }
+  }
+
+  private getVideoUrls(videoUrl: any): string[] {
+    if (!videoUrl) return []
+    if (Array.isArray(videoUrl)) return videoUrl.filter(v => typeof v === 'string' && v.trim().length > 0)
+    if (typeof videoUrl === 'string' && videoUrl.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(videoUrl)
+        if (Array.isArray(parsed)) return parsed.filter(v => typeof v === 'string' && v.trim().length > 0)
+      } catch {
+        return [videoUrl.trim()]
+      }
+      return [videoUrl.trim()]
+    }
+    return []
+  }
+
+  private buildVideoProgressList(videoUrls: string[], progresses: any[], attendancePercent: number): IVideoProgress[] {
+    return videoUrls.map(url => {
+      const key = videoKeyOf(url)
+      const p = progresses.find(
+        prog =>
+          (prog.video_key && prog.video_key === key) ||
+          prog.video_url === url ||
+          (!prog.video_key && !prog.video_url && videoUrls.length === 1),
+      )
+      if (p) {
+        const watchedSeconds = Number(Number(p.watched_seconds || 0).toFixed(1))
+        const totalDuration = Number(p.total_duration) || 0
+        const progressPercentage =
+          p.progress_percentage !== undefined
+            ? p.progress_percentage
+            : Number(((watchedSeconds / (totalDuration || 1)) * 100).toFixed(1))
+        return {
+          id: p.id,
+          video_key: key,
+          video_url: p.video_url || url,
+          last_position: p.last_position || 0,
+          watched_seconds: watchedSeconds,
+          total_duration: totalDuration,
+          is_completed: Boolean(p.is_completed),
+          progress_percentage: progressPercentage,
+          attendance_percent: attendancePercent,
+        }
+      }
+      return {
+        id: null,
+        video_key: key,
+        video_url: url,
+        last_position: 0,
+        watched_seconds: 0,
+        total_duration: 0,
+        is_completed: false,
+        progress_percentage: 0,
+        attendance_percent: attendancePercent,
+      }
+    })
   }
 
   async getLessonById(id: number, userId?: number): Promise<ILesson> {
@@ -298,24 +366,18 @@ export class LessonService {
       throwAppException('LESSON_NOT_FOUND', ErrorCode.LESSON_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
 
-    let videoProgress = null
-    if (userId) {
+    const videoUrls = this.getVideoUrls(lesson.video_url)
+    const hasVideo = videoUrls.length > 0
+
+    let videoProgress: IVideoProgress[] | null = null
+    if (userId && hasVideo) {
       const student = await this.studentRepository.findOne({ where: { user_id: userId } })
       if (student) {
-        const progress = await this.lessonVideoProgressRepository.findOne({
+        const progresses = await this.lessonVideoProgressRepository.find({
           where: { lesson_id: id, student_id: student.id },
-          order: { watched_seconds: 'DESC' },
+          order: { id: 'ASC' },
         })
-        if (progress) {
-          videoProgress = {
-            last_position: progress.last_position,
-            watched_seconds: Number(progress.watched_seconds.toFixed(1)),
-            total_duration: progress.total_duration,
-            is_completed: progress.is_completed,
-            progress_percentage: Number(((progress.watched_seconds / (progress.total_duration || 1)) * 100).toFixed(1)),
-            attendance_percent: lesson.attendance_percent ?? 50,
-          }
-        }
+        videoProgress = this.buildVideoProgressList(videoUrls, progresses, lesson.attendance_percent ?? 50)
       }
     }
 
