@@ -81,6 +81,16 @@ export class PaginateStudentBookDto extends PaginationDto {
 
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({ description: 'Tìm theo họ tên người nhận sách' })
+  shipping_name?: string
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ description: 'Tìm theo số điện thoại người nhận sách' })
+  shipping_phone?: string
+
+  @IsOptional()
+  @IsString()
   @ApiPropertyOptional({ description: 'Tìm theo địa chỉ nhận sách' })
   shipping_address?: string
 }
@@ -121,8 +131,23 @@ export class CreateStudentBookDto {
 
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Họ tên người nhận sách', example: 'Nguyễn Văn A' })
+  shipping_name?: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Số điện thoại người nhận sách', example: '0901234567' })
+  shipping_phone?: string
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Địa chỉ nhận sách mới', example: '123 Nguyễn Trãi, Q.1, TP.HCM' })
   shipping_address?: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Ghi chú người nhận sách', example: 'Giao giờ hành chính, gọi trước khi giao' })
+  shipping_note?: string
 
   @IsString()
   @IsOptional()
@@ -161,8 +186,23 @@ export class UpdateStudentBookDto {
 
   @IsString()
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Họ tên người nhận sách', example: 'Nguyễn Văn A' })
+  shipping_name?: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Số điện thoại người nhận sách', example: '0901234567' })
+  shipping_phone?: string
+
+  @IsString()
+  @IsOptional()
   @ApiPropertyOptional({ description: 'Địa chỉ nhận sách mới', example: '123 Nguyễn Trãi, Q.1, TP.HCM' })
   shipping_address?: string
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ description: 'Ghi chú người nhận sách', example: 'Giao giờ hành chính, gọi trước khi giao' })
+  shipping_note?: string
 
   @IsString()
   @IsOptional()

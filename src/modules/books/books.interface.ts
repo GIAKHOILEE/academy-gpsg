@@ -35,7 +35,10 @@ export interface IStudentBook {
   class_id?: number
   book_status: BookDeliveryStatus
   change_status: StudentBookChangeStatus
+  shipping_name?: string
+  shipping_phone?: string
   shipping_address?: string
+  shipping_note?: string
   book_delivery_note?: string
   book_received_date?: string
   created_at?: Date

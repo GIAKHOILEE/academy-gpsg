@@ -71,7 +71,10 @@ export class BooksService {
       class_id: sb.class_id ?? null,
       book_status: sb.book_status,
       change_status: sb.change_status ?? StudentBookChangeStatus.NORMAL,
+      shipping_name: sb.shipping_name,
+      shipping_phone: sb.shipping_phone,
       shipping_address: sb.shipping_address,
+      shipping_note: sb.shipping_note,
       book_delivery_note: sb.book_delivery_note,
       book_received_date: sb.book_received_date,
       created_at: sb.created_at,
@@ -179,23 +182,40 @@ export class BooksService {
             },
             order: { id: 'DESC' },
           })
-          const shippingAddressMap = new Map<number, string>()
+          const shippingInfoMap = new Map<
+            number,
+            {
+              shipping_name?: string | null
+              shipping_phone?: string | null
+              shipping_address?: string | null
+              shipping_note?: string | null
+            }
+          >()
           for (const enr of enrollments) {
-            if (enr.student_id && enr.shipping_address && !shippingAddressMap.has(enr.student_id)) {
-              shippingAddressMap.set(enr.student_id, enr.shipping_address)
+            if (enr.student_id && !shippingInfoMap.has(enr.student_id)) {
+              shippingInfoMap.set(enr.student_id, {
+                shipping_name: enr.shipping_name || enr.full_name || null,
+                shipping_phone: enr.shipping_phone || enr.phone_number || null,
+                shipping_address: enr.shipping_address || enr.address || null,
+                shipping_note: enr.shipping_note || null,
+              })
             }
           }
 
-          const toCreate = missingStudentIds.map(studentId =>
-            this.studentBookRepository.create({
+          const toCreate = missingStudentIds.map(studentId => {
+            const ship = shippingInfoMap.get(studentId)
+            return this.studentBookRepository.create({
               student_id: studentId,
               book_id: bookId,
               class_id: studentToClassMap.get(studentId) ?? null,
               book_status: BookDeliveryStatus.NOT_SENT,
               change_status: StudentBookChangeStatus.NORMAL,
-              shipping_address: shippingAddressMap.get(studentId) ?? null,
-            }),
-          )
+              shipping_name: ship?.shipping_name ?? null,
+              shipping_phone: ship?.shipping_phone ?? null,
+              shipping_address: ship?.shipping_address ?? null,
+              shipping_note: ship?.shipping_note ?? null,
+            })
+          })
           await this.studentBookRepository.save(toCreate)
         }
       }
@@ -397,6 +417,8 @@ export class BooksService {
       phone_number,
       book_name,
       book_code,
+      shipping_name,
+      shipping_phone,
       shipping_address,
       ...rest
     } = pagination
@@ -451,6 +473,16 @@ export class BooksService {
     }
     if (book_code) {
       queryBuilder.andWhere('book.code LIKE :book_code', { book_code: `%${book_code.trim()}%` })
+    }
+    if (shipping_name) {
+      queryBuilder.andWhere('student_books.shipping_name LIKE :shipping_name', {
+        shipping_name: `%${shipping_name.trim()}%`,
+      })
+    }
+    if (shipping_phone) {
+      queryBuilder.andWhere('student_books.shipping_phone LIKE :shipping_phone', {
+        shipping_phone: `%${shipping_phone.trim()}%`,
+      })
     }
     if (shipping_address) {
       queryBuilder.andWhere('student_books.shipping_address LIKE :shipping_address', {
@@ -536,7 +568,10 @@ export class BooksService {
       class_id: dto.class_id ?? null,
       book_status: dto.book_status ?? BookDeliveryStatus.NOT_SENT,
       change_status: dto.change_status ?? StudentBookChangeStatus.NORMAL,
+      shipping_name: dto.shipping_name ?? null,
+      shipping_phone: dto.shipping_phone ?? null,
       shipping_address: dto.shipping_address ?? null,
+      shipping_note: dto.shipping_note ?? null,
       book_delivery_note: dto.book_delivery_note ?? null,
       book_received_date: receivedDate,
     })
@@ -568,8 +603,17 @@ export class BooksService {
     if (dto.change_status !== undefined) {
       updateData.change_status = dto.change_status
     }
+    if (dto.shipping_name !== undefined) {
+      updateData.shipping_name = dto.shipping_name
+    }
+    if (dto.shipping_phone !== undefined) {
+      updateData.shipping_phone = dto.shipping_phone
+    }
     if (dto.shipping_address !== undefined) {
       updateData.shipping_address = dto.shipping_address
+    }
+    if (dto.shipping_note !== undefined) {
+      updateData.shipping_note = dto.shipping_note
     }
     if (dto.book_delivery_note !== undefined) {
       updateData.book_delivery_note = dto.book_delivery_note

@@ -32,7 +32,10 @@ export interface IEnrollments {
   phone_number?: string
   birth_date?: Date
   address?: string
+  shipping_name?: string
+  shipping_phone?: string
   shipping_address?: string
+  shipping_note?: string
   birth_place?: string
   parish?: string
   deanery?: string

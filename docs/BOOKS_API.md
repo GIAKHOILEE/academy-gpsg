@@ -6,8 +6,8 @@
    - Khi Admin tạo hoặc sửa một cuốn **Sách / Giáo trình**, Admin truyền mảng `class_ids` (danh sách ID các lớp sử dụng cuốn sách đó).
    - Bên API tạo/sửa Lớp học (`Classes`) **không còn** nhận `book_ids` nữa.
 2. **Học viên đăng ký học Online (`Enrollments`):**
-   - Khi học viên gửi form đăng ký học (`POST /enrollments`), nếu có chọn lớp học Online (`learn_type = 2` (Video) hoặc `learn_type = 3` (Meeting)), FE cho học viên nhập thêm trường `shipping_address` (**địa chỉ mới để nhận sách**, độc lập với `address` cá nhân của học viên).
-   - Khi Admin duyệt đơn đăng ký (`PUT /admin/enrollments/:id`) chuyển `status` sang khác `1 (PENDING)` (tức là `2: DONE`, `3: PAY_LATE`, `4: DEBT`), hệ thống tự động tạo các bản ghi trong bảng `student_books` cho học viên đối với tất cả sách của các lớp học Online trong đơn kèm `class_id` và `shipping_address` của đơn.
+   - Khi học viên gửi form đăng ký học (`POST /enrollments`), nếu có chọn lớp học Online (`learn_type = 2` (Video) hoặc `learn_type = 3` (Meeting)), FE cho học viên nhập thêm các trường nhận sách: `shipping_name` (**họ tên người nhận sách**), `shipping_phone` (**số điện thoại người nhận sách**), `shipping_address` (**địa chỉ nhận sách**), và `shipping_note` (**ghi chú người nhận sách**), độc lập với thông tin cá nhân của học viên.
+   - Khi Admin duyệt đơn đăng ký (`PUT /admin/enrollments/:id`) chuyển `status` sang khác `1 (PENDING)` (tức là `2: DONE`, `3: PAY_LATE`, `4: DEBT`), hệ thống tự động tạo các bản ghi trong bảng `student_books` cho học viên đối với tất cả sách của các lớp học Online trong đơn kèm `class_id` và toàn bộ thông tin nhận sách (`shipping_name`, `shipping_phone`, `shipping_address`, `shipping_note`) của đơn.
 3. **Quản lý Ship sách (`student_books`) & Cơ chế Đồng bộ / Đánh dấu (`change_status`):**
    - Giáo trình/sách gắn với **Học viên (`Student`)** tại bảng `student_books`, kèm cột `class_id` thể hiện học viên nhận cuốn sách này từ lớp nào.
    - **Khi thêm hoặc xóa lớp khỏi sách (`PUT /admin/books/:id`, `PATCH /admin/books/:id/classes`):**
@@ -138,12 +138,12 @@
 
 ---
 
-## 4. API Đăng ký Học (`Enrollments`) - Thêm `shipping_address`
+## 4. API Đăng ký Học (`Enrollments`) - Thêm Thông tin Nhận Sách
 
 ### 4.1. Tạo đơn đăng ký học — `POST /enrollments`
 & **Cập nhật đơn đăng ký học — `PUT /admin/enrollments/:id`**
 
-Bổ sung thêm trường `shipping_address` trong Body:
+Bổ sung thêm các trường nhận sách trong Body:
 ```json
 {
   "class_ids": [
@@ -154,15 +154,21 @@ Bổ sung thêm trường `shipping_address` trong Body:
   "gender": 1,
   "phone_number": "0901234567",
   "address": "Địa chỉ hộ khẩu / thường trú của học viên",
-  "shipping_address": "Số 456 Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM"
+  "shipping_name": "Nguyễn Văn B (hoặc người nhà)",
+  "shipping_phone": "0912345678",
+  "shipping_address": "Số 456 Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM",
+  "shipping_note": "Giao giờ hành chính, gọi trước khi giao"
 }
 ```
 
 | Field mới | Kiểu | Bắt buộc | Mô tả |
 | :--- | :--- | :---: | :--- |
-| `shipping_address` | `string` | Không | Địa chỉ mới để nhận sách (dùng khi học viên đăng ký lớp có `learn_type = 2` hoặc `3`). Không ghi đè vào `address` của học viên. |
+| `shipping_name` | `string` | Không | Họ tên người nhận sách (dành cho các lớp online cần ship sách). Tự fallback sang `full_name` nếu để trống. |
+| `shipping_phone` | `string` | Không | Số điện thoại người nhận sách. Tự fallback sang `phone_number` nếu để trống. |
+| `shipping_address` | `string` | Không | Địa chỉ nhận sách. Tự fallback sang `address` nếu để trống. |
+| `shipping_note` | `string` | Không | Ghi chú người nhận sách / chỉ dẫn giao sách. |
 
-> **Lưu ý:** Trong response của `GET /admin/enrollments` và `GET /admin/enrollments/:id` cũng trả về thêm trường `shipping_address`.
+> **Lưu ý:** Trong response của `GET /admin/enrollments` và `GET /admin/enrollments/:id` đều trả về đầy đủ các trường `shipping_name`, `shipping_phone`, `shipping_address`, `shipping_note`.
 
 ---
 
@@ -188,6 +194,8 @@ API chính để Admin theo dõi và đi gửi sách cho học viên.
 | `phone_number` | `string` | Tìm theo số điện thoại học viên |
 | `book_name` | `string` | Tìm theo tên sách |
 | `book_code` | `string` | Tìm theo mã sách |
+| `shipping_name` | `string` | Tìm theo họ tên người nhận sách |
+| `shipping_phone` | `string` | Tìm theo số điện thoại người nhận sách |
 | `shipping_address` | `string` | Tìm theo địa chỉ nhận sách |
 
 **Response `data` item mẫu:**
@@ -199,7 +207,10 @@ API chính để Admin theo dõi và đi gửi sách cho học viên.
   "class_id": 1,
   "book_status": 1,
   "change_status": 0,
+  "shipping_name": "Nguyễn Văn B",
+  "shipping_phone": "0912345678",
   "shipping_address": "Số 456 Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM",
+  "shipping_note": "Giao giờ hành chính, gọi trước khi giao",
   "book_delivery_note": null,
   "book_received_date": null,
   "created_at": "2026-10-30T09:15:00.000Z",
@@ -243,7 +254,7 @@ API chính để Admin theo dõi và đi gửi sách cho học viên.
 
 ---
 
-### 5.2. Cập nhật Trạng thái Ship Sách / Địa chỉ nhận sách
+### 5.2. Cập nhật Trạng thái Ship Sách / Thông tin nhận sách
 FE có thể gọi **1 trong 2** endpoint sau (tùy chỗ đứng trên UI):
 - **Cách 1 (Theo `id` của bản ghi `student_books`):** `PATCH /admin/books/student-books/:id`
 - **Cách 2 (Theo `bookId` và `studentId`):** `PATCH /admin/books/:bookId/students/:studentId`
@@ -254,7 +265,10 @@ FE có thể gọi **1 trong 2** endpoint sau (tùy chỗ đứng trên UI):
   "book_status": 2,
   "change_status": 0,
   "class_id": 1,
+  "shipping_name": "Nguyễn Văn B",
+  "shipping_phone": "0912345678",
   "shipping_address": "Số 789 Trần Hưng Đạo, Q.5, TP.HCM",
+  "shipping_note": "Giao giờ hành chính",
   "book_delivery_note": "VNPost: VN123456789",
   "book_received_date": "2026-10-30"
 }
@@ -265,7 +279,10 @@ FE có thể gọi **1 trong 2** endpoint sau (tùy chỗ đứng trên UI):
 | `book_status` | `number` | Không | `1`: Chưa gửi, `2`: Đang gửi, `3`: Đã nhận sách |
 | `change_status` | `number` | Không | `0`: Bình thường, `1`: Lớp đã xóa khỏi sách, `2`: Học viên đã đổi lớp |
 | `class_id` | `number` | Không | ID lớp học mà học viên nhận sách |
+| `shipping_name` | `string` | Không | Cập nhật họ tên người nhận sách |
+| `shipping_phone` | `string` | Không | Cập nhật số điện thoại người nhận sách |
 | `shipping_address` | `string` | Không | Cập nhật địa chỉ nhận sách mới |
+| `shipping_note` | `string` | Không | Cập nhật ghi chú người nhận sách |
 | `book_delivery_note` | `string` | Không | Ghi chú giao hàng / Mã vận đơn bưu điện |
 | `book_received_date` | `string` | Không | Ngày nhận sách (`YYYY-MM-DD`). Nếu chuyển `book_status = 3` mà không truyền ngày, BE tự động điền ngày hiện tại. |
 

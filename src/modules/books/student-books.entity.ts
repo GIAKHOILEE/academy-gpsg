@@ -37,8 +37,17 @@ export class StudentBook {
   @Column({ type: 'enum', enum: StudentBookChangeStatus, default: StudentBookChangeStatus.NORMAL })
   change_status: StudentBookChangeStatus
 
+  @Column({ nullable: true })
+  shipping_name: string
+
+  @Column({ nullable: true })
+  shipping_phone: string
+
   @Column({ type: 'text', nullable: true })
   shipping_address: string
+
+  @Column({ type: 'text', nullable: true })
+  shipping_note: string
 
   @Column({ type: 'text', nullable: true })
   book_delivery_note: string

@@ -79,7 +79,12 @@ export class EnrollmentsService {
     studentId: number,
     currentEnrollmentClassItems: { class_id: number; learn_type: LearnType }[],
     oldClassIds: number[],
-    shippingAddress?: string | null,
+    shippingInfo?: {
+      shipping_name?: string | null
+      shipping_phone?: string | null
+      shipping_address?: string | null
+      shipping_note?: string | null
+    },
   ): Promise<void> {
     if (!studentId) return
 
@@ -196,7 +201,10 @@ export class EnrollmentsService {
             class_id: defaultClassId,
             book_status: BookDeliveryStatus.NOT_SENT,
             change_status: StudentBookChangeStatus.NORMAL,
-            shipping_address: shippingAddress ?? null,
+            shipping_name: shippingInfo?.shipping_name ?? null,
+            shipping_phone: shippingInfo?.shipping_phone ?? null,
+            shipping_address: shippingInfo?.shipping_address ?? null,
+            shipping_note: shippingInfo?.shipping_note ?? null,
           })
           await studentBookRepo.save(newStudentBook)
         } else {
@@ -215,13 +223,20 @@ export class EnrollmentsService {
             updatePayload.change_status = StudentBookChangeStatus.NORMAL
           }
 
-          if (
-            existing.book_status === BookDeliveryStatus.NOT_SENT &&
-            shippingAddress !== undefined &&
-            shippingAddress !== null &&
-            (currentEnrollmentBookIdSet.has(bookId) || !existing.shipping_address)
-          ) {
-            updatePayload.shipping_address = shippingAddress
+          if (existing.book_status === BookDeliveryStatus.NOT_SENT) {
+            const isCurrent = currentEnrollmentBookIdSet.has(bookId)
+            if (shippingInfo?.shipping_name !== undefined && (isCurrent || !existing.shipping_name)) {
+              updatePayload.shipping_name = shippingInfo.shipping_name
+            }
+            if (shippingInfo?.shipping_phone !== undefined && (isCurrent || !existing.shipping_phone)) {
+              updatePayload.shipping_phone = shippingInfo.shipping_phone
+            }
+            if (shippingInfo?.shipping_address !== undefined && (isCurrent || !existing.shipping_address)) {
+              updatePayload.shipping_address = shippingInfo.shipping_address
+            }
+            if (shippingInfo?.shipping_note !== undefined && (isCurrent || !existing.shipping_note)) {
+              updatePayload.shipping_note = shippingInfo.shipping_note
+            }
           }
 
           if (Object.keys(updatePayload).length > 0) {
@@ -338,7 +353,10 @@ export class EnrollmentsService {
       // 4. TẠO ĐƠN ĐĂNG KÝ (Enrollment Creation)
       const enrollment = enrollmentsRepo.create({
         ...createEnrollmentDto,
+        shipping_name: createEnrollmentDto.shipping_name ?? null,
+        shipping_phone: createEnrollmentDto.shipping_phone ?? null,
         shipping_address: createEnrollmentDto.shipping_address ?? null,
+        shipping_note: createEnrollmentDto.shipping_note ?? null,
         is_logged: isLogged,
         code: generateRandomString(5),
         total_fee: totalFee,
@@ -372,7 +390,10 @@ export class EnrollmentsService {
         student_code: studentEntity?.user?.code || null,
         birth_date: formatStringToDate(createEnrollmentDto.birth_date),
         gender: savedEnrollment.gender,
+        shipping_name: savedEnrollment.shipping_name,
+        shipping_phone: savedEnrollment.shipping_phone,
         shipping_address: savedEnrollment.shipping_address,
+        shipping_note: savedEnrollment.shipping_note,
         classes: class_ids.map(item => ({
           class_id: item.class_id,
           learn_type: item.learn_type,
@@ -593,7 +614,21 @@ export class EnrollmentsService {
         enrollment.payment_status = newStatus === StatusEnrollment.DONE ? PaymentStatus.PAID : PaymentStatus.UNPAID
       }
 
-      const targetShippingAddress = rest.shipping_address !== undefined ? rest.shipping_address : enrollment.shipping_address
+      const targetShippingName =
+        (rest.shipping_name !== undefined ? rest.shipping_name : enrollment.shipping_name) || rest.full_name || enrollment.full_name || null
+      const targetShippingPhone =
+        (rest.shipping_phone !== undefined ? rest.shipping_phone : enrollment.shipping_phone) || rest.phone_number || enrollment.phone_number || null
+      const targetShippingAddress =
+        (rest.shipping_address !== undefined ? rest.shipping_address : enrollment.shipping_address) || rest.address || enrollment.address || null
+      const targetShippingNote =
+        (rest.shipping_note !== undefined ? rest.shipping_note : enrollment.shipping_note) || null
+
+      const shippingInfo = {
+        shipping_name: targetShippingName,
+        shipping_phone: targetShippingPhone,
+        shipping_address: targetShippingAddress,
+        shipping_note: targetShippingNote,
+      }
 
       // 7. ĐỒNG BỘ THÀNH VIÊN LỚP (ClassStudents Sync) & GIÁO TRÌNH (StudentBooks Sync)
       // Logic: PENDING = chỉ là đơn đăng ký chờ. Các trạng thái khác = chính thức tham gia lớp.
@@ -605,7 +640,7 @@ export class EnrollmentsService {
         // Nếu đơn quay về trạng thái PENDING -> Xóa học viên khỏi danh sách lớp chính thức
         await classStudentsRepo.delete({ student_id: enrollment.student_id, class_id: In(oldClassIds) })
         if (enrollment.student_id) {
-          await this.syncStudentBooksForStudent(queryRunner.manager, enrollment.student_id, [], oldClassIds, targetShippingAddress)
+          await this.syncStudentBooksForStudent(queryRunner.manager, enrollment.student_id, [], oldClassIds, shippingInfo)
         }
       } else if (isCurrentlyMember && enrollment.student_id) {
         // A. Kiểm tra sĩ số (Class Capacity Check)
@@ -664,7 +699,7 @@ export class EnrollmentsService {
           enrollment.student_id,
           enrollment.class_ids,
           oldClassIds,
-          targetShippingAddress,
+          shippingInfo,
         )
       }
 
@@ -778,7 +813,10 @@ export class EnrollmentsService {
         email: enrollment?.email,
         parish: enrollment?.parish,
         address: enrollment?.address,
+        shipping_name: enrollment?.shipping_name,
+        shipping_phone: enrollment?.shipping_phone,
         shipping_address: enrollment?.shipping_address,
+        shipping_note: enrollment?.shipping_note,
         deanery: enrollment?.deanery,
         diocese: enrollment?.diocese,
         congregation: enrollment?.congregation,
@@ -942,7 +980,10 @@ export class EnrollmentsService {
         'enrollment.email',
         'enrollment.phone_number',
         'enrollment.address',
+        'enrollment.shipping_name',
+        'enrollment.shipping_phone',
         'enrollment.shipping_address',
+        'enrollment.shipping_note',
         'enrollment.birth_date',
         'enrollment.birth_place',
         'enrollment.parish',
@@ -1043,7 +1084,10 @@ export class EnrollmentsService {
       email: enrollment.email,
       phone_number: enrollment.phone_number,
       address: enrollment.address,
+      shipping_name: enrollment.shipping_name,
+      shipping_phone: enrollment.shipping_phone,
       shipping_address: enrollment.shipping_address,
+      shipping_note: enrollment.shipping_note,
       birth_date: enrollment.birth_date,
       birth_place: enrollment.birth_place,
       parish: enrollment.parish,
@@ -1090,7 +1134,10 @@ export class EnrollmentsService {
         'enrollment.email',
         'enrollment.phone_number',
         'enrollment.address',
+        'enrollment.shipping_name',
+        'enrollment.shipping_phone',
         'enrollment.shipping_address',
+        'enrollment.shipping_note',
         'enrollment.class_ids',
         'student.id',
         'user.code',
@@ -1188,7 +1235,10 @@ export class EnrollmentsService {
         email: enrollment.email,
         phone_number: enrollment.phone_number,
         address: enrollment.address,
+        shipping_name: enrollment.shipping_name,
+        shipping_phone: enrollment.shipping_phone,
         shipping_address: enrollment.shipping_address,
+        shipping_note: enrollment.shipping_note,
         discount: enrollment.discount,
         is_read_note: enrollment.is_read_note,
         class_ids: enrollment.class_ids,

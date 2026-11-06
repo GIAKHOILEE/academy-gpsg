@@ -92,10 +92,25 @@ export class UpdateEnrollmentsDto {
   @IsOptional()
   address: string
 
-  @ApiPropertyOptional({ description: 'Địa chỉ mới để nhận sách (khi đăng ký học online)', example: '123 Nguyễn Trãi, Q.1, TP.HCM' })
+  @ApiPropertyOptional({ description: 'Họ tên người nhận sách (khi đăng ký học online)', example: 'Nguyễn Văn A' })
+  @IsString()
+  @IsOptional()
+  shipping_name?: string
+
+  @ApiPropertyOptional({ description: 'Số điện thoại người nhận sách (khi đăng ký học online)', example: '0901234567' })
+  @IsString()
+  @IsOptional()
+  shipping_phone?: string
+
+  @ApiPropertyOptional({ description: 'Địa chỉ nhận sách (khi đăng ký học online)', example: '123 Nguyễn Trãi, Q.1, TP.HCM' })
   @IsString()
   @IsOptional()
   shipping_address?: string
+
+  @ApiPropertyOptional({ description: 'Ghi chú người nhận sách (khi đăng ký học online)', example: 'Giao giờ hành chính, gọi trước khi giao' })
+  @IsString()
+  @IsOptional()
+  shipping_note?: string
 
   @ApiPropertyOptional({ description: 'Nơi sinh', example: 'Nơi sinh' })
   @IsString()
