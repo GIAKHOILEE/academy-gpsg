@@ -1,6 +1,7 @@
 import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
+import { CreateStoryAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { CreateStoryDto } from './dtos/create-story.dto'
@@ -14,6 +15,17 @@ import { StoryService } from './story.service'
 @Auth(Role.ADMIN, Role.STAFF)
 export class AdminStoryController {
   constructor(private readonly storyService: StoryService) {}
+
+  @Post('ai-generate')
+  @ApiOperation({ summary: 'AI gen hàng loạt bài viết Story theo khoảng deadline' })
+  async generateStoriesByAi(@Body() dto: CreateStoryAiBatchDto): Promise<ResponseDto> {
+    const result = await this.storyService.generateStoriesByAi(dto)
+    return new ResponseDto({
+      statusCode: HttpStatus.CREATED,
+      messageCode: 'STORY_AI_BATCH_CREATED',
+      data: result,
+    })
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new story' })
@@ -29,7 +41,7 @@ export class AdminStoryController {
   @Get()
   @ApiOperation({ summary: 'Get all stories' })
   async getStories(@Query() paginateStoryDto: PaginateStoryDto): Promise<ResponseDto> {
-    const stories = await this.storyService.getStories(paginateStoryDto)
+    const stories = await this.storyService.getStories(paginateStoryDto, true)
     return new ResponseDto({
       statusCode: HttpStatus.OK,
       messageCode: 'STORIES_FETCHED',

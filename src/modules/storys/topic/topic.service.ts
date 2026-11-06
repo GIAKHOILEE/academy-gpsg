@@ -54,11 +54,12 @@ export class TopicService {
 
     const { data, meta } = await paginate(query, paginateTopicDto)
 
-    const topics: ITopic[] = data.map((topic: ITopic) => {
+    const topics: ITopic[] = data.map((topic: Topic) => {
       return {
         id: topic.id,
         name: topic.name,
         description: topic.description,
+        ai_status: topic.ai_status,
       }
     })
 
@@ -77,6 +78,7 @@ export class TopicService {
       id: topic.id,
       name: topic.name,
       description: topic.description,
+      ai_status: topic.ai_status,
     }
 
     return formattedTopic

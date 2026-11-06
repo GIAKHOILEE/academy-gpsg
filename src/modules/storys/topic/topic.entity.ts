@@ -1,3 +1,4 @@
+import { AiStatus } from '@enums/ai-content.enum'
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { Story } from '../story/story.entity'
 
@@ -11,6 +12,9 @@ export class Topic {
 
   @Column({ nullable: true })
   description: string
+
+  @Column({ type: 'varchar', length: 32, nullable: true, default: null })
+  ai_status: AiStatus | null
 
   @OneToMany(() => Story, story => story.topic, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   stories: Story[]

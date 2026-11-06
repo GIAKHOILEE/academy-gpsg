@@ -11,6 +11,7 @@ import {
 } from 'typeorm'
 import { Post } from '../post/post.entity'
 import { PostCatalogType } from '@enums/post.enum'
+import { AiStatus } from '@enums/ai-content.enum'
 
 @Entity('post_catalogs')
 export class PostCatalog {
@@ -35,6 +36,9 @@ export class PostCatalog {
   @Column({ default: PostCatalogType.BOTTOM })
   type: PostCatalogType
 
+  @Column({ nullable: true })
+  parent_id: number
+
   @ManyToOne(() => PostCatalog, catalog => catalog.children, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'parent_id' })
   parent: PostCatalog | null // Catalog
@@ -47,6 +51,9 @@ export class PostCatalog {
 
   @Column({ default: true })
   is_active: boolean
+
+  @Column({ type: 'varchar', length: 32, nullable: true, default: null })
+  ai_status: AiStatus | null
 
   @CreateDateColumn()
   createdAt: Date

@@ -1,3 +1,5 @@
+import { AiStatus } from '@enums/ai-content.enum'
+
 export interface IPostCatalog {
   id: number
   index?: number
@@ -8,4 +10,5 @@ export interface IPostCatalog {
   parent?: IPostCatalog | null
   children?: IPostCatalog[]
   is_active?: boolean
+  ai_status?: AiStatus | null
 }

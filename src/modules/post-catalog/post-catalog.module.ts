@@ -1,3 +1,4 @@
+import { AiContentModule } from '@modules/ai-content/ai-content.module'
 import { Post } from '@modules/post/post.entity'
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
@@ -7,7 +8,7 @@ import { PostCatalog } from './post-catalog.entity'
 import { PostCatalogService } from './post-catalog.service'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PostCatalog, Post])],
+  imports: [TypeOrmModule.forFeature([PostCatalog, Post]), AiContentModule],
   controllers: [PostCatalogAdminController, PostCatalogController, PostCatalogTopAdminController, PostCatalogTopControllerUser],
   providers: [PostCatalogService],
 })

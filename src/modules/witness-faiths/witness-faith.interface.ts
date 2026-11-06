@@ -1,3 +1,4 @@
+import { AiStatus } from '@enums/ai-content.enum'
 import { IWitnessFaithMenu } from './_witness-faith-menu/witness-faith-menu.interface'
 
 export interface IWitnessFaith {
@@ -8,4 +9,7 @@ export interface IWitnessFaith {
   content?: string
   witness_faith_menu_id?: number
   witness_faith_menu?: IWitnessFaithMenu
+  ai_status?: AiStatus | null
+  ai_batch_id?: number | null
+  created_at?: Date | string
 }

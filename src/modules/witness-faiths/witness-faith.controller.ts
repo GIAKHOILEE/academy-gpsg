@@ -1,3 +1,4 @@
+import { CreateWitnessFaithAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { WitnessFaithService } from './witness-faith.service'
 import { CreateWitnessFaithDto } from './dtos/create-witness-faith.dto'
@@ -21,6 +22,17 @@ import { UpdateWitnessFaithDto } from './dtos/update-witness-faith.dto'
 export class WitnessFaithController {
   constructor(private readonly witnessFaithService: WitnessFaithService) {}
 
+  @Post('ai-generate')
+  @ApiOperation({ summary: 'AI gen hàng loạt bài viết Chứng nhân đức tin (Witness Faiths) theo khoảng deadline' })
+  async generateWitnessFaithsByAi(@Body() dto: CreateWitnessFaithAiBatchDto): Promise<ResponseDto> {
+    const data = await this.witnessFaithService.generateWitnessFaithsByAi(dto)
+    return {
+      statusCode: 201,
+      messageCode: 'WITNESS_FAITH_AI_BATCH_CREATED',
+      data,
+    }
+  }
+
   @Post()
   @ApiOperation({ summary: 'Tạo chứng nhân đức tin' })
   async createWitnessFaith(@Body() createWitnessFaithDto: CreateWitnessFaithDto): Promise<ResponseDto> {
@@ -35,7 +47,7 @@ export class WitnessFaithController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách chứng nhân đức tin' })
   async getWitnessFaiths(@Query() paginateWitnessFaithDto: PaginateWitnessFaithDto): Promise<ResponseDto> {
-    const { data, meta } = await this.witnessFaithService.getAllWitnessFaiths(paginateWitnessFaithDto)
+    const { data, meta } = await this.witnessFaithService.getAllWitnessFaiths(paginateWitnessFaithDto, true)
     return {
       statusCode: 200,
       messageCode: 'WITNESS_FAITH_GET_SUCCESS',

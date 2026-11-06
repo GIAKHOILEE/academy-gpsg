@@ -1,3 +1,4 @@
+import { AiContentModule } from '@modules/ai-content/ai-content.module'
 import { Module } from '@nestjs/common'
 import { WitnessFaithService } from './witness-faith.service'
 import {
@@ -12,7 +13,7 @@ import { WitnessFaithMenu } from './_witness-faith-menu/witness-faith-menu.entit
 import { WitnessFaithMenuService } from './_witness-faith-menu/witness-faith-menu.service'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([WitnessFaith, WitnessFaithMenu, WitnessFaithMenu])],
+  imports: [TypeOrmModule.forFeature([WitnessFaith, WitnessFaithMenu]), AiContentModule],
   controllers: [WitnessFaithMenuController, WitnessFaithMenuPublicController, WitnessFaithController, WitnessFaithPublicController],
   providers: [WitnessFaithService, WitnessFaithMenuService],
 })

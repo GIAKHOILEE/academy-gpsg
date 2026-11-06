@@ -1,3 +1,4 @@
+import { AiStatus } from '@enums/ai-content.enum'
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, JoinColumn } from 'typeorm'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
 
@@ -21,7 +22,7 @@ export class Post {
   @Column({ length: 255 })
   slug: string
 
-  @Column({ length: 255, nullable: true, default: null })
+  @Column({ type: 'text', nullable: true, default: null })
   image: string
 
   @Column({ default: true })
@@ -33,9 +34,18 @@ export class Post {
   @Column({ default: false })
   is_kiot: boolean
 
+  @Column({ nullable: true })
+  post_catalog_id: number
+
   @ManyToOne(() => PostCatalog, catalog => catalog.posts, { onUpdate: 'CASCADE', onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'post_catalog_id' })
   post_catalog: PostCatalog
+
+  @Column({ type: 'varchar', length: 32, nullable: true, default: null })
+  ai_status: AiStatus | null
+
+  @Column({ nullable: true, default: null })
+  ai_batch_id: number | null
 
   @CreateDateColumn()
   created_at: Date

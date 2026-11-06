@@ -9,8 +9,11 @@ import { UpdatePostDto } from './dtos/update-post.dto'
 import { Post } from './post.entity'
 import { IPost } from './post.interface'
 import { PostCatalog } from '../post-catalog/post-catalog.entity'
+import { AiStatus } from '@enums/ai-content.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { PostCatalogType } from '@enums/post.enum'
+import { AiContentService } from '@modules/ai-content/ai-content.service'
+import { CreatePostCatalogTopAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { DataSource } from 'typeorm'
 
 @Injectable()
@@ -21,7 +24,12 @@ export class PostService {
     @InjectRepository(PostCatalog)
     private readonly postCatalogRepository: Repository<PostCatalog>,
     private readonly dataSource: DataSource,
+    private readonly aiContentService: AiContentService,
   ) {}
+
+  async generatePostsTopByAi(dto: CreatePostCatalogTopAiBatchDto) {
+    return this.aiContentService.createPostCatalogTopBatch(dto)
+  }
 
   async create(createPostDto: CreatePostDto): Promise<IPost> {
     const { title, content, image, post_catalog_id, description } = createPostDto
@@ -76,7 +84,7 @@ export class PostService {
   }
 
   async getManyPost(params: PaginatePostDto, isAdmin: boolean, type: PostCatalogType, isKiot: boolean): Promise<any> {
-    const { is_banner, ...paginationParams } = params
+    const { is_banner, ai_status, ...paginationParams } = params
     const queryBuilder = this.postRepository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.post_catalog', 'post_catalog')
@@ -89,9 +97,13 @@ export class PostService {
         'post.is_active',
         'post.is_banner',
         'post.description',
+        'post.ai_status',
+        'post.ai_batch_id',
+        'post.created_at',
         'post_catalog.id',
         'post_catalog.name',
         'post_catalog.slug',
+        'post_catalog.ai_status',
       ])
 
     if (isKiot) {
@@ -106,6 +118,11 @@ export class PostService {
 
     if (!isAdmin) {
       queryBuilder.andWhere('post.is_active = :is_active', { is_active: true })
+      queryBuilder.andWhere('(post.ai_status IS NULL OR post.ai_status = :completedStatus)', {
+        completedStatus: AiStatus.COMPLETED,
+      })
+    } else if (ai_status) {
+      queryBuilder.andWhere('post.ai_status = :ai_status', { ai_status })
     }
 
     if (is_banner) {
@@ -124,11 +141,15 @@ export class PostService {
         is_active: post.is_active,
         is_banner: post.is_banner,
         description: post.description,
+        ai_status: post.ai_status,
+        ai_batch_id: post.ai_batch_id,
+        created_at: post.created_at,
         post_catalog: post.post_catalog
           ? {
               id: post.post_catalog.id,
               name: post.post_catalog.name,
               slug: post.post_catalog.slug,
+              ai_status: post.post_catalog.ai_status,
             }
           : null,
       }
@@ -151,7 +172,7 @@ export class PostService {
       throwAppException('POST_NOT_FOUND', ErrorCode.POST_NOT_FOUND)
     }
 
-    const formatPost = {
+    const formatPost: IPost = {
       id: post.id,
       title: post.title,
       index: post.index,
@@ -161,11 +182,14 @@ export class PostService {
       is_active: post.is_active,
       is_banner: post.is_banner,
       description: post.description,
+      ai_status: post.ai_status,
+      ai_batch_id: post.ai_batch_id,
       post_catalog: post.post_catalog
         ? {
             id: post.post_catalog.id,
             name: post.post_catalog.name,
             slug: post.post_catalog.slug,
+            ai_status: post.post_catalog.ai_status,
           }
         : null,
     }

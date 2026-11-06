@@ -1,7 +1,8 @@
 import { PaginationDto } from '@common/pagination'
+import { AiStatus } from '@enums/ai-content.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class PaginateWitnessFaithDto extends PaginationDto {
   @IsOptional()
@@ -20,4 +21,12 @@ export class PaginateWitnessFaithDto extends PaginationDto {
     example: 'John Doe',
   })
   name: string
+
+  @IsOptional()
+  @IsEnum(AiStatus)
+  @ApiPropertyOptional({
+    enum: AiStatus,
+    description: 'Filter by AI generation status (PENDING, PROCESSING, COMPLETED, FAILED)',
+  })
+  ai_status?: AiStatus
 }

@@ -1,3 +1,4 @@
+import { AiContentModule } from '@modules/ai-content/ai-content.module'
 import { Module } from '@nestjs/common'
 import { AdminTopicController, UserTopicController } from './topic/topic.controller'
 import { AdminStoryController, UserStoryController } from './story/story.controller'
@@ -8,7 +9,7 @@ import { Topic } from './topic/topic.entity'
 import { TopicService } from './topic/topic.service'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Story, Topic])],
+  imports: [TypeOrmModule.forFeature([Story, Topic]), AiContentModule],
   controllers: [AdminTopicController, UserTopicController, AdminStoryController, UserStoryController],
   providers: [StoryService, TopicService],
 })

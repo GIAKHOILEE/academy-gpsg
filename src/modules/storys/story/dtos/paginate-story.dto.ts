@@ -1,6 +1,7 @@
 import { PaginationDto } from '@common/pagination'
+import { AiStatus } from '@enums/ai-content.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 import { Transform } from 'class-transformer'
 
 export class PaginateStoryDto extends PaginationDto {
@@ -14,4 +15,9 @@ export class PaginateStoryDto extends PaginationDto {
   @ApiPropertyOptional({ example: 1, description: 'Search by story topic id' })
   @Transform(({ value }) => Number(value))
   topic_id?: number
+
+  @IsOptional()
+  @IsEnum(AiStatus)
+  @ApiPropertyOptional({ enum: AiStatus, description: 'Filter by AI generation status (PENDING, PROCESSING, COMPLETED, FAILED)' })
+  ai_status?: AiStatus
 }

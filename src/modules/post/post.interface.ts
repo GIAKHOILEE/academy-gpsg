@@ -1,3 +1,5 @@
+import { AiStatus } from '@enums/ai-content.enum'
+
 export interface IPost {
   id?: number
   title: string
@@ -8,11 +10,14 @@ export interface IPost {
   image?: string
   is_active?: boolean
   is_banner?: boolean
+  ai_status?: AiStatus | null
+  ai_batch_id?: number | null
   created_at?: Date
   updated_at?: Date
   post_catalog?: {
     id: number
     name: string
     slug: string
+    ai_status?: AiStatus | null
   } | null
 }

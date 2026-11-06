@@ -1,3 +1,4 @@
+import { AiStatus } from '@enums/ai-content.enum'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { WitnessFaithMenu } from './_witness-faith-menu/witness-faith-menu.entity'
 
@@ -9,21 +10,27 @@ export class WitnessFaith {
   @Column()
   name: string
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   image: string
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   description: string
 
-  @ManyToOne(() => WitnessFaithMenu, witnessFaithMenu => witnessFaithMenu.id, { onDelete: 'CASCADE' })
+  @ManyToOne(() => WitnessFaithMenu, witnessFaithMenu => witnessFaithMenu.witness_faiths, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'witness_faith_menu_id' })
   witness_faith_menu: WitnessFaithMenu
 
   @Column({ nullable: true })
   witness_faith_menu_id: number
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   content: string
+
+  @Column({ type: 'varchar', length: 32, nullable: true, default: null })
+  ai_status: AiStatus | null
+
+  @Column({ nullable: true, default: null })
+  ai_batch_id: number | null
 
   @CreateDateColumn()
   created_at: Date

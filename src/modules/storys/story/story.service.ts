@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { paginate, PaginationMeta } from '@common/pagination'
 import { formatStringDate, throwAppException } from '@common/utils'
+import { AiStatus } from '@enums/ai-content.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
+import { AiContentService } from '@modules/ai-content/ai-content.service'
+import { CreateStoryAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { Topic } from '../topic/topic.entity'
 import { CreateStoryDto } from './dtos/create-story.dto'
 import { PaginateStoryDto } from './dtos/paginate-story.dto'
@@ -18,7 +21,12 @@ export class StoryService {
     private storyRepository: Repository<Story>,
     @InjectRepository(Topic)
     private topicRepository: Repository<Topic>,
+    private readonly aiContentService: AiContentService,
   ) {}
+
+  async generateStoriesByAi(dto: CreateStoryAiBatchDto) {
+    return this.aiContentService.createStoryBatch(dto)
+  }
 
   async createStory(createStoryDto: CreateStoryDto): Promise<IStory> {
     const topic = await this.topicRepository.findOne({ where: { id: createStoryDto.topic_id } })
@@ -45,6 +53,8 @@ export class StoryService {
       content: savedStory.content,
       topic_id: savedStory.topic_id,
       topic: topic,
+      ai_status: savedStory.ai_status,
+      ai_batch_id: savedStory.ai_batch_id,
       created_at: formatStringDate(savedStory.created_at.toISOString()),
     }
 
@@ -96,14 +106,16 @@ export class StoryService {
       content: story.content,
       topic_id: story.topic_id,
       topic: story.topic,
+      ai_status: story.ai_status,
+      ai_batch_id: story.ai_batch_id,
       created_at: formatStringDate(story.created_at.toISOString()),
     }
 
     return formattedStory
   }
 
-  async getStories(paginateStoryDto: PaginateStoryDto): Promise<{ data: IStory[]; meta: PaginationMeta }> {
-    const { topic_id, ...rest } = paginateStoryDto
+  async getStories(paginateStoryDto: PaginateStoryDto, isAdmin = false): Promise<{ data: IStory[]; meta: PaginationMeta }> {
+    const { topic_id, ai_status, ...rest } = paginateStoryDto
     const query = this.storyRepository
       .createQueryBuilder('story')
       .leftJoinAndSelect('story.topic', 'topic')
@@ -113,19 +125,32 @@ export class StoryService {
         'story.thumbnail',
         'story.content',
         'story.topic_id',
+        'story.ai_status',
+        'story.ai_batch_id',
         'story.created_at',
         'topic.id',
         'topic.name',
+        'topic.ai_status',
         'story.index',
       ])
 
     if (topic_id) {
-      query.where('story.topic_id = :topic_id', { topic_id })
+      query.andWhere('story.topic_id = :topic_id', { topic_id })
     }
 
-    if (!rest.title && !topic_id) {
-      // random order nếu không có filter
+    if (!isAdmin) {
+      query.andWhere('(story.ai_status IS NULL OR story.ai_status = :completedStatus)', {
+        completedStatus: AiStatus.COMPLETED,
+      })
+    } else if (ai_status) {
+      query.andWhere('story.ai_status = :ai_status', { ai_status })
+    }
+
+    if (!isAdmin && !rest.title && !topic_id && !rest.orderBy) {
+      // random order nếu không có filter bên phía user
       query.orderBy('RAND()')
+    } else if (isAdmin && !rest.orderBy) {
+      query.orderBy('story.created_at', 'DESC')
     }
 
     const { data, meta } = await paginate(query, rest)
@@ -137,11 +162,16 @@ export class StoryService {
       thumbnail: story.thumbnail,
       content: story.content,
       topic_id: story.topic_id,
+      ai_status: story.ai_status,
+      ai_batch_id: story.ai_batch_id,
       created_at: formatStringDate(story.created_at.toISOString()),
-      topic: {
-        id: story.topic.id,
-        name: story.topic.name,
-      },
+      topic: story.topic
+        ? {
+            id: story.topic.id,
+            name: story.topic.name,
+            ai_status: story.topic.ai_status,
+          }
+        : undefined,
     }))
 
     return {

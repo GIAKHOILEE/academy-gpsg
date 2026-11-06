@@ -70,6 +70,7 @@ import { BooksModule } from '@modules/books/books.module'
 import { StorageHubModule } from '@modules/storage/hub/storage-hub.module'
 import { HvmMeetModule } from '@modules/hvm-meet/hvm-meet.module'
 import { SmsGatewayModule } from '@modules/sms-gateway/sms-gateway.module'
+import { AiContentModule } from '@modules/ai-content/ai-content.module'
 import { ScheduleModule } from '@nestjs/schedule'
 
 @Module({
@@ -137,6 +138,7 @@ import { ScheduleModule } from '@nestjs/schedule'
     HvmMeetModule,
     ScheduleModule.forRoot(),
     SmsGatewayModule,
+    AiContentModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,6 +1,7 @@
 import { Auth } from '@decorators/auth.decorator'
 import { PostCatalogType } from '@enums/post.enum'
 import { Role } from '@enums/role.enum'
+import { CreatePostCatalogTopAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { ResponseDto } from 'src/common/response.dto'
@@ -18,6 +19,17 @@ import { PostCatalogService } from './post-catalog.service'
 @Auth(Role.ADMIN, Role.STAFF)
 export class PostCatalogTopAdminController {
   constructor(private readonly postCatalogService: PostCatalogService) {}
+
+  @Post('ai-generate')
+  @ApiOperation({ summary: 'AI gen hàng loạt bài viết cho danh mục Post Catalog Top theo khoảng deadline' })
+  async generatePostsByAi(@Body() dto: CreatePostCatalogTopAiBatchDto): Promise<ResponseDto> {
+    const result = await this.postCatalogService.generatePostsTopByAi(dto)
+    return new ResponseDto({
+      messageCode: 'POST_CATALOG_TOP_AI_BATCH_CREATED',
+      statusCode: 201,
+      data: result,
+    })
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create post-catalog' })

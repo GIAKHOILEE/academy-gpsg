@@ -1,3 +1,4 @@
+import { AiStatus } from '@enums/ai-content.enum'
 import { ITopic } from '../topic/topic.interface'
 
 export interface IStory {
@@ -8,5 +9,7 @@ export interface IStory {
   content?: string
   topic_id?: number
   topic?: ITopic
+  ai_status?: AiStatus | null
+  ai_batch_id?: number | null
   created_at: string
 }

@@ -1,3 +1,4 @@
+import { AiStatus } from '@enums/ai-content.enum'
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 import { Topic } from '../topic/topic.entity'
 
@@ -12,7 +13,7 @@ export class Story {
   @Column()
   title: string
 
-  @Column()
+  @Column({ type: 'text', nullable: true })
   thumbnail: string
 
   @Column({ type: 'longtext' })
@@ -24,6 +25,12 @@ export class Story {
   @ManyToOne(() => Topic, topic => topic.stories, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'topic_id' })
   topic: Topic
+
+  @Column({ type: 'varchar', length: 32, nullable: true, default: null })
+  ai_status: AiStatus | null
+
+  @Column({ nullable: true, default: null })
+  ai_batch_id: number | null
 
   @CreateDateColumn()
   created_at: Date

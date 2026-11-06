@@ -8,6 +8,7 @@ import { PostService } from './post.service'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { PostCatalogType } from '@enums/post.enum'
+import { CreatePostCatalogTopAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 
 /*===============================================
   ======================ADMIN=====================
@@ -19,6 +20,17 @@ import { PostCatalogType } from '@enums/post.enum'
 export class PostControllerAdmin {
   constructor(private readonly postService: PostService) {}
   // ========================== BOTTOM ==========================
+
+  @Post('top/ai-generate')
+  @ApiOperation({ summary: 'AI gen hàng loạt bài viết cho danh mục Post Catalog Top theo khoảng deadline' })
+  async generatePostsTopByAi(@Body() dto: CreatePostCatalogTopAiBatchDto): Promise<ResponseDto> {
+    const result = await this.postService.generatePostsTopByAi(dto)
+    return new ResponseDto({
+      statusCode: 201,
+      messageCode: 'POST_CATALOG_TOP_AI_BATCH_CREATED',
+      data: result,
+    })
+  }
 
   @Post('kiot')
   @ApiOperation({ summary: 'Tạo bài viết kiot' })

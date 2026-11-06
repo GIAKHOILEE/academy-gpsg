@@ -68,6 +68,7 @@ export class WitnessFaithMenuService {
     const formattedData = data.map(witnessFaithMenu => ({
       id: witnessFaithMenu.id,
       name: witnessFaithMenu.name,
+      ai_status: witnessFaithMenu.ai_status,
     }))
     return { data: formattedData, meta }
   }
@@ -80,12 +81,15 @@ export class WitnessFaithMenuService {
     const formattedWitnessFaithMenu = {
       id: witnessFaithMenu.id,
       name: witnessFaithMenu.name,
+      ai_status: witnessFaithMenu.ai_status,
       witness_faiths: witnessFaithMenu.witness_faiths.map(witnessFaith => ({
         id: witnessFaith.id,
         name: witnessFaith.name,
         image: witnessFaith.image,
         description: witnessFaith.description,
         content: witnessFaith.content,
+        ai_status: witnessFaith.ai_status,
+        ai_batch_id: witnessFaith.ai_batch_id,
       })),
     }
 

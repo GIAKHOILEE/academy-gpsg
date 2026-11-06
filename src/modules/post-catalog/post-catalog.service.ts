@@ -10,6 +10,8 @@ import { IPostCatalog } from './post-catalog.interface'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Post } from '@modules/post/post.entity'
 import { PostCatalogType } from '@enums/post.enum'
+import { AiContentService } from '@modules/ai-content/ai-content.service'
+import { CreatePostCatalogTopAiBatchDto } from '@modules/ai-content/dtos/create-ai-batch.dto'
 
 @Injectable()
 export class PostCatalogService {
@@ -18,7 +20,12 @@ export class PostCatalogService {
     private readonly postCatalogRepository: Repository<PostCatalog>,
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
+    private readonly aiContentService: AiContentService,
   ) {}
+
+  async generatePostsTopByAi(dto: CreatePostCatalogTopAiBatchDto) {
+    return this.aiContentService.createPostCatalogTopBatch(dto)
+  }
 
   async create(createPostCatalogDto: CreatePostCatalogDto, type: PostCatalogType = PostCatalogType.BOTTOM): Promise<IPostCatalog> {
     const { name, parent_id } = createPostCatalogDto
@@ -69,6 +76,7 @@ export class PostCatalogService {
         'post_catalog.parent_id',
         'post_catalog.icon',
         'post_catalog.image',
+        'post_catalog.ai_status',
       ])
     if (!id && !parent_id) {
       queryBuilder.andWhere('post_catalog.parent_id IS NULL')
@@ -100,6 +108,7 @@ export class PostCatalogService {
           is_active: catalog.is_active,
           icon: catalog.icon,
           image: catalog.image,
+          ai_status: catalog.ai_status,
           parent: null,
           children,
         }
@@ -124,6 +133,7 @@ export class PostCatalogService {
         'post_catalog.is_active',
         'post_catalog.icon',
         'post_catalog.image',
+        'post_catalog.ai_status',
       ])
       .where('post_catalog.parent_id = :parentId', { parentId })
       .andWhere(isAdmin ? '1=1' : 'post_catalog.is_active = :is_active', { is_active: true })
@@ -142,6 +152,7 @@ export class PostCatalogService {
           is_active: child.is_active,
           icon: child.icon,
           image: child.image,
+          ai_status: child.ai_status,
           children: grandChildren,
         }
       }),
@@ -161,6 +172,7 @@ export class PostCatalogService {
         'post_catalog.parent_id',
         'post_catalog.icon',
         'post_catalog.image',
+        'post_catalog.ai_status',
       ])
     queryBuilder.andWhere('post_catalog.is_active = :is_active', { is_active: true })
     if (!id && !parent_id) {
@@ -191,6 +203,7 @@ export class PostCatalogService {
           is_active: catalog.is_active,
           icon: catalog.icon,
           image: catalog.image,
+          ai_status: catalog.ai_status,
           parent: null,
           children,
         }
