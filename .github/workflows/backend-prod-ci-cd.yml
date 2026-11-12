@@ -52,4 +52,3 @@ jobs:
               docker pull ${{ secrets.DOCKER_USERNAME }}/hvm-be:latest
               docker compose -p hvm-be-prod down
               docker compose -p hvm-be-prod up -d
-              docker image prune -f
