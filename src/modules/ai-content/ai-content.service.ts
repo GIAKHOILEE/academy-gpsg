@@ -291,13 +291,16 @@ export class AiContentService implements OnModuleInit {
       await this.updateCategoryAiStatus(item.module_type, item.category_id, AiStatus.PROCESSING)
       await this.updateModuleRecordStatus(item.module_type, item.target_record_id, AiStatus.PROCESSING)
 
-      // 2. Lấy danh sách tiêu đề đã có trong cùng đợt để tránh trùng lặp chủ đề/góc nhìn
-      const siblingItems = await this.itemRepository.find({
-        where: { batch_id: item.batch_id, status: AiStatus.COMPLETED },
-        select: ['title', 'image_url'],
+      // 2. Lấy danh sách tiêu đề đã có trong cùng module/đợt để tránh trùng lặp chủ đề hoặc bài viết trên web
+      const recentCompletedItems = await this.itemRepository.find({
+        where: { module_type: item.module_type, status: AiStatus.COMPLETED },
+        select: ['id', 'title', 'image_url'],
+        order: { id: 'DESC' },
+        take: 30,
       })
-      const existingTitles = siblingItems.map(s => s.title).filter((t): t is string => Boolean(t))
-      const usedImageUrls = siblingItems.map(s => s.image_url).filter((u): u is string => Boolean(u))
+      const filteredSiblings = recentCompletedItems.filter(s => s.id !== item.id)
+      const existingTitles = filteredSiblings.map(s => s.title).filter((t): t is string => Boolean(t))
+      const usedImageUrls = filteredSiblings.map(s => s.image_url).filter((u): u is string => Boolean(u))
 
       const categoryName = item.batch?.category_name || (await this.validateAndGetCategoryName(item.module_type, item.category_id))
 

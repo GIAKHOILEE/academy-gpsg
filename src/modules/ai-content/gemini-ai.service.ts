@@ -131,41 +131,53 @@ export class GeminiAiService {
             .join('\n')}\n`
         : ''
 
+    const webRef = await this.fetchWebReferenceFromPrompt(prompt, sequenceNumber, existingTitles)
+    const wantsOriginalWebTitle = Boolean(
+      webRef && /copy\s*title|giữ\s*nguyên\s*tiêu\s*đề|y\s*chang|vị\s*thánh\s*cụ\s*thể|1\s*bài\s*thánh/i.test(prompt),
+    )
+
+    const titleRequirementBlock = webRef
+      ? `YÊU CẦU BẮT BUỘC VỀ TIÊU ĐỀ (TITLE) KHI CÓ BÀI VIẾT THAM KHẢO TỪ TRANG WEB:
+- BẮT BUỘC viết đúng về vị Thánh / nhân vật cụ thể trong bài tham khảo: "${webRef.referenceTitle}".
+- TUYỆT ĐỐI KHÔNG đặt tiêu đề chung chung như "Đức Tin Sáng Ngời Giữa Đời Thường" hay "Chứng Nhân Đức Tin Giữa Lòng Đời".
+- Phần ===TITLE=== PHẢI giữ đúng tiêu đề bài viết gốc trên web: "${webRef.referenceTitle}".`
+      : `YÊU CẦU BẮT BUỘC VỀ TIÊU ĐỀ (TITLE):
+- Tiêu đề (TITLE) PHẢI NGẮN GỌN, SÚC TÍCH, ẤN TƯỢNG: chỉ từ 4 đến 9 từ (tối đa 55 ký tự).
+- TUYỆT ĐỐI KHÔNG viết tiêu đề dài dòng, KHÔNG dùng dấu hai chấm ":" để nối thêm vế phụ dài.
+- Ví dụ tiêu đề chuẩn: "Nét Hòa Bình Trong Văn Hóa Việt Nam", "Nghệ Thuật Đồng Hành Mục Vụ", "Ánh Sáng Đức Tin Giữa Đời Thường", "Chị Thánh Têrêsa Với Người Trẻ".`
+
     const systemInstruction = `Bạn là biên tập viên và tác giả chuyên nghiệp của Học viện Mục vụ Tổng Giáo phận Sài Gòn.
 Nhiệm vụ của bạn là viết bài viết chất lượng cao, sâu sắc, mạch lạc, giàu giá trị nhân văn và học thuật bằng tiếng Việt, được trình bày HTML đẹp mắt, chuẩn mực như bài báo chuyên khảo của Học viện.
 
 ${moduleGuide}
 
-YÊU CẦU BẮT BUỘC VỀ TIÊU ĐỀ (TITLE):
-- Tiêu đề (TITLE) PHẢI NGẮN GỌN, SÚC TÍCH, ẤN TƯỢNG: chỉ từ 4 đến 9 từ (tối đa 55 ký tự).
-- TUYỆT ĐỐI KHÔNG viết tiêu đề dài dòng, KHÔNG dùng dấu hai chấm ":" để nối thêm vế phụ dài.
-- Ví dụ tiêu đề chuẩn: "Nét Hòa Bình Trong Văn Hóa Việt Nam", "Nghệ Thuật Đồng Hành Mục Vụ", "Ánh Sáng Đức Tin Giữa Đời Thường", "Chị Thánh Têrêsa Với Người Trẻ".
+${titleRequirementBlock}
 
 YÊU CẦU BẮT BUỘC VỀ ĐỘ DÀI VÀ THIẾT KẾ GIAO DIỆN HTML (CONTENT):
 1. Độ dài phần CONTENT phải đạt từ ${Math.max(1400, minWords + 300)} đến ${Math.min(2600, maxWords - 200)} từ (nằm trong khoảng ${minWords} - ${maxWords} từ).
-2. Bài viết PHẢI được chia thành 5 - 7 phần lớn (I, II, III...), mỗi phần lớn có các mục nhỏ (1, 2...) và từ 3 - 5 đoạn văn phân tích chi tiết, dẫn chứng cụ thể, câu chuyện minh họa sinh động và bài học suy niệm sâu sắc.
+2. Bài viết PHẢI được chia thành các phần lớn rõ ràng (ví dụ: BỔN MẠNG & TIỂU SỬ, TRÍCH DẪN, SUY NIỆM CUỘC ĐỜI, BÀI HỌC ĐỨC TIN, CẦU NGUYỆN hoặc I, II, III...), phân tích chi tiết, giữ đầy đủ mọi dữ kiện lịch sử, năm tháng, nhân vật, lời cầu nguyện từ bài gốc và mở rộng suy niệm sâu sắc.
 3. Trình bày HTML (CONTENT) PHẢI có đầy đủ inline CSS (căn lề, cỡ chữ to nhỏ phân cấp, màu sắc hài hòa trang trọng) theo đúng chuẩn mẫu sau:
-   - Mở đầu bài viết là Tiêu đề lớn căn giữa, chữ IN HOA đậm, cỡ 30px, màu đỏ đô:
-     <p style="text-align: center; line-height: 1.4; margin-bottom: 6px;"><strong><span style="font-size: 30px; color: rgb(204, 0, 0);">[TIÊU ĐỀ BÀI VIẾT IN HOA]</span></strong></p>
+   - Mở đầu bài viết là Tiêu đề lớn căn giữa, chữ IN HOA đậm, cỡ 28px-30px, màu đỏ đô:
+     <p style="text-align: center; line-height: 1.4; margin-bottom: 6px;"><strong><span style="font-size: 28px; color: rgb(204, 0, 0);">[TIÊU ĐỀ BÀI VIẾT IN HOA]</span></strong></p>
    - Ngay dưới tiêu đề là dòng bút danh/nguồn căn phải, chữ nghiêng, cỡ 18px:
      <p style="text-align: right; margin-bottom: 20px;"><em><span style="font-size: 18px; color: #555555;">Ban Biên Tập Học Viện Mục Vụ</span></em></p>
    - Đoạn dẫn nhập (Sapo) căn đều 2 bên (justify), cỡ 20px, chữ nghiêng màu xanh đen (#1f3a52), thụt đầu dòng &nbsp;&nbsp;&nbsp;&nbsp;:
      <p style="text-align: justify; line-height: 1.75; margin-bottom: 18px;"><span style="font-size: 20px; color: #1f3a52;"><em>&nbsp;&nbsp;&nbsp;&nbsp;[Đoạn mở đầu khái quát toàn bài...]</em></span></p>
-   - Tiêu đề các phần lớn (I, II, III, IV, V...) căn đều (justify), chữ IN HOA đậm, cỡ 22px, màu xanh dương đậm rgb(0, 85, 255):
-     <p style="text-align: justify; margin-top: 24px; margin-bottom: 12px;"><strong><span style="color: rgb(0, 85, 255); font-size: 22px;">I. [TÊN PHẦN LỚN IN HOA]</span></strong></p>
-   - Tiêu đề các mục nhỏ (1., 2., 3...) căn đều (justify), chữ đậm nghiêng, cỡ 20px, màu xanh ngọc rgb(0, 130, 153):
-     <p style="text-align: justify; margin-top: 16px; margin-bottom: 10px;"><span style="font-size: 20px; color: rgb(0, 130, 153);"><strong><em>1. [Tên mục nhỏ]</em></strong></span></p>
+   - Tiêu đề các phần lớn căn đều (justify), chữ IN HOA đậm, cỡ 22px, màu xanh dương đậm rgb(0, 85, 255):
+     <p style="text-align: justify; margin-top: 24px; margin-bottom: 12px;"><strong><span style="color: rgb(0, 85, 255); font-size: 22px;">[TÊN PHẦN LỚN IN HOA]</span></strong></p>
+   - Tiêu đề các mục nhỏ căn đều (justify), chữ đậm nghiêng, cỡ 20px, màu xanh ngọc rgb(0, 130, 153):
+     <p style="text-align: justify; margin-top: 16px; margin-bottom: 10px;"><span style="font-size: 20px; color: rgb(0, 130, 153);"><strong><em>[Tên mục nhỏ]</em></strong></span></p>
    - Các đoạn văn nội dung (<p>) BẮT BUỘC căn đều 2 bên (text-align: justify), cỡ chữ 20px, line-height: 1.75, màu #222222, đầu mỗi đoạn có "&nbsp;&nbsp;&nbsp;&nbsp;" để thụt đầu dòng. Trong đoạn văn, hãy nhấn mạnh các ý chính bằng chữ đậm <strong>, chữ nghiêng <em> hoặc đổi màu tinh tế <span style="color: rgb(180, 40, 0);"><strong>...</strong></span>:
      <p style="text-align: justify; line-height: 1.75; margin-bottom: 14px;"><span style="font-size: 20px; color: #222222;">&nbsp;&nbsp;&nbsp;&nbsp;[Nội dung đoạn văn...]</span></p>
-   - Các câu trích dẫn Kinh Thánh, lời danh ngôn hoặc điểm suy niệm nổi bật đặt trong khối trích dẫn căn giữa, chữ cỡ 20px màu nâu đỏ rgb(153, 56, 0):
+   - Các câu trích dẫn Kinh Thánh, lời chứng hoặc lời cầu nguyện đặt trong khối trích dẫn căn giữa hoặc căn đều trang trọng, chữ cỡ 20px màu nâu đỏ rgb(153, 56, 0):
      <blockquote style="text-align: center; margin: 20px auto; padding: 14px 24px; background-color: #fdfaf6; border-left: 4px solid #c0392b; border-radius: 4px;"><p style="text-align: center; line-height: 1.6; margin: 0;"><span style="font-size: 20px; color: rgb(153, 56, 0);"><strong><em>“[Nội dung câu trích dẫn...]”</em></strong></span></p></blockquote>
 4. KHÔNG dùng thẻ <html>, <head>, <body> hay markdown \`\`\`.
-5. Đây là bài viết thứ ${sequenceNumber} trên tổng số ${totalQuantity} bài của đợt tạo nội dung. Hãy chọn một góc nhìn, chủ đề cụ thể hoặc nhân vật/câu chuyện riêng biệt để bài viết hoàn toàn độc lập và mới mẻ.
+5. Đây là bài viết thứ ${sequenceNumber} trên tổng số ${totalQuantity} bài của đợt tạo nội dung.
 ${avoidTitlesBlock}
 
 YÊU CẦU ĐỊNH DẠNG ĐẦU RA (BẮT BUỘC GIỮ ĐÚNG CÁC NHÃN PHÂN CÁCH SAU):
 ===TITLE===
-(Tiêu đề bài viết bằng tiếng Việt thật ngắn gọn từ 4 - 9 từ, tối đa 55 ký tự, không có dấu ngoặc kép)
+(Tiêu đề bài viết bằng tiếng Việt, không có dấu ngoặc kép)
 ===DESCRIPTION===
 (Đoạn mô tả tóm tắt ngắn gọn từ 2 - 3 câu bằng tiếng Việt, không chứa thẻ HTML)
 ===IMAGE_PROMPT===
@@ -175,14 +187,20 @@ YÊU CẦU ĐỊNH DẠNG ĐẦU RA (BẮT BUỘC GIỮ ĐÚNG CÁC NHÃN PHÂN 
 ===CONTENT===
 (Toàn bộ nội dung bài viết định dạng HTML đã được thiết kế inline style đẹp mắt, dài từ ${minWords} đến ${maxWords} từ)`
 
-    const webRef = await this.fetchWebReferenceFromPrompt(prompt, sequenceNumber)
     const webReferenceBlock = webRef
-      ? `\nNỘI DUNG THAM KHẢO TỪ ĐƯỜNG LINK ADMIN CUNG CẤP:
-- Nguồn bài viết: ${webRef.sourceUrl}
-- Tiêu đề gốc trên trang web: "${webRef.referenceTitle}"
-- Nội dung trích xuất từ trang web:
+      ? `\nBÀI VIẾT THAM KHẢO CỤ THỂ ĐÃ ĐỌC TỪ TRANG WEB CỦA ADMIN (BẮT BUỘC VIẾT ĐÚNG VỀ VỊ THÁNH NÀY):
+- Link bài viết chi tiết: ${webRef.sourceUrl}
+- Tiêu đề gốc bài viết (BẮT BUỘC DÙNG CHO ===TITLE===): "${webRef.referenceTitle}"
+- Mô tả tóm tắt gốc: "${webRef.referenceDescription || ''}"
+- Nội dung chi tiết của bài viết trên trang web:
 ${webRef.referenceText}
-(Lưu ý: Hãy bám sát thông tin, nhân vật, sự kiện từ bài viết trên trang web này; nếu Admin yêu cầu giữ/copy tiêu đề hoặc ghi nguồn ở cuối bài thì thực hiện đúng theo yêu cầu).\n`
+${webRef.referenceHtml ? `\n- Định dạng HTML & màu sắc mẫu của bài gốc trên trang web (tham khảo để giữ đúng tinh thần định dạng màu sắc):\n${webRef.referenceHtml.slice(0, 6000)}` : ''}
+
+YÊU CẦU ĐẶC BIỆT KHI VIẾT BÀI TỪ TRANG WEB TRÊN:
+1. BẮT BUỘC viết bài về đúng vị Thánh trong tiêu đề "${webRef.referenceTitle}", giữ đầy đủ toàn bộ nội dung, tiểu sử, năm sinh/năm mất, trích dẫn, suy niệm và lời cầu nguyện trong bài gốc, kết hợp trình bày định dạng màu sắc inline CSS đẹp mắt và sâu sắc để đạt độ dài ${minWords} - ${maxWords} từ.
+2. Phần ===TITLE=== bắt buộc trả về đúng: ${webRef.referenceTitle}
+3. Ở cuối phần ===CONTENT===, bắt buộc có dòng ghi nguồn căn phải:
+<p style="text-align: right; margin-top: 20px;"><em><span style="font-size: 18px; color: #555555;">Nguồn: Hội Đồng Giám Mục Việt Nam (${webRef.sourceUrl})</span></em></p>\n`
       : ''
 
     const userPrompt = `Yêu cầu từ Admin (Prompt): "${prompt}"
@@ -239,17 +257,17 @@ Chỉ trả về mã HTML của phần viết thêm (không lặp lại phần �
       content = this.trimHtmlToMaxWords(content, maxWords)
     }
 
-    const wantsOriginalWebTitle = Boolean(webRef && /copy\s*title|giữ\s*nguyên\s*tiêu\s*đề|y\s*chang/i.test(prompt))
-    const shortTitle = this.normalizeShortTitle(parsed.title || webRef?.referenceTitle || '', wantsOriginalWebTitle)
+    const rawCandidateTitle = wantsOriginalWebTitle && webRef?.referenceTitle ? webRef.referenceTitle : parsed.title || webRef?.referenceTitle || ''
+    const shortTitle = this.normalizeShortTitle(rawCandidateTitle, Boolean(webRef))
     content = this.beautifyArticleHtml(content, shortTitle)
-    if (webRef && /ghi\s*nguồn|nguồn/i.test(prompt) && !/nguồn\s*:/i.test(content.slice(-500))) {
-      content = `${content}\n<p style="text-align: right; margin-top: 18px;"><em><span style="font-size: 18px; color: #555555;">Nguồn: ${webRef.sourceUrl}</span></em></p>`
+    if (webRef && !content.includes(webRef.sourceUrl)) {
+      content = `${content}\n<p style="text-align: right; margin-top: 20px;"><em><span style="font-size: 18px; color: #555555;">Nguồn: Hội Đồng Giám Mục Việt Nam (<a href="${webRef.sourceUrl}" target="_blank" style="color: rgb(0, 85, 255);">${webRef.sourceUrl}</a>)</span></em></p>`
     }
     wordCount = this.countWords(content)
 
     return {
       title: shortTitle,
-      description: parsed.description,
+      description: parsed.description || webRef?.referenceDescription || shortTitle,
       content,
       wordCount,
       imagePrompt: parsed.imagePrompt,
@@ -803,20 +821,24 @@ BẮT BUỘC trả về đúng cấu trúc đánh dấu sau:
 
   /**
    * Tự động phát hiện đường link (http/https) trong prompt của Admin,
-   * tải nội dung bài viết (hoặc chọn bài viết cụ thể nếu link là trang danh mục) để cung cấp ngữ cảnh thực tế cho AI.
+   * tải nội dung bài viết (hỗ trợ cả website Next.js SSR __NEXT_DATA__ như hdgmvietnam.com lẫn HTML tĩnh)
+   * và chọn đúng bài viết cụ thể chưa trùng lặp để cung cấp ngữ cảnh thực tế cho AI.
    */
   private async fetchWebReferenceFromPrompt(
     prompt: string,
     sequenceNumber = 1,
-  ): Promise<{ sourceUrl: string; referenceTitle: string; referenceText: string } | null> {
+    existingTitles: string[] = [],
+  ): Promise<{ sourceUrl: string; referenceTitle: string; referenceDescription?: string; referenceText: string; referenceHtml?: string } | null> {
     if (!prompt) return null
     const urlMatches = prompt.match(/https?:\/\/[^\s"'<>]+/gi)
     if (!urlMatches || urlMatches.length === 0) return null
 
     const rawUrl = urlMatches[0].replace(/[.,;)]+$/, '')
     let cleanUrl = rawUrl
+    let origin = ''
     try {
       const parsedUrl = new URL(rawUrl)
+      origin = parsedUrl.origin
       parsedUrl.searchParams.delete('fbclid')
       parsedUrl.searchParams.delete('gclid')
       for (const key of Array.from(parsedUrl.searchParams.keys())) {
@@ -830,13 +852,102 @@ BẮT BUỘC trả về đúng cấu trúc đánh dấu sau:
     }
 
     try {
-      const html = await this.fetchHtmlWithTimeout(cleanUrl, 8000)
+      const html = await this.fetchHtmlWithTimeout(cleanUrl, 9000)
       if (!html) return null
 
+      // 1. Hỗ trợ trang Next.js SSR có <script id="__NEXT_DATA__"> (như hdgmvietnam.com)
+      const nextData = this.extractNextDataJson(html)
+      if (nextData?.props?.pageProps) {
+        const pageProps = nextData.props.pageProps
+
+        // 1a. Nếu link truyền vào là trang chi tiết bài viết (có postDetail)
+        if (pageProps.postDetail?.title && pageProps.postDetail?.content) {
+          const post = pageProps.postDetail
+          const plainContent = this.extractTextFromHtml(post.content)
+          this.logger.log(`Đã đọc bài chi tiết từ Next.js URL: ${cleanUrl} ("${post.title}")`)
+          return {
+            sourceUrl: cleanUrl,
+            referenceTitle: String(post.title).trim(),
+            referenceDescription: post.metaDescription ? String(post.metaDescription).trim() : undefined,
+            referenceText: plainContent.slice(0, 9000),
+            referenceHtml: String(post.content),
+          }
+        }
+
+        // 1b. Nếu link truyền vào là trang chuyên mục (có categoryCode hoặc focusNews.value)
+        const categoryCode = pageProps.categoryCode
+        let candidateArticles: Array<{ title: string; link: string; metaDescription?: string }> =
+          Array.isArray(pageProps.focusNews?.value) ? [...pageProps.focusNews.value] : []
+
+        if (categoryCode && origin) {
+          try {
+            const apiRes = await fetch(`${origin}/api/posts?sub-id=${encodeURIComponent(categoryCode)}&page=1&size=28`, {
+              headers: { Accept: 'application/json' },
+            })
+            if (apiRes.ok) {
+              const apiJson: any = await apiRes.json()
+              if (Array.isArray(apiJson?.value) && apiJson.value.length > 0) {
+                candidateArticles = apiJson.value
+              }
+            }
+          } catch {
+            // Giữ danh sách từ focusNews.value nếu gọi /api/posts lỗi
+          }
+        }
+
+        if (candidateArticles.length > 0) {
+          const normalizedExisting = existingTitles.map(t => t.toLowerCase().trim())
+          const wantsSpecificSaint = /vị\s*thánh\s*cụ\s*thể|1\s*bài\s*thánh|thánh/i.test(prompt)
+
+          // Ưu tiên lọc các bài viết về 1 vị Thánh cụ thể (không phải bài tổng hợp "Các Thánh...") và chưa từng tạo
+          let filtered = candidateArticles.filter(
+            item => item?.title && item?.link && !normalizedExisting.some(ex => ex.includes(item.title.toLowerCase().trim())),
+          )
+          if (filtered.length === 0) {
+            filtered = candidateArticles.filter(item => item?.title && item?.link)
+          }
+
+          if (wantsSpecificSaint) {
+            const specificSaintArticles = filtered.filter(
+              item =>
+                /(thánh\s+(?!tử\s*đạo\s*việt\s*nam)|chân\s*phước|đức\s*cha)/i.test(item.title) &&
+                !/các\s+(thánh|vị\s*thánh)/i.test(item.title),
+            )
+            if (specificSaintArticles.length > 0) {
+              filtered = specificSaintArticles
+            }
+          }
+
+          const chosen = filtered[(Math.max(1, sequenceNumber) - 1) % filtered.length]
+          if (chosen?.link && origin) {
+            const detailUrl = chosen.link.startsWith('http')
+              ? chosen.link
+              : `${origin}/chi-tiet/${chosen.link.replace(/^\/+/, '')}`
+            const detailHtml = await this.fetchHtmlWithTimeout(detailUrl, 9000)
+            if (detailHtml) {
+              const detailNextData = this.extractNextDataJson(detailHtml)
+              const postDetail = detailNextData?.props?.pageProps?.postDetail
+              if (postDetail?.content) {
+                const refTitle = String(postDetail.title || chosen.title).trim()
+                const plainText = this.extractTextFromHtml(postDetail.content)
+                this.logger.log(`Đã chọn & đọc bài Thánh từ chuyên mục: ${detailUrl} ("${refTitle}")`)
+                return {
+                  sourceUrl: detailUrl,
+                  referenceTitle: refTitle,
+                  referenceDescription: postDetail.metaDescription || chosen.metaDescription,
+                  referenceText: plainText.slice(0, 9000),
+                  referenceHtml: String(postDetail.content),
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Hỗ trợ các trang web HTML tiêu chuẩn
       let targetUrl = cleanUrl
       let targetHtml = html
 
-      // Kiểm tra xem trang này có phải trang danh sách chuyên mục (nhiều link bài viết con) hay không
       const articleLinks = this.extractArticleLinksFromListing(html, cleanUrl)
       if (articleLinks.length > 0) {
         const chosenLink = articleLinks[(Math.max(1, sequenceNumber) - 1) % articleLinks.length]
@@ -858,33 +969,7 @@ BẮT BUỘC trả về đúng cấu trúc đánh dấu sau:
         .split(/\s*[|–—-]\s*(?:Hội đồng Giám mục|HDGM|Trang chủ)/i)[0]
         .trim()
 
-      const paragraphs: string[] = []
-      const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi
-      let pMatch: RegExpExecArray | null
-      while ((pMatch = pRegex.exec(targetHtml)) !== null) {
-        const text = this.decodeHtmlEntities(
-          pMatch[1]
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim(),
-        )
-        if (text.length >= 40) {
-          paragraphs.push(text)
-        }
-      }
-
-      const bodyText =
-        paragraphs.length > 0
-          ? paragraphs.join('\n\n').slice(0, 6000)
-          : this.decodeHtmlEntities(
-              targetHtml
-                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
-                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
-                .replace(/<[^>]+>/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim(),
-            ).slice(0, 4500)
-
+      const bodyText = this.extractTextFromHtml(targetHtml).slice(0, 8000)
       if (!extractedTitle && !bodyText) return null
 
       this.logger.log(`Đã đọc nội dung tham khảo từ link: ${targetUrl} (Tiêu đề: "${extractedTitle}")`)
@@ -897,6 +982,45 @@ BẮT BUỘC trả về đúng cấu trúc đánh dấu sau:
       this.logger.warn(`Không thể tải nội dung từ URL trong prompt (${cleanUrl}): ${err?.message}`)
       return null
     }
+  }
+
+  private extractNextDataJson(html: string): any | null {
+    const match = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
+    if (!match?.[1]) return null
+    try {
+      return JSON.parse(match[1])
+    } catch {
+      return null
+    }
+  }
+
+  private extractTextFromHtml(rawHtml: string): string {
+    if (!rawHtml) return ''
+    const paragraphs: string[] = []
+    const pRegex = /<(p|h[1-6]|blockquote|li)[^>]*>([\s\S]*?)<\/\1>/gi
+    let pMatch: RegExpExecArray | null
+    while ((pMatch = pRegex.exec(rawHtml)) !== null) {
+      const text = this.decodeHtmlEntities(
+        pMatch[2]
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      )
+      if (text.length >= 3) {
+        paragraphs.push(text)
+      }
+    }
+    if (paragraphs.length > 0) {
+      return paragraphs.join('\n\n')
+    }
+    return this.decodeHtmlEntities(
+      rawHtml
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    )
   }
 
   private async fetchHtmlWithTimeout(url: string, timeoutMs = 8000): Promise<string | null> {
