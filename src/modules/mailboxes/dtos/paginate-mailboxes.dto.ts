@@ -1,9 +1,11 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { IsOptional, IsString } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 
 export class PaginateMailboxesDto extends PaginationDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'Full name of the mailbox',

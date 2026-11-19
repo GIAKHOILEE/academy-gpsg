@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { StorageFileKind } from '@enums/storage.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
@@ -58,6 +59,7 @@ export class UploadStorageFileDto {
 
 export class RenameStorageFileDto {
   @ApiProperty({ description: 'Tên mới của file (kèm phần mở rộng)' })
+  @Trim()
   @IsString()
   @IsNotEmpty()
   name: string
@@ -113,6 +115,7 @@ export class CreateStorageFolderDto {
   provider_id: number
 
   @ApiProperty({ description: 'Tên thư mục' })
+  @Trim()
   @IsString()
   @IsNotEmpty()
   name: string
@@ -126,6 +129,7 @@ export class CreateStorageFolderDto {
 
 export class RenameStorageFolderDto {
   @ApiProperty({ description: 'Tên mới của thư mục' })
+  @Trim()
   @IsString()
   @IsNotEmpty()
   name: string

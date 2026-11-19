@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator'
@@ -8,6 +9,7 @@ export class UpdateSmsDeviceDto {
     example: 'Máy Samsung SIM Viettel Chính',
   })
   @IsOptional()
+  @Trim()
   @IsString()
   @MaxLength(120)
   name?: string

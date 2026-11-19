@@ -1,5 +1,13 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { formatStringDate, formatStringToDate, hashPassword, removeVietnameseTones, throwAppException } from '@common/utils'
+import {
+  formatStringDate,
+  formatStringToDate,
+  hashPassword,
+  parseFullNameMeta,
+  removeVietnameseTones,
+  throwAppException,
+  trimString,
+} from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -39,6 +47,9 @@ export class StudentsService {
     try {
       const { image_4x6, diploma_image, transcript_image, other_document, card_code, ...userData } = createStudentDto
       const { password, email, code, full_name, birth_date, ...rest } = userData
+      if (rest.saint_name !== undefined) {
+        rest.saint_name = trimString(rest.saint_name)
+      }
 
       // Kiểm tra code đã tồn tại
       if (!code) throwAppException('CODE_IS_REQUIRED', ErrorCode.CODE_IS_REQUIRED, HttpStatus.BAD_REQUEST)
@@ -49,8 +60,7 @@ export class StudentsService {
       }
 
       const hashedPassword = await hashPassword(password ?? code)
-      const first_name = full_name.trim().split(/\s+/).pop()
-      const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
+      const { full_name: trimmedFullName, first_name, full_name_normalized } = parseFullNameMeta(full_name)
       const new_birth_date = !birth_date || birth_date === '' ? '1970-01-01' : formatStringToDate(birth_date)
       const user = queryRunner.manager.getRepository(User).create({
         password: hashedPassword,
@@ -58,7 +68,7 @@ export class StudentsService {
         status: UserStatus.ACTIVE,
         email,
         code,
-        full_name,
+        full_name: trimmedFullName,
         full_name_normalized,
         first_name,
         birth_date: new_birth_date,
@@ -109,9 +119,9 @@ export class StudentsService {
 
       // Đồng bộ học viên sang hệ thống thư viện (sau khi commit thành công)
       this.librarySyncService.syncStudentToLibrary({
-        full_name: full_name,
+        full_name: trimmedFullName,
         code: code,
-        saint_name: userData.saint_name || null,
+        saint_name: rest.saint_name || null,
         password: password ?? code,
         email: email || null,
         birth_date: new_birth_date,
@@ -138,6 +148,9 @@ export class StudentsService {
     const { image_4x6, diploma_image, transcript_image, other_document, graduate, graduate_year, card_code, card_status, ...userData } =
       updateStudentDto
     const { email, full_name, password, birth_date, code, ...rest } = userData
+    if (rest.saint_name !== undefined) {
+      rest.saint_name = trimString(rest.saint_name)
+    }
 
     try {
       const studentRepo = queryRunner.manager.getRepository(Student)
@@ -166,12 +179,11 @@ export class StudentsService {
 
       // Cập nhật user: merge dữ liệu mới vào dữ liệu cũ
       const hashedPassword = password ? await hashPassword(password) : user.password
-      const first_name = full_name ? full_name.trim().split(/\s+/).pop() : user.first_name
-      const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : user.full_name_normalized
+      const { full_name: trimmedFullName, first_name, full_name_normalized } = parseFullNameMeta(full_name)
       const updatedUser = userRepo.merge(user, {
         email: email ?? user.email,
-        full_name: full_name ?? user.full_name,
-        full_name_normalized,
+        full_name: trimmedFullName || user.full_name,
+        full_name_normalized: trimmedFullName ? full_name_normalized : user.full_name_normalized,
         first_name: first_name ?? user.first_name,
         password: hashedPassword,
         birth_date: birth_date ? formatStringToDate(birth_date) : user.birth_date,
@@ -653,8 +665,8 @@ export class StudentsService {
       queryBuilder.andWhere('user.id = :user_id', { user_id })
     }
 
-    if (full_name) {
-      queryBuilder.andWhere('user.full_name_normalized = :full_name', { full_name: removeVietnameseTones(full_name).toLowerCase().trim() })
+    if (full_name?.trim()) {
+      queryBuilder.andWhere('user.full_name_normalized = :full_name', { full_name: removeVietnameseTones(full_name).toLowerCase() })
     }
 
     if (birth_date) {

@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { LearnType, PaymentMethod } from '@enums/class.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator'
@@ -38,11 +39,13 @@ export class CreateEnrollmentsDto {
 
   // thông tin sinh viên
   @ApiPropertyOptional({ description: 'Tên thánh', example: 'Tên thánh' })
+  @Trim()
   @IsString()
   @IsOptional()
   saint_name: string
 
   @ApiPropertyOptional({ description: 'Tên sinh viên', example: 'Tên sinh viên' })
+  @Trim()
   @IsString()
   @IsOptional()
   full_name: string
@@ -75,6 +78,7 @@ export class CreateEnrollmentsDto {
   address: string
 
   @ApiPropertyOptional({ description: 'Họ tên người nhận sách (khi đăng ký học online)', example: 'Nguyễn Văn A' })
+  @Trim()
   @IsString()
   @IsOptional()
   shipping_name?: string

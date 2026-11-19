@@ -30,8 +30,32 @@ export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, saltRounds)
 }
 
+export function trimString<T>(value: T): T {
+  return (typeof value === 'string' ? value.trim() : value) as T
+}
+
+export function parseFullNameMeta(fullName?: string | null): {
+  full_name: string | null | undefined
+  first_name: string | undefined
+  full_name_normalized: string | null
+} {
+  if (fullName === undefined || fullName === null) {
+    return { full_name: fullName, first_name: undefined, full_name_normalized: null }
+  }
+  const trimmed = fullName.trim()
+  if (!trimmed) {
+    return { full_name: '', first_name: undefined, full_name_normalized: null }
+  }
+  return {
+    full_name: trimmed,
+    first_name: trimmed.split(/\s+/).pop(),
+    full_name_normalized: removeVietnameseTones(trimmed).toLowerCase(),
+  }
+}
+
 export function removeVietnameseTones(str: string): string {
   return str
+    .trim()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd')
@@ -46,9 +70,9 @@ export function convertToSlug(text: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
-    .trim()
 }
 
 // convert string date to date object

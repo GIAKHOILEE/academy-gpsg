@@ -1,7 +1,9 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateBookDto {
+  @Trim()
   @IsString()
   @IsNotEmpty()
   @ApiProperty({ description: 'Tên giáo trình / sách', example: 'Giáo trình Toán cao cấp' })

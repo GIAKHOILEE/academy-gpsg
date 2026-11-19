@@ -1,10 +1,12 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { FinancesPaymentMethod, FinancesType } from '@enums/finances.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBooleanString, IsOptional, IsString } from 'class-validator'
 
 export class PaginateFinancesDto extends PaginationDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Name of the finances' })
   name?: string

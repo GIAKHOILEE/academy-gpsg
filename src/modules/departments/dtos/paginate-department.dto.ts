@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsString, IsOptional, IsBooleanString } from 'class-validator'
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 
 export class PaginateDepartmentDto extends PaginationDto {
   @ApiPropertyOptional({
@@ -15,6 +16,7 @@ export class PaginateDepartmentDto extends PaginationDto {
     description: 'Tên khoa',
     example: 'Ngoại ngữ',
   })
+  @Trim()
   @IsString()
   @IsOptional()
   name?: string

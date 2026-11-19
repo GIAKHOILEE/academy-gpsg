@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
@@ -12,6 +13,7 @@ export class UpdateDocumentsDto {
   batch_code: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'The name of the document',
@@ -80,6 +82,7 @@ export class BuyDocumentsDto {
 
 export class UserBuyDocumentDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'The name of the document',

@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { Gender } from '@enums/role.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator'
@@ -8,11 +9,13 @@ export class UpdateUserDto {
   @ApiPropertyOptional({ description: 'Mã code', example: '2026-0001' })
   code?: string
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên đầy đủ', example: 'John Doe' })
   full_name?: string
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên tài khoản', example: 'John Doe' })
@@ -23,6 +26,7 @@ export class UpdateUserDto {
   @ApiPropertyOptional({ description: 'Email', example: 'john.doe@example.com' })
   email?: string
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên thánh', example: 'John Doe' })
@@ -102,6 +106,7 @@ export class UpdateUserDtoV2 {
   @IsOptional()
   password: string
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên đầy đủ', example: 'John Doe' })
@@ -112,6 +117,7 @@ export class UpdateUserDtoV2 {
   @ApiPropertyOptional({ description: 'Email', example: 'john.doe@example.com' })
   email?: string
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên thánh', example: 'John Doe' })

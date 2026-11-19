@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsNumber, IsOptional, IsString } from 'class-validator'
@@ -14,6 +15,7 @@ export class PaginateExamDto extends PaginationDto {
   class_id?: number
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'Tên đề kiểm tra',

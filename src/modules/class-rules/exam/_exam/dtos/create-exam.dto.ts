@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty } from '@nestjs/swagger'
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator'
 
@@ -10,6 +11,7 @@ export class CreateExamDto {
   })
   class_id: number
 
+  @Trim()
   @IsNotEmpty()
   @IsString()
   @ApiProperty({

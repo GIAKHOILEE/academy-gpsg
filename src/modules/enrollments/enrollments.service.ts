@@ -7,9 +7,11 @@ import {
   generateRandomString,
   hashPassword,
   mapScheduleToVietnamese,
+  parseFullNameMeta,
   removeVietnameseTones,
   renderPdfFromTemplate,
   throwAppException,
+  trimString,
 } from '@common/utils'
 import { BookDeliveryStatus, LearnType, PaymentMethod, PaymentStatus, StatusEnrollment, StudentBookChangeStatus } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
@@ -276,10 +278,11 @@ export class EnrollmentsService {
           studentId = studentEntity.id
           // Tự động điền thông tin từ hồ sơ học viên vào đơn đăng ký (giữ nguyên shipping_address mới mà học viên nhập)
           const { user } = studentEntity
+          const { full_name: userFullName, full_name_normalized: userFullNameNormalized } = parseFullNameMeta(user.full_name)
           Object.assign(createEnrollmentDto, {
-            saint_name: user.saint_name,
-            full_name: user.full_name,
-            full_name_normalized: removeVietnameseTones(user.full_name).toLowerCase(),
+            saint_name: trimString(user.saint_name),
+            full_name: userFullName,
+            full_name_normalized: userFullNameNormalized,
             email: user.email,
             phone_number: user.phone_number,
             address: user.address,
@@ -351,9 +354,12 @@ export class EnrollmentsService {
       }
 
       // 4. TẠO ĐƠN ĐĂNG KÝ (Enrollment Creation)
+      const { full_name: trimmedFullName, full_name_normalized } = parseFullNameMeta(createEnrollmentDto.full_name)
       const enrollment = enrollmentsRepo.create({
         ...createEnrollmentDto,
-        shipping_name: createEnrollmentDto.shipping_name ?? null,
+        saint_name: trimString(createEnrollmentDto.saint_name),
+        full_name: trimmedFullName,
+        shipping_name: trimString(createEnrollmentDto.shipping_name) ?? null,
         shipping_phone: createEnrollmentDto.shipping_phone ?? null,
         shipping_address: createEnrollmentDto.shipping_address ?? null,
         shipping_note: createEnrollmentDto.shipping_note ?? null,
@@ -363,7 +369,7 @@ export class EnrollmentsService {
         prepaid: 0,
         debt: totalFee, // Mặc định đơn mới sẽ có dư nợ bằng tổng phí
         student_id: studentId,
-        full_name_normalized: removeVietnameseTones(createEnrollmentDto.full_name).toLowerCase().trim(),
+        full_name_normalized,
         is_read_note: createEnrollmentDto.user_note ? false : null,
       })
 
@@ -442,6 +448,9 @@ export class EnrollmentsService {
 
   async updateEnrollmentV3(id: number, updateEnrollmentDto: UpdateEnrollmentsDto): Promise<void> {
     const { student_code, status: newStatus, prepaid, class_ids: newClassData, ...rest } = updateEnrollmentDto
+    if (rest.full_name !== undefined) rest.full_name = trimString(rest.full_name)
+    if (rest.saint_name !== undefined) rest.saint_name = trimString(rest.saint_name)
+    if (rest.shipping_name !== undefined) rest.shipping_name = trimString(rest.shipping_name)
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
@@ -515,17 +524,17 @@ export class EnrollmentsService {
         if (!user) {
           isNewUser = true
           isNewUserCreated = true
-          const targetFullName = rest.full_name || enrollment.full_name
-          const first_name = targetFullName ? targetFullName.trim().split(/\s+/).pop() : undefined
+          const targetFullName = rest.full_name || trimString(enrollment.full_name)
+          const { full_name: normalizedTargetFullName, first_name, full_name_normalized } = parseFullNameMeta(targetFullName)
           user = userRepo.create({
             code: student_code,
             password: await hashPassword(student_code),
             role: Role.STUDENT,
             status: UserStatus.ACTIVE,
             first_name,
-            saint_name: enrollment.saint_name,
-            full_name: enrollment.full_name,
-            full_name_normalized: enrollment.full_name ? removeVietnameseTones(enrollment.full_name).toLowerCase().trim() : null,
+            saint_name: trimString(enrollment.saint_name),
+            full_name: normalizedTargetFullName ?? trimString(enrollment.full_name),
+            full_name_normalized,
             email: enrollment.email,
             phone_number: enrollment.phone_number,
             address: enrollment.address,
@@ -615,7 +624,9 @@ export class EnrollmentsService {
       }
 
       const targetShippingName =
-        (rest.shipping_name !== undefined ? rest.shipping_name : enrollment.shipping_name) || rest.full_name || enrollment.full_name || null
+        trimString(
+          (rest.shipping_name !== undefined ? rest.shipping_name : enrollment.shipping_name) || rest.full_name || enrollment.full_name,
+        ) || null
       const targetShippingPhone =
         (rest.shipping_phone !== undefined ? rest.shipping_phone : enrollment.shipping_phone) || rest.phone_number || enrollment.phone_number || null
       const targetShippingAddress =
@@ -707,7 +718,7 @@ export class EnrollmentsService {
       const finalEnrollment = this.enrollmentsRepository.create({
         ...enrollment,
         status: newStatus || enrollment.status,
-        full_name_normalized: rest.full_name ? removeVietnameseTones(rest.full_name).toLowerCase() : enrollment.full_name_normalized,
+        full_name_normalized: rest.full_name ? parseFullNameMeta(rest.full_name).full_name_normalized : enrollment.full_name_normalized,
         ...rest,
       })
       await enrollmentsRepo.save(finalEnrollment)
@@ -800,20 +811,22 @@ export class EnrollmentsService {
       let subject = ''
       let pdfTemplate = ''
       let pdfFilename = ''
+      const enrollmentSaintName = trimString(enrollment?.saint_name)
+      const enrollmentFullName = trimString(enrollment?.full_name)
       const pdfData: any = {
         logo,
         background,
         stamp,
         code: enrollment?.code,
-        saint_name: enrollment?.saint_name,
-        full_name: enrollment?.full_name,
+        saint_name: enrollmentSaintName,
+        full_name: enrollmentFullName,
         birth_date: formatStringDate(enrollment?.birth_date + '', true),
         birth_place: enrollment?.birth_place,
         phone: enrollment?.phone_number,
         email: enrollment?.email,
         parish: enrollment?.parish,
         address: enrollment?.address,
-        shipping_name: enrollment?.shipping_name,
+        shipping_name: trimString(enrollment?.shipping_name),
         shipping_phone: enrollment?.shipping_phone,
         shipping_address: enrollment?.shipping_address,
         shipping_note: enrollment?.shipping_note,
@@ -850,12 +863,12 @@ export class EnrollmentsService {
       const pdfBuffer = await renderPdfFromTemplate(pdfTemplate, pdfData)
 
       await this.emailService.sendMail(
-        [{ email: enrollment.email, name: enrollment.full_name }],
+        [{ email: enrollment.email, name: enrollmentFullName }],
         subject,
         templateName,
         {
-          saint_name: enrollment?.saint_name,
-          full_name: enrollment?.full_name,
+          saint_name: enrollmentSaintName,
+          full_name: enrollmentFullName,
           day,
           month,
           year,
@@ -945,12 +958,13 @@ export class EnrollmentsService {
       throwAppException('ENROLLMENT_NO_ONLINE_CLASS', ErrorCode.ENROLLMENT_NO_ONLINE_CLASS, HttpStatus.BAD_REQUEST)
     }
 
-    const saintName = enrollment.saint_name ? `${enrollment.saint_name} ` : ''
-    const fullName = enrollment.full_name || ''
+    const saintNameValue = trimString(enrollment.saint_name)
+    const saintName = saintNameValue ? `${saintNameValue} ` : ''
+    const fullName = trimString(enrollment.full_name) || ''
     const mailContent = `Xin chào ${saintName}${fullName},<br><br>Học viện Mục vụ xin gửi video hướng dẫn sử dụng hệ thống học trực tuyến, xin học viên tham khảo kỹ để có một quá trình học tập thuận lợi nhất.<br><br>https://youtu.be/J_h32_gDSBE?si=-yo_sKlUyRq4O0Db<br><br>Mọi thắc mắc xin liên hệ lại với học viện qua bất kỳ hình thức liên lạc nào thuận tiện để được hỗ trợ.<br><br>Xin chân thành cảm ơn!`
 
     await this.emailService.sendMail(
-      [{ email: enrollment.email, name: enrollment.full_name }],
+      [{ email: enrollment.email, name: fullName }],
       'Hướng dẫn sử dụng hệ thống học trực tuyến',
       '',
       null,

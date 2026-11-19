@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
@@ -10,6 +11,7 @@ export class CreateWitnessFaithDto {
   })
   witness_faith_menu_id: number
 
+  @Trim()
   @IsNotEmpty()
   @IsString()
   @ApiProperty({

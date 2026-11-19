@@ -1,7 +1,9 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsOptional, IsString } from 'class-validator'
 
 export class PaginateCertificatesDto {
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên sinh viên', example: 'Hoàng Phi Khanh Pro' })

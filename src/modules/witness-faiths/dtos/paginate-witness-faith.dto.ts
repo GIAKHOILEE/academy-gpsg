@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { AiStatus } from '@enums/ai-content.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
@@ -15,6 +16,7 @@ export class PaginateWitnessFaithDto extends PaginationDto {
   witness_faith_menu_id: number
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'The name of the witness faith',

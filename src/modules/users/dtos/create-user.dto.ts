@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { Gender } from '@enums/role.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator'
@@ -7,6 +8,7 @@ export class CreateUserDto {
     description: 'Full name of the user',
     example: 'John Doe',
   })
+  @Trim()
   @IsString()
   @IsOptional()
   full_name?: string
@@ -16,6 +18,7 @@ export class CreateUserDto {
     minLength: 3,
     example: 'student1',
   })
+  @Trim()
   @IsString()
   @MinLength(3)
   @IsNotEmpty()
@@ -43,6 +46,7 @@ export class CreateUserDto {
     description: 'Saint name of the user',
     example: 'John Doe',
   })
+  @Trim()
   @IsString()
   @IsOptional()
   saint_name?: string
@@ -151,6 +155,7 @@ export class CreateUserDtoV2 {
     description: 'Full name of the user',
     example: 'John Doe',
   })
+  @Trim()
   @IsString()
   @IsOptional()
   full_name?: string
@@ -185,6 +190,7 @@ export class CreateUserDtoV2 {
     description: 'Saint name of the user',
     example: 'John Doe',
   })
+  @Trim()
   @IsString()
   @IsOptional()
   saint_name?: string

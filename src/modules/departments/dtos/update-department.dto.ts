@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsString, IsOptional } from 'class-validator'
 
@@ -14,6 +15,7 @@ export class UpdateDepartmentDto {
     description: 'Tên khoa',
     example: 'Ngoại ngữ',
   })
+  @Trim()
   @IsString()
   @IsOptional()
   name?: string

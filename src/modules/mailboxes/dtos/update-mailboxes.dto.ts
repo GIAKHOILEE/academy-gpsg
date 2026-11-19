@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsOptional, IsString } from 'class-validator'
 
@@ -19,6 +20,7 @@ export class UpdateMailboxesDto {
   content: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'Full name of the mailbox',

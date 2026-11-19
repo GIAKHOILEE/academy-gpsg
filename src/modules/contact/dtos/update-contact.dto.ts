@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsOptional, IsString } from 'class-validator'
 
@@ -34,6 +35,7 @@ export class UpdateContactDto {
   })
   copyright: string
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({

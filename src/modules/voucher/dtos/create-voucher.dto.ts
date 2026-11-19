@@ -1,8 +1,10 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty } from '@nestjs/swagger'
 import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator'
 import { VoucherType } from '@enums/voucher.enum'
 
 export class CreateVoucherDto {
+  @Trim()
   @IsNotEmpty()
   @IsString()
   @ApiProperty({

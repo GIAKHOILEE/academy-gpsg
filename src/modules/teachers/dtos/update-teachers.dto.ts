@@ -1,4 +1,5 @@
 import { IFile } from '@common/file'
+import { Trim } from '@decorators/trim.decorator'
 import { UpdateUserDtoV2 } from '@modules/users/dtos/update-user.dto'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
@@ -10,6 +11,7 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   card_code: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên khác (GM, LM, TS, ThS,...)' })
   other_name: string
@@ -90,6 +92,7 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
 
   // banking
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên ngân hàng' })
   bank_name: string
@@ -100,6 +103,7 @@ export class UpdateTeachersDto extends UpdateUserDtoV2 {
   bank_account_number: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên chủ tài khoản ngân hàng' })
   bank_account_name: string

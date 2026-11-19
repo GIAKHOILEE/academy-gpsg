@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNumber, IsOptional, IsString } from 'class-validator'
 
@@ -11,6 +12,7 @@ export class UpdateWitnessFaithDto {
   witness_faith_menu_id: number
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'The name of the witness faith',

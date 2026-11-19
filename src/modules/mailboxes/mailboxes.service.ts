@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { MailboxesEntity } from './mailboxes.entity'
 import { CreateMailboxesDto } from './dtos/create-mailboxes.dto'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { formatStringDate, throwAppException } from '@common/utils'
+import { formatStringDate, throwAppException, trimString } from '@common/utils'
 import { UpdateIsReadDto, UpdateMailboxesDto } from './dtos/update-mailboxes.dto'
 import { IMailboxes } from './mailboxes.interface'
 import { paginate, PaginationMeta } from '@common/pagination'
@@ -20,6 +20,7 @@ export class MailboxesService {
   async createMailboxes(createMailboxesDto: CreateMailboxesDto): Promise<void> {
     const mailboxes = this.mailboxesRepository.create({
       ...createMailboxesDto,
+      ...(createMailboxesDto.full_name !== undefined ? { full_name: trimString(createMailboxesDto.full_name) } : {}),
     })
     await this.mailboxesRepository.save(mailboxes)
   }
@@ -29,7 +30,9 @@ export class MailboxesService {
     if (!mailboxes) {
       throwAppException('MAILBOX_NOT_FOUND', ErrorCode.MAILBOX_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
-    await this.mailboxesRepository.update(id, updateMailboxesDto)
+    const payload = { ...updateMailboxesDto }
+    if (payload.full_name !== undefined) payload.full_name = trimString(payload.full_name)
+    await this.mailboxesRepository.update(id, payload)
   }
 
   async adminUpdateIsReadMailboxes(id: number, updateIsReadDto: UpdateIsReadDto): Promise<void> {

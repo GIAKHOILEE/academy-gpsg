@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsOptional, IsString } from 'class-validator'
 
@@ -12,6 +13,7 @@ export class PaginateVoucherDto extends PaginationDto {
   code: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'The name of the voucher',

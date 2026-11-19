@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { ClassStatus } from '@enums/class.enum'
 import { Gender } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -9,11 +10,13 @@ import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class PaginateStudentsDto extends PaginationDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên sinh viên' })
   full_name?: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Họ sinh viên' })
   first_name?: string
@@ -50,6 +53,7 @@ export class PaginateStudentsDto extends PaginationDto {
   card_code?: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên lớp' })
   class_name?: string
@@ -99,6 +103,7 @@ export class PaginateStudentsDto extends PaginationDto {
 }
 
 export class SearchStudentClassCertificateDto {
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên sinh viên', example: 'Hoàng Phi Khanh Pro' })

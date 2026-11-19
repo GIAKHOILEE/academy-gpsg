@@ -1,9 +1,11 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBooleanString, IsOptional, IsString } from 'class-validator'
 
 export class PaginateConsultDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Tên thánh' })
+  @Trim()
   @IsString()
   @IsOptional()
   full_name?: string

@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { ClassStatus, LearnType } from '@enums/class.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
@@ -6,6 +7,7 @@ import { IsBooleanString, IsEnum, IsNumber, IsOptional, IsString } from 'class-v
 
 export class PaginateClassDto extends PaginationDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên lớp' })
   name: string
@@ -69,6 +71,7 @@ export class PaginateClassDto extends PaginationDto {
 
 export class GetStudentsOfClassDto extends PaginationDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên học sinh' })
   full_name: string
@@ -79,6 +82,7 @@ export class GetStudentsOfClassDto extends PaginationDto {
   code: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Họ tên học sinh' })
   first_name: string
@@ -92,6 +96,7 @@ export class GetStudentsOfClassDto extends PaginationDto {
 
 export class PaginateClassOfStudentDto extends PaginationDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên lớp' })
   name: string

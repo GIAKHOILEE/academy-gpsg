@@ -222,6 +222,7 @@ export class ExamScoreService {
 /* =============================================
 ================= SCORE V2 =====================
 ================================================*/
+@Injectable()
 export class ExamScoreServiceV2 {
   @InjectRepository(Classes)
   private classRepo: Repository<Classes>
@@ -231,50 +232,77 @@ export class ExamScoreServiceV2 {
 
   @InjectRepository(Student)
   private studentRepo: Repository<Student>
-  // create  score
-  async createClassStudentScores(dto: CreateClassStudentScoreDto): Promise<void> {
-    const { class_id, scores } = dto
+
+  /** Chuẩn hóa và kiểm tra điểm hợp lệ trong khoảng 0-10; rỗng/null sẽ xóa điểm (null). */
+  private normalizeScore(rawScore: string | number | null | undefined): string | null {
+    if (rawScore === null || (typeof rawScore === 'string' && rawScore.trim() === '')) {
+      return null
+    }
+    if (typeof rawScore !== 'number' && typeof rawScore !== 'string') {
+      throwAppException('SCORE_INVALID', ErrorCode.SCORE_INVALID, HttpStatus.BAD_REQUEST)
+    }
+
+    const normalized = typeof rawScore === 'string' ? rawScore.trim() : String(rawScore)
+    if (typeof rawScore === 'string' && !/^\d+(\.\d+)?$/.test(normalized)) {
+      throwAppException('SCORE_INVALID', ErrorCode.SCORE_INVALID, HttpStatus.BAD_REQUEST)
+    }
+
+    const numericScore = Number(normalized)
+    if (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > 10) {
+      throwAppException('SCORE_INVALID', ErrorCode.SCORE_INVALID, HttpStatus.BAD_REQUEST)
+    }
+
+    return String(numericScore)
+  }
+
+  /** Cập nhật điểm trực tiếp cho các học viên đã có trong lớp (không tự chèn mới vào class_students). */
+  private async saveClassStudentScores(classId: number, scores: Array<{ student_id: number; score: string | number }>): Promise<void> {
     if (!scores || scores.length === 0) return
 
-    const classEntity = await this.classRepo.findOne({ where: { id: class_id } })
-    if (!classEntity) throw throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    const classExists = await this.classRepo.exists({ where: { id: classId } })
+    if (!classExists) {
+      throwAppException('CLASS_NOT_FOUND', ErrorCode.CLASS_NOT_FOUND, HttpStatus.NOT_FOUND)
+    }
 
-    // validate score từ 0-10
-    scores.forEach(s => {
-      if (Number(s.score) < 0 || Number(s.score) > 10) {
-        throw throwAppException('SCORE_INVALID', ErrorCode.SCORE_INVALID, HttpStatus.BAD_REQUEST)
+    // Gom theo student_id (last-write-wins nếu FE gửi trùng) và validate toàn bộ điểm trước khi ghi DB
+    const scoreByStudentId = new Map<number, string | null>()
+    for (const s of scores) {
+      const studentId = Number(s.student_id)
+      if (!Number.isInteger(studentId) || studentId <= 0) {
+        throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
+      }
+      scoreByStudentId.set(studentId, this.normalizeScore(s.score))
+    }
+
+    const studentIds = Array.from(scoreByStudentId.keys())
+
+    await this.classStudentRepo.manager.transaction(async manager => {
+      const classStudentRepo = manager.getRepository(ClassStudents)
+      const classStudents = await classStudentRepo.find({
+        where: { class_id: classId, student_id: In(studentIds) },
+        select: ['id', 'student_id'],
+      })
+
+      const csIdByStudentId = new Map<number, number>(classStudents.map(cs => [cs.student_id, cs.id]))
+      const missingStudentIds = studentIds.filter(studentId => !csIdByStudentId.has(studentId))
+      if (missingStudentIds.length > 0) {
+        throwAppException('STUDENT_NOT_IN_CLASS', ErrorCode.STUDENT_NOT_IN_CLASS, HttpStatus.BAD_REQUEST)
+      }
+
+      for (const [studentId, score] of scoreByStudentId.entries()) {
+        await classStudentRepo.update(csIdByStudentId.get(studentId)!, { score })
       }
     })
-    const updateData = scores.map(s => ({
-      class_id,
-      student_id: s.student_id,
-      score: s.score,
-    }))
-    await this.classStudentRepo.upsert(updateData, ['class_id', 'student_id'])
+  }
+
+  // create  score
+  async createClassStudentScores(dto: CreateClassStudentScoreDto): Promise<void> {
+    await this.saveClassStudentScores(dto.class_id, dto.scores)
   }
 
   // update score
   async updateClassStudentScores(dto: UpdateClassStudentScoreDto): Promise<void> {
-    const { class_id, scores } = dto
-    if (!scores || scores.length === 0) return
-
-    // validate score từ 0-10
-    scores.forEach(s => {
-      if (Number(s.score) < 0 || Number(s.score) > 10) {
-        throw throwAppException('SCORE_INVALID', ErrorCode.SCORE_INVALID, HttpStatus.BAD_REQUEST)
-      }
-    })
-
-    try {
-      const updateData = scores.map(s => ({
-        class_id,
-        student_id: s.student_id,
-        score: s.score,
-      }))
-      await this.classStudentRepo.upsert(updateData, ['class_id', 'student_id'])
-    } catch (err) {
-      throw err
-    }
+    await this.saveClassStudentScores(dto.class_id, dto.scores)
   }
 
   async getClassStudentScores(dto: PaginateExamScoresDto): Promise<{ data: any[]; meta: any }> {

@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsOptional, IsString } from 'class-validator'
 
@@ -9,6 +10,7 @@ export class PaginateDocumentDto extends PaginationDto {
   batch_code?: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Name of the document' })
   name?: string
@@ -16,6 +18,7 @@ export class PaginateDocumentDto extends PaginationDto {
 
 export class PaginateDocumentOrderDto extends PaginationDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Name of the document' })
   name?: string

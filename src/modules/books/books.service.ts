@@ -1,5 +1,5 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { removeVietnameseTones, throwAppException } from '@common/utils'
+import { removeVietnameseTones, throwAppException, trimString } from '@common/utils'
 import { BookDeliveryStatus, LearnType, StatusEnrollment, StudentBookChangeStatus } from '@enums/class.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Classes } from '@modules/class/class.entity'
@@ -194,7 +194,7 @@ export class BooksService {
           for (const enr of enrollments) {
             if (enr.student_id && !shippingInfoMap.has(enr.student_id)) {
               shippingInfoMap.set(enr.student_id, {
-                shipping_name: enr.shipping_name || enr.full_name || null,
+                shipping_name: trimString(enr.shipping_name || enr.full_name) || null,
                 shipping_phone: enr.shipping_phone || enr.phone_number || null,
                 shipping_address: enr.shipping_address || enr.address || null,
                 shipping_note: enr.shipping_note || null,
@@ -278,6 +278,9 @@ export class BooksService {
 
   async create(createBookDto: CreateBookDto): Promise<IBook> {
     const { class_ids, ...bookData } = createBookDto
+    if (bookData.name !== undefined) {
+      bookData.name = trimString(bookData.name)
+    }
 
     if (bookData.code) {
       const existing = await this.bookRepository.findOne({ where: { code: bookData.code } })
@@ -345,6 +348,9 @@ export class BooksService {
 
   async update(id: number, updateBookDto: UpdateBookDto): Promise<IBook> {
     const { class_ids, ...bookData } = updateBookDto
+    if (bookData.name !== undefined) {
+      bookData.name = trimString(bookData.name)
+    }
     const book = await this.bookRepository.findOne({
       where: { id },
       relations: ['classes'],
@@ -568,7 +574,7 @@ export class BooksService {
       class_id: dto.class_id ?? null,
       book_status: dto.book_status ?? BookDeliveryStatus.NOT_SENT,
       change_status: dto.change_status ?? StudentBookChangeStatus.NORMAL,
-      shipping_name: dto.shipping_name ?? null,
+      shipping_name: trimString(dto.shipping_name) ?? null,
       shipping_phone: dto.shipping_phone ?? null,
       shipping_address: dto.shipping_address ?? null,
       shipping_note: dto.shipping_note ?? null,
@@ -604,7 +610,7 @@ export class BooksService {
       updateData.change_status = dto.change_status
     }
     if (dto.shipping_name !== undefined) {
-      updateData.shipping_name = dto.shipping_name
+      updateData.shipping_name = trimString(dto.shipping_name)
     }
     if (dto.shipping_phone !== undefined) {
       updateData.shipping_phone = dto.shipping_phone

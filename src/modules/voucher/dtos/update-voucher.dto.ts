@@ -1,9 +1,11 @@
+import { Trim } from '@decorators/trim.decorator'
 import { VoucherType } from '@enums/voucher.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdateVoucherDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'The name of the voucher',

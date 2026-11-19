@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { BookDeliveryStatus, StudentBookChangeStatus } from '@enums/class.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
@@ -55,6 +56,7 @@ export class PaginateStudentBookDto extends PaginationDto {
   change_status?: StudentBookChangeStatus
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tìm theo họ tên học sinh' })
   full_name?: string
@@ -70,6 +72,7 @@ export class PaginateStudentBookDto extends PaginationDto {
   phone_number?: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tìm theo tên sách / giáo trình' })
   book_name?: string
@@ -80,6 +83,7 @@ export class PaginateStudentBookDto extends PaginationDto {
   book_code?: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tìm theo họ tên người nhận sách' })
   shipping_name?: string
@@ -129,6 +133,7 @@ export class CreateStudentBookDto {
   })
   change_status?: StudentBookChangeStatus
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Họ tên người nhận sách', example: 'Nguyễn Văn A' })
@@ -184,6 +189,7 @@ export class UpdateStudentBookDto {
   })
   change_status?: StudentBookChangeStatus
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Họ tên người nhận sách', example: 'Nguyễn Văn A' })

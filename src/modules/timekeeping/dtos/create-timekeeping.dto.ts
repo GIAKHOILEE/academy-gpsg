@@ -1,7 +1,9 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty } from '@nestjs/swagger'
 import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateTimekeepingDto {
+  @Trim()
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ description: 'Tên nhân viên' })

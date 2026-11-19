@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 import { SmsDeviceStatus } from '../entities/sms-device.entity'
@@ -23,6 +24,7 @@ export class PaginateSmsDeviceDto extends PaginationDto {
     description: 'Tìm kiếm theo tên thiết bị',
   })
   @IsOptional()
+  @Trim()
   @IsString()
   name?: string
 }

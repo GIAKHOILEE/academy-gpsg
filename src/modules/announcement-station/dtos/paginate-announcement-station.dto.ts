@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { AnnouncementStatus, AnnouncementType } from '@enums/announcement.enum'
 import { Role } from '@enums/role.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
@@ -83,6 +84,7 @@ export class PaginateAnnouncementStationDto extends PaginationDto {
   sms_job_uid?: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'Tìm kiếm theo họ tên người nhận',

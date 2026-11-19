@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { StorageDriver, StorageStrategy } from '@enums/storage.enum'
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
@@ -6,6 +7,7 @@ import { IsBoolean, IsEnum, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, M
 
 export class CreateStorageProviderDto {
   @ApiProperty({ description: 'Tên dịch vụ cho người dùng đọc', example: 'R2 chính' })
+  @Trim()
   @IsString()
   @IsNotEmpty()
   name: string
@@ -142,6 +144,7 @@ export class PaginateStorageProviderDto extends PaginationDto {
 
   @ApiPropertyOptional({ description: 'Tên dịch vụ cần tìm' })
   @IsOptional()
+  @Trim()
   @IsString()
   name?: string
 }

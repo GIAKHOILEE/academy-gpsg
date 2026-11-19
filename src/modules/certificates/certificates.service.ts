@@ -6,7 +6,7 @@ import { CreateCertificatesDto } from './dtos/create-certificates.dto'
 import { Student } from '@modules/students/students.entity'
 import { UpdateCertificatesDto } from './dtos/update-certificates.dto'
 import { ErrorCode } from '@enums/error-codes.enum'
-import { formatStringToDate, throwAppException } from '@common/utils'
+import { formatStringToDate, throwAppException, trimString } from '@common/utils'
 import { PaginateCertificatesDto } from './dtos/paginate-certificates.dto'
 
 @Injectable()
@@ -38,8 +38,9 @@ export class CertificatesService {
       .leftJoinAndSelect('certificates.student', 'student')
       .leftJoinAndSelect('student.user', 'user')
 
-    if (full_name) {
-      queryBuilder.andWhere('user.full_name = :full_name', { full_name })
+    const trimmedFullName = trimString(full_name)
+    if (trimmedFullName) {
+      queryBuilder.andWhere('user.full_name = :full_name', { full_name: trimmedFullName })
     }
 
     if (birth_date) {

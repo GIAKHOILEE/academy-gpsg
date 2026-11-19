@@ -1,8 +1,10 @@
+import { Trim } from '@decorators/trim.decorator'
 import { FinancesPaymentMethod, FinancesType } from '@enums/finances.enum'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreateFinancesDto {
+  @Trim()
   @IsString()
   @IsNotEmpty()
   @ApiProperty({ description: 'Name of the finances', example: 'Salary' })

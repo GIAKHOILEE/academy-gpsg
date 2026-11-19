@@ -1,8 +1,10 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class UpdatePostCatalogDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ example: 'string', description: 'Ten danh muc' })
   name: string

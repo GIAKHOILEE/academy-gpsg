@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { PaymentMethod, PaymentStatus, StatusEnrollment } from '@enums/class.enum'
 import { UserStatus } from '@enums/status.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
@@ -12,6 +13,7 @@ export class PaginateEnrollmentsDto extends PaginationDto {
   code?: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên sinh viên' })
   full_name?: string

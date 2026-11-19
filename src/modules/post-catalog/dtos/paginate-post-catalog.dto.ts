@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { AiStatus } from '@enums/ai-content.enum'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
@@ -10,6 +11,7 @@ export class PaginatePostCatalogDto extends PaginationDto {
   id: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'filter theo tên danh mục' })
   name: string

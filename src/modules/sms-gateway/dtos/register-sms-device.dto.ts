@@ -1,3 +1,4 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator'
@@ -19,6 +20,7 @@ export class RegisterSmsDeviceDto {
     description: 'Tên gợi nhớ của thiết bị',
     example: 'Máy Samsung SIM Viettel Chính',
   })
+  @Trim()
   @IsNotEmpty()
   @IsString()
   @MaxLength(120)

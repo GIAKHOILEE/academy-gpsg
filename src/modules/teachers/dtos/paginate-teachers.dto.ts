@@ -1,4 +1,5 @@
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 import { ClassStatus } from '@enums/class.enum'
 import { Gender } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -8,6 +9,7 @@ import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 export class PaginateTeachersDto extends PaginationDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên giáo viên' })
   full_name?: string
@@ -39,6 +41,7 @@ export class PaginateTeachersDto extends PaginationDto {
   status?: UserStatus
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên lớp' })
   class_name?: string
@@ -74,6 +77,7 @@ export class PaginateTeachersDto extends PaginationDto {
   scholastic_id?: string
 
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({ description: 'Tên giáo viên' })
   first_name?: string

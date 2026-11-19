@@ -1,5 +1,13 @@
 import { paginate, PaginationMeta } from '@common/pagination'
-import { formatStringToDate, hashPassword, removeVietnameseTones, throwAppException, validateHash } from '@common/utils'
+import {
+  formatStringToDate,
+  hashPassword,
+  parseFullNameMeta,
+  removeVietnameseTones,
+  throwAppException,
+  trimString,
+  validateHash,
+} from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -21,25 +29,31 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto, role: Role): Promise<User> {
     const { username, password, full_name, ...rest } = createUserDto
-    const existingUser = await this.usersRepository.createQueryBuilder('users').where('users.username = :username', { username }).getOne()
+    const trimmedUsername = trimString(username)
+    if (rest.saint_name !== undefined) {
+      rest.saint_name = trimString(rest.saint_name)
+    }
+    const existingUser = await this.usersRepository
+      .createQueryBuilder('users')
+      .where('users.username = :username', { username: trimmedUsername })
+      .getOne()
     if (existingUser) {
       throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
 
     // từ full name tách ra first name (lấy tên - từ cuối cùng)
-    const first_name = full_name.trim().split(/\s+/).pop()
-    const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
+    const { full_name: trimmedFullName, first_name, full_name_normalized } = parseFullNameMeta(full_name)
 
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
-      username,
-      full_name,
+      ...rest,
+      username: trimmedUsername,
+      full_name: trimmedFullName,
       full_name_normalized,
       first_name,
       password: hashedPassword,
       role,
       status: UserStatus.ACTIVE,
-      ...rest,
     })
 
     return this.usersRepository.save(user)
@@ -47,18 +61,24 @@ export class UserService {
 
   async createStaff(createUserDto: CreateUserDto): Promise<User> {
     const { username, password, full_name, ...rest } = createUserDto
-    const existingUser = await this.usersRepository.createQueryBuilder('users').where('users.username = :username', { username }).getOne()
+    const trimmedUsername = trimString(username)
+    if (rest.saint_name !== undefined) {
+      rest.saint_name = trimString(rest.saint_name)
+    }
+    const existingUser = await this.usersRepository
+      .createQueryBuilder('users')
+      .where('users.username = :username', { username: trimmedUsername })
+      .getOne()
     if (existingUser) {
       throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
     // từ full name tách ra first name (lấy tên - từ cuối cùng)
-    const first_name = full_name.trim().split(/\s+/).pop()
-    const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
+    const { full_name: trimmedFullName, first_name, full_name_normalized } = parseFullNameMeta(full_name)
 
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
-      username,
-      full_name,
+      username: trimmedUsername,
+      full_name: trimmedFullName,
       full_name_normalized,
       first_name,
       password: hashedPassword,
@@ -72,17 +92,23 @@ export class UserService {
 
   async createFinance(createUserDto: CreateUserDto): Promise<User> {
     const { username, password, full_name, ...rest } = createUserDto
-    const existingUser = await this.usersRepository.createQueryBuilder('users').where('users.username = :username', { username }).getOne()
+    const trimmedUsername = trimString(username)
+    if (rest.saint_name !== undefined) {
+      rest.saint_name = trimString(rest.saint_name)
+    }
+    const existingUser = await this.usersRepository
+      .createQueryBuilder('users')
+      .where('users.username = :username', { username: trimmedUsername })
+      .getOne()
     if (existingUser) {
       throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
     }
-    const first_name = full_name ? full_name.trim().split(/\s+/).pop() : undefined
-    const full_name_normalized = full_name ? removeVietnameseTones(full_name).toLowerCase().trim() : null
+    const { full_name: trimmedFullName, first_name, full_name_normalized } = parseFullNameMeta(full_name)
 
     const hashedPassword = await hashPassword(password)
     const user = this.usersRepository.create({
-      username,
-      full_name,
+      username: trimmedUsername,
+      full_name: trimmedFullName,
       full_name_normalized,
       first_name,
       password: hashedPassword,
@@ -165,25 +191,31 @@ export class UserService {
 
   async updateUser(userId: number, updateUserDto: UpdateUserDto): Promise<void> {
     const { username, full_name, code, ...dto } = updateUserDto
+    const trimmedUsername = trimString(username)
+    const { full_name: trimmedFullName, first_name, full_name_normalized } = parseFullNameMeta(full_name)
+    if (dto.saint_name !== undefined) {
+      dto.saint_name = trimString(dto.saint_name)
+    }
+
     const user = await this.usersRepository.findOne({ where: { id: userId } })
     if (!user) {
       throwAppException('USER_NOT_FOUND', ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
-    if (username) {
+    if (trimmedUsername) {
       const existingUser = await this.usersRepository
         .createQueryBuilder('users')
-        .where('users.username = :username', { username })
+        .where('users.username = :username', { username: trimmedUsername })
         .andWhere('users.id != :userId', { userId })
         .getOne()
       if (existingUser) {
         throwAppException('USERNAME_ALREADY_EXISTS', ErrorCode.USERNAME_ALREADY_EXISTS, HttpStatus.CONFLICT)
       }
-      user.username = username
+      user.username = trimmedUsername
     }
-    if (full_name) {
-      user.full_name = full_name
-      user.first_name = full_name.trim().split(/\s+/).pop()
-      user.full_name_normalized = removeVietnameseTones(full_name).toLowerCase().trim()
+    if (trimmedFullName) {
+      user.full_name = trimmedFullName
+      user.first_name = first_name
+      user.full_name_normalized = full_name_normalized
     }
 
     if (code) {

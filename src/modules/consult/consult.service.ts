@@ -6,7 +6,7 @@ import { CreateConsultDto } from './dtos/create-consult.dto'
 import { IConsult } from './consult.interface'
 import { PaginateConsultDto } from './dtos/paginate-consult.dto'
 import { paginate, PaginationMeta } from '@common/pagination'
-import { formatStringDateUTC7, throwAppException } from '@common/utils'
+import { formatStringDateUTC7, throwAppException, trimString } from '@common/utils'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { UpdateConsultDto } from './dtos/update-consult.dto'
 
@@ -20,6 +20,8 @@ export class ConsultService {
   async create(createConsultDto: CreateConsultDto): Promise<IConsult> {
     const consult = this.consultRepository.create({
       ...createConsultDto,
+      saint_name: trimString(createConsultDto.saint_name),
+      full_name: trimString(createConsultDto.full_name),
       is_read: false,
     })
     const savedConsult = await this.consultRepository.save(consult)
@@ -76,7 +78,10 @@ export class ConsultService {
     if (!consult) {
       throwAppException('CONSULT_NOT_FOUND', ErrorCode.CONSULT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
-    await this.consultRepository.update(id, updateConsultDto)
+    const payload = { ...updateConsultDto }
+    if (payload.saint_name !== undefined) payload.saint_name = trimString(payload.saint_name)
+    if (payload.full_name !== undefined) payload.full_name = trimString(payload.full_name)
+    await this.consultRepository.update(id, payload)
   }
 
   async updateIsRead(id: number): Promise<void> {

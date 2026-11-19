@@ -1,8 +1,10 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 export class CreateConsultDto {
   @IsOptional()
+  @Trim()
   @IsString()
   @ApiPropertyOptional({
     description: 'Tên thánh',
@@ -10,6 +12,7 @@ export class CreateConsultDto {
   })
   saint_name: string
 
+  @Trim()
   @IsNotEmpty()
   @IsString()
   @ApiProperty({

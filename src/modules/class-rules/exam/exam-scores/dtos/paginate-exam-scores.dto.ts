@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsNumber, IsOptional, IsString } from 'class-validator'
 import { PaginationDto } from '@common/pagination'
+import { Trim } from '@decorators/trim.decorator'
 
 export class PaginateExamScoresDto extends PaginationDto {
   @IsOptional()
@@ -52,6 +53,7 @@ export class PaginateMyExamScoresDto extends PaginationDto {
   @Type(() => Number)
   class_id: number
 
+  @Trim()
   @IsString()
   @IsOptional()
   @ApiPropertyOptional({ description: 'Tên lớp', example: '10A1' })

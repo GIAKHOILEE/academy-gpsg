@@ -1,7 +1,9 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 export class CreatePostCatalogDto {
+  @Trim()
   @IsNotEmpty()
   @IsString()
   @ApiProperty({ example: 'string', description: 'Ten danh muc' })

@@ -1,7 +1,9 @@
+import { Trim } from '@decorators/trim.decorator'
 import { ApiProperty } from '@nestjs/swagger'
 import { IsNotEmpty, IsString } from 'class-validator'
 
 export class AdminLoginDto {
+  @Trim()
   @IsString()
   @IsNotEmpty()
   @ApiProperty({ example: 'superadmin', description: 'Username' })
