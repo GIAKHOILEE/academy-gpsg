@@ -8,11 +8,12 @@ import {
   throwAppException,
   trimString,
 } from '@common/utils'
+import { EnrollmentLogAction } from '@enums/enrollment-log.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Gender, Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
 import { ReligionType } from '@enums/user.enum'
-import { HttpStatus, Injectable, Logger } from '@nestjs/common'
+import { HttpStatus, Injectable, Logger, Optional } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Not, Repository } from 'typeorm'
 import { User } from '../users/user.entity'
@@ -22,6 +23,8 @@ import { UpdateStudentsDto } from './dtos/update-students.dto'
 import { Student } from './students.entity'
 import { IStudent } from './students.interface'
 import { Enrollments } from '@modules/enrollments/enrollments.entity'
+import { diffEnrollment, markEnrollmentAuditHandled } from '@modules/enrollments/enrollment-logs.helper'
+import { EnrollmentLogsService } from '@modules/enrollments/enrollment-logs.service'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
 import { LibrarySyncService } from '@services/library-sync/library-sync.service'
 import { ClassStudents } from '@modules/class/class-students/class-student.entity'
@@ -36,6 +39,8 @@ export class StudentsService {
     private readonly studentRepository: Repository<Student>,
     private readonly emailService: BrevoMailerService,
     private readonly librarySyncService: LibrarySyncService,
+    @Optional()
+    private readonly enrollmentLogsService?: EnrollmentLogsService,
   ) {}
 
   async createStudent(createStudentDto: CreateStudentsDto): Promise<void> {
@@ -194,8 +199,9 @@ export class StudentsService {
       // cập nhật thông tin các enrollments
       const enrollments = await enrollmentsRepo.find({ where: { student_id: student.id } })
       if (enrollments.length > 0) {
+        markEnrollmentAuditHandled(queryRunner.manager)
         for (const enrollment of enrollments) {
-          await enrollmentsRepo.update(enrollment.id, {
+          const syncPayload = {
             email: email ?? enrollment.email,
             full_name: user.full_name ?? enrollment.full_name,
             saint_name: user.saint_name ?? enrollment.saint_name,
@@ -207,7 +213,36 @@ export class StudentsService {
             deanery: user.deanery ?? enrollment.deanery,
             diocese: user.diocese ?? enrollment.diocese,
             congregation: user.congregation ?? enrollment.congregation,
-          })
+          }
+          await enrollmentsRepo.update(enrollment.id, syncPayload)
+
+          if (this.enrollmentLogsService) {
+            const changes = diffEnrollment(enrollment, { ...enrollment, ...syncPayload }, undefined, Object.keys(syncPayload))
+            if (Object.keys(changes).length > 0) {
+              await this.enrollmentLogsService.record(
+                {
+                  enrollmentId: enrollment.id,
+                  enrollmentCode: enrollment.code,
+                  studentId: student.id,
+                  studentName: syncPayload.full_name ?? enrollment.full_name,
+                  studentCode: updatedUser.code ?? null,
+                  action: EnrollmentLogAction.SYNC_FROM_STUDENT,
+                  reason: updatedUser.code
+                    ? `Hệ thống tự động đồng bộ thông tin đơn khi hồ sơ học viên (${updatedUser.code}) được cập nhật`
+                    : 'Hệ thống tự động đồng bộ thông tin đơn khi hồ sơ học viên được cập nhật',
+                  changes,
+                  metadata: {
+                    reason_code: 'STUDENT_PROFILE_SYNC',
+                    triggered_by: 'SYSTEM_SYNC',
+                    source: 'student_profile_update',
+                    student_id: student.id,
+                    student_code: updatedUser.code ?? null,
+                  },
+                },
+                queryRunner.manager,
+              )
+            }
+          }
         }
       }
 

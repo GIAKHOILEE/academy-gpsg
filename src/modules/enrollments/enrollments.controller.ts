@@ -2,20 +2,25 @@ import { ResponseDto } from '@common/response.dto'
 import { Auth } from '@decorators/auth.decorator'
 import { Role } from '@enums/role.enum'
 import { OptionalJwtAuthGuard } from '@guards/optional-jwt-auth.guard'
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Request, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, Request, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
+import { PaginateEnrollmentLogsDto, PaginateSingleEnrollmentLogsDto } from './dtos/paginate-enrollment-logs.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
+import { EnrollmentLogsService } from './enrollment-logs.service'
 import { EnrollmentsService } from './enrollments.service'
 import { Throttle } from '@nestjs/throttler'
 
 @Controller('admin/enrollments')
 @ApiBearerAuth()
-@Auth(Role.ADMIN, Role.STAFF)
+@Auth(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
 @ApiTags('Admin Enrollments')
 export class AdminEnrollmentsController {
-  constructor(private readonly enrollmentsService: EnrollmentsService) {}
+  constructor(
+    private readonly enrollmentsService: EnrollmentsService,
+    private readonly enrollmentLogsService: EnrollmentLogsService,
+  ) {}
 
   @ApiOperation({ summary: 'Lấy danh sách đăng ký' })
   @Get()
@@ -38,6 +43,50 @@ export class AdminEnrollmentsController {
       messageCode: 'ENROLLMENTS_GET_SUCCESS',
       data,
       meta,
+    })
+  }
+
+  @ApiOperation({ summary: 'Tra cứu toàn bộ lịch sử thao tác đơn đăng ký (bao gồm cả đơn đã xóa cứng)' })
+  @Get('logs')
+  async getEnrollmentLogs(@Query() query: PaginateEnrollmentLogsDto): Promise<ResponseDto> {
+    const { data, meta } = await this.enrollmentLogsService.getLogs(query)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'ENROLLMENT_LOGS_GET_SUCCESS',
+      data,
+      meta,
+    })
+  }
+
+  @ApiOperation({ summary: 'Xem chi tiết 1 bản ghi lịch sử đơn đăng ký (kèm snapshot nếu có)' })
+  @Get('logs/:logId')
+  async getEnrollmentLogById(@Param('logId', ParseIntPipe) logId: number): Promise<ResponseDto> {
+    const data = await this.enrollmentLogsService.getLogById(logId)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'ENROLLMENT_LOG_GET_SUCCESS',
+      data,
+    })
+  }
+
+  @ApiOperation({ summary: 'Xem lịch sử thao tác của 1 đơn đăng ký theo ID (kể cả đơn đã bị xóa mềm hoặc xóa cứng)' })
+  @Get(':id/logs')
+  async getLogsByEnrollmentId(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: PaginateSingleEnrollmentLogsDto,
+  ): Promise<ResponseDto> {
+    const result = await this.enrollmentLogsService.getLogsByEnrollmentId(id, query)
+    return new ResponseDto({
+      statusCode: 200,
+      messageCode: 'ENROLLMENT_LOGS_GET_SUCCESS',
+      data: {
+        enrollment_id: result.enrollment_id,
+        enrollment_code: result.enrollment_code,
+        enrollment_state: result.enrollment_state,
+        latest_snapshot: result.latest_snapshot,
+        logs: result.data,
+      },
+      meta: result.meta,
     })
   }
 

@@ -1,3 +1,4 @@
+import { RequestContextInterceptor } from '@common/request-context.interceptor'
 import { StatsCacheInterceptor } from '@common/stats-cache.interceptor'
 import { StatsCacheModule } from '@common/stats-cache.module'
 import { databaseConfig } from '@config/database.config'
@@ -149,6 +150,10 @@ import { ScheduleModule } from '@nestjs/schedule'
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestContextInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,

@@ -14,6 +14,7 @@ import {
   trimString,
 } from '@common/utils'
 import { BookDeliveryStatus, LearnType, PaymentMethod, PaymentStatus, StatusEnrollment, StudentBookChangeStatus } from '@enums/class.enum'
+import { EnrollmentLogAction, EnrollmentLogActorType } from '@enums/enrollment-log.enum'
 import { ErrorCode } from '@enums/error-codes.enum'
 import { Role } from '@enums/role.enum'
 import { UserStatus } from '@enums/status.enum'
@@ -22,7 +23,7 @@ import { ClassStudents } from '@modules/class/class-students/class-student.entit
 import { Classes } from '@modules/class/class.entity'
 import { Student } from '@modules/students/students.entity'
 import { User } from '@modules/users/user.entity'
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable, Optional } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectRepository } from '@nestjs/typeorm'
 import { BrevoMailerService } from '@services/brevo-mailer/email.service'
@@ -33,6 +34,15 @@ import { DataSource, EntityManager, In, Repository } from 'typeorm'
 import { CreateEnrollmentsDto } from './dtos/create-enrollments.dto'
 import { PaginateEnrollmentsDto } from './dtos/paginate-enrollments.dto'
 import { UpdateEnrollmentsDto } from './dtos/update-enrollments.dto'
+import {
+  buildEnrollmentSnapshot,
+  diffEnrollment,
+  EnrollmentClassMeta,
+  extractUniqueClassIds,
+  markEnrollmentAuditHandled,
+  normalizeTimestampValue,
+} from './enrollment-logs.helper'
+import { EnrollmentLogsService } from './enrollment-logs.service'
 import { Enrollments } from './enrollments.entity'
 import { IEnrollments } from './enrollments.interface'
 import { Voucher } from '@modules/voucher/voucher.entity'
@@ -67,6 +77,8 @@ export class EnrollmentsService {
     @InjectRepository(ClassStudents)
     private readonly classStudentsRepository: Repository<ClassStudents>,
     private readonly librarySyncService: LibrarySyncService,
+    @Optional()
+    private readonly enrollmentLogsService?: EnrollmentLogsService,
   ) {}
 
   /**
@@ -373,6 +385,7 @@ export class EnrollmentsService {
         is_read_note: createEnrollmentDto.user_note ? false : null,
       })
 
+      markEnrollmentAuditHandled(queryRunner.manager)
       const savedEnrollment = await queryRunner.manager.save(Enrollments, enrollment)
 
       // 5. CẬP NHẬT VOUCHER (Nếu có)
@@ -389,7 +402,51 @@ export class EnrollmentsService {
         )
       }
 
-      // 6. CHUẨN BỊ DỮ LIỆU PHẢN HỒI (Final Result)
+      // 6. GHI AUDIT LOG TẠO ĐƠN (trong cùng transaction)
+      if (this.enrollmentLogsService) {
+        const classMetaMap = new Map<number, EnrollmentClassMeta>(
+          classEntities.map(cls => [
+            cls.id,
+            {
+              id: cls.id,
+              code: cls.code ?? null,
+              name: cls.name ?? null,
+              price: cls.price !== undefined && cls.price !== null ? Number(cls.price) : null,
+            },
+          ]),
+        )
+        const studentCode = studentEntity?.user?.code || null
+        await this.enrollmentLogsService.record(
+          {
+            enrollmentId: savedEnrollment.id,
+            enrollmentCode: savedEnrollment.code,
+            studentId,
+            studentName: savedEnrollment.full_name,
+            studentNameNormalized: savedEnrollment.full_name_normalized,
+            studentCode,
+            action: EnrollmentLogAction.CREATE,
+            reason: userId ? 'Học viên đã đăng nhập tạo đơn đăng ký khóa học' : 'Khách tạo đơn đăng ký khóa học trực tuyến',
+            actor: userId
+              ? {
+                  actorType: EnrollmentLogActorType.USER,
+                  userId,
+                }
+              : {
+                  actorType: EnrollmentLogActorType.GUEST,
+                  guestName: savedEnrollment.full_name,
+                  guestIdentifier: savedEnrollment.email || savedEnrollment.phone_number || null,
+                },
+            snapshot: buildEnrollmentSnapshot(savedEnrollment, studentCode, classMetaMap),
+            metadata: {
+              is_logged: isLogged,
+              source: 'public_enrollment',
+            },
+          },
+          queryRunner.manager,
+        )
+      }
+
+      // 7. CHUẨN BỊ DỮ LIỆU PHẢN HỒI (Final Result)
       const result: IEnrollments = {
         ...savedEnrollment,
         student_id: studentId,
@@ -467,10 +524,7 @@ export class EnrollmentsService {
       let isNewUserCreated = false
       let newUserObj: User | null = null
 
-      // 1. PHỤC HỒI ĐƠN VÀ LẤY THÔNG TIN HIỆN TẠI
-      // Nếu đơn bị xóa mềm, phục hồi lại trước khi cập nhật
-      await enrollmentsRepo.update(id, { deleted_at: null })
-
+      // 1. LẤY THÔNG TIN HIỆN TẠI (BAO GỒM CẢ ĐƠN ĐÃ XÓA MỀM) ĐỂ PHÁT HIỆN PHỤC HỒI & DIFF LOG
       const enrollment = await enrollmentsRepo
         .createQueryBuilder('enrollment')
         .leftJoinAndSelect('enrollment.student', 'student')
@@ -480,6 +534,23 @@ export class EnrollmentsService {
         .getOne()
 
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
+
+      const wasSoftDeleted = Boolean(enrollment.deleted_at)
+      const previousDeletedAt = enrollment.deleted_at ?? null
+      const beforeStudentCode = enrollment.student?.user?.code ?? null
+      const beforeEnrollment = {
+        ...enrollment,
+        class_ids: Array.isArray(enrollment.class_ids) ? enrollment.class_ids.map(item => ({ ...item })) : [],
+      }
+
+      // Đánh dấu transaction đã có audit log tường minh để tránh fallback subscriber ghi trùng
+      markEnrollmentAuditHandled(queryRunner.manager)
+
+      // Nếu đơn bị xóa mềm, phục hồi lại trước khi cập nhật
+      if (wasSoftDeleted) {
+        await enrollmentsRepo.update(id, { deleted_at: null })
+        enrollment.deleted_at = null
+      }
 
       // 2. KIỂM TRA TÍNH HỢP LỆ (Validation)
       // Không cho phép thay đổi mã học viên nếu đơn đã được gán mã từ trước
@@ -714,14 +785,84 @@ export class EnrollmentsService {
         )
       }
 
-      // 8. LƯU THAY ĐỔI VÀ GỬI THÔNG BÁO
+      // 8. LƯU THAY ĐỔI, GHI AUDIT LOG VÀ GỬI THÔNG BÁO
       const finalEnrollment = this.enrollmentsRepository.create({
         ...enrollment,
         status: newStatus || enrollment.status,
         full_name_normalized: rest.full_name ? parseFullNameMeta(rest.full_name).full_name_normalized : enrollment.full_name_normalized,
         ...rest,
       })
-      await enrollmentsRepo.save(finalEnrollment)
+      const savedEnrollment = (await enrollmentsRepo.save(finalEnrollment)) || finalEnrollment
+
+      if (this.enrollmentLogsService) {
+        const afterStudentCode = student_code || beforeStudentCode
+        const involvedClassIds = extractUniqueClassIds(beforeEnrollment.class_ids, savedEnrollment.class_ids)
+        const preliminaryChanges = diffEnrollment(
+          { ...beforeEnrollment, student_code: beforeStudentCode },
+          { ...savedEnrollment, student_code: afterStudentCode },
+        )
+
+        let changes = preliminaryChanges
+        if (preliminaryChanges.class_ids && involvedClassIds.length > 0) {
+          const classMetaMap = await this.enrollmentLogsService.loadClassMetaMap(involvedClassIds, queryRunner.manager)
+          changes = diffEnrollment(
+            { ...beforeEnrollment, student_code: beforeStudentCode },
+            { ...savedEnrollment, student_code: afterStudentCode },
+            classMetaMap,
+          )
+        }
+
+        if (wasSoftDeleted) {
+          const hasOtherChanges = Object.keys(changes).length > 0
+          changes.deleted_at = {
+            old: normalizeTimestampValue(previousDeletedAt),
+            new: null,
+          }
+          await this.enrollmentLogsService.record(
+            {
+              enrollmentId: savedEnrollment.id,
+              enrollmentCode: savedEnrollment.code ?? beforeEnrollment.code,
+              studentId: savedEnrollment.student_id ?? null,
+              studentName: savedEnrollment.full_name ?? beforeEnrollment.full_name,
+              studentNameNormalized: savedEnrollment.full_name_normalized ?? beforeEnrollment.full_name_normalized,
+              studentCode: afterStudentCode,
+              action: EnrollmentLogAction.RESTORE,
+              reason: hasOtherChanges
+                ? 'Quản trị viên khôi phục đơn từ danh sách đã xóa mềm và cập nhật thông tin'
+                : 'Quản trị viên khôi phục đơn đăng ký từ danh sách đã xóa mềm',
+              changes,
+              metadata: {
+                restored_from_soft_delete: true,
+                updated_during_restore: hasOtherChanges,
+                created_new_student_account: isNewUserCreated,
+                source: 'admin_enrollment',
+              },
+            },
+            queryRunner.manager,
+          )
+        } else if (Object.keys(changes).length > 0 || isNewUserCreated) {
+          await this.enrollmentLogsService.record(
+            {
+              enrollmentId: savedEnrollment.id,
+              enrollmentCode: savedEnrollment.code ?? beforeEnrollment.code,
+              studentId: savedEnrollment.student_id ?? null,
+              studentName: savedEnrollment.full_name ?? beforeEnrollment.full_name,
+              studentNameNormalized: savedEnrollment.full_name_normalized ?? beforeEnrollment.full_name_normalized,
+              studentCode: afterStudentCode,
+              action: EnrollmentLogAction.UPDATE,
+              reason: isNewUserCreated
+                ? `Quản trị viên cập nhật đơn đăng ký và tạo mới tài khoản học viên (${afterStudentCode})`
+                : 'Quản trị viên cập nhật thông tin đơn đăng ký',
+              changes,
+              metadata: {
+                created_new_student_account: isNewUserCreated,
+                source: 'admin_enrollment',
+              },
+            },
+            queryRunner.manager,
+          )
+        }
+      }
 
       if (enrollment.email) {
         setImmediate(() => {
@@ -887,7 +1028,10 @@ export class EnrollmentsService {
   }
 
   async sendPaymentSuccessEmail(id: number): Promise<void> {
-    const enrollment = await this.enrollmentsRepository.findOne({ where: { id } })
+    const enrollment = await this.enrollmentsRepository.findOne({
+      where: { id },
+      relations: ['student', 'student.user'],
+    })
     if (!enrollment) {
       throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
@@ -901,6 +1045,21 @@ export class EnrollmentsService {
     }
 
     await this.handleEnrollmentEmail(enrollment, 'payment', StatusEnrollment.DONE, true)
+
+    await this.enrollmentLogsService?.record({
+      enrollmentId: enrollment.id,
+      enrollmentCode: enrollment.code,
+      studentId: enrollment.student_id ?? null,
+      studentName: enrollment.full_name,
+      studentNameNormalized: enrollment.full_name_normalized,
+      studentCode: enrollment.student?.user?.code ?? null,
+      action: EnrollmentLogAction.SEND_PAYMENT_EMAIL,
+      reason: 'Quản trị viên gửi thủ công email xác nhận thanh toán (hóa đơn)',
+      metadata: {
+        recipient_email: enrollment.email,
+        source: 'admin_enrollment',
+      },
+    })
   }
 
   async sendAccountEmail(id: number): Promise<void> {
@@ -938,10 +1097,30 @@ export class EnrollmentsService {
       password: user.code,
       loginLink: `${process.env.FRONTEND_URL}`,
     })
+
+    await this.enrollmentLogsService?.record({
+      enrollmentId: enrollment.id,
+      enrollmentCode: enrollment.code,
+      studentId: enrollment.student_id ?? null,
+      studentName: enrollment.full_name,
+      studentNameNormalized: enrollment.full_name_normalized,
+      studentCode: user.code ?? null,
+      action: EnrollmentLogAction.SEND_ACCOUNT_EMAIL,
+      reason: 'Quản trị viên gửi thủ công email thông tin tài khoản học viên',
+      metadata: {
+        recipient_email: emailToSend,
+        target_user_id: user.id,
+        target_user_code: user.code,
+        source: 'admin_enrollment',
+      },
+    })
   }
 
   async sendInstructionEmail(id: number): Promise<void> {
-    const enrollment = await this.enrollmentsRepository.findOne({ where: { id } })
+    const enrollment = await this.enrollmentsRepository.findOne({
+      where: { id },
+      relations: ['student', 'student.user'],
+    })
     if (!enrollment) {
       throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
     }
@@ -971,6 +1150,21 @@ export class EnrollmentsService {
       undefined,
       mailContent,
     )
+
+    await this.enrollmentLogsService?.record({
+      enrollmentId: enrollment.id,
+      enrollmentCode: enrollment.code,
+      studentId: enrollment.student_id ?? null,
+      studentName: enrollment.full_name,
+      studentNameNormalized: enrollment.full_name_normalized,
+      studentCode: enrollment.student?.user?.code ?? null,
+      action: EnrollmentLogAction.SEND_INSTRUCTION_EMAIL,
+      reason: 'Quản trị viên gửi thủ công email hướng dẫn sử dụng hệ thống học trực tuyến',
+      metadata: {
+        recipient_email: enrollment.email,
+        source: 'admin_enrollment',
+      },
+    })
   }
 
   async getEnrollmentById(id: number): Promise<IEnrollments> {
@@ -1265,7 +1459,7 @@ export class EnrollmentsService {
     }
   }
 
-  // delete
+  // delete (xóa cứng đơn đăng ký và lưu trọn vẹn snapshot vào enrollment_logs để tra cứu lại)
   async deleteEnrollment(id: number): Promise<void> {
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
@@ -1276,26 +1470,63 @@ export class EnrollmentsService {
 
       const enrollment = await enrollmentsRepo
         .createQueryBuilder('enrollment')
-        .select(['enrollment.id', 'enrollment.status', 'enrollment.class_ids', 'enrollment.student_id'])
+        .leftJoinAndSelect('enrollment.student', 'student')
+        .leftJoinAndSelect('student.user', 'user')
         .where('enrollment.id = :id', { id })
         .withDeleted()
         .getOne()
       if (!enrollment) throwAppException('ENROLLMENT_NOT_FOUND', ErrorCode.ENROLLMENT_NOT_FOUND, HttpStatus.NOT_FOUND)
 
+      const studentCode = enrollment.student?.user?.code ?? null
+      const classIds = Array.isArray(enrollment.class_ids) ? enrollment.class_ids.map(item => item.class_id) : []
+      const classMetaMap = this.enrollmentLogsService
+        ? await this.enrollmentLogsService.loadClassMetaMap(extractUniqueClassIds(enrollment.class_ids), queryRunner.manager)
+        : undefined
+      const snapshot = buildEnrollmentSnapshot(enrollment, studentCode, classMetaMap)
+
       // nếu đơn nằm trong 3 status kia chứng tỏ đã vào lớp, xóa thì xóa trong lớp đi
       if (enrollment.status != StatusEnrollment.PENDING) {
-        const classIds = enrollment.class_ids.map(item => item.class_id)
-        await classStudentsRepo.delete({
-          class_id: In(classIds),
-          student_id: enrollment.student_id,
-        })
+        if (classIds.length > 0 && enrollment.student_id) {
+          await classStudentsRepo.delete({
+            class_id: In(classIds),
+            student_id: enrollment.student_id,
+          })
+        }
 
         if (enrollment.student_id) {
           await this.syncStudentBooksForStudent(queryRunner.manager, enrollment.student_id, [], classIds)
         }
       }
 
+      // Giữ nguyên chính sách xóa cứng
+      markEnrollmentAuditHandled(queryRunner.manager)
       await enrollmentsRepo.delete(id)
+
+      if (this.enrollmentLogsService) {
+        const wasSoftDeleted = Boolean(enrollment.deleted_at)
+        await this.enrollmentLogsService.record(
+          {
+            enrollmentId: enrollment.id,
+            enrollmentCode: enrollment.code,
+            studentId: enrollment.student_id ?? null,
+            studentName: enrollment.full_name,
+            studentNameNormalized: enrollment.full_name_normalized,
+            studentCode,
+            action: EnrollmentLogAction.DELETE,
+            reason: wasSoftDeleted
+              ? 'Quản trị viên xóa vĩnh viễn đơn đăng ký từ danh sách đã xóa mềm'
+              : 'Quản trị viên xóa vĩnh viễn đơn đăng ký',
+            snapshot,
+            metadata: {
+              hard_deleted: true,
+              was_soft_deleted: wasSoftDeleted,
+              source: 'admin_enrollment',
+            },
+          },
+          queryRunner.manager,
+        )
+      }
+
       await queryRunner.commitTransaction()
     } catch (error) {
       await queryRunner.rollbackTransaction()
@@ -1310,14 +1541,63 @@ export class EnrollmentsService {
   async overDue10Day() {
     const enrollments = await this.enrollmentsRepository
       .createQueryBuilder('enrollment')
-      .select(['enrollment.id', 'enrollment.status', 'enrollment.created_at', 'enrollment.payment_status'])
+      .select([
+        'enrollment.id',
+        'enrollment.code',
+        'enrollment.status',
+        'enrollment.created_at',
+        'enrollment.payment_status',
+        'enrollment.student_id',
+        'enrollment.full_name',
+        'enrollment.full_name_normalized',
+        'student.id',
+        'user.code',
+      ])
+      .leftJoin('enrollment.student', 'student')
+      .leftJoin('student.user', 'user')
       .where('enrollment.payment_status = :payment_status', { payment_status: PaymentStatus.UNPAID })
       .andWhere('enrollment.status = :status', { status: StatusEnrollment.PENDING })
       .andWhere('enrollment.created_at < :date', { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) })
       .getMany()
 
     for (const enrollment of enrollments) {
-      await this.enrollmentsRepository.softDelete(enrollment.id)
+      const deletedAtIso = new Date().toISOString()
+      await this.dataSource.transaction(async manager => {
+        markEnrollmentAuditHandled(manager)
+        await manager.getRepository(Enrollments).softDelete(enrollment.id)
+        if (this.enrollmentLogsService) {
+          await this.enrollmentLogsService.record(
+            {
+              enrollmentId: enrollment.id,
+              enrollmentCode: enrollment.code,
+              studentId: enrollment.student_id ?? null,
+              studentName: enrollment.full_name,
+              studentNameNormalized: enrollment.full_name_normalized,
+              studentCode: enrollment.student?.user?.code ?? null,
+              action: EnrollmentLogAction.AUTO_SOFT_DELETE,
+              reason: 'Hệ thống tự động xóa mềm đơn do quá 10 ngày chưa thanh toán (trạng thái chờ thanh toán)',
+              actor: {
+                actorType: EnrollmentLogActorType.SYSTEM,
+              },
+              changes: {
+                deleted_at: {
+                  old: null,
+                  new: deletedAtIso,
+                },
+              },
+              metadata: {
+                reason_code: 'OVERDUE_10_DAYS_UNPAID',
+                triggered_by: 'SYSTEM_CRON',
+                cron_job: 'overDue10Day',
+                overdue_days: 10,
+                enrollment_created_at: normalizeTimestampValue(enrollment.created_at),
+                source: 'cron_overdue_10_day',
+              },
+            },
+            manager,
+          )
+        }
+      })
     }
   }
 }
