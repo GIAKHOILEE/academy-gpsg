@@ -3,7 +3,11 @@ import { HvmMeetRole, MeetingProvider } from '@enums/meeting.enum'
 import { Role } from '@enums/role.enum'
 import { HvmMeetApiError, HvmMeetClientService } from '../services/hvm-meet-client.service'
 import { LessonMeetSessionService } from '../services/lesson-meet-session.service'
-import { decideMeetingRole, decideReplayAccess, LessonMeetingService } from '../services/lesson-meeting.service'
+import { DEFAULT_ROOM_POLICY, MANAGED_MEET_KEYS, toMeetSettings } from '../hvm-meet.policy'
+import { decideMeetingRole, decideReplayAccess, LessonMeetingService, pickUpcomingLessonIds, vietnamToday } from '../services/lesson-meeting.service'
+
+/** 15 key do academy quản lý, tất cả null = để meet dùng giá trị kế thừa. */
+const ALL_NULL_SETTINGS = Object.fromEntries(MANAGED_MEET_KEYS.map(key => [key, null]))
 
 describe('decideMeetingRole', () => {
   it.each([
@@ -89,7 +93,7 @@ describe('LessonMeetingService.joinLesson', () => {
       }),
       find: jest.fn(async () => [{ id: 11, student: { user: { id: 101, full_name: 'Nguyễn Văn A', saint_name: 'Maria' } } }]),
     }
-    settingService = { getActiveConfig: jest.fn(async () => config) }
+    settingService = { getActiveConfig: jest.fn(async () => config), getStoredRoomPolicy: jest.fn(async () => null) }
 
     client = new HvmMeetClientService()
     jest.spyOn(client['logger'], 'error').mockImplementation(() => undefined)
@@ -146,6 +150,8 @@ describe('LessonMeetingService.joinLesson', () => {
       scheduledStart: '2026-10-26T11:30:00.000Z',
       scheduledEnd: '2026-10-26T13:00:00.000Z',
       metadata: { classId: 3, lessonId: 12 },
+      // chưa lưu cấu hình chung, buổi không ghi đè: gửi đủ key với null (giữ nguyên hành vi cũ của meet)
+      settings: ALL_NULL_SETTINGS,
       roster: [
         { identity: 'academy:user:50', name: 'Thầy Phêrô', roleKey: 'host', externalUserId: '50' },
         { identity: 'academy:user:101', name: 'Maria Nguyễn Văn A', roleKey: 'participant', externalUserId: '101' },
@@ -388,6 +394,288 @@ describe('LessonMeetingService.joinLesson', () => {
       ;(client.createReplayTicket as jest.Mock).mockRejectedValue(new HvmMeetApiError('Không tìm thấy buổi', 404, 'SESSION_NOT_FOUND'))
       const error = await service.createReplay(12, 'sess-12a', { userId: 1, role: Role.ADMIN }).catch(err => err)
       expect(error.getStatus()).toBe(404)
+    })
+  })
+
+  describe('chính sách phòng (cách vào + điểm danh) gửi kèm khi upsert phòng', () => {
+    const globalPolicy = {
+      access: { ...DEFAULT_ROOM_POLICY.access, mode: 'account_or_code_birthdate' as const },
+      attendance: { ...DEFAULT_ROOM_POLICY.attendance, present_percent: 80 },
+    }
+
+    it('cấu hình chung đã lưu → settings theo cấu hình chung, đủ mọi key quản lý', async () => {
+      settingService.getStoredRoomPolicy.mockResolvedValue(globalPolicy)
+      await service.joinLesson(12, { userId: 101, role: Role.STUDENT })
+      const body = upsertRoom.mock.calls[0][2]
+      expect(Object.keys(body.settings).sort()).toEqual([...MANAGED_MEET_KEYS].sort())
+      expect(body.settings).toMatchObject({
+        'room.publicJoin': true,
+        'room.publicJoinFactor': 'birthdate',
+        'attendance.presentThresholdPercent': 80,
+      })
+    })
+
+    it('buổi học ghi đè phần cách vào → phần đó theo buổi, phần điểm danh vẫn theo cấu hình chung', async () => {
+      lesson.meet_policy = { access: { ...DEFAULT_ROOM_POLICY.access, mode: 'account_or_guest', guest_waiting_room: false }, attendance: null }
+      const body = await service.buildRoomRequest(lesson, config, globalPolicy)
+      expect(body.settings).toEqual(toMeetSettings({ access: lesson.meet_policy.access, attendance: globalPolicy.attendance }))
+      expect(body.settings).toMatchObject({
+        'room.publicJoinFactor': 'guest',
+        'room.guestWaitingRoom': false,
+        'attendance.presentThresholdPercent': 80,
+      })
+    })
+
+    it('đổi chính sách thì lần vào sau PUT lại phòng (hash gồm cả settings)', async () => {
+      await service.joinLesson(12, { userId: 101, role: Role.STUDENT })
+      await service.joinLesson(12, { userId: 101, role: Role.STUDENT })
+      expect(upsertRoom).toHaveBeenCalledTimes(1)
+      settingService.getStoredRoomPolicy.mockResolvedValue(globalPolicy)
+      await service.joinLesson(12, { userId: 101, role: Role.STUDENT })
+      expect(upsertRoom).toHaveBeenCalledTimes(2)
+    })
+
+    it('meet trả 422 SETTINGS_INVALID (meet cũ) → ghi log, gửi lại KHÔNG kèm settings, vẫn vào được', async () => {
+      upsertRoom.mockRejectedValueOnce(
+        new HvmMeetApiError('Một số setting không hợp lệ', 422, 'SETTINGS_INVALID', { 'room.guestWaitingRoom': 'unknown' }),
+      )
+      const logError = jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined)
+
+      await expect(service.joinLesson(12, { userId: 101, role: Role.STUDENT })).resolves.toMatchObject({ joinUrl: ticket.joinUrl })
+
+      expect(upsertRoom).toHaveBeenCalledTimes(2)
+      expect(upsertRoom.mock.calls[0][2]).toHaveProperty('settings')
+      expect(upsertRoom.mock.calls[1][2]).not.toHaveProperty('settings')
+      expect(upsertRoom.mock.calls[1][2]).toMatchObject({ title: 'Thánh Kinh K12 — Bài 1: Kinh Thánh', roster: expect.any(Array) })
+      expect(logError).toHaveBeenCalledWith(expect.stringContaining('lesson-12'))
+    })
+
+    it.each([
+      ['422 mã khác', new HvmMeetApiError('Sai', 422, 'VALIDATION_FAILED')],
+      ['500', new HvmMeetApiError('Lỗi', 500, 'INTERNAL')],
+      ['lỗi mạng', new HvmMeetApiError('timeout', null, 'TIMEOUT')],
+    ])('lỗi khác (%s) không thử lại mà ném tiếp', async (_label, error) => {
+      upsertRoom.mockRejectedValueOnce(error)
+      const conn = { baseUrl: 'https://meet.test', apiKey: 'k' }
+      await expect(service.syncRoom(conn, 'lesson-12', { title: 'x', settings: { 'room.waitingRoom': null } })).rejects.toBe(error)
+      expect(upsertRoom).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('đồng bộ phòng chủ động', () => {
+    it('syncLessonRoom: buổi HVM → PUT phòng (bỏ qua cache), trả true', async () => {
+      await service.joinLesson(12, { userId: 101, role: Role.STUDENT })
+      await expect(service.syncLessonRoom(12)).resolves.toBe(true)
+      expect(upsertRoom).toHaveBeenCalledTimes(2)
+    })
+
+    it('syncLessonRoom: buổi link ngoài / tích hợp tắt / không có buổi → không gọi meet', async () => {
+      await expect(service.syncLessonRoom(999)).resolves.toBe(false)
+      lesson.meeting_provider = MeetingProvider.EXTERNAL
+      await expect(service.syncLessonRoom(12)).resolves.toBe(false)
+      lesson.meeting_provider = MeetingProvider.HVM_MEET
+      settingService.getActiveConfig.mockResolvedValue(null)
+      await expect(service.syncLessonRoom(12)).resolves.toBe(false)
+      expect(upsertRoom).not.toHaveBeenCalled()
+    })
+
+    it('syncLessonRoom: meet lỗi → chỉ ghi log, không ném (lưu buổi học không hỏng)', async () => {
+      upsertRoom.mockRejectedValue(new HvmMeetApiError('timeout', null, 'TIMEOUT'))
+      jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined)
+      await expect(service.syncLessonRoom(12)).resolves.toBe(false)
+    })
+
+    it('vietnamToday: 23:30 UTC đã là ngày hôm sau ở VN', () => {
+      expect(vietnamToday(Date.UTC(2026, 10, 3, 23, 30))).toBe('2026-11-04')
+      expect(vietnamToday(Date.UTC(2026, 10, 3, 16, 59))).toBe('2026-11-03')
+    })
+
+    it('pickUpcomingLessonIds: hôm nay trở đi + chưa có ngày, gần nhất trước, có giới hạn', () => {
+      const lessons = [
+        { id: 1, start_date: '2026-11-03' }, // hôm qua
+        { id: 2, start_date: '2026-11-04' }, // hôm nay
+        { id: 3, start_date: '10/11/2026' }, // định dạng cũ dd/mm/yyyy
+        { id: 4, start_date: null },
+        { id: 5, start_date: '2026-11-05T17:00:00.000Z' }, // ISO UTC = 06/11 giờ VN
+        { id: 6, start_date: 'không phải ngày' }, // không đọc được → coi như chưa có ngày
+      ]
+      expect(pickUpcomingLessonIds(lessons, '2026-11-04')).toEqual([2, 5, 3, 4, 6])
+      expect(pickUpcomingLessonIds(lessons, '2026-11-04', 2)).toEqual([2, 5])
+    })
+
+    it('resyncUpcomingRooms: chỉ đẩy buổi sắp tới, tuần tự, lỗi một phòng không dừng cả lượt', async () => {
+      lesson.start_date = vietnamToday()
+      const lessons: Record<number, any> = {
+        12: lesson,
+        13: { ...lesson, id: 13, start_date: '2000-01-01' },
+        14: { ...lesson, id: 14, start_date: null },
+        15: { ...lesson, id: 15, start_date: null },
+      }
+      lessonRepository.find = jest.fn(async () => Object.values(lessons).map(l => ({ id: l.id, start_date: l.start_date })))
+      lessonRepository.findOne = jest.fn(async ({ where }) => lessons[where.id] ?? null)
+      upsertRoom.mockImplementation(async (_conn, externalId) => {
+        if (externalId === 'lesson-14') throw new HvmMeetApiError('Lỗi', 500, 'INTERNAL')
+        return { id: 'room' }
+      })
+      jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined)
+      const log = jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined)
+
+      await service.resyncUpcomingRooms()
+
+      expect(lessonRepository.find).toHaveBeenCalledWith(expect.objectContaining({ where: { meeting_provider: MeetingProvider.HVM_MEET } }))
+      expect(upsertRoom.mock.calls.map(call => call[1])).toEqual(['lesson-12', 'lesson-14', 'lesson-15'])
+      expect(log).toHaveBeenCalledWith(expect.stringContaining('2 phòng thành công, 1 lỗi'))
+    })
+
+    it('resyncUpcomingRooms: gọi chồng khi đang chạy → chạy thêm đúng một lượt', async () => {
+      lesson.start_date = vietnamToday()
+      lessonRepository.find = jest.fn(async () => [{ id: 12, start_date: lesson.start_date }])
+      jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined)
+
+      await Promise.all([service.resyncUpcomingRooms(), service.resyncUpcomingRooms(), service.resyncUpcomingRooms()])
+      expect(lessonRepository.find).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('link công khai của buổi học (getPublicLink)', () => {
+    const link = { url: 'https://meet.test/p/abc', enabled: true, verifyConfigured: true, factor: 'birthdate' as const }
+
+    beforeEach(() => {
+      client.getPublicLink = jest.fn(async () => link)
+    })
+
+    it('admin: đồng bộ phòng (bỏ qua cache) rồi lấy link, trả access_mode hiệu lực', async () => {
+      settingService.getStoredRoomPolicy.mockResolvedValue({
+        access: { ...DEFAULT_ROOM_POLICY.access, mode: 'account_or_code_birthdate' },
+        attendance: DEFAULT_ROOM_POLICY.attendance,
+      })
+      await service.joinLesson(12, { userId: 101, role: Role.STUDENT }) // đã có cache
+      const result = await service.getPublicLink(12, { userId: 1, role: Role.ADMIN })
+
+      expect(upsertRoom).toHaveBeenCalledTimes(2)
+      expect(client.getPublicLink).toHaveBeenCalledWith({ baseUrl: 'https://meet.test', apiKey: 'hvmm_academy_x' }, 'lesson-12', false)
+      expect(result).toEqual({
+        url: link.url,
+        enabled: true,
+        factor: 'birthdate',
+        verify_configured: true,
+        access_mode: 'account_or_code_birthdate',
+      })
+    })
+
+    it('chưa lưu cấu hình nào → access_mode = account; meet cũ không trả factor → null', async () => {
+      ;(client.getPublicLink as jest.Mock).mockResolvedValue({ url: link.url, enabled: false, verifyConfigured: false })
+      await expect(service.getPublicLink(12, { userId: 50, role: Role.TEACHER })).resolves.toEqual({
+        url: link.url,
+        enabled: false,
+        factor: null,
+        verify_configured: false,
+        access_mode: 'account',
+      })
+    })
+
+    it('chỉ vào bằng tài khoản: link chưa mở thì bỏ factor kế thừa của meet → null', async () => {
+      ;(client.getPublicLink as jest.Mock).mockResolvedValue({ ...link, enabled: false, factor: 'birthdate' })
+      await expect(service.getPublicLink(12, { userId: 50, role: Role.TEACHER })).resolves.toMatchObject({
+        enabled: false,
+        factor: null,
+        access_mode: 'account',
+      })
+    })
+
+    it('ghi đè của buổi học thắng cấu hình chung; meet cũ thiếu factor thì suy từ mode', async () => {
+      ;(client.getPublicLink as jest.Mock).mockResolvedValue({ url: link.url, enabled: true, verifyConfigured: true })
+      lesson.meet_policy = { access: { ...DEFAULT_ROOM_POLICY.access, mode: 'account_or_guest' } }
+      await expect(service.getPublicLink(12, { userId: 2, role: Role.STAFF })).resolves.toMatchObject({
+        factor: 'guest',
+        access_mode: 'account_or_guest',
+      })
+    })
+
+    it('giảng viên của lớp xem được nhưng không đổi link (403)', async () => {
+      await expect(service.getPublicLink(12, { userId: 50, role: Role.TEACHER })).resolves.toMatchObject({ url: link.url })
+      const error = await service.getPublicLink(12, { userId: 50, role: Role.TEACHER }, true).catch(err => err)
+      expect(error.getStatus()).toBe(403)
+      expect(error.response.data).toEqual({ reason: 'NOT_ALLOWED' })
+      expect(client.getPublicLink).toHaveBeenCalledTimes(1)
+    })
+
+    it('giáo vụ đổi link → gọi meet với rotate = true', async () => {
+      jest.spyOn(service['logger'], 'log').mockImplementation(() => undefined)
+      await service.getPublicLink(12, { userId: 2, role: Role.STAFF }, true)
+      expect(client.getPublicLink).toHaveBeenCalledWith(expect.anything(), 'lesson-12', true)
+    })
+
+    it.each([
+      ['học viên học trực tuyến', 101, Role.STUDENT],
+      ['giảng viên lớp khác', 51, Role.TEACHER],
+      ['tài chính', 5, Role.FINANCE],
+    ])('%s không được lấy link (403)', async (_label, userId, role) => {
+      const error = await service.getPublicLink(12, { userId, role }).catch(err => err)
+      expect(error.getStatus()).toBe(403)
+      expect(client.getPublicLink).not.toHaveBeenCalled()
+    })
+
+    it('buổi học dùng link ngoài → 400 NOT_HVM_MEET', async () => {
+      lesson.meeting_provider = MeetingProvider.EXTERNAL
+      const error = await service.getPublicLink(12, { userId: 1, role: Role.ADMIN }).catch(err => err)
+      expect(error.getStatus()).toBe(400)
+      expect(error.response.data).toEqual({ reason: 'NOT_HVM_MEET' })
+    })
+
+    it('tích hợp tắt → 503 NOT_CONFIGURED', async () => {
+      settingService.getActiveConfig.mockResolvedValue(null)
+      const error = await service.getPublicLink(12, { userId: 1, role: Role.ADMIN }).catch(err => err)
+      expect(error.getStatus()).toBe(503)
+    })
+
+    it('meet chưa có endpoint (404 không mã) → 502 HVM_MEET_REQUEST_FAILED', async () => {
+      ;(client.getPublicLink as jest.Mock).mockRejectedValue(new HvmMeetApiError('Not Found', 404))
+      const error = await service.getPublicLink(12, { userId: 1, role: Role.ADMIN }).catch(err => err)
+      expect(error.getStatus()).toBe(502)
+    })
+  })
+
+  describe('điểm danh từng buổi (getSessionAttendance)', () => {
+    const summary = {
+      sessionId: 'sess-12a',
+      finalized: true,
+      reports: [{ identity: 'academy:user:101', name: 'A', roleKey: 'participant', status: 'present', attendedSeconds: 3000, expectedSeconds: 3600 }],
+    }
+
+    beforeEach(() => {
+      client.getAttendance = jest.fn(async () => summary as any)
+      sessions[0].attendance_finalized = true
+    })
+
+    it('admin: chuyển tiếp báo cáo của meet + academySynced', async () => {
+      await expect(service.getSessionAttendance(12, 'sess-12a', { userId: 1, role: Role.ADMIN })).resolves.toEqual({
+        ...summary,
+        academySynced: true,
+      })
+      expect(client.getAttendance).toHaveBeenCalledWith({ baseUrl: 'https://meet.test', apiKey: 'hvmm_academy_x' }, 'sess-12a')
+    })
+
+    it('giảng viên của lớp xem được; chưa ghi vào sổ → academySynced false', async () => {
+      sessions[0].attendance_finalized = false
+      await expect(service.getSessionAttendance(12, 'sess-12a', { userId: 50, role: Role.TEACHER })).resolves.toMatchObject({
+        academySynced: false,
+      })
+    })
+
+    it('session của buổi học khác → 404, không gọi meet', async () => {
+      const error = await service.getSessionAttendance(12, 'sess-99', { userId: 1, role: Role.ADMIN }).catch(err => err)
+      expect(error.getStatus()).toBe(404)
+      expect(error.response.data).toEqual({ reason: 'SESSION_NOT_FOUND' })
+      expect(client.getAttendance).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['học viên', 101, Role.STUDENT],
+      ['giảng viên lớp khác', 51, Role.TEACHER],
+    ])('%s không được xem (403)', async (_label, userId, role) => {
+      const error = await service.getSessionAttendance(12, 'sess-12a', { userId, role }).catch(err => err)
+      expect(error.getStatus()).toBe(403)
     })
   })
 })

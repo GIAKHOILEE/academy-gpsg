@@ -9,7 +9,9 @@ import { Repository } from 'typeorm'
 import { TestHvmMeetSettingDto, UpdateHvmMeetSettingDto } from '../dtos/hvm-meet-setting.dto'
 import { HvmMeetSettingEntity } from '../entities/hvm-meet-setting.entity'
 import { HVM_MEET_DEFAULT_TEMPLATE_KEY, HVM_MEET_WEBHOOK_PATH } from '../hvm-meet.constants'
+import { DEFAULT_ROOM_POLICY, HvmMeetRoomPolicy, normalizeRoomPolicy } from '../hvm-meet.policy'
 import { HvmMeetConnectionConfig } from '../hvm-meet.types'
+import { UpdateHvmMeetRoomPolicyDto } from '../dtos/hvm-meet-room-policy.dto'
 import { HvmMeetClientService } from './hvm-meet-client.service'
 
 /** Phần cấu hình nằm trong `config_encrypted`. */
@@ -111,6 +113,30 @@ export class HvmMeetSettingService {
     }
 
     return this.getConfigResponse()
+  }
+
+  /* ------------------ Cách vào phòng + điểm danh (mặc định chung) ------------------ */
+
+  /** Mặc định chung đã lưu; null = chưa lưu lần nào (meet dùng giá trị kế thừa). */
+  async getStoredRoomPolicy(): Promise<HvmMeetRoomPolicy | null> {
+    const settings = await this.getSettings()
+    return normalizeRoomPolicy(settings.room_policy)
+  }
+
+  /** GET /admin/hvm-meet/room-policy: giá trị đã lưu + mặc định để FE hiển thị khi chưa lưu. */
+  async getRoomPolicy(): Promise<{ policy: HvmMeetRoomPolicy | null; defaults: HvmMeetRoomPolicy }> {
+    return { policy: await this.getStoredRoomPolicy(), defaults: DEFAULT_ROOM_POLICY }
+  }
+
+  /**
+   * PUT /admin/hvm-meet/room-policy. `policy: null` = khôi phục mặc định.
+   * Đẩy sang các phòng sắp tới do controller gọi LessonMeetingService.resyncUpcomingRooms().
+   */
+  async updateRoomPolicy(dto: UpdateHvmMeetRoomPolicyDto): Promise<{ policy: HvmMeetRoomPolicy | null; defaults: HvmMeetRoomPolicy }> {
+    const settings = await this.getSettings()
+    settings.room_policy = dto?.policy ? normalizeRoomPolicy(dto.policy) : null
+    await this.settingRepository.save(settings)
+    return this.getRoomPolicy()
   }
 
   /* --------------------------- Kiểm tra kết nối --------------------------- */
